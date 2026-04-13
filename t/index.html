@@ -2059,7 +2059,7 @@ function buildSessionObj(){
   const remarks = (document.getElementById('sessionRemarks')?.value||'').trim();
   // id is NOT set here — callers use _currentSessionId to ensure upsert correctness
   return{version:QRS_VERSION,student,range,remarks,
-    date:new Date().toLocaleDateString(),isoDate:new Date().toISOString(),
+     studentId: null,date:new Date().toLocaleDateString('en-US'),isoDate:new Date().toISOString(),
     duration:timerStr(),juz:curJuz,surah:currentSurah,viewMode,mistakes:[...mistakes]};
 }
 
