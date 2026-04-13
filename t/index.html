@@ -740,8 +740,11 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
         <input class="tinput" id="sessionName" placeholder="Session name" style="width:105px;flex:none;" />
       </div>
       <textarea class="tinput" id="sessionRemarks" placeholder="Session remarks" maxlength="240" rows="2" style="margin-top:4px;resize:none;font-size:11px;line-height:1.5;height:auto;width:100%;display:block;"></textarea>
-      <button class="btn-foot primary" onclick="saveSession()" style="width:100%;margin-top:4px;padding:5px;border-radius:5px;font-family:'Lora',serif;font-size:11px;cursor:pointer;background:var(--gold);color:var(--ink);border:none;font-weight:600;">💾 Save session</button>
-      <div class="stats-row" style="margin-top:4px;">
+     <div style="display:flex;gap:4px;margin-top:4px;">
+        <button class="btn-foot primary" onclick="saveSession()" style="flex:1;padding:5px;border-radius:5px;font-family:'Lora',serif;font-size:11px;cursor:pointer;background:var(--gold);color:var(--ink);border:none;font-weight:600;">💾 Save session</button>
+        <button class="btn-foot" onclick="openSettings()" style="flex:none;padding:5px 9px;border-radius:5px;font-family:'Lora',serif;font-size:11px;cursor:pointer;" title="Session settings">⚙</button>
+      </div>
+        <div class="stats-row" style="margin-top:4px;">
         <div class="stat-pill"><span class="n" id="st0">0</span><span class="l">Total</span></div>
         <div class="stat-pill"><span class="n" id="st1" style="color:var(--green)">0</span><span class="l">Self</span></div>
         <div class="stat-pill"><span class="n" id="st2" style="color:var(--amber)">0</span><span class="l">Hint</span></div>
@@ -836,7 +839,52 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
     </div>
   </div>
 </div>
+<!-- SETTINGS MODAL -->
+<div class="modal-bg" id="settingsModal">
+  <div class="modal" style="max-width:360px;">
+    <div class="modal-title">⚙ Session Settings</div>
+    <div class="modal-sub">These settings apply to new sessions.</div>
 
+    <div class="edit-form-group">
+      <label>Timezone</label>
+      <select class="sel" id="settingsTZSel" style="width:100%;background:var(--parchment2);color:var(--ink);border:.5px solid var(--border2);border-radius:5px;padding:6px 8px;font-family:'Lora',serif;font-size:12px;">
+        <option value="">Automatic (device timezone)</option>
+        <option value="America/New_York">Eastern Time — New York</option>
+        <option value="America/Chicago">Central Time — Chicago</option>
+        <option value="America/Denver">Mountain Time — Denver</option>
+        <option value="America/Los_Angeles">Pacific Time — Los Angeles</option>
+        <option value="America/Anchorage">Alaska Time</option>
+        <option value="Pacific/Honolulu">Hawaii Time</option>
+        <option value="Europe/London">GMT — London</option>
+        <option value="Europe/Paris">CET — Paris / Berlin</option>
+        <option value="Europe/Istanbul">Turkey Time</option>
+        <option value="Asia/Dubai">Gulf Time — Dubai</option>
+        <option value="Asia/Karachi">Pakistan Time — Karachi</option>
+        <option value="Asia/Kolkata">India Time — Mumbai</option>
+        <option value="Asia/Dhaka">Bangladesh Time</option>
+        <option value="Asia/Riyadh">Arabia Time — Riyadh</option>
+        <option value="Asia/Kuala_Lumpur">Malaysia Time</option>
+        <option value="Asia/Jakarta">Western Indonesia Time</option>
+        <option value="Australia/Sydney">AEDT — Sydney</option>
+        <option value="Pacific/Auckland">New Zealand Time</option>
+      </select>
+    </div>
+
+    <div class="edit-form-group">
+      <label>Date format</label>
+      <select class="sel" id="settingsFmtSel" style="width:100%;background:var(--parchment2);color:var(--ink);border:.5px solid var(--border2);border-radius:5px;padding:6px 8px;font-family:'Lora',serif;font-size:12px;">
+        <option value="en-US">MM/DD/YYYY — United States</option>
+        <option value="en-GB">DD/MM/YYYY — UK / Pakistan</option>
+        <option value="iso">YYYY-MM-DD — ISO / International</option>
+      </select>
+    </div>
+
+    <div class="modal-btns">
+      <button class="btn-m sec" onclick="closeModal('settingsModal')">Cancel</button>
+      <button class="btn-m pri" onclick="saveSettings()">Save</button>
+    </div>
+  </div>
+</div>
 <!-- SESSIONS OVERLAY -->
 <div class="sessions-overlay" id="sessionsOverlay" onclick="if(event.target===this)closeSessions()">
   <div class="sessions-panel">
@@ -924,6 +972,8 @@ const corrClass2 = {self:'self',prompted:'prompted',teacher:'teacher'};
 // ═══════════════════════════════════════════════════════════════════
 let viewMode = 'mushaf';
 let _jumpTargetPage = null; // set by jumpToPageFromInput, prevents input reset
+let settingsTZ = '';           // '' = use device timezone
+let settingsDateFmt = 'en-US'; // 'en-US', 'en-GB', or 'iso'
 let currentSurah = null;
 let pageVerses = [];
 let allVerseWords = {};   // {"S:A": [wordObj,...]}
@@ -956,6 +1006,8 @@ window.addEventListener('DOMContentLoaded', () => {
   });
   document.getElementById('viewControls').style.display = 'none';
   document.getElementById('mushafControls').style.display = '';
+  settingsTZ = localStorage.getItem('settingsTZ') || '';
+  settingsDateFmt = localStorage.getItem('settingsDateFmt') || 'en-US';
   loadJuz(1);
   setupKeyboardShortcuts();
   setupSwipeToClose();
@@ -2047,7 +2099,17 @@ function makeFileName(student, range) {
   const r=(range||'').replace(/[^\w\s:–-]/g,'').trim().replace(/\s+/g,'_').slice(0,30);
   return `${s}_${mm}-${dd}-${yyyy}${r?'_'+r:''}`;
 }
-
+function formatDate(){
+  const opts = {year:'numeric', month:'2-digit', day:'2-digit'};
+  if(settingsTZ) opts.timeZone = settingsTZ;
+  if(settingsDateFmt === 'iso'){
+    const d = settingsTZ
+      ? new Date(new Date().toLocaleString('en-US', {timeZone: settingsTZ}))
+      : new Date();
+    return d.toISOString().slice(0,10); // YYYY-MM-DD
+  }
+  return new Date().toLocaleDateString(settingsDateFmt, opts);
+}
 function buildSessionObj(){
   const student=document.getElementById('studentName').value.trim()||'Student';
   const juzSel=document.getElementById('juzSel');
@@ -2059,13 +2121,26 @@ function buildSessionObj(){
   const remarks = (document.getElementById('sessionRemarks')?.value||'').trim();
   // id is NOT set here — callers use _currentSessionId to ensure upsert correctness
   return{version:QRS_VERSION,student,range,remarks,
-     studentId: null,date:new Date().toLocaleDateString('en-US'),isoDate:new Date().toISOString(),
+     studentId: null, date:formatDate(),isoDate:new Date().toISOString(),
     duration:timerStr(),juz:curJuz,surah:currentSurah,viewMode,mistakes:[...mistakes]};
 }
 
 // Track whether current session has been saved to localStorage
 let sessionSaved = false;
+function openSettings(){
+  document.getElementById('settingsTZSel').value = settingsTZ;
+  document.getElementById('settingsFmtSel').value = settingsDateFmt;
+  document.getElementById('settingsModal').classList.add('open');
+}
 
+function saveSettings(){
+  settingsTZ = document.getElementById('settingsTZSel').value;
+  settingsDateFmt = document.getElementById('settingsFmtSel').value;
+  localStorage.setItem('settingsTZ', settingsTZ);
+  localStorage.setItem('settingsDateFmt', settingsDateFmt);
+  closeModal('settingsModal');
+  showToast('Settings saved ✓');
+}
 function saveSession(){
   if(!mistakes.length){showToast('No mistakes to save');return;}
   // Reuse existing ID so we update-in-place (same as autosave does)
