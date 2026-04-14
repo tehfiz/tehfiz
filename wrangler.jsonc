@@ -1,14 +1,10 @@
+
+
 {
-  "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "tehfiz",
-  "compatibility_date": "2026-04-13",
-  "observability": {
-    "enabled": true
-  },
+  "name": "tehfiz",           // ← change to your actual Worker name (same as on main)
+  "compatibility_date": "2026-04-14",   // ← today's date is fine, or copy whatever is on main
   "assets": {
-    "directory": "."
-  },
-  "compatibility_flags": [
-    "nodejs_compat"
-  ]
+    "directory": "./dist"               // ← change this to wherever your static files live
+                                        // Common values: "./dist", "./public", "./build", or "./" if files are in root
+  }
 }
