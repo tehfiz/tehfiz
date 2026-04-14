@@ -353,12 +353,12 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
 .flash-card{animation:flashCard 1.1s ease forwards;}
 @keyframes flashWord{0%{background:var(--gold)!important;color:var(--ink)!important;outline:2px solid var(--gold);outline-offset:2px;}80%{background:var(--gold-pale);outline-color:var(--gold-light);}100%{background:none;outline:none;}}
 .flash-word{animation:flashWord 1.2s ease forwards;}
-.qcf-word.marked-pause{background:var(--amber-bg);color:var(--amber);border-bottom:2px solid var(--amber);}
-.qcf-word.marked-error{background:var(--red-bg);color:var(--red);border-bottom:2px solid var(--red);}
-.qcf-word.marked-skip{background:var(--coral-bg);color:var(--coral);border-bottom:2px solid var(--coral);}
-.qcf-word.marked-makhraj{background:var(--purple-bg);color:var(--purple);border-bottom:2px solid var(--purple);}
-.qcf-word.marked-tajweed{background:var(--teal-bg);color:var(--teal);border-bottom:2px solid var(--teal);}
-.qcf-word.marked-other{background:var(--parchment3);border-bottom:2px solid var(--ink3);}
+.qcf-word.marked-m1{background:var(--amber-bg);color:var(--amber);border-bottom:2px solid var(--amber);}
+.qcf-word.marked-m2{background:var(--red-bg);color:var(--red);border-bottom:2px solid var(--red);}
+.qcf-word.marked-m3{background:var(--coral-bg);color:var(--coral);border-bottom:2px solid var(--coral);}
+.qcf-word.marked-m4{background:var(--purple-bg);color:var(--purple);border-bottom:2px solid var(--purple);}
+.qcf-word.marked-m5{background:var(--teal-bg);color:var(--teal);border-bottom:2px solid var(--teal);}
+.qcf-word.marked-m6{background:var(--parchment3);border-bottom:2px solid var(--ink3);}
 .qcf-word.active-select{background:var(--gold)!important;color:var(--ink)!important;}
 .qcf-end-marker{
   font-family:'Scheherazade New','Amiri',serif;
@@ -411,12 +411,12 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
 /* WORD BUTTONS */
 .word-btn{display:inline;cursor:pointer;padding:2px 3px;border-radius:3px;transition:background .1s,color .1s;border:none;background:none;font-family:inherit;font-size:inherit;color:inherit;line-height:inherit;}
 .word-btn:hover{background:var(--gold-light);}
-.word-btn.marked-pause{background:var(--amber-bg);color:var(--amber);border-bottom:2px solid var(--amber);}
-.word-btn.marked-error{background:var(--red-bg);color:var(--red);border-bottom:2px solid var(--red);}
-.word-btn.marked-skip{background:var(--coral-bg);color:var(--coral);border-bottom:2px solid var(--coral);}
-.word-btn.marked-makhraj{background:var(--purple-bg);color:var(--purple);border-bottom:2px solid var(--purple);}
-.word-btn.marked-tajweed{background:var(--teal-bg);color:var(--teal);border-bottom:2px solid var(--teal);}
-.word-btn.marked-other{background:var(--parchment3);border-bottom:2px solid var(--ink3);}
+.word-btn.marked-m1{background:var(--amber-bg);color:var(--amber);border-bottom:2px solid var(--amber);}
+.word-btn.marked-m2{background:var(--red-bg);color:var(--red);border-bottom:2px solid var(--red);}
+.word-btn.marked-m3{background:var(--coral-bg);color:var(--coral);border-bottom:2px solid var(--coral);}
+.word-btn.marked-m4{background:var(--purple-bg);color:var(--purple);border-bottom:2px solid var(--purple);}
+.word-btn.marked-m5{background:var(--teal-bg);color:var(--teal);border-bottom:2px solid var(--teal);}
+.word-btn.marked-m6{background:var(--parchment3);border-bottom:2px solid var(--ink3);}
 .word-btn.active-select{background:var(--gold)!important;color:var(--ink)!important;transform:scale(1.06);}
 .end-marker{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;background:var(--gold);color:var(--ink);border-radius:50%;font-size:9px;font-family:'IBM Plex Mono',monospace;margin:0 3px;vertical-align:middle;flex-shrink:0;}
 
@@ -453,17 +453,21 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
 .type-btn{padding:4px 2px;border-radius:4px;border:1.5px solid transparent;font-family:'Lora',serif;font-size:10px;cursor:pointer;text-align:center;transition:all .12s;line-height:1.3;background:var(--parchment);color:var(--ink2);}
 .type-btn:hover{border-color:var(--border2);}
 .type-btn.sel{border-width:2px;font-weight:600;}
-.type-btn[data-t=pause].sel{background:var(--amber-bg);color:var(--amber);border-color:var(--amber);}
-.type-btn[data-t=error].sel{background:var(--red-bg);color:var(--red);border-color:var(--red);}
-.type-btn[data-t=skip].sel{background:var(--coral-bg);color:var(--coral);border-color:var(--coral);}
-.type-btn[data-t=makhraj].sel{background:var(--purple-bg);color:var(--purple);border-color:var(--purple);}
-.type-btn[data-t=tajweed].sel{background:var(--teal-bg);color:var(--teal);border-color:var(--teal);}
-.type-btn[data-t=other].sel{background:var(--parchment3);color:var(--ink);border-color:var(--border2);}
+.type-btn[data-t=m1].sel{background:var(--amber-bg);color:var(--amber);border-color:var(--amber);}
+.type-btn[data-t=m2].sel{background:var(--red-bg);color:var(--red);border-color:var(--red);}
+.type-btn[data-t=m3].sel{background:var(--coral-bg);color:var(--coral);border-color:var(--coral);}
+.type-btn[data-t=m4].sel{background:var(--purple-bg);color:var(--purple);border-color:var(--purple);}
+.type-btn[data-t=m5].sel{background:var(--teal-bg);color:var(--teal);border-color:var(--teal);}
+.type-btn[data-t=m6].sel{background:var(--parchment3);color:var(--ink);border-color:var(--border2);}
 .corr-btns{display:flex;gap:3px;margin-bottom:6px;}
 .corr-btn{flex:1;padding:5px 3px;border-radius:4px;border:1.5px solid var(--border);font-family:'Lora',serif;font-size:10px;cursor:pointer;text-align:center;transition:all .12s;background:var(--parchment);color:var(--ink2);line-height:1.3;}
-.corr-btn.sel-self{background:var(--green-bg);color:var(--green);border-color:var(--green);font-weight:600;}
-.corr-btn.sel-prompted{background:var(--amber-bg);color:var(--amber);border-color:var(--amber);font-weight:600;}
-.corr-btn.sel-teacher{background:var(--red-bg);color:var(--red);border-color:var(--red);font-weight:600;}
+.corr-btn.sel-c1{background:var(--green-bg);color:var(--green);border-color:var(--green);font-weight:600;}
+.corr-btn.sel-c2{background:var(--amber-bg);color:var(--amber);border-color:var(--amber);font-weight:600;}
+.corr-btn.sel-c3{background:var(--red-bg);color:var(--red);border-color:var(--red);font-weight:600;}
+.corr-btn.sel-c4{background:var(--parchment3);color:var(--ink2);border-color:var(--border2);font-weight:600;}
+/* "Other" text inputs styled as type/corr buttons — selected state */
+input.type-btn.sel-m6{background:var(--parchment3);color:var(--ink);border-color:var(--border2);border-width:2px;font-weight:600;}
+input.corr-btn.sel-c4{background:var(--parchment3);color:var(--ink2);border-color:var(--border2);font-weight:600;}
 .note-input{width:100%;border:.5px solid var(--border2);border-radius:4px;background:var(--parchment);color:var(--ink);padding:4px 7px;font-size:11px;font-family:'Lora',serif;resize:none;height:34px;margin-bottom:6px;}
 .note-input:focus{outline:none;border-color:var(--gold);}
 .add-row{display:flex;gap:4px;}
@@ -478,19 +482,20 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
 .mistake-item:hover{border-color:var(--border2);background:white;}
 @keyframes slideIn{from{opacity:0;transform:translateY(-4px);}to{opacity:1;transform:translateY(0);}}
 .m-badge{flex-shrink:0;padding:2px 6px;border-radius:999px;font-size:9px;font-weight:600;white-space:nowrap;margin-top:1px;font-family:'IBM Plex Mono',monospace;direction:ltr;unicode-bidi:isolate;display:inline-block;}
-.m-badge.pause{background:var(--amber-bg);color:var(--amber);}
-.m-badge.error{background:var(--red-bg);color:var(--red);}
-.m-badge.skip{background:var(--coral-bg);color:var(--coral);}
-.m-badge.makhraj{background:var(--purple-bg);color:var(--purple);}
-.m-badge.tajweed{background:var(--teal-bg);color:var(--teal);}
-.m-badge.other{background:var(--parchment3);color:var(--ink2);}
+.m-badge.m1{background:var(--amber-bg);color:var(--amber);}
+.m-badge.m2{background:var(--red-bg);color:var(--red);}
+.m-badge.m3{background:var(--coral-bg);color:var(--coral);}
+.m-badge.m4{background:var(--purple-bg);color:var(--purple);}
+.m-badge.m5{background:var(--teal-bg);color:var(--teal);}
+.m-badge.m6{background:var(--parchment3);color:var(--ink2);}
 .m-body{flex:1;min-width:0;cursor:pointer;}
 .m-ref{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--ink3);margin-bottom:1px;}
 .m-word{font-family:'Scheherazade New','Amiri',serif;font-size:15px;direction:rtl;color:var(--ink);display:block;}
 .m-corr{font-size:9px;margin-top:1px;}
-.m-corr.self{color:var(--green);}
-.m-corr.prompted{color:var(--amber);}
-.m-corr.teacher{color:var(--red);}
+.m-corr.c1{color:var(--green);}
+.m-corr.c2{color:var(--amber);}
+.m-corr.c3{color:var(--red);}
+.m-corr.c4{color:var(--ink3);}
 .m-note{font-size:9px;color:var(--ink3);font-style:italic;margin-top:1px;}
 .m-ctx{direction:rtl;text-align:right;font-family:'Scheherazade New','Amiri',serif;font-size:13px;line-height:2;margin:1px 0;unicode-bidi:embed;}
 .m-ctx-word{font-weight:700;color:var(--ink);background:var(--gold-pale);padding:0 2px;border-radius:2px;}
@@ -570,22 +575,22 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
 .timeline{display:flex;gap:2px;flex-wrap:wrap;margin-bottom:10px;}
 .tl-dot{width:15px;height:15px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:7px;cursor:default;transition:transform .1s;font-family:'IBM Plex Mono',monospace;color:white;font-weight:600;}
 .tl-dot:hover{transform:scale(1.4);}
-.tl-dot.pause{background:var(--amber);}
-.tl-dot.error{background:var(--red);}
-.tl-dot.skip{background:var(--coral);}
-.tl-dot.makhraj{background:var(--purple);}
-.tl-dot.tajweed{background:var(--teal);}
-.tl-dot.other{background:var(--ink3);}
+.tl-dot.m1{background:var(--amber);}
+.tl-dot.m2{background:var(--red);}
+.tl-dot.m3{background:var(--coral);}
+.tl-dot.m4{background:var(--purple);}
+.tl-dot.m5{background:var(--teal);}
+.tl-dot.m6{background:var(--ink3);}
 .review-verses-title{font-size:10px;font-weight:600;color:var(--ink2);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px;padding-top:4px;border-top:.5px solid var(--border);}
 .review-verse{margin-bottom:10px;padding:8px 12px;border-radius:6px;border:.5px solid var(--border);background:var(--parchment2);}
 .review-verse-ref{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--ink3);margin-bottom:5px;}
 .review-verse-arabic{direction:rtl;text-align:right;line-height:2.6;font-size:19px;font-family:'Scheherazade New','Amiri',serif;margin-bottom:5px;}
-.rw-pause{background:var(--amber-bg);color:var(--amber);border-bottom:2px solid var(--amber);border-radius:2px;padding:1px 2px;}
-.rw-error{background:var(--red-bg);color:var(--red);border-bottom:2px solid var(--red);border-radius:2px;padding:1px 2px;}
-.rw-skip{background:var(--coral-bg);color:var(--coral);border-bottom:2px solid var(--coral);border-radius:2px;padding:1px 2px;}
-.rw-makhraj{background:var(--purple-bg);color:var(--purple);border-bottom:2px solid var(--purple);border-radius:2px;padding:1px 2px;}
-.rw-tajweed{background:var(--teal-bg);color:var(--teal);border-bottom:2px solid var(--teal);border-radius:2px;padding:1px 2px;}
-.rw-other{background:var(--parchment3);border-bottom:2px solid var(--ink3);border-radius:2px;padding:1px 2px;}
+.rw-m1{background:var(--amber-bg);color:var(--amber);border-bottom:2px solid var(--amber);border-radius:2px;padding:1px 2px;}
+.rw-m2{background:var(--red-bg);color:var(--red);border-bottom:2px solid var(--red);border-radius:2px;padding:1px 2px;}
+.rw-m3{background:var(--coral-bg);color:var(--coral);border-bottom:2px solid var(--coral);border-radius:2px;padding:1px 2px;}
+.rw-m4{background:var(--purple-bg);color:var(--purple);border-bottom:2px solid var(--purple);border-radius:2px;padding:1px 2px;}
+.rw-m5{background:var(--teal-bg);color:var(--teal);border-bottom:2px solid var(--teal);border-radius:2px;padding:1px 2px;}
+.rw-m6{background:var(--parchment3);border-bottom:2px solid var(--ink3);border-radius:2px;padding:1px 2px;}
 .rml-item{display:flex;align-items:flex-start;gap:5px;font-size:10px;margin-bottom:3px;}
 .rml-word{font-family:'Scheherazade New','Amiri',serif;font-size:13px;direction:rtl;}
 .rml-detail{flex:1;color:var(--ink2);}
@@ -600,15 +605,16 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
 .edit-btn-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;margin-bottom:10px;}
 .edit-type-btn,.edit-corr-btn{padding:6px;border-radius:5px;border:1.5px solid transparent;font-size:10px;cursor:pointer;text-align:center;background:var(--parchment);color:var(--ink2);font-family:'Lora',serif;}
 .edit-type-btn.sel,.edit-corr-btn.sel{border-width:2px;font-weight:600;}
-.edit-type-btn[data-t=pause].sel{background:var(--amber-bg);color:var(--amber);border-color:var(--amber);}
-.edit-type-btn[data-t=error].sel{background:var(--red-bg);color:var(--red);border-color:var(--red);}
-.edit-type-btn[data-t=skip].sel{background:var(--coral-bg);color:var(--coral);border-color:var(--coral);}
-.edit-type-btn[data-t=makhraj].sel{background:var(--purple-bg);color:var(--purple);border-color:var(--purple);}
-.edit-type-btn[data-t=tajweed].sel{background:var(--teal-bg);color:var(--teal);border-color:var(--teal);}
-.edit-type-btn[data-t=other].sel{background:var(--parchment3);color:var(--ink);border-color:var(--border2);}
-.edit-corr-btn[data-c=self].sel{background:var(--green-bg);color:var(--green);border-color:var(--green);}
-.edit-corr-btn[data-c=prompted].sel{background:var(--amber-bg);color:var(--amber);border-color:var(--amber);}
-.edit-corr-btn[data-c=teacher].sel{background:var(--red-bg);color:var(--red);border-color:var(--red);}
+.edit-type-btn[data-t=m1].sel{background:var(--amber-bg);color:var(--amber);border-color:var(--amber);}
+.edit-type-btn[data-t=m2].sel{background:var(--red-bg);color:var(--red);border-color:var(--red);}
+.edit-type-btn[data-t=m3].sel{background:var(--coral-bg);color:var(--coral);border-color:var(--coral);}
+.edit-type-btn[data-t=m4].sel{background:var(--purple-bg);color:var(--purple);border-color:var(--purple);}
+.edit-type-btn[data-t=m5].sel{background:var(--teal-bg);color:var(--teal);border-color:var(--teal);}
+.edit-type-btn[data-t=m6].sel{background:var(--parchment3);color:var(--ink);border-color:var(--border2);}
+.edit-corr-btn[data-c=c1].sel{background:var(--green-bg);color:var(--green);border-color:var(--green);}
+.edit-corr-btn[data-c=c2].sel{background:var(--amber-bg);color:var(--amber);border-color:var(--amber);}
+.edit-corr-btn[data-c=c3].sel{background:var(--red-bg);color:var(--red);border-color:var(--red);}
+.edit-corr-btn[data-c=c4].sel{background:var(--parchment3);color:var(--ink2);border-color:var(--border2);}
 
 /* UthmanicHafs fallback */
 @font-face{font-family:'UthmanicHafs';src:url('https://verses.quran.foundation/fonts/quran/hafs/uthmanic_hafs/UthmanicHafs1Ver18.woff2') format('woff2');font-display:swap;}
@@ -740,15 +746,16 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
         <input class="tinput" id="sessionName" placeholder="Session name" style="width:105px;flex:none;" />
       </div>
       <textarea class="tinput" id="sessionRemarks" placeholder="Session remarks" maxlength="240" rows="2" style="margin-top:4px;resize:none;font-size:11px;line-height:1.5;height:auto;width:100%;display:block;"></textarea>
-     <div style="display:flex;gap:4px;margin-top:4px;">
+      <div style="display:flex;gap:4px;margin-top:4px;">
         <button class="btn-foot primary" onclick="saveSession()" style="flex:1;padding:5px;border-radius:5px;font-family:'Lora',serif;font-size:11px;cursor:pointer;background:var(--gold);color:var(--ink);border:none;font-weight:600;">💾 Save session</button>
-        <button class="btn-foot" onclick="openSettings()" style="flex:none;padding:5px 9px;border-radius:5px;font-family:'Lora',serif;font-size:11px;cursor:pointer;" title="Session settings">⚙</button>
+        <button onclick="openSettings()" title="Settings" style="flex-shrink:0;padding:5px 9px;border-radius:5px;font-family:'Lora',serif;font-size:13px;cursor:pointer;background:var(--parchment);color:var(--ink2);border:.5px solid var(--border2);">⚙︎</button>
       </div>
-        <div class="stats-row" style="margin-top:4px;">
+      <div class="stats-row" style="margin-top:4px;">
         <div class="stat-pill"><span class="n" id="st0">0</span><span class="l">Total</span></div>
         <div class="stat-pill"><span class="n" id="st1" style="color:var(--green)">0</span><span class="l">Self</span></div>
         <div class="stat-pill"><span class="n" id="st2" style="color:var(--amber)">0</span><span class="l">Hint</span></div>
         <div class="stat-pill"><span class="n" id="st3" style="color:var(--red)">0</span><span class="l">Taught</span></div>
+        <div class="stat-pill"><span class="n" id="st4" style="color:var(--ink3)">0</span><span class="l">Other</span></div>
       </div>
     </div>
 
@@ -758,19 +765,24 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
       <div class="word-display" id="qfWord">—</div>
       <div style="font-size:9px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--ink3);margin-bottom:4px;padding-top:1px;">Mistake type</div>
       <div class="type-btns">
-        <button class="type-btn" data-t="pause" onclick="selType(this)">Hesitation</button>
-        <button class="type-btn" data-t="error" onclick="selType(this)">Wrong word</button>
-        <button class="type-btn" data-t="skip" onclick="selType(this)">Skipped</button>
-        <button class="type-btn" data-t="makhraj" onclick="selType(this)">Makhraj</button>
-        <button class="type-btn" data-t="tajweed" onclick="selType(this)">Tajweed</button>
-        <button class="type-btn" data-t="other" onclick="selType(this)">Other</button>
+        <button class="type-btn" data-t="m1" onclick="selType(this)">Hesitation</button>
+        <button class="type-btn" data-t="m2" onclick="selType(this)">Wrong word</button>
+        <button class="type-btn" data-t="m3" onclick="selType(this)">Skipped</button>
+        <button class="type-btn" data-t="m4" onclick="selType(this)">Makhraj</button>
+        <button class="type-btn" data-t="m5" onclick="selType(this)">Tajweed</button>
+        <input class="type-btn" id="qfTypeOther" type="text" placeholder="Other…" maxlength="32"
+          style="cursor:text;text-align:left;"
+          oninput="selTypeOther(this)" onfocus="selTypeOther(this)" />
       </div>
       <div style="border-top:.5px solid rgba(90,82,72,.2);margin:6px 0 5px;"></div>
       <div style="font-size:9px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--ink3);margin-bottom:4px;">How was it corrected?</div>
       <div class="corr-btns">
-        <button class="corr-btn" data-c="self" onclick="selCorr(this)">✓ Self</button>
-        <button class="corr-btn" data-c="prompted" onclick="selCorr(this)">⇒ Prompted</button>
-        <button class="corr-btn" data-c="teacher" onclick="selCorr(this)">⚠ Taught</button>
+        <button class="corr-btn" data-c="c1" onclick="selCorr(this)">✓ Self</button>
+        <button class="corr-btn" data-c="c2" onclick="selCorr(this)">⇒ Prompted</button>
+        <button class="corr-btn" data-c="c3" onclick="selCorr(this)">⚠ Taught</button>
+        <input class="corr-btn" id="qfCorrOther" type="text" placeholder="Other…" maxlength="32"
+          style="cursor:text;text-align:left;flex:1;"
+          oninput="selCorrOther(this)" onfocus="selCorrOther(this)" />
       </div>
       <textarea class="note-input" id="qfNote" placeholder="Optional note…"></textarea>
       <div class="add-row">
@@ -813,20 +825,21 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
     <div class="edit-form-group">
       <label>Mistake type</label>
       <div class="edit-btn-row" id="editTypeRow">
-        <button class="edit-type-btn" data-t="pause" onclick="editSelType(this)">Hesitation</button>
-        <button class="edit-type-btn" data-t="error" onclick="editSelType(this)">Wrong word</button>
-        <button class="edit-type-btn" data-t="skip" onclick="editSelType(this)">Skipped</button>
-        <button class="edit-type-btn" data-t="makhraj" onclick="editSelType(this)">Makhraj</button>
-        <button class="edit-type-btn" data-t="tajweed" onclick="editSelType(this)">Tajweed</button>
-        <button class="edit-type-btn" data-t="other" onclick="editSelType(this)">Other</button>
+        <button class="edit-type-btn" data-t="m1" onclick="editSelType(this)">Hesitation</button>
+        <button class="edit-type-btn" data-t="m2" onclick="editSelType(this)">Wrong word</button>
+        <button class="edit-type-btn" data-t="m3" onclick="editSelType(this)">Skipped</button>
+        <button class="edit-type-btn" data-t="m4" onclick="editSelType(this)">Makhraj</button>
+        <button class="edit-type-btn" data-t="m5" onclick="editSelType(this)">Tajweed</button>
+        <button class="edit-type-btn" data-t="m6" onclick="editSelType(this)">Other</button>
       </div>
     </div>
     <div class="edit-form-group">
       <label>Correction</label>
       <div style="display:flex;gap:5px;" id="editCorrRow">
-        <button class="edit-corr-btn" style="flex:1;padding:7px;" data-c="self" onclick="editSelCorr(this)">✓ Self-corrected</button>
-        <button class="edit-corr-btn" style="flex:1;padding:7px;" data-c="prompted" onclick="editSelCorr(this)">⇒ After prompting</button>
-        <button class="edit-corr-btn" style="flex:1;padding:7px;" data-c="teacher" onclick="editSelCorr(this)">⚠ Teacher corrected</button>
+        <button class="edit-corr-btn" style="flex:1;padding:7px;" data-c="c1" onclick="editSelCorr(this)">✓ Self-corrected</button>
+        <button class="edit-corr-btn" style="flex:1;padding:7px;" data-c="c2" onclick="editSelCorr(this)">⇒ After prompting</button>
+        <button class="edit-corr-btn" style="flex:1;padding:7px;" data-c="c3" onclick="editSelCorr(this)">⚠ Teacher corrected</button>
+        <button class="edit-corr-btn" style="flex:1;padding:7px;" data-c="c4" onclick="editSelCorr(this)">◌ Other</button>
       </div>
     </div>
     <div class="edit-form-group">
@@ -839,52 +852,7 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
     </div>
   </div>
 </div>
-<!-- SETTINGS MODAL -->
-<div class="modal-bg" id="settingsModal">
-  <div class="modal" style="max-width:360px;">
-    <div class="modal-title">⚙ Session Settings</div>
-    <div class="modal-sub">These settings apply to new sessions.</div>
 
-    <div class="edit-form-group">
-      <label>Timezone</label>
-      <select class="sel" id="settingsTZSel" style="width:100%;background:var(--parchment2);color:var(--ink);border:.5px solid var(--border2);border-radius:5px;padding:6px 8px;font-family:'Lora',serif;font-size:12px;">
-        <option value="">Automatic (device timezone)</option>
-        <option value="America/New_York">Eastern Time — New York</option>
-        <option value="America/Chicago">Central Time — Chicago</option>
-        <option value="America/Denver">Mountain Time — Denver</option>
-        <option value="America/Los_Angeles">Pacific Time — Los Angeles</option>
-        <option value="America/Anchorage">Alaska Time</option>
-        <option value="Pacific/Honolulu">Hawaii Time</option>
-        <option value="Europe/London">GMT — London</option>
-        <option value="Europe/Paris">CET — Paris / Berlin</option>
-        <option value="Europe/Istanbul">Turkey Time</option>
-        <option value="Asia/Dubai">Gulf Time — Dubai</option>
-        <option value="Asia/Karachi">Pakistan Time — Karachi</option>
-        <option value="Asia/Kolkata">India Time — Mumbai</option>
-        <option value="Asia/Dhaka">Bangladesh Time</option>
-        <option value="Asia/Riyadh">Arabia Time — Riyadh</option>
-        <option value="Asia/Kuala_Lumpur">Malaysia Time</option>
-        <option value="Asia/Jakarta">Western Indonesia Time</option>
-        <option value="Australia/Sydney">AEDT — Sydney</option>
-        <option value="Pacific/Auckland">New Zealand Time</option>
-      </select>
-    </div>
-
-    <div class="edit-form-group">
-      <label>Date format</label>
-      <select class="sel" id="settingsFmtSel" style="width:100%;background:var(--parchment2);color:var(--ink);border:.5px solid var(--border2);border-radius:5px;padding:6px 8px;font-family:'Lora',serif;font-size:12px;">
-        <option value="en-US">MM/DD/YYYY — United States</option>
-        <option value="en-GB">DD/MM/YYYY — UK / Pakistan</option>
-        <option value="iso">YYYY-MM-DD — ISO / International</option>
-      </select>
-    </div>
-
-    <div class="modal-btns">
-      <button class="btn-m sec" onclick="closeModal('settingsModal')">Cancel</button>
-      <button class="btn-m pri" onclick="saveSettings()">Save</button>
-    </div>
-  </div>
-</div>
 <!-- SESSIONS OVERLAY -->
 <div class="sessions-overlay" id="sessionsOverlay" onclick="if(event.target===this)closeSessions()">
   <div class="sessions-panel">
@@ -936,7 +904,8 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
         <tr style="border-bottom:.5px solid var(--border);"><td style="padding:6px 8px;font-family:'IBM Plex Mono',monospace;background:var(--parchment2);border-radius:3px;color:var(--ink2);">1 – 6</td><td style="padding:6px 8px;color:var(--ink2);">Select mistake type (1=Hesitation, 2=Wrong word, 3=Skipped, 4=Makhraj, 5=Tajweed, 6=Other)</td></tr>
         <tr style="border-bottom:.5px solid var(--border);"><td style="padding:6px 8px;font-family:'IBM Plex Mono',monospace;background:var(--parchment2);border-radius:3px;color:var(--ink2);">q</td><td style="padding:6px 8px;color:var(--ink2);">Self-corrected</td></tr>
         <tr style="border-bottom:.5px solid var(--border);"><td style="padding:6px 8px;font-family:'IBM Plex Mono',monospace;background:var(--parchment2);border-radius:3px;color:var(--ink2);">w</td><td style="padding:6px 8px;color:var(--ink2);">After prompting</td></tr>
-        <tr><td style="padding:6px 8px;font-family:'IBM Plex Mono',monospace;background:var(--parchment2);border-radius:3px;color:var(--ink2);">e</td><td style="padding:6px 8px;color:var(--ink2);">Teacher corrected</td></tr>
+        <tr style="border-bottom:.5px solid var(--border);"><td style="padding:6px 8px;font-family:'IBM Plex Mono',monospace;background:var(--parchment2);border-radius:3px;color:var(--ink2);">e</td><td style="padding:6px 8px;color:var(--ink2);">Teacher corrected</td></tr>
+        <tr><td style="padding:6px 8px;font-family:'IBM Plex Mono',monospace;background:var(--parchment2);border-radius:3px;color:var(--ink2);">r</td><td style="padding:6px 8px;color:var(--ink2);">Other</td></tr>
       </tbody>
     </table>
     <div class="modal-btns">
@@ -963,17 +932,49 @@ const AR_NAMES = ["الفاتحة","البقرة","آل عمران","النسا�
 const AYAH_COUNTS = [7,286,200,176,120,165,206,75,129,109,123,111,43,52,99,128,111,110,98,135,112,78,118,64,77,227,93,88,69,60,34,30,73,54,45,83,182,88,75,85,54,53,89,59,37,35,38,29,18,45,60,49,62,55,78,96,29,22,24,13,14,11,11,18,12,12,30,52,52,44,28,28,20,56,40,31,50,45,33,27,57,29,59,35,19,17,26,30,20,15,21,11,8,8,19,5,8,8,11,98,8,19,5,4,7,3,6,3,5,4,5,4,5,6,5,6,1,5,1,4,6,1,3,6,1];
 const JUZ_PAGES = [1,22,42,62,82,102,122,142,162,182,202,222,242,262,282,302,322,342,362,382,402,422,442,462,482,502,522,542,562,582];
 const JUZ_NAMES = ["Juz 1 — Alif Lam Mim","Juz 2 — Sayaqul","Juz 3 — Tilka'r Rusul","Juz 4 — Lan Tana Lu","Juz 5 — Wal Muhsanat","Juz 6 — La Yuhibbullah","Juz 7 — Wa Idha Sami'u","Juz 8 — Wa Law Annana","Juz 9 — Qalal Mala","Juz 10 — Wa A'lamu","Juz 11 — Ya'tadhirun","Juz 12 — Wa Ma Min Dabbah","Juz 13 — Wa Ma Ubarri'u","Juz 14 — Rubama","Juz 15 — Subhanalladhi","Juz 16 — Qala Alam","Juz 17 — Iqtaraba","Juz 18 — Qad Aflaha","Juz 19 — Wa Qalallathina","Juz 20 — Amman Khalaq","Juz 21 — Utlu Ma Uhiya","Juz 22 — Wa Man Yaqnut","Juz 23 — Wa Mali","Juz 24 — Faman Azlamu","Juz 25 — Ilayhi Yuraddu","Juz 26 — Ha Mim","Juz 27 — Qala Fama Khatbukum","Juz 28 — Qad Sami'allah","Juz 29 — Tabarakalladhi","Juz 30 — Amma"];
-const TYPE_COLORS = {pause:'var(--amber)',error:'var(--red)',skip:'var(--coral)',makhraj:'var(--purple)',tajweed:'var(--teal)',other:'var(--ink3)'};
-const corrLabel = {self:'✓ Self-corrected',prompted:'⇒ After prompting',teacher:'⚠ Teacher corrected'};
-const corrClass2 = {self:'self',prompted:'prompted',teacher:'teacher'};
+const MISTAKE_TYPES = [
+  {id:'m1', label:'Hesitation', color:'var(--amber)', bgColor:'var(--amber-bg)',    borderColor:'var(--amber)'},
+  {id:'m2', label:'Wrong word', color:'var(--red)',   bgColor:'var(--red-bg)',      borderColor:'var(--red)'},
+  {id:'m3', label:'Skipped',    color:'var(--coral)', bgColor:'var(--coral-bg)',    borderColor:'var(--coral)'},
+  {id:'m4', label:'Makhraj',    color:'var(--purple)',bgColor:'var(--purple-bg)',   borderColor:'var(--purple)'},
+  {id:'m5', label:'Tajweed',    color:'var(--teal)',  bgColor:'var(--teal-bg)',     borderColor:'var(--teal)'},
+  {id:'m6', label:'Other',      color:'var(--ink3)',  bgColor:'var(--parchment3)',  borderColor:'var(--border2)'},
+];
+const CORRECTION_TYPES = [
+  {id:'c1', label:'✓ Self-corrected',    shortLabel:'Self',     cssClass:'c1'},
+  {id:'c2', label:'⇒ After prompting',   shortLabel:'Prompted', cssClass:'c2'},
+  {id:'c3', label:'⚠ Teacher corrected', shortLabel:'Taught',   cssClass:'c3'},
+  {id:'c4', label:'◌ Other',             shortLabel:'Other',    cssClass:'c4'},
+];
+// Migration map — translates old .qrs IDs to new neutral IDs
+const ID_MIGRATION = {
+  pause:'m1', error:'m2', skip:'m3',
+  makhraj:'m4', tajweed:'m5', other:'m6',
+  self:'c1', prompted:'c2', teacher:'c3'
+};
+// Helper functions
+function getType(id)  { return MISTAKE_TYPES.find(t=>t.id===id) || MISTAKE_TYPES[5]; }
+function getCorr(id)  { return CORRECTION_TYPES.find(c=>c.id===id) || CORRECTION_TYPES[0]; }
+function migrateId(id){ return ID_MIGRATION[id] || id; }
+function migrateMistakes(mistakes){
+  return (mistakes||[]).map(m=>({...m, type:migrateId(m.type), correction:migrateId(m.correction)}));
+}
+// Resolve labels from a session's embedded typeConfig, falling back to global defaults
+function typeLabelFor(cfg, id){ if(cfg?.mistakeTypes){const t=cfg.mistakeTypes.find(t=>t.id===id);if(t)return t.label;} return typeLabel(id); }
+function corrLabelFor(cfg, id){ if(cfg?.correctionTypes){const c=cfg.correctionTypes.find(c=>c.id===id);if(c)return c.label;} return getCorr(id).label; }
+// Use per-mistake overrides (from "Other" text inputs) if present
+function mTypeLabel(m, cfg){ return m.typeLabel || typeLabelFor(cfg||m.typeConfig||null, m.type); }
+function mCorrLabel(m, cfg){ return m.corrLabel || corrLabelFor(cfg||m.typeConfig||null, m.correction); }
+// Derived lookups — kept for backward compatibility with any code that references them directly
+const TYPE_COLORS   = Object.fromEntries(MISTAKE_TYPES.map(t=>[t.id, t.color]));
+const corrLabel     = Object.fromEntries(CORRECTION_TYPES.map(c=>[c.id, c.label]));
+const corrClass2    = Object.fromEntries(CORRECTION_TYPES.map(c=>[c.id, c.cssClass]));
 
 // ═══════════════════════════════════════════════════════════════════
 // STATE
 // ═══════════════════════════════════════════════════════════════════
 let viewMode = 'mushaf';
 let _jumpTargetPage = null; // set by jumpToPageFromInput, prevents input reset
-let settingsTZ = '';           // '' = use device timezone
-let settingsDateFmt = 'en-US'; // 'en-US', 'en-GB', or 'iso'
 let currentSurah = null;
 let pageVerses = [];
 let allVerseWords = {};   // {"S:A": [wordObj,...]}
@@ -993,6 +994,7 @@ const loadedQcfFonts = new Set();
 // INIT
 // ═══════════════════════════════════════════════════════════════════
 window.addEventListener('DOMContentLoaded', () => {
+  loadSettings();
   document.documentElement.style.setProperty('--arabic-size', arabicSize + 'px');
   buildTopbarNav();
   document.getElementById('vcTrans').classList.toggle('active-vc', showTranslation);
@@ -1006,8 +1008,6 @@ window.addEventListener('DOMContentLoaded', () => {
   });
   document.getElementById('viewControls').style.display = 'none';
   document.getElementById('mushafControls').style.display = '';
-  settingsTZ = localStorage.getItem('settingsTZ') || '';
-  settingsDateFmt = localStorage.getItem('settingsDateFmt') || 'en-US';
   loadJuz(1);
   setupKeyboardShortcuts();
   setupSwipeToClose();
@@ -1072,11 +1072,11 @@ function setupKeyboardShortcuts(){
         }
         break;
       case '1': case '2': case '3': case '4': case '5': case '6':
-      case 'q': case 'w': case 'e':
+      case 'q': case 'w': case 'e': case 'r':
         if(!document.getElementById('quickForm').classList.contains('hidden')){
-          e.preventDefault(); // prevent browser default (e.g. focus change) before setting type
-          const typeMap={'1':'pause','2':'error','3':'skip','4':'makhraj','5':'tajweed','6':'other'};
-          const corrMap={'q':'self','w':'prompted','e':'teacher'};
+          e.preventDefault();
+          const typeMap={'1':'m1','2':'m2','3':'m3','4':'m4','5':'m5','6':'m6'};
+          const corrMap={'q':'c1','w':'c2','e':'c3','r':'c4'};
           if(typeMap[e.key]) selTypeKey(typeMap[e.key]);
           if(corrMap[e.key]) selCorrKey(corrMap[e.key]);
         }
@@ -1907,7 +1907,11 @@ function wordTapped(el) {
   } else ctxEl.style.display='none';
   document.getElementById('qfNote').value='';
   document.querySelectorAll('.type-btn').forEach(b=>b.classList.remove('sel'));
-  document.querySelectorAll('.corr-btn').forEach(b=>b.classList.remove('sel-self','sel-prompted','sel-teacher'));
+  document.getElementById('qfTypeOther').value='';
+  document.getElementById('qfTypeOther').classList.remove('sel-m6');
+  document.querySelectorAll('.corr-btn').forEach(b=>b.classList.remove('sel-c1','sel-c2','sel-c3','sel-c4'));
+  document.getElementById('qfCorrOther').value='';
+  document.getElementById('qfCorrOther').classList.remove('sel-c4');
   const qf=document.getElementById('quickForm');
   if(isMobile()){
     // Move form to body so it overlays the quran panel, not inside the clipped sidebar
@@ -1918,11 +1922,27 @@ function wordTapped(el) {
   if(!isMobile()) qf.scrollIntoView({behavior:'smooth',block:'nearest'});
 }
 
-function selType(el){document.querySelectorAll('.type-btn').forEach(b=>b.classList.remove('sel'));el.classList.add('sel');selectedType=el.dataset.t;}
+function selType(el){
+  document.querySelectorAll('.type-btn').forEach(b=>b.classList.remove('sel'));
+  document.getElementById('qfTypeOther').classList.remove('sel-m6');
+  el.classList.add('sel');
+  selectedType=el.dataset.t;
+}
+function selTypeOther(el){
+  document.querySelectorAll('.type-btn').forEach(b=>b.classList.remove('sel'));
+  el.classList.add('sel-m6');
+  selectedType='m6';
+}
 function selCorr(el){
-  document.querySelectorAll('.corr-btn').forEach(b=>b.classList.remove('sel-self','sel-prompted','sel-teacher'));
-  el.classList.add({self:'sel-self',prompted:'sel-prompted',teacher:'sel-teacher'}[el.dataset.c]);
+  document.querySelectorAll('.corr-btn').forEach(b=>b.classList.remove('sel-c1','sel-c2','sel-c3','sel-c4'));
+  document.getElementById('qfCorrOther').classList.remove('sel-c4');
+  el.classList.add({c1:'sel-c1',c2:'sel-c2',c3:'sel-c3',c4:'sel-c4'}[el.dataset.c]);
   selectedCorr=el.dataset.c;
+}
+function selCorrOther(el){
+  document.querySelectorAll('.corr-btn').forEach(b=>b.classList.remove('sel-c1','sel-c2','sel-c3','sel-c4'));
+  el.classList.add('sel-c4');
+  selectedCorr='c4';
 }
 function cancelForm(){
   const qf=document.getElementById('quickForm');
@@ -1932,6 +1952,10 @@ function cancelForm(){
   if(tp && qf.parentElement===document.body) tp.insertBefore(qf, document.getElementById('mistakesList'));
   if(pendingWord?.wordEl) pendingWord.wordEl.classList.remove('active-select');
   pendingWord=null;selectedType=null;selectedCorr=null;
+  document.getElementById('qfTypeOther').value='';
+  document.getElementById('qfTypeOther').classList.remove('sel-m6');
+  document.getElementById('qfCorrOther').value='';
+  document.getElementById('qfCorrOther').classList.remove('sel-c4');
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -1941,11 +1965,15 @@ function commitMistake(){
   if(!pendingWord) return;
   if(!selectedType){alert('Select a mistake type.');return;}
   if(!selectedCorr){alert('Select how it was corrected.');return;}
+  const typeOtherText = selectedType==='m6' ? (document.getElementById('qfTypeOther').value.trim()||'') : '';
+  const corrOtherText = selectedCorr==='c4' ? (document.getElementById('qfCorrOther').value.trim()||'') : '';
   const m={id:Date.now(),surah:pendingWord.surah,ayah:pendingWord.ayah,wordPos:pendingWord.wordPos,
     word:pendingWord.wordText,context:pendingWord.context||{before:[],after:[]},
     type:selectedType,correction:selectedCorr,
+    ...(typeOtherText && {typeLabel:typeOtherText}),
+    ...(corrOtherText && {corrLabel:corrOtherText}),
     note:document.getElementById('qfNote').value.trim(),
-    time:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),timerStamp:timerStr()};
+    time:formatTime(new Date()),timerStamp:timerStr()};
   mistakes.push(m);
   applyMistakeToDOM(m);
   const qf2=document.getElementById('quickForm');
@@ -1953,6 +1981,10 @@ function commitMistake(){
   const tp2=document.getElementById('trackerPanel');
   if(tp2 && qf2.parentElement===document.body) tp2.insertBefore(qf2, document.getElementById('mistakesList'));
   pendingWord=null;selectedType=null;selectedCorr=null;
+  document.getElementById('qfTypeOther').value='';
+  document.getElementById('qfTypeOther').classList.remove('sel-m6');
+  document.getElementById('qfCorrOther').value='';
+  document.getElementById('qfCorrOther').classList.remove('sel-c4');
   renderMistakesList();updateStats();
   autoSaveSession();
   // Resume timer if it was paused
@@ -2002,7 +2034,7 @@ function applyMistakeToDOM(m){
 }
 
 function getMC(s,a,p){const m=mistakes.find(x=>x.surah===s&&x.ayah===a&&x.wordPos===p);return m?`marked-${m.type}`:''}
-function typeLabel(t){return{pause:'Hesitation',error:'Wrong word',skip:'Skipped',makhraj:'Makhraj',tajweed:'Tajweed',other:'Other'}[t]||t;}
+function typeLabel(id){return getType(id).label;}
 
 // ═══════════════════════════════════════════════════════════════════
 // MISTAKES LIST
@@ -2012,11 +2044,11 @@ function renderMistakesList(){
   if(!mistakes.length){list.innerHTML=`<div class="empty-hint"><span class="arrow">↑</span>Tap any Arabic word to log a mistake</div>`;return;}
   list.innerHTML=[...mistakes].sort((a,b)=>a.surah-b.surah||a.ayah-b.ayah||a.wordPos-b.wordPos).map(m=>`
     <div class="mistake-item">
-      <span class="m-badge ${m.type}">${typeLabel(m.type)}</span>
+      <span class="m-badge ${m.type}">${mTypeLabel(m)}</span>
       <div class="m-body" onclick="navigateToVerse(${m.surah},${m.ayah},${m.wordPos})">
         <div class="m-ref">${m.surah}:${m.ayah} · ${m.time}</div>
         ${(()=>{const b=(m.context?.before||[]).join(' '),a=(m.context?.after||[]).join(' ');return(b||a)?`<div class="m-ctx">${b?`<span class="m-ctx-side">${b}</span> `:''}<span class="m-ctx-word">${m.word}</span>${a?` <span class="m-ctx-side">${a}</span>`:''}</div>`:`<span class="m-word">${m.word}</span>`;})()}
-        <div class="m-corr ${corrClass2[m.correction]}">${corrLabel[m.correction]}</div>
+        <div class="m-corr ${corrClass2[m.correction]}">${mCorrLabel(m)}</div>
         ${m.note?`<div class="m-note">${esc(m.note)}</div>`:''}
       </div>
       <div class="m-actions">
@@ -2045,9 +2077,10 @@ function deleteMistake(id){
 
 function updateStats(){
   document.getElementById('st0').textContent=mistakes.length;
-  document.getElementById('st1').textContent=mistakes.filter(m=>m.correction==='self').length;
-  document.getElementById('st2').textContent=mistakes.filter(m=>m.correction==='prompted').length;
-  document.getElementById('st3').textContent=mistakes.filter(m=>m.correction==='teacher').length;
+  document.getElementById('st1').textContent=mistakes.filter(m=>m.correction==='c1').length;
+  document.getElementById('st2').textContent=mistakes.filter(m=>m.correction==='c2').length;
+  document.getElementById('st3').textContent=mistakes.filter(m=>m.correction==='c3').length;
+  document.getElementById('st4').textContent=mistakes.filter(m=>m.correction==='c4').length;
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -2099,17 +2132,7 @@ function makeFileName(student, range) {
   const r=(range||'').replace(/[^\w\s:–-]/g,'').trim().replace(/\s+/g,'_').slice(0,30);
   return `${s}_${mm}-${dd}-${yyyy}${r?'_'+r:''}`;
 }
-function formatDate(){
-  const opts = {year:'numeric', month:'2-digit', day:'2-digit'};
-  if(settingsTZ) opts.timeZone = settingsTZ;
-  if(settingsDateFmt === 'iso'){
-    const d = settingsTZ
-      ? new Date(new Date().toLocaleString('en-US', {timeZone: settingsTZ}))
-      : new Date();
-    return d.toISOString().slice(0,10); // YYYY-MM-DD
-  }
-  return new Date().toLocaleDateString(settingsDateFmt, opts);
-}
+
 function buildSessionObj(){
   const student=document.getElementById('studentName').value.trim()||'Student';
   const juzSel=document.getElementById('juzSel');
@@ -2121,26 +2144,18 @@ function buildSessionObj(){
   const remarks = (document.getElementById('sessionRemarks')?.value||'').trim();
   // id is NOT set here — callers use _currentSessionId to ensure upsert correctness
   return{version:QRS_VERSION,student,range,remarks,
-     studentId: null, date:formatDate(),isoDate:new Date().toISOString(),
-    duration:timerStr(),juz:curJuz,surah:currentSurah,viewMode,mistakes:[...mistakes]};
+    studentId:null,date:formatDate(new Date()),isoDate:new Date().toISOString(),
+    duration:timerStr(),juz:curJuz,surah:currentSurah,viewMode,
+    typeConfig:{
+      mistakeTypes:MISTAKE_TYPES.map(t=>({id:t.id,label:t.label,color:t.color,bgColor:t.bgColor,borderColor:t.borderColor})),
+      correctionTypes:CORRECTION_TYPES.map(c=>({id:c.id,label:c.label,shortLabel:c.shortLabel}))
+    },
+    mistakes:[...mistakes]};
 }
 
 // Track whether current session has been saved to localStorage
 let sessionSaved = false;
-function openSettings(){
-  document.getElementById('settingsTZSel').value = settingsTZ;
-  document.getElementById('settingsFmtSel').value = settingsDateFmt;
-  document.getElementById('settingsModal').classList.add('open');
-}
 
-function saveSettings(){
-  settingsTZ = document.getElementById('settingsTZSel').value;
-  settingsDateFmt = document.getElementById('settingsFmtSel').value;
-  localStorage.setItem('settingsTZ', settingsTZ);
-  localStorage.setItem('settingsDateFmt', settingsDateFmt);
-  closeModal('settingsModal');
-  showToast('Settings saved ✓');
-}
 function saveSession(){
   if(!mistakes.length){showToast('No mistakes to save');return;}
   // Reuse existing ID so we update-in-place (same as autosave does)
@@ -2219,7 +2234,7 @@ async function loadSessionIntoEditor(sess){
   document.getElementById('studentName').value=sess.student||'';
   document.getElementById('sessionName').value=sess.range||'';
   document.getElementById('sessionRemarks').value=sess.remarks||'';
-  mistakes=[...sess.mistakes];
+  mistakes=migrateMistakes([...sess.mistakes]);
   _currentSessionId = sess.id || null; // use loaded session's ID for autosave updates
   sessionSaved=true; // loaded session counts as "saved"
 
@@ -2282,9 +2297,10 @@ function renderSessionsList(){
   const sessions=getSessions(),el=document.getElementById('sessionsListInner');
   if(!sessions.length){el.innerHTML='<div style="text-align:center;padding:24px;color:var(--ink3);font-style:italic;">No saved sessions yet</div>';return;}
   el.innerHTML=sessions.map(s=>{
-    const self=s.mistakes.filter(m=>m.correction==='self').length;
-    const prompted=s.mistakes.filter(m=>m.correction==='prompted').length;
-    const teacher=s.mistakes.filter(m=>m.correction==='teacher').length;
+    const self=s.mistakes.filter(m=>m.correction==='c1').length;
+    const prompted=s.mistakes.filter(m=>m.correction==='c2').length;
+    const teacher=s.mistakes.filter(m=>m.correction==='c3').length;
+    const other=s.mistakes.filter(m=>m.correction==='c4').length;
     const safeS=JSON.stringify(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;');
     return`<div class="sess-card">
       <div class="sess-card-head">
@@ -2296,6 +2312,7 @@ function renderSessionsList(){
             <span style="color:var(--green)">✓ ${self}</span>
             <span style="color:var(--amber)">⇒ ${prompted}</span>
             <span style="color:var(--red)">⚠ ${teacher}</span>
+            <span style="color:var(--ink3)">◌ ${other}</span>
           </div>
         </div>
         <div class="sess-actions">
@@ -2357,10 +2374,11 @@ function importSession(event){
     try{
       const data=JSON.parse(e.target.result);
       if(data.type==='qrs-session'&&data.session){
+        data.session.mistakes=migrateMistakes(data.session.mistakes);
         importSingle(data.session);
         loadSessionIntoEditor(data.session);
       } else if(data.type==='qrs-bundle'&&data.sessions){
-        data.sessions.forEach(s=>importSingle(s,true));
+        data.sessions.forEach(s=>{s.mistakes=migrateMistakes(s.mistakes);importSingle(s,true);});
         const sorted=[...data.sessions].sort((a,b)=>b.id-a.id);
         if(sorted.length) loadSessionIntoEditor(sorted[0]);
         else openSessions();
@@ -2388,11 +2406,13 @@ function reviewSession(id){
 }
 
 function buildReviewHTML(s){
+  const cfg=s.typeConfig||null;
   const ml=s.mistakes,total=ml.length;
-  const self=ml.filter(m=>m.correction==='self').length;
-  const prompted=ml.filter(m=>m.correction==='prompted').length;
-  const teacher=ml.filter(m=>m.correction==='teacher').length;
-  const types=['pause','error','skip','makhraj','tajweed','other'];
+  const self=ml.filter(m=>m.correction==='c1').length;
+  const prompted=ml.filter(m=>m.correction==='c2').length;
+  const teacher=ml.filter(m=>m.correction==='c3').length;
+  const other=ml.filter(m=>m.correction==='c4').length;
+  const types=(cfg?.mistakeTypes||MISTAKE_TYPES).map(t=>t.id);
   const tc=Object.fromEntries(types.map(t=>[t,ml.filter(m=>m.type===t).length]));
   const maxT=Math.max(1,...Object.values(tc));
   const byAyah={};
@@ -2407,13 +2427,14 @@ function buildReviewHTML(s){
       <span class="m-badge" style="background:var(--green-bg);color:var(--green);font-size:10px;">✓ ${self} self</span>
       <span class="m-badge" style="background:var(--amber-bg);color:var(--amber);font-size:10px;">⇒ ${prompted} prompted</span>
       <span class="m-badge" style="background:var(--red-bg);color:var(--red);font-size:10px;">⚠ ${teacher} taught</span>
+      <span class="m-badge" style="background:var(--parchment3);color:var(--ink2);font-size:10px;">◌ ${other} other</span>
     </div>
   </div>`;
 
-  const corrData=[{label:'Self',val:self,color:'var(--green)'},{label:'Prompted',val:prompted,color:'var(--amber)'},{label:'Taught',val:teacher,color:'var(--red)'}];
+  const corrData=[{label:'Self',val:self,color:'var(--green)'},{label:'Prompted',val:prompted,color:'var(--amber)'},{label:'Taught',val:teacher,color:'var(--red)'},{label:'Other',val:other,color:'var(--ink3)'}];
   h+=`<div class="charts-row">
     <div class="chart-box"><h4>Mistake types</h4><div class="bar-chart">
-      ${types.map(t=>`<div class="bar-row"><div class="bar-label">${typeLabel(t)}</div><div class="bar-track"><div class="bar-fill" style="width:${total?Math.round(tc[t]/maxT*100):0}%;background:${TYPE_COLORS[t]};"></div></div><div class="bar-count">${tc[t]}</div></div>`).join('')}
+      ${types.map(t=>`<div class="bar-row"><div class="bar-label">${typeLabelFor(cfg,t)}</div><div class="bar-track"><div class="bar-fill" style="width:${total?Math.round(tc[t]/maxT*100):0}%;background:${TYPE_COLORS[t]};"></div></div><div class="bar-count">${tc[t]}</div></div>`).join('')}
     </div></div>
     <div class="chart-box"><h4>Correction outcomes</h4>
       <div class="donut-wrap">${donutSVG(corrData,total)}<div class="donut-center"><span class="big">${total}</span><span class="lbl">total</span></div></div>
@@ -2425,8 +2446,8 @@ function buildReviewHTML(s){
     const sorted=[...ml].sort((a,b)=>a.surah-b.surah||a.ayah-b.ayah||a.wordPos-b.wordPos);
     h+=`<div class="chart-box" style="margin-bottom:12px;">
       <h4>Mistake map <span style="font-size:8px;font-weight:400;color:var(--ink3);">hover for details</span></h4>
-      <div class="legend-row" style="margin-top:5px;">${types.map(t=>`<div class="leg-item"><div class="leg-dot" style="background:${TYPE_COLORS[t]};"></div>${typeLabel(t)}</div>`).join('')}</div>
-      <div class="timeline">${sorted.map((m,i)=>`<div class="tl-dot ${m.type}" title="${m.surah}:${m.ayah} — ${typeLabel(m.type)}\n${corrLabel[m.correction]}${m.note?'\n'+m.note:''}">${i+1}</div>`).join('')}</div>
+      <div class="legend-row" style="margin-top:5px;">${types.map(t=>`<div class="leg-item"><div class="leg-dot" style="background:${TYPE_COLORS[t]};"></div>${typeLabelFor(cfg,t)}</div>`).join('')}</div>
+      <div class="timeline">${sorted.map((m,i)=>`<div class="tl-dot ${m.type}" title="${m.surah}:${m.ayah} — ${mTypeLabel(m,cfg)}\n${mCorrLabel(m,cfg)}${m.note?'\n'+m.note:''}">${i+1}</div>`).join('')}</div>
     </div>`;
   }
 
@@ -2448,9 +2469,9 @@ function buildReviewHTML(s){
         const bef=(m.context?.before||[]).join(' ');
         const aft=(m.context?.after||[]).join(' ');
         // Color values keyed by type
-        const typeBg={pause:'var(--amber-bg)',error:'var(--red-bg)',skip:'var(--coral-bg)',makhraj:'var(--purple-bg)',tajweed:'var(--teal-bg)',other:'var(--parchment3)'};
-        const typeCol={pause:'var(--amber)',error:'var(--red)',skip:'var(--coral)',makhraj:'var(--purple)',tajweed:'var(--teal)',other:'var(--ink2)'};
-        const typeBdr={pause:'var(--amber)',error:'var(--red)',skip:'var(--coral)',makhraj:'var(--purple)',tajweed:'var(--teal)',other:'var(--border2)'};
+        const typeBg={m1:'var(--amber-bg)',m2:'var(--red-bg)',m3:'var(--coral-bg)',m4:'var(--purple-bg)',m5:'var(--teal-bg)',m6:'var(--parchment3)'};
+        const typeCol={m1:'var(--amber)',m2:'var(--red)',m3:'var(--coral)',m4:'var(--purple)',m5:'var(--teal)',m6:'var(--ink2)'};
+        const typeBdr={m1:'var(--amber)',m2:'var(--red)',m3:'var(--coral)',m4:'var(--purple)',m5:'var(--teal)',m6:'var(--border2)'};
         let ctxHtml='';
         if(bef||aft){
           // dir=rtl: write bef (rightmost in RTL) then target then aft (leftmost in RTL)
@@ -2467,9 +2488,9 @@ function buildReviewHTML(s){
         }
         return`<div class="rml-item" style="flex-direction:column;align-items:stretch;gap:2px;margin-bottom:8px;padding-bottom:8px;border-bottom:.5px solid var(--border);">
           <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-            <span class="m-badge ${m.type}">${typeLabel(m.type)}</span>
+            <span class="m-badge ${m.type}">${mTypeLabel(m,cfg)}</span>
             <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--ink3);">${m.surah}:${m.ayah}</span>
-            <span class="m-corr ${corrClass2[m.correction]}" style="font-size:9px;margin-left:auto;">${corrLabel[m.correction]}</span>
+            <span class="m-corr ${corrClass2[m.correction]}" style="font-size:9px;margin-left:auto;">${mCorrLabel(m,cfg)}</span>
           </div>
           ${ctxHtml}
           ${m.note?`<div class="rml-note" style="padding:0 4px;font-size:10px;">${esc(m.note)}</div>`:''}
@@ -2490,31 +2511,29 @@ function donutSVG(slices,total){
 // TEXT REPORT — WhatsApp-friendly format, fixed RTL context order
 // ═══════════════════════════════════════════════════════════════════
 function buildTextReport(s){
-  const self=s.mistakes.filter(m=>m.correction==='self').length;
-  const prompted=s.mistakes.filter(m=>m.correction==='prompted').length;
-  const teacher=s.mistakes.filter(m=>m.correction==='teacher').length;
+  const cfg=s.typeConfig||null;
+  const self=s.mistakes.filter(m=>m.correction==='c1').length;
+  const prompted=s.mistakes.filter(m=>m.correction==='c2').length;
+  const teacher=s.mistakes.filter(m=>m.correction==='c3').length;
+  const other=s.mistakes.filter(m=>m.correction==='c4').length;
   let t='📖 *Quran Recitation Session Report*\n';
   t+='━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
   t+=`👤 Student : ${s.student}\n`;
   t+=`📜 Passage : ${s.range}\n`;
   t+=`📅 Date    : ${s.date}   ⏱ ${s.duration}\n`;
-  t+=`📊 Summary : ${s.mistakes.length} mistakes  |  ✓ ${self} self  |  ⇒ ${prompted} prompted  |  ⚠ ${teacher} taught\n`;
+  t+=`📊 Summary : ${s.mistakes.length} mistakes  |  ✓ ${self} self  |  ⇒ ${prompted} prompted  |  ⚠ ${teacher} taught  |  ◌ ${other} other\n`;
   if(s.remarks) t+=`📝 Remarks  : ${s.remarks}\n`;
   t+='━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n';
 
   [...s.mistakes].sort((a,b)=>a.surah-b.surah||a.ayah-b.ayah||a.wordPos-b.wordPos).forEach((m,i)=>{
-    // FIX: Each field on its own line so Arabic/numbers don't fight over direction
-    // Context: before = lower-pos words (right side in Arabic), after = higher-pos (left side)
-    // In plain text output, write: before_words **TARGET** after_words  (RTL reading order)
     const bef=(m.context?.before||[]).join(' ');
     const aft=(m.context?.after||[]).join(' ');
     const ctxLine=bef||aft?`${bef} *${m.word}* ${aft}`:m.word;
-
     t+=`▪️ *Mistake ${i+1}*\n`;
-    t+=`   Type   : ${typeLabel(m.type)}\n`;
+    t+=`   Type   : ${mTypeLabel(m,cfg)}\n`;
     t+=`   Verse  : ${m.surah}:${m.ayah}\n`;
     t+=`   Word   : ${ctxLine}\n`;
-    t+=`   Result : ${corrLabel[m.correction]}\n`;
+    t+=`   Result : ${mCorrLabel(m,cfg)}\n`;
     if(m.note) t+=`   Note   : ${m.note}\n`;
     t+='\n';
   });
@@ -2601,6 +2620,194 @@ function hideTopbar(){ setTopbarHidden(true); }
 function showTopbar(){ setTopbarHidden(false); }
 
 // ═══════════════════════════════════════════════════════════════════
+// SETTINGS
+// ═══════════════════════════════════════════════════════════════════
+let appSettings = {timezone:'device', dateFormat:'device'};
+
+function loadSettings(){
+  try{ const s=localStorage.getItem('qrt4_settings'); if(s) appSettings={...appSettings,...JSON.parse(s)}; }catch{}
+}
+function saveSettings(){
+  appSettings.dateFormat = document.getElementById('settingDateFormat').value;
+  // timezone is saved directly by selectTz()
+  localStorage.setItem('qrt4_settings', JSON.stringify(appSettings));
+  updateSettingsPreviews();
+}
+function resetSettings(){
+  appSettings={timezone:'device',dateFormat:'device'};
+  localStorage.removeItem('qrt4_settings');
+  document.getElementById('settingDateFormat').value='device';
+  initTzPicker();
+  updateSettingsPreviews();
+}
+
+// ── TIMEZONE PICKER ──────────────────────────────────────────────
+// Build list: "Device default" + every IANA zone with its UTC offset label
+let _tzEntries = null; // cached [{value, label, search}]
+
+function buildTzEntries(){
+  if(_tzEntries) return _tzEntries;
+  const now = new Date();
+  const allZones = Intl.supportedValuesOf
+    ? Intl.supportedValuesOf('timeZone')
+    : ["Africa/Abidjan","Africa/Cairo","Africa/Johannesburg","Africa/Nairobi","America/Anchorage","America/Bogota","America/Buenos_Aires","America/Chicago","America/Denver","America/Halifax","America/Los_Angeles","America/Mexico_City","America/New_York","America/Sao_Paulo","America/Toronto","America/Vancouver","Asia/Almaty","Asia/Baghdad","Asia/Baku","Asia/Colombo","Asia/Dhaka","Asia/Dubai","Asia/Jakarta","Asia/Kabul","Asia/Karachi","Asia/Kathmandu","Asia/Kolkata","Asia/Kuwait","Asia/Muscat","Asia/Qatar","Asia/Riyadh","Asia/Seoul","Asia/Shanghai","Asia/Singapore","Asia/Tashkent","Asia/Tehran","Asia/Tokyo","Asia/Yangon","Atlantic/Reykjavik","Australia/Adelaide","Australia/Brisbane","Australia/Sydney","Europe/Amsterdam","Europe/Athens","Europe/Berlin","Europe/Helsinki","Europe/Istanbul","Europe/London","Europe/Moscow","Europe/Paris","Europe/Warsaw","Pacific/Auckland","Pacific/Fiji","Pacific/Honolulu","UTC"];
+
+  // Reliably compute UTC offset string for any IANA timezone
+  function tzOffset(tz){
+    try{
+      // Subtract UTC date components from local timezone components to get offset in minutes
+      const local = new Intl.DateTimeFormat('en-US',{
+        timeZone:tz, year:'numeric', month:'2-digit', day:'2-digit',
+        hour:'2-digit', minute:'2-digit', hour12:false
+      }).formatToParts(now);
+      const get = t => parseInt(local.find(p=>p.type===t)?.value||'0',10);
+      const localMs = Date.UTC(get('year'),get('month')-1,get('day'),get('hour')===24?0:get('hour'),get('minute'));
+      const utcMs   = Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate(),now.getUTCHours(),now.getUTCMinutes());
+      const diff    = Math.round((localMs-utcMs)/60000); // minutes
+      const sign    = diff>=0?'+':'-';
+      const h       = Math.floor(Math.abs(diff)/60);
+      const m       = Math.abs(diff)%60;
+      return `UTC${sign}${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+    }catch{ return 'UTC+00:00'; }
+  }
+
+  const deviceTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const deviceOff = tzOffset(deviceTz);
+  _tzEntries = [{
+    value:'device',
+    label:`Device (${deviceTz} / ${deviceOff})`,
+    search:`device default ${deviceTz} ${deviceOff}`.toLowerCase(),
+    offset:0
+  }];
+
+  allZones.forEach(tz => {
+    try {
+      const offsetStr = tzOffset(tz);
+      // Parse numeric offset for sorting: UTC+05:30 → 5.5
+      const m2 = offsetStr.match(/UTC([+-])(\d+):(\d+)/);
+      const numOff = m2 ? (m2[1]==='-'?-1:1)*(parseInt(m2[2])+parseInt(m2[3])/60) : 0;
+      const city   = tz.split('/').pop().replace(/_/g,' ');
+      const region = tz.includes('/') ? tz.split('/')[0].replace(/_/g,' ') : '';
+      const label  = `${offsetStr}  ${city}${region?' · '+region:''}`;
+      _tzEntries.push({value:tz, label, search:(tz+' '+city+' '+region+' '+offsetStr).toLowerCase(), offset:numOff});
+    } catch(e){}
+  });
+
+  // Sort by UTC offset, then city name within same offset
+  _tzEntries.sort((a,b)=>{
+    if(a.value==='device') return -1;
+    if(b.value==='device') return 1;
+    if(a.offset!==b.offset) return a.offset-b.offset;
+    return a.label.localeCompare(b.label);
+  });
+
+  return _tzEntries;
+}
+
+function renderTzList(filter=''){
+  const entries = buildTzEntries();
+  const q = filter.toLowerCase().trim();
+  const filtered = q ? entries.filter(e=>e.search.includes(q)) : entries;
+  const list = document.getElementById('tzList');
+  if(!filtered.length){
+    list.innerHTML=`<div style="padding:8px 10px;font-size:11px;color:var(--ink3);font-style:italic;">No results</div>`;
+    return;
+  }
+  list.innerHTML = filtered.slice(0,80).map(e=>`
+    <div onclick="selectTz('${e.value.replace(/'/g,"\\'")}','${e.label.replace(/'/g,"\\'")}')"
+      style="padding:6px 10px;font-size:11px;font-family:'Lora',serif;cursor:pointer;color:var(--ink);
+             border-bottom:.5px solid var(--border);${appSettings.timezone===e.value?'background:var(--gold-pale);font-weight:600;':''}">
+      ${esc(e.label)}
+    </div>`).join('');
+}
+
+function selectTz(value, label){
+  appSettings.timezone = value;
+  localStorage.setItem('qrt4_settings', JSON.stringify(appSettings));
+  document.getElementById('tzSearch').value = label;
+  hideTzList();
+  updateSettingsPreviews();
+}
+
+function showTzList(){
+  // Clear the input so user can type immediately — show full list while blank
+  document.getElementById('tzSearch').value='';
+  renderTzList('');
+  document.getElementById('tzList').style.display='block';
+}
+function hideTzList(){
+  document.getElementById('tzList').style.display='none';
+  // Restore the label for the currently saved timezone
+  initTzPicker();
+}
+function filterTzList(){ renderTzList(document.getElementById('tzSearch').value); document.getElementById('tzList').style.display='block'; }
+
+function initTzPicker(){
+  const entries = buildTzEntries();
+  const current = appSettings.timezone;
+  const match = entries.find(e=>e.value===current);
+  document.getElementById('tzSearch').value = match ? match.label : entries[0].label;
+}
+
+// Close picker when clicking outside
+document.addEventListener('click', e=>{
+  if(!e.target.closest('#tzPickerWrap')) hideTzList();
+});
+
+function openSettings(){
+  initTzPicker();
+  document.getElementById('settingDateFormat').value=appSettings.dateFormat;
+  updateSettingsPreviews();
+  document.getElementById('settingsModal').classList.add('open');
+}
+
+// Return the effective IANA timezone string
+function effectiveTz(){
+  return appSettings.timezone==='device'
+    ? Intl.DateTimeFormat().resolvedOptions().timeZone
+    : appSettings.timezone;
+}
+
+// Format a Date object according to the current settings
+function formatDate(d){
+  const tz=effectiveTz();
+  if(appSettings.dateFormat==='device'){
+    return d.toLocaleDateString(undefined,{timeZone:tz});
+  }
+  const parts=new Intl.DateTimeFormat('en-US',{
+    timeZone:tz,year:'numeric',month:'2-digit',day:'2-digit'
+  }).formatToParts(d);
+  const get=t=>parts.find(p=>p.type===t)?.value||'';
+  const year=get('year'),mon=get('month'),day=get('day');
+  const monthName=new Intl.DateTimeFormat('en-US',{timeZone:tz,month:'long'}).format(d);
+  const dayNum=parseInt(day,10);
+  switch(appSettings.dateFormat){
+    case 'DMY':      return `${day}/${mon}/${year}`;
+    case 'MDY':      return `${mon}/${day}/${year}`;
+    case 'YMD':      return `${year}-${mon}-${day}`;
+    case 'DMONTHY':  return `${dayNum} ${monthName} ${year}`;
+    case 'MONTHDYY': return `${monthName} ${dayNum}, ${year}`;
+    default:         return d.toLocaleDateString(undefined,{timeZone:tz});
+  }
+}
+
+// Format a time string in the effective timezone
+function formatTime(d){
+  return d.toLocaleTimeString(undefined,{
+    timeZone:effectiveTz(),hour:'2-digit',minute:'2-digit'
+  });
+}
+
+function updateSettingsPreviews(){
+  const now=new Date();
+  const tz=effectiveTz();
+  document.getElementById('tzPreview').textContent=
+    `Current time in ${tz}: ${now.toLocaleTimeString(undefined,{timeZone:tz,hour:'2-digit',minute:'2-digit',timeZoneName:'short'})}`;
+  document.getElementById('datePreview').textContent=
+    `Preview: ${formatDate(now)}`;
+}
+
+// ═══════════════════════════════════════════════════════════════════
 // TIMER
 // ═══════════════════════════════════════════════════════════════════
 function resetTimer(){
@@ -2623,6 +2830,44 @@ function closeModal(id){document.getElementById(id).classList.remove('open');if(
 document.querySelectorAll('.modal-bg').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)closeModal(m.id);}));
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 </script>
+<!-- SETTINGS OVERLAY -->
+<div class="modal-bg" id="settingsModal">
+  <div class="modal" style="max-width:400px;">
+    <div class="modal-title">⚙︎ Settings</div>
+    <div class="modal-sub">Preferences are saved on this device.</div>
+
+    <div class="edit-form-group">
+      <label>Timezone</label>
+      <!-- Custom searchable timezone picker -->
+      <div style="position:relative;" id="tzPickerWrap">
+        <input type="text" id="tzSearch" placeholder="Search timezone…" autocomplete="off"
+          style="width:100%;border:.5px solid var(--border2);border-radius:5px;background:var(--parchment2);color:var(--ink);padding:6px 8px;font-size:12px;font-family:'Lora',serif;"
+          oninput="filterTzList()" onfocus="showTzList()" />
+        <div id="tzList" style="display:none;position:absolute;left:0;right:0;top:100%;z-index:500;background:var(--parchment);border:.5px solid var(--border2);border-radius:0 0 5px 5px;max-height:180px;overflow-y:auto;box-shadow:0 4px 14px rgba(26,22,18,.14);"></div>
+      </div>
+      <div style="font-size:10px;color:var(--ink3);margin-top:3px;" id="tzPreview"></div>
+    </div>
+
+    <div class="edit-form-group">
+      <label>Date format</label>
+      <select id="settingDateFormat" onchange="saveSettings()">
+        <option value="device">Device default</option>
+        <option value="DMY">DD/MM/YYYY (e.g. 14/04/2026)</option>
+        <option value="MDY">MM/DD/YYYY (e.g. 04/14/2026)</option>
+        <option value="YMD">YYYY-MM-DD (e.g. 2026-04-14)</option>
+        <option value="DMONTHY">D Month YYYY (e.g. 14 April 2026)</option>
+        <option value="MONTHDYY">Month D, YYYY (e.g. April 14, 2026)</option>
+      </select>
+      <div style="font-size:10px;color:var(--ink3);margin-top:3px;" id="datePreview"></div>
+    </div>
+
+    <div class="modal-btns">
+      <button class="btn-m sec" onclick="resetSettings()">Reset to defaults</button>
+      <button class="btn-m pri" onclick="closeModal('settingsModal')">Done</button>
+    </div>
+  </div>
+</div>
+
 <!-- MOBILE PANEL TOGGLE + BACKDROP -->
 <div class="panel-backdrop" id="panelBackdrop" onclick="closeMobilePanel()"></div>
 <button class="panel-toggle-btn" id="panelToggleBtn" onclick="toggleMobilePanel()" title="Toggle session panel">📋</button>
