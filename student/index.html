@@ -603,6 +603,8 @@ function migrateMistakes(mistakes){return(mistakes||[]).map(m=>({...m,type:migra
 function typeLabel(id){return getType(id).label;}
 function typeLabelFor(cfg,id){if(cfg?.mistakeTypes){const t=cfg.mistakeTypes.find(t=>t.id===id);if(t)return t.label;}return typeLabel(id);}
 function corrLabelFor(cfg,id){if(cfg?.correctionTypes){const c=cfg.correctionTypes.find(c=>c.id===id);if(c)return c.label;}return getCorr(id).label;}
+function mTypeLabel(m,cfg){return m.typeLabel||typeLabelFor(cfg||m.typeConfig||null,m.type);}
+function mCorrLabel(m,cfg){return m.corrLabel||corrLabelFor(cfg||m.typeConfig||null,m.correction);}
 const TYPE_COLORS=Object.fromEntries(MISTAKE_TYPES.map(t=>[t.id,t.color]));
 const corrLabel=Object.fromEntries(CORRECTION_TYPES.map(c=>[c.id,c.label]));
 const corrClass2=Object.fromEntries(CORRECTION_TYPES.map(c=>[c.id,c.cssClass]));
@@ -1204,8 +1206,8 @@ function showTT(event,el,enc){
     const cfg=m.typeConfig||null;
     const t=getType(m.type);
     if(mList.length>1)html+=`<div style="border-top:.5px solid rgba(255,255,255,.1);margin:4px 0 3px;padding-top:3px;"></div>`;
-    html+=`<span class="tt-badge" style="background:${t.bgColor};color:${t.color};">${typeLabelFor(cfg,m.type)}</span><br>`;
-    html+=`<span class="tt-corr">${corrLabelFor(cfg,m.correction)}</span>`;
+    html+=`<span class="tt-badge" style="background:${t.bgColor};color:${t.color};">${mTypeLabel(m,cfg)}</span><br>`;
+    html+=`<span class="tt-corr">${mCorrLabel(m,cfg)}</span>`;
     if(m.note)html+=`<span class="tt-note">"${esc(m.note)}"</span>`;
     const sessLine=[m.sessionStudent,m.sessionRange,m.sessionDate].filter(Boolean).join(' · ');
     if(sessLine)html+=`<span class="tt-sess">${esc(sessLine)}</span>`;
@@ -1295,11 +1297,11 @@ function renderMistakesList(){
     const wk=`${m.surah}:${m.ayah}:${m.wordPos}`;const isR=wkm[wk].length>1;
     const sessInfo=`${m.sessionStudent||''}${m.sessionRange?' · '+m.sessionRange:''}${m.sessionDate?' · '+m.sessionDate:''}`;
     return`<div class="mistake-item${isR?' repeated-mistake':''}" onclick="navigateToVerse(${m.surah},${m.ayah},${m.wordPos||0})">
-      <span class="m-badge ${m.type}">${typeLabelFor(cfg,m.type)}</span>
+      <span class="m-badge ${m.type}">${mTypeLabel(m,cfg)}</span>
       <div class="m-body">
         <div class="m-ref">${m.surah}:${m.ayah} · ${m.time||''}${isR?`<span class="repeat-badge">×${wkm[wk].length}</span>`:''}</div>
         <span class="m-word">${m.word}</span>
-        <div class="m-corr ${corrClass2[m.correction]}">${corrLabelFor(cfg,m.correction)}</div>
+        <div class="m-corr ${corrClass2[m.correction]}">${mCorrLabel(m,cfg)}</div>
         ${m.note?`<div class="m-note">${esc(m.note)}</div>`:''}
         ${sessInfo?`<div class="m-sess-tag">${esc(sessInfo)}</div>`:''}
       </div>
@@ -1372,7 +1374,7 @@ function buildReviewHTML(s){
       const ctx=bef||aft
         ?`<div style="direction:rtl;text-align:right;font-family:'Scheherazade New','Amiri',serif;font-size:16px;line-height:2.2;margin:4px 0;padding:4px 8px;background:var(--parchment);border-radius:5px;border:.5px solid var(--border);unicode-bidi:isolate;">${bef?`<span style="color:var(--ink3);opacity:.75;">${bef}</span> `:''}<span style="background:${t.bgColor};color:${t.color};border-bottom:2px solid ${t.borderColor};border-radius:3px;padding:1px 3px;font-weight:700;font-size:17px;">${m.word}</span>${aft?` <span style="color:var(--ink3);opacity:.75;">${aft}</span>`:''}</div>`
         :`<div style="direction:rtl;text-align:right;font-family:'Scheherazade New','Amiri',serif;font-size:16px;line-height:2.2;margin:4px 0;padding:4px 8px;background:var(--parchment);border-radius:5px;border:.5px solid var(--border);"><span style="background:${t.bgColor};color:${t.color};border-bottom:2px solid ${t.borderColor};border-radius:3px;padding:1px 3px;font-weight:700;font-size:17px;">${m.word}</span></div>`;
-      return`<div style="flex-direction:column;align-items:stretch;gap:2px;margin-bottom:7px;padding-bottom:7px;border-bottom:.5px solid var(--border);display:flex;"><div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;"><span class="m-badge ${m.type}">${typeLabelFor(cfg,m.type)}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--ink3);">${m.surah}:${m.ayah}</span><span class="m-corr ${corrClass2[m.correction]}" style="font-size:9px;margin-left:auto;">${corrLabelFor(cfg,m.correction)}</span>${m.sessionLabel&&activeSessions.length>1?`<span style="font-size:8px;color:var(--ink3);font-family:'IBM Plex Mono',monospace;">${esc(m.sessionLabel)}</span>`:''}</div>${ctx}${m.note?`<div style="padding:0 3px;font-size:9px;color:var(--ink3);font-style:italic;">${esc(m.note)}</div>`:''}</div>`;
+      return`<div style="flex-direction:column;align-items:stretch;gap:2px;margin-bottom:7px;padding-bottom:7px;border-bottom:.5px solid var(--border);display:flex;"><div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;"><span class="m-badge ${m.type}">${mTypeLabel(m,cfg)}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--ink3);">${m.surah}:${m.ayah}</span><span class="m-corr ${corrClass2[m.correction]}" style="font-size:9px;margin-left:auto;">${mCorrLabel(m,cfg)}</span>${m.sessionLabel&&activeSessions.length>1?`<span style="font-size:8px;color:var(--ink3);font-family:'IBM Plex Mono',monospace;">${esc(m.sessionLabel)}</span>`:''}</div>${ctx}${m.note?`<div style="padding:0 3px;font-size:9px;color:var(--ink3);font-style:italic;">${esc(m.note)}</div>`:''}</div>`;
     }).join('')}</div></div>`;
   });
   return h;
@@ -1397,7 +1399,7 @@ function buildReport(sessions,mistakes){
     const cfg=m.typeConfig||null;
     const bef=(m.context?.before||[]).join(' '),aft=(m.context?.after||[]).join(' ');
     const ctx=bef||aft?`${bef} *${m.word}* ${aft}`:m.word;
-    t+=`▪️ *Mistake ${i+1}*\n   Type   : ${typeLabelFor(cfg,m.type)}\n   Verse  : ${m.surah}:${m.ayah}\n   Word   : ${ctx}\n   Result : ${corrLabelFor(cfg,m.correction)}\n`;
+    t+=`▪️ *Mistake ${i+1}*\n   Type   : ${mTypeLabel(m,cfg)}\n   Verse  : ${m.surah}:${m.ayah}\n   Word   : ${ctx}\n   Result : ${mCorrLabel(m,cfg)}\n`;
     if(m.note)t+=`   Note   : ${m.note}\n`;if(sessions.length>1&&m.sessionLabel)t+=`   Session: ${m.sessionLabel}\n`;t+='\n';
   });return t;
 }
