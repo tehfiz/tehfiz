@@ -287,9 +287,11 @@ body{font-family:'Lora',Georgia,serif;background:var(--parchment);color:var(--in
 .m-ref{font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--ink3);margin-bottom:1px;}
 .m-word{font-family:'Scheherazade New','Amiri',serif;font-size:14px;direction:rtl;color:var(--ink);display:block;}
 .m-corr{font-size:9px;margin-top:1px;}
-.m-corr.c1{color:var(--green);}
-.m-corr.c2{color:var(--amber);}
-.m-corr.c3{color:var(--red);}
+.m-corr.c0{color:var(--ink3);font-style:italic;}
+.m-corr.c1{color:var(--green);font-weight:600;}
+.m-corr.c2{color:var(--amber);font-weight:600;}
+.m-corr.c3{color:var(--red);font-weight:600;}
+.m-corr.c4{color:var(--ink2);font-weight:600;}
 .m-note{font-size:8px;color:var(--ink3);font-style:italic;margin-top:1px;}
 .m-sess-tag{font-size:8px;font-family:'IBM Plex Mono',monospace;color:var(--ink3);margin-top:2px;background:var(--parchment3);border-radius:3px;padding:1px 3px;display:inline-block;}
 .repeat-badge{font-size:8px;background:var(--gold);color:var(--ink);padding:1px 4px;border-radius:999px;font-family:'IBM Plex Mono',monospace;font-weight:700;margin-left:3px;vertical-align:middle;}
@@ -514,9 +516,9 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
         </div>
         <div class="stats-row">
           <div class="stat-pill"><span class="n" id="st0">0</span><span class="l">Total</span></div>
-          <div class="stat-pill"><span class="n" id="st1" style="color:var(--green)">0</span><span class="l">Self ✓</span></div>
-          <div class="stat-pill"><span class="n" id="st2" style="color:var(--amber)">0</span><span class="l">Hint ⇒</span></div>
-          <div class="stat-pill"><span class="n" id="st3" style="color:var(--red)">0</span><span class="l">Taught ⚠</span></div>
+          <div class="stat-pill"><span class="n" id="st1" style="color:var(--green)">0</span><span class="l">Lvl 1</span></div>
+          <div class="stat-pill"><span class="n" id="st2" style="color:var(--amber)">0</span><span class="l">Lvl 2</span></div>
+          <div class="stat-pill"><span class="n" id="st3" style="color:var(--red)">0</span><span class="l">Lvl 3</span></div>
         </div>
         <div class="mistakes-scroll" id="mistakesList"></div>
       </div>
@@ -587,10 +589,11 @@ const MISTAKE_TYPES=[
   {id:'m6',label:'Other',      color:'var(--ink3)',  bgColor:'var(--parchment3)',borderColor:'var(--border2)'},
 ];
 const CORRECTION_TYPES=[
-  {id:'c1',label:'✓ Self-corrected',    shortLabel:'Self',     cssClass:'c1'},
-  {id:'c2',label:'⇒ After prompting',   shortLabel:'Prompted', cssClass:'c2'},
-  {id:'c3',label:'⚠ Teacher corrected', shortLabel:'Taught',   cssClass:'c3'},
-  {id:'c4',label:'◌ Other',             shortLabel:'Other',    cssClass:'c4'},
+  {id:'c0', label:'Lvl 0 · No intervention', shortLabel:'Lvl 0', cssClass:'c0'},
+  {id:'c1', label:'Lvl 1 · Repeat',          shortLabel:'Lvl 1', cssClass:'c1'},
+  {id:'c2', label:'Lvl 2 · Hint',            shortLabel:'Lvl 2', cssClass:'c2'},
+  {id:'c3', label:'Lvl 3 · Taught',          shortLabel:'Lvl 3', cssClass:'c3'},
+  {id:'c4', label:'◌ Other',                 shortLabel:'Other', cssClass:'c4'},
 ];
 const ID_MIGRATION={
   pause:'m1',error:'m2',skip:'m3',makhraj:'m4',tajweed:'m5',other:'m6',
@@ -1281,7 +1284,7 @@ function renderSessionsList(){
         <div class="sess-date">${s.date||''} · ${s.duration||''}</div>
         ${s.remarks?`<div style="font-size:9px;color:var(--ink2);font-style:italic;margin-top:3px;padding:3px 5px;background:var(--parchment2);border-radius:3px;border-left:2px solid var(--gold);">${esc(s.remarks)}</div>`:''}
       </div><button class="sess-del" onclick="event.stopPropagation();deleteSession(${s.id})">✕</button></div>
-      <div class="sess-counts"><span>${(s.mistakes||[]).length} mistakes</span><span style="color:var(--green)">✓${sf}</span><span style="color:var(--amber)">⇒${sp}</span><span style="color:var(--red)">⚠${st}</span></div>
+      <div class="sess-counts"><span>${(s.mistakes||[]).length} mistakes</span><span style="color:var(--green)">Lvl 1 ${sf}</span><span style="color:var(--amber)">Lvl 2 ${sp}</span><span style="color:var(--red)">Lvl 3 ${st}</span></div>
     </div>`;
   }).join('');
 }
@@ -1336,7 +1339,7 @@ function buildReviewHTML(s){
   // For multi-session review, cfg comes per-mistake; for single use session cfg
   const sessionCfg=activeSessions.length===1?(activeSessions[0].typeConfig||null):null;
   const getCfg=(m)=>m.typeConfig||sessionCfg||null;
-  const self=ml.filter(m=>m.correction==='c1').length,prompted=ml.filter(m=>m.correction==='c2').length,teacher=ml.filter(m=>m.correction==='c3').length,other4=ml.filter(m=>m.correction==='c4').length;
+  const self=ml.filter(m=>m.correction==='c1').length,prompted=ml.filter(m=>m.correction==='c2').length,teacher=ml.filter(m=>m.correction==='c3').length,other4=ml.filter(m=>m.correction==='c4').length,noInt=ml.filter(m=>m.correction==='c0'||!m.correction).length;
   const types=MISTAKE_TYPES.map(t=>t.id);
   const tc=Object.fromEntries(types.map(t=>[t,ml.filter(m=>m.type===t).length]));
   const maxT=Math.max(1,...Object.values(tc));
@@ -1354,14 +1357,15 @@ function buildReviewHTML(s){
     }
     <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:6px;">
       <span class="m-badge" style="background:var(--parchment3);color:var(--ink2);font-size:9px;">${total} mistakes</span>
-      <span class="m-badge" style="background:var(--green-bg);color:var(--green);font-size:9px;">✓ ${self}</span>
-      <span class="m-badge" style="background:var(--amber-bg);color:var(--amber);font-size:9px;">⇒ ${prompted}</span>
-      <span class="m-badge" style="background:var(--red-bg);color:var(--red);font-size:9px;">⚠ ${teacher}</span>
+      ${noInt?`<span class="m-badge" style="background:var(--parchment3);color:var(--ink3);font-size:9px;">Lvl 0 · ${noInt}</span>`:''}
+      <span class="m-badge" style="background:var(--green-bg);color:var(--green);font-size:9px;">Lvl 1 · ${self}</span>
+      <span class="m-badge" style="background:var(--amber-bg);color:var(--amber);font-size:9px;">Lvl 2 · ${prompted}</span>
+      <span class="m-badge" style="background:var(--red-bg);color:var(--red);font-size:9px;">Lvl 3 · ${teacher}</span>
       ${other4?`<span class="m-badge" style="background:var(--parchment3);color:var(--ink2);font-size:9px;">◌ ${other4}</span>`:''}
     </div>
   </div>`;
-  const cD=[{label:'Self',val:self,color:'var(--green)'},{label:'Prompted',val:prompted,color:'var(--amber)'},{label:'Taught',val:teacher,color:'var(--red)'},{label:'Other',val:other4,color:'var(--ink3)'}];
-  h+=`<div class="charts-row"><div class="chart-box"><h4>Mistake types</h4><div class="bar-chart">${types.map(t=>`<div class="bar-row"><div class="bar-label">${typeLabelFor(sessionCfg,t)}</div><div class="bar-track"><div class="bar-fill" style="width:${total?Math.round(tc[t]/maxT*100):0}%;background:${TYPE_COLORS[t]};"></div></div><div class="bar-count">${tc[t]}</div></div>`).join('')}</div></div><div class="chart-box"><h4>Correction</h4><div class="donut-wrap">${donutSVG(cD,total)}<div class="donut-center"><span class="big">${total}</span><span class="lbl">total</span></div></div><div class="donut-legend">${cD.map(d=>`<div class="dl-row"><div class="dl-dot" style="background:${d.color};"></div><span>${d.label} — ${d.val}</span></div>`).join('')}</div></div></div>`;
+  const cD=[{label:'Lvl 0 · None',val:noInt,color:'var(--ink3)'},{label:'Lvl 1 · Repeat',val:self,color:'var(--green)'},{label:'Lvl 2 · Hint',val:prompted,color:'var(--amber)'},{label:'Lvl 3 · Taught',val:teacher,color:'var(--red)'},{label:'Other',val:other4,color:'var(--ink2)'}];
+  h+=`<div class="charts-row"><div class="chart-box"><h4>Mistake types</h4><div class="bar-chart">${types.map(t=>`<div class="bar-row"><div class="bar-label">${typeLabelFor(sessionCfg,t)}</div><div class="bar-track"><div class="bar-fill" style="width:${total?Math.round(tc[t]/maxT*100):0}%;background:${TYPE_COLORS[t]};"></div></div><div class="bar-count">${tc[t]}</div></div>`).join('')}</div></div><div class="chart-box"><h4>Teacher intervention</h4><div style="font-size:8px;color:var(--ink3);margin-bottom:6px;font-style:italic;">How much help was needed per mistake</div><div class="donut-wrap">${donutSVG(cD,total)}<div class="donut-center"><span class="big">${total}</span><span class="lbl">total</span></div></div><div class="donut-legend">${cD.map(d=>`<div class="dl-row"><div class="dl-dot" style="background:${d.color};"></div><span>${d.label} — ${d.val}</span></div>`).join('')}</div></div></div>`;
   if(repeatWordKeys.size>0)h+=`<div class="chart-box" style="margin-bottom:10px;background:var(--gold-pale);border-color:var(--gold-light);"><h4 style="color:var(--amber);">⚠ ${repeatWordKeys.size} word${repeatWordKeys.size>1?'s':''} repeated across sessions — focus here</h4></div>`;
   if(ml.length){const sorted=[...ml].sort((a,b)=>a.surah-b.surah||a.ayah-b.ayah||a.wordPos-b.wordPos);h+=`<div class="chart-box" style="margin-bottom:10px;"><h4>Mistake map</h4><div class="legend-row">${types.map(t=>`<div class="leg-item"><div class="leg-dot" style="background:${TYPE_COLORS[t]};"></div>${typeLabelFor(sessionCfg,t)}</div>`).join('')}</div><div class="timeline">${sorted.map((m,i)=>`<div class="tl-dot ${m.type}" title="${m.surah}:${m.ayah} — ${typeLabelFor(getCfg(m),m.type)}\n${corrLabelFor(getCfg(m),m.correction)}${m.note?'\n'+m.note:''}">${i+1}</div>`).join('')}</div></div>`;}
   h+=`<div class="review-verses-title">Mistakes by verse</div>`;
@@ -1392,14 +1396,14 @@ function buildReport(sessions,mistakes){
     t+=`👤 Student : ${sessions[0].student}\n📜 Sessions: ${sessions.length}\n`;
     sessions.forEach((s,i)=>{t+=`  ${i+1}. ${s.range} (${s.date})`;if(s.remarks)t+=` — ${s.remarks}`;t+='\n';});
   }
-  t+=`📊 Summary : ${mistakes.length} mistakes  |  ✓ ${sf} self  |  ⇒ ${sp} prompted  |  ⚠ ${st} taught${so?`  |  ◌ ${so} other`:''}\n`;
+  t+=`📊 Summary : ${mistakes.length} mistakes  |  Lvl 1: ${sf}  |  Lvl 2: ${sp}  |  Lvl 3: ${st}${so?`  |  Other: ${so}`:''}\n`;
   if(repeatWordKeys.size>0)t+=`⚠ Repeated: ${repeatWordKeys.size} words appear in multiple sessions\n`;
   t+='━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n';
   [...mistakes].sort((a,b)=>a.surah-b.surah||a.ayah-b.ayah||a.wordPos-b.wordPos).forEach((m,i)=>{
     const cfg=m.typeConfig||null;
     const bef=(m.context?.before||[]).join(' '),aft=(m.context?.after||[]).join(' ');
     const ctx=bef||aft?`${bef} *${m.word}* ${aft}`:m.word;
-    t+=`▪️ *Mistake ${i+1}*\n   Type   : ${mTypeLabel(m,cfg)}\n   Verse  : ${m.surah}:${m.ayah}\n   Word   : ${ctx}\n   Result : ${mCorrLabel(m,cfg)}\n`;
+    t+=`▪️ *Mistake ${i+1}*\n   Type         : ${mTypeLabel(m,cfg)}\n   Verse        : ${m.surah}:${m.ayah}\n   Word         : ${ctx}\n   Intervention : ${mCorrLabel(m,cfg)}\n`;
     if(m.note)t+=`   Note   : ${m.note}\n`;if(sessions.length>1&&m.sessionLabel)t+=`   Session: ${m.sessionLabel}\n`;t+='\n';
   });return t;
 }
