@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>Quran Recitation Tracker</title>
+<title>Tehfīz: Feedback Logger</title>
 <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
@@ -680,15 +680,18 @@ input.corr-btn.sel-c4{background:var(--parchment3);color:var(--ink2);border-colo
 <body>
 
 <div class="topbar" id="topbar">
-  <div class="topbar-brand">&#x1F4D6; Quran Tracker <span>for Teachers</span></div>
+  <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+    <a href="https://tehfiz.com" title="Tehfīz home" style="color:var(--gold);font-size:17px;line-height:1;text-decoration:none;flex-shrink:0;" aria-label="Home">🏠</a>
+    <div class="topbar-brand">Tehfīz <span>Feedback Logger</span></div>
+  </div>
   <div class="topbar-nav" id="topbarNav"></div>
   <div class="topbar-right">
     <span class="tdisplay" id="timerDisplay">00:00</span>
     <button class="btn-t" id="timerBtn" onclick="toggleTimer()">▶ Start</button>
-    <button class="btn-t" onclick="resetTimer()" title="Reset timer to 0:00">↺ Reset</button>
-    <button class="btn-t" onclick="openSessions()">&#128193; Sessions</button>
-    <button class="btn-t" onclick="openShortcuts()" title="Keyboard shortcuts / guide" style="font-size:13px;">⌨</button>
-    <label class="btn-t gold" style="cursor:pointer;">&#8681; Import
+    <button class="btn-t" onclick="resetTimer()" title="Reset timer">↺</button>
+    <button class="btn-t" onclick="openSessions()" title="Sessions">&#128193;</button>
+    <button class="btn-t" onclick="openShortcuts()" title="Help & guide">❓ Help</button>
+    <label class="btn-t gold" style="cursor:pointer;" title="Import .qrs">&#8681; Import
       <input type="file" id="importFile" accept=".qrs" style="display:none;" onchange="importSession(event)">
     </label>
   </div>
@@ -708,14 +711,12 @@ input.corr-btn.sel-c4{background:var(--parchment3);color:var(--ink2);border-colo
     <span class="vc-label">Size:</span>
     <button class="vc-btn" onclick="changeSize(-2)">A−</button>
     <button class="vc-btn" onclick="changeSize(2)">A+</button>
-    <button class="vc-btn" onclick="openShortcuts()" title="Keyboard shortcuts (?)">⌨ ?</button>
   </div>
   <!-- Mushaf-mode controls: zoom (desktop only) and shortcuts -->
   <div class="view-controls" id="mushafControls" style="display:none;">
     <span class="vc-label vc-zoom-label">Zoom:</span>
     <button class="vc-btn vc-zoom-btn" onclick="changeMushafZoom(-1)" title="Shrink page">−</button>
     <button class="vc-btn vc-zoom-btn" onclick="changeMushafZoom(1)" title="Enlarge page">+</button>
-    <button class="vc-btn" onclick="openShortcuts()" title="Keyboard shortcuts (?)">⌨ ?</button>
   </div>
 </div>
 <div class="hint-bar" id="hintBar">

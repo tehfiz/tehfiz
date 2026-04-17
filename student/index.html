@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Quran Session Viewer — Student</title>
+<title>Tehfīz: Feedback Viewer</title>
 <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
@@ -432,11 +432,15 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
 <button class="panel-fab" id="panelFab" onclick="togglePanel()" title="View sessions">📋</button>
 
 <div class="topbar">
-  <div class="topbar-brand">📖 Quran <span>Viewer</span></div>
+  <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+    <a href="https://tehfiz.com" title="Tehfīz home" style="color:var(--gold);font-size:17px;line-height:1;text-decoration:none;flex-shrink:0;" aria-label="Home">🏠</a>
+    <div class="topbar-brand">Tehfīz <span>Feedback Viewer</span></div>
+  </div>
   <div class="topbar-nav" id="topbarNav"></div>
   <div class="topbar-right">
     <!-- Desktop sidebar toggle — hidden on mobile (FAB used instead) -->
     <button id="panelToggleBtn" onclick="togglePanel()" title="Toggle sessions panel">📋 Sessions</button>
+    <button class="btn-t" onclick="openInterventionGuide()" title="Intervention guide">❓ Help</button>
     <label class="btn-t gold" style="cursor:pointer;font-size:11px;">⬇ Import
       <input type="file" accept=".qrs" multiple style="display:none;" onchange="importSession(event)">
     </label>
@@ -542,6 +546,35 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
       <button class="btn-foot" onclick="openReview()">📊 Review</button>
       <button class="btn-foot accent" onclick="loadFromFolder()" title="Scan a folder for all .qrs files and import them">📂 Import folder</button>
       <button class="btn-foot" onclick="openShare()">↑ Share</button>
+    </div>
+  </div>
+</div>
+
+<!-- INTERVENTION GUIDE MODAL -->
+<div class="modal-bg" id="interventionModal">
+  <div class="modal" style="max-width:440px;">
+    <div class="modal-title">Teacher Intervention Guide</div>
+    <div class="modal-sub">What each level means in this session's feedback</div>
+    <div style="display:flex;flex-direction:column;gap:6px;font-size:12px;">
+      <div style="display:flex;gap:8px;align-items:flex-start;padding:7px 10px;background:var(--parchment2);border-radius:6px;border-left:3px solid var(--border2);">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:700;color:var(--ink3);flex-shrink:0;padding-top:2px;white-space:nowrap;">Level 0</span>
+        <div><strong style="color:var(--ink2);">No intervention</strong> — You made a mistake but your teacher did not step in. You either self-corrected, moved past it, or your teacher chose to observe silently.</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:flex-start;padding:7px 10px;background:var(--green-bg);border-radius:6px;border-left:3px solid var(--green);">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:700;color:var(--green);flex-shrink:0;padding-top:2px;white-space:nowrap;">Level 1</span>
+        <div><strong style="color:var(--green);">Repeat</strong> — Your teacher asked you to stop and try again without giving any words. For a wrong word: "go back and try again". For a hesitation: "go back to the previous verse".</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:flex-start;padding:7px 10px;background:var(--amber-bg);border-radius:6px;border-left:3px solid var(--amber);">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:700;color:var(--amber);flex-shrink:0;padding-top:2px;white-space:nowrap;">Level 2</span>
+        <div><strong style="color:var(--amber);">Hint</strong> — Your teacher gave you the next word or a short prompt to help you continue, without reciting a full verse.</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:flex-start;padding:7px 10px;background:var(--red-bg);border-radius:6px;border-left:3px solid var(--red);">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:700;color:var(--red);flex-shrink:0;padding-top:2px;white-space:nowrap;">Level 3</span>
+        <div><strong style="color:var(--red);">Taught</strong> — Your teacher had to recite a full verse or a large portion of it for you to follow along and get back on track.</div>
+      </div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-m pri" onclick="closeModal('interventionModal')">Got it</button>
     </div>
   </div>
 </div>
@@ -1477,6 +1510,7 @@ async function _processFiles(files){
 // ── UTILS
 function toAr(n){return n.toString().replace(/[0-9]/g,d=>'٠١٢٣٤٥٦٧٨٩'[d]);}
 function closeModal(id){document.getElementById(id).classList.remove('open');}
+function openInterventionGuide(){document.getElementById('interventionModal').classList.add('open');}
 document.querySelectorAll('.modal-bg').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)closeModal(m.id);}));
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 </script>
