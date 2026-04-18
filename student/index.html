@@ -892,13 +892,14 @@ function scrollToAyah(){
 // ── WORD SPAN HTML (page/surah view)
 function wsHTML(text,sN,aN,pos){
   const wk=`${sN}:${aN}:${pos}`;
-  const mList=activeMistakes.filter(m=>m.surah===sN&&m.ayah===aN&&m.wordPos===pos);
+  // Match single-word mistakes AND range mistakes that cover this position
+  const mList=activeMistakes.filter(m=>m.surah===sN&&m.ayah===aN&&
+    (m.wordPos===pos||(m.wordPosEnd&&pos>=m.wordPos&&pos<=m.wordPosEnd)));
   if(!mList.length)return`<span class="word-span" data-s="${sN}" data-a="${aN}">${text}</span>`;
   const pri=['m2','m3','m4','m5','m1','m6'];
   const bt=pri.find(t=>mList.some(m=>m.type===t))||mList[0].type;
   const isRep=repeatWordKeys.has(wk);
-  // Include word (text) so tooltip can use it instead of el.textContent
-  const enc=encodeURIComponent(JSON.stringify(mList.map(m=>({type:m.type,correction:m.correction,note:m.note||'',sessionStudent:m.sessionStudent||'',sessionRange:m.sessionRange||'',sessionDate:m.sessionDate||'',ref:`${sN}:${aN}`,word:text,typeConfig:m.typeConfig||null}))));
+  const enc=encodeURIComponent(JSON.stringify(mList.map(m=>({type:m.type,correction:m.correction,note:m.note||'',sessionStudent:m.sessionStudent||'',sessionRange:m.sessionRange||'',sessionDate:m.sessionDate||'',ref:m.wordPosEnd&&m.wordPosEnd!==m.wordPos?`${sN}:${aN} words ${m.wordPos}–${m.wordPosEnd}`:`${sN}:${aN}`,word:m.word||text,typeConfig:m.typeConfig||null}))));
   return`<span id="ws-${sN}-${aN}-${pos}" class="word-span marked-${bt}${isRep?' repeated':''}" data-s="${sN}" data-a="${aN}" onclick="showTT(event,this,'${enc}')">${text}</span>`;
 }
 
@@ -1055,7 +1056,8 @@ function renderMushafFromQuranCom(juzNum,pageMap,startPage,endPage,hizbByVerse={
       const wordSpans=lineWords.map(w=>{
         if(w.isEnd)return`<span class="qcf-end-marker" style="font-family:'UthmanicHafs','Scheherazade New',serif;">${w.code}</span>`;
         // Get mistake info for this word
-        const mList=activeMistakes.filter(m=>m.surah===w.sNum&&m.ayah===w.aNum&&m.wordPos===w.position);
+        const mList=activeMistakes.filter(m=>m.surah===w.sNum&&m.ayah===w.aNum&&
+          (m.wordPos===w.position||(m.wordPosEnd&&w.position>=m.wordPos&&w.position<=m.wordPosEnd)));
         const isRep=repeatWordKeys.has(`${w.sNum}:${w.aNum}:${w.position}`);
         let cls='qcf-word';
         if(mList.length){const pri=['m2','m3','m4','m5','m1','m6'];const bt=pri.find(t=>mList.some(m=>m.type===t))||mList[0].type;cls+=` marked-${bt}`;if(isRep)cls+=' repeated';}
@@ -1331,11 +1333,12 @@ function renderMistakesList(){
   list.innerHTML=sorted.map(m=>{
     const cfg=m.typeConfig||null;
     const wk=`${m.surah}:${m.ayah}:${m.wordPos}`;const isR=wkm[wk].length>1;
+    const refLabel=m.wordPosEnd&&m.wordPosEnd!==m.wordPos?`${m.surah}:${m.ayah} (words ${m.wordPos}–${m.wordPosEnd})`:`${m.surah}:${m.ayah}`;
     const sessInfo=`${m.sessionStudent||''}${m.sessionRange?' · '+m.sessionRange:''}${m.sessionDate?' · '+m.sessionDate:''}`;
     return`<div class="mistake-item${isR?' repeated-mistake':''}" onclick="navigateToVerse(${m.surah},${m.ayah},${m.wordPos||0})">
       <span class="m-badge ${m.type}">${mTypeLabel(m,cfg)}</span>
       <div class="m-body">
-        <div class="m-ref">${m.surah}:${m.ayah} · ${m.time||''}${isR?`<span class="repeat-badge">×${wkm[wk].length}</span>`:''}</div>
+        <div class="m-ref">${refLabel} · ${m.time||''}${isR?`<span class="repeat-badge">×${wkm[wk].length}</span>`:''}</div>
         <span class="m-word">${m.word}</span>
         <div class="m-corr ${corrClass2[m.correction]}">${mCorrLabel(m,cfg)}</div>
         ${m.note?`<div class="m-note">${esc(m.note)}</div>`:''}
