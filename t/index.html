@@ -411,6 +411,7 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
 /* WORD BUTTONS */
 .word-btn{display:inline;cursor:pointer;padding:2px 3px;border-radius:3px;transition:background .1s,color .1s;border:none;background:none;font-family:inherit;font-size:inherit;color:inherit;line-height:inherit;}
 .word-btn:hover{background:var(--gold-light);}
+.word-btn.verse-hover,.qcf-word.verse-hover{background:var(--gold-light)!important;}
 .word-btn.marked-m1{background:var(--amber-bg);color:var(--amber);border-bottom:2px solid var(--amber);}
 .word-btn.marked-m2{background:var(--red-bg);color:var(--red);border-bottom:2px solid var(--red);}
 .word-btn.marked-m3{background:var(--coral-bg);color:var(--coral);border-bottom:2px solid var(--coral);}
@@ -418,7 +419,6 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
 .word-btn.marked-m5{background:var(--teal-bg);color:var(--teal);border-bottom:2px solid var(--teal);}
 .word-btn.marked-m6{background:var(--parchment3);border-bottom:2px solid var(--ink3);}
 .word-btn.active-select{background:var(--gold)!important;color:var(--ink)!important;transform:scale(1.06);}
-.end-marker{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;background:var(--gold);color:var(--ink);border-radius:50%;font-size:9px;font-family:'IBM Plex Mono',monospace;margin:0 3px;vertical-align:middle;flex-shrink:0;}
 
 .loading-msg{text-align:center;padding:50px 20px;color:var(--ink3);font-style:italic;}
 .loading-spinner{width:26px;height:26px;border:3px solid var(--parchment3);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px;}
@@ -619,7 +619,18 @@ input.corr-btn.sel-c4{background:var(--parchment3);color:var(--ink2);border-colo
 .edit-corr-btn[data-c=c3].sel{background:var(--red-bg);color:var(--red);border-color:var(--red);}
 .edit-corr-btn[data-c=c4].sel{background:var(--parchment3);color:var(--ink2);border-color:var(--border2);}
 
-/* UthmanicHafs fallback */
+/* ── RANGE SELECTION ── */
+@keyframes rangeStartPulse{
+  0%,100%{background:var(--gold)!important;color:var(--ink)!important;outline:2px solid var(--gold);outline-offset:2px;}
+  50%{background:var(--gold-pale)!important;outline-color:var(--gold-light);}
+}
+.range-start-word{animation:rangeStartPulse .7s ease infinite!important;cursor:crosshair!important;}
+.range-preview{background:var(--gold-light)!important;outline:1px dashed var(--gold);outline-offset:1px;}
+
+/* End marker: clickable gold circle — tap to select whole verse */
+.end-marker{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;background:var(--gold);color:var(--ink);border-radius:50%;font-size:9px;font-family:'IBM Plex Mono',monospace;margin:0 3px;vertical-align:middle;flex-shrink:0;cursor:pointer;transition:transform .1s,opacity .1s;}
+.end-marker:hover{transform:scale(1.15);opacity:.85;}
+
 @font-face{font-family:'UthmanicHafs';src:url('https://verses.quran.foundation/fonts/quran/hafs/uthmanic_hafs/UthmanicHafs1Ver18.woff2') format('woff2');font-display:swap;}
 
 ::-webkit-scrollbar{width:4px;}
@@ -951,6 +962,27 @@ input.corr-btn.sel-c4{background:var(--parchment3);color:var(--ink2);border-colo
       </div>
     </div>
 
+    <!-- MULTI-WORD SELECTION GUIDE -->
+    <div style="font-size:10px;font-weight:600;color:var(--ink2);letter-spacing:.06em;text-transform:uppercase;margin-bottom:7px;border-top:.5px solid var(--border);padding-top:4px;margin-top:4px;">Multi-word Selection</div>
+    <div style="font-size:11px;color:var(--ink2);margin-bottom:8px;line-height:1.7;">To log a mistake that spans more than one word (e.g. a skipped phrase or a multi-word makhraj error), you can select a range of words within the same verse.</div>
+    <div style="display:flex;flex-direction:column;gap:6px;font-size:11px;margin-bottom:4px;">
+      <div style="padding:6px 10px;background:var(--parchment2);border-radius:6px;border-left:3px solid var(--gold);">
+        <strong style="display:block;color:var(--ink);margin-bottom:2px;">📱 Mobile — long press</strong>
+        Long-press the <strong>first word</strong> of the range until you see the pulse and the "Multi-word mode" notice. Then tap the <strong>last word</strong> of the range in the same verse to confirm the selection.
+      </div>
+      <div style="padding:6px 10px;background:var(--parchment2);border-radius:6px;border-left:3px solid var(--gold);">
+        <strong style="display:block;color:var(--ink);margin-bottom:2px;">🖥 Desktop — Shift + click</strong>
+        Hold <strong>Shift</strong> and click the <strong>first word</strong> of the range. The word will pulse to show selection mode is active. Then click the <strong>last word</strong> of the range in the same verse.
+      </div>
+      <div style="padding:6px 10px;background:var(--gold-pale);border-radius:6px;border-left:3px solid var(--gold);">
+        <strong style="display:block;color:var(--amber);margin-bottom:2px;">🔵 Whole verse — tap the verse number</strong>
+        Tap the <strong>gold verse number circle</strong> at the end of any verse to instantly select the entire verse as a single mistake. Hover over it on desktop to preview the highlighted verse before tapping.
+      </div>
+      <div style="padding:6px 10px;background:var(--amber-bg);border-radius:6px;font-size:10px;color:var(--amber);">
+        ⚠ Manual range selection must be within a single verse. To cancel range mode, tap/click any word in a different verse, or press Escape.
+      </div>
+    </div>
+
     <div class="modal-btns">
       <button class="btn-m pri" onclick="closeShortcuts()">Got it</button>
     </div>
@@ -1018,10 +1050,10 @@ const corrClass2    = Object.fromEntries(CORRECTION_TYPES.map(c=>[c.id, c.cssCla
 // STATE
 // ═══════════════════════════════════════════════════════════════════
 let viewMode = 'mushaf';
-let _jumpTargetPage = null; // set by jumpToPageFromInput, prevents input reset
+let _jumpTargetPage = null;
 let currentSurah = null;
 let pageVerses = [];
-let allVerseWords = {};   // {"S:A": [wordObj,...]}
+let allVerseWords = {};
 let mistakes = [];
 let pendingWord = null;
 let selectedType = null, selectedCorr = null;
@@ -1029,10 +1061,14 @@ let timerSec = 0, timerRunning = false, timerIv = null;
 let reviewingSession = null;
 let editingMistakeId = null;
 let editType = null, editCorr = null;
-let showTranslation = false;  // default off
-let flowMode = true;          // compact flow mode (no per-verse blocks) — default ON
-let arabicSize = 28;          // px — default larger
+let showTranslation = false;
+let flowMode = true;
+let arabicSize = 28;
 const loadedQcfFonts = new Set();
+
+// ── RANGE SELECTION STATE ──
+let rangeStart = null; // {surah, ayah, pos, el} — set when long-press/shift-click starts
+let _longPressTimer = null;
 
 // ═══════════════════════════════════════════════════════════════════
 // INIT
@@ -1110,7 +1146,7 @@ function setupKeyboardShortcuts(){
       case 'c': toggleFlow(); break;
       case '+': case '=': if(viewMode==='mushaf') changeMushafZoom(1); else changeSize(2); break;
       case '-': if(viewMode==='mushaf') changeMushafZoom(-1); else changeSize(-2); break;
-      case 'Escape': cancelForm(); break;
+      case 'Escape': clearRangeState(); hideRangeNotice(); cancelForm(); break;
       case 'Enter':
         if(!document.getElementById('quickForm').classList.contains('hidden')){
           // Also commit when Enter is pressed while the "other" inputs are focused
@@ -1586,7 +1622,7 @@ function renderMushafFromQuranCom(juzNum, pageMap, startPage, endPage, hizbByVer
 
       const wordSpans = lineWords.map(w => {
         if(w.isEnd){
-          return `<span class="qcf-end-marker" style="font-family:'UthmanicHafs','Scheherazade New',serif;cursor:default;">${w.code}</span>`;
+          return `<span class="qcf-end-marker" title="Tap to select whole verse" style="font-family:'UthmanicHafs','Scheherazade New',serif;cursor:pointer;" onclick="selectWholeVerse(${w.sNum},${w.aNum})">${w.code}</span>`;
         }
         const mc = getMC(w.sNum, w.aNum, w.position);
         const wFont = `qcf-p${w.v2page}-v2`;
@@ -1595,7 +1631,7 @@ function renderMushafFromQuranCom(juzNum, pageMap, startPage, endPage, hizbByVer
           style="${fs}"
           data-surah="${w.sNum}" data-ayah="${w.aNum}" data-pos="${w.position}"
           data-word="${encodeURIComponent(w.text)}"
-          onclick="wordTapped(this)">${w.code}</span>`;
+          onclick="wordTapped(this,event.shiftKey)">${w.code}</span>`;
       }).join('');
 
       const sc = lineWords.filter(w=>!w.isEnd).length === 1 ? ' msl-single' : '';
@@ -1680,16 +1716,14 @@ function renderJuzVerses(juzNum, pageMap, startPage, endPage) {
           if(hizbH) html+=hizbH+' ';
           words.forEach(w=>{
             const mc=getMC(sNum,aNum,w.position);
-            html+=`<button class="word-btn ${mc}" data-surah="${sNum}" data-ayah="${aNum}" data-pos="${w.position}" data-word="${encodeURIComponent(w.text_uthmani||'')}" onclick="wordTapped(this)">${w.text_uthmani||''}</button> `;
+            html+=`<button class="word-btn ${mc}" data-surah="${sNum}" data-ayah="${aNum}" data-pos="${w.position}" data-word="${encodeURIComponent(w.text_uthmani||'')}" onclick="wordTapped(this,event.shiftKey)">${w.text_uthmani||''}</button> `;
           });
-          html+=`<span class="end-marker">${toAr(aNum)}</span> `;
-          if(vm.length) html+=vm.map(x=>`<span class="m-badge ${x.type}" style="font-size:8px;vertical-align:middle;">${typeLabel(x.type)}</span>`).join('')+' ';
+          html+=`<span class="end-marker" title="Tap to select whole verse" onclick="selectWholeVerse(${sNum},${aNum})">${toAr(aNum)}</span> `;
         } else {
           let wHtml=words.map(w=>{
             const mc=getMC(sNum,aNum,w.position);
-            return`<button class="word-btn ${mc}" data-surah="${sNum}" data-ayah="${aNum}" data-pos="${w.position}" data-word="${encodeURIComponent(w.text_uthmani||'')}" onclick="wordTapped(this)">${w.text_uthmani||''}</button>`;
-          }).join(' ')+` <span class="end-marker">${toAr(aNum)}</span>`;
-          const trans=v.translations?.[0]?.text||'';
+            return`<button class="word-btn ${mc}" data-surah="${sNum}" data-ayah="${aNum}" data-pos="${w.position}" data-word="${encodeURIComponent(w.text_uthmani||'')}" onclick="wordTapped(this,event.shiftKey)">${w.text_uthmani||''}</button>`;
+          }).join(' ')+` <span class="end-marker" title="Tap to select whole verse" onclick="selectWholeVerse(${sNum},${aNum})">${toAr(aNum)}</span>`;
           html+=`<div class="verse-block${vm.length?' has-mistake':''}" id="vb-${sNum}-${aNum}">
             <div class="verse-arabic" id="va-${sNum}-${aNum}">${wHtml}</div>
             ${showTranslation&&trans?`<div class="verse-translation">${trans.replace(/<[^>]+>/g,'')}</div>`:''}
@@ -1815,11 +1849,9 @@ function renderSurahVerses(n, vv) {
       if(v.rub_el_hizb_number&&v.rub_el_hizb_number!==prevRub){html+=hizbSpan(v.rub_el_hizb_number)+' ';prevRub=v.rub_el_hizb_number;}
       words.forEach(w=>{
         const mc=getMC(sNum,aNum,w.position);
-        html+=`<button class="word-btn ${mc}" data-surah="${sNum}" data-ayah="${aNum}" data-pos="${w.position}" data-word="${encodeURIComponent(w.text_uthmani||'')}" onclick="wordTapped(this)">${w.text_uthmani||''}</button> `;
+        html+=`<button class="word-btn ${mc}" data-surah="${sNum}" data-ayah="${aNum}" data-pos="${w.position}" data-word="${encodeURIComponent(w.text_uthmani||'')}" onclick="wordTapped(this,event.shiftKey)">${w.text_uthmani||''}</button> `;
       });
-      html+=`<span class="end-marker">${toAr(aNum)}</span> `;
-      const vm=mistakes.filter(m=>m.surah===sNum&&m.ayah===aNum);
-      if(vm.length) html+=vm.map(x=>`<span class="m-badge ${x.type}" style="font-size:8px;vertical-align:middle;">${typeLabel(x.type)}</span>`).join('')+' ';
+      html+=`<span class="end-marker" title="Tap to select whole verse" onclick="selectWholeVerse(${sNum},${aNum})">${toAr(aNum)}</span> `;
     });
     html+='</div>';
     content.innerHTML=html;
@@ -1834,9 +1866,8 @@ function renderSurahVerses(n, vv) {
       const vm=mistakes.filter(m=>m.surah===sNum&&m.ayah===aNum);
       let wHtml=words.map(w=>{
         const mc=getMC(sNum,aNum,w.position);
-        return`<button class="word-btn ${mc}" data-surah="${sNum}" data-ayah="${aNum}" data-pos="${w.position}" data-word="${encodeURIComponent(w.text_uthmani||'')}" onclick="wordTapped(this)">${w.text_uthmani||''}</button>`;
-      }).join(' ')+` <span class="end-marker">${toAr(aNum)}</span>`;
-      const trans=v.translations?.[0]?.text||v.translation||'';
+        return`<button class="word-btn ${mc}" data-surah="${sNum}" data-ayah="${aNum}" data-pos="${w.position}" data-word="${encodeURIComponent(w.text_uthmani||'')}" onclick="wordTapped(this,event.shiftKey)">${w.text_uthmani||''}</button>`;
+      }).join(' ')+` <span class="end-marker" title="Tap to select whole verse" onclick="selectWholeVerse(${sNum},${aNum})">${toAr(aNum)}</span>`;
       html+=`<div class="verse-block${vm.length?' has-mistake':''}" id="vb-${sNum}-${aNum}">
         <div class="verse-arabic" id="va-${sNum}-${aNum}">${wHtml}</div>
         ${showTranslation&&trans?`<div class="verse-translation">${trans.replace(/<[^>]+>/g,'')}</div>`:''}
@@ -1952,34 +1983,157 @@ async function navigateToVerse(surah, ayah, wordPos) {
 }
 
 // ═══════════════════════════════════════════════════════════════════
+// RANGE SELECTION HELPERS
+// ═══════════════════════════════════════════════════════════════════
+function clearActiveSelect(){
+  document.querySelectorAll('.word-btn.active-select,.qcf-word.active-select').forEach(el=>el.classList.remove('active-select'));
+}
+
+function clearRangeState(){
+  if(rangeStart){
+    document.querySelectorAll('.range-start-word,.range-preview').forEach(el=>{
+      el.classList.remove('range-start-word','range-preview');
+    });
+    rangeStart=null;
+  }
+}
+
+function selectWholeVerse(surah, ayah){
+  clearRangeState();
+  hideRangeNotice();
+  const key=`${surah}:${ayah}`;
+  const vw=allVerseWords[key]||[];
+  if(!vw.length){ showToast('Verse words not loaded yet'); return; }
+  const posStart=vw[0].position, posEnd=vw[vw.length-1].position;
+  // Find the first word element to use as anchor
+  const startEl=document.querySelector(`.word-btn[data-surah="${surah}"][data-ayah="${ayah}"][data-pos="${posStart}"]`)
+              ||document.querySelector(`.qcf-word[data-surah="${surah}"][data-ayah="${ayah}"][data-pos="${posStart}"]`);
+  _openFormForRange(surah, ayah, posStart, posEnd, startEl);
+}
+
+function activateRangeMode(el){
+  clearActiveSelect();
+  clearRangeState();
+  const surah=+el.dataset.surah, ayah=+el.dataset.ayah, pos=+el.dataset.pos;
+  rangeStart={surah,ayah,pos,el};
+  el.classList.add('range-start-word');
+  // Show toast-style notice
+  showRangeNotice();
+}
+
+function showRangeNotice(){
+  let n=document.getElementById('rangeNotice');
+  if(!n){
+    n=document.createElement('div');
+    n.id='rangeNotice';
+    n.style.cssText='position:fixed;top:70px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--gold-light);padding:10px 20px;border-radius:10px;font-size:12px;font-family:Lora,serif;z-index:9999;text-align:center;line-height:1.6;border:1px solid rgba(184,132,26,.4);box-shadow:0 4px 24px rgba(0,0,0,.4);max-width:280px;pointer-events:none;';
+    document.body.appendChild(n);
+  }
+  n.innerHTML='<span style="font-size:15px;">✦</span><br><strong style="color:var(--gold);">Multi-word mode active</strong><br><span style="opacity:.75;font-size:11px;">Now tap the last word of the range<br>within the same verse</span>';
+  n.style.opacity='1';
+  clearTimeout(n._to);
+  n._to=setTimeout(()=>{ n.style.transition='opacity .4s'; n.style.opacity='0'; },4000);
+}
+
+function hideRangeNotice(){
+  const n=document.getElementById('rangeNotice');
+  if(n){ n.style.opacity='0'; }
+}
+
+function updateRangePreview(el){
+  if(!rangeStart) return;
+  const surah=+el.dataset.surah, ayah=+el.dataset.ayah, pos=+el.dataset.pos;
+  // Clear previous preview (but keep range-start-word)
+  document.querySelectorAll('.range-preview').forEach(e=>e.classList.remove('range-preview'));
+  if(surah!==rangeStart.surah||ayah!==rangeStart.ayah) return;
+  const lo=Math.min(rangeStart.pos,pos), hi=Math.max(rangeStart.pos,pos);
+  for(let p=lo;p<=hi;p++){
+    const wordEl=document.querySelector(`.word-btn[data-surah="${surah}"][data-ayah="${ayah}"][data-pos="${p}"]`)
+              ||document.querySelector(`.qcf-word[data-surah="${surah}"][data-ayah="${ayah}"][data-pos="${p}"]`);
+    if(wordEl&&!wordEl.classList.contains('range-start-word')) wordEl.classList.add('range-preview');
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
 // WORD TAPPED
 // ═══════════════════════════════════════════════════════════════════
-function wordTapped(el) {
-  document.querySelectorAll('.word-btn.active-select, .qcf-word.active-select').forEach(b=>b.classList.remove('active-select'));
+function wordTapped(el, shiftHeld) {
+  const surah=+el.dataset.surah, ayah=+el.dataset.ayah, pos=+el.dataset.pos;
+
+  // ── RANGE MODE: confirm end word ──
+  if(rangeStart){
+    if(surah===rangeStart.surah && ayah===rangeStart.ayah){
+      // Confirm range
+      const posStart=Math.min(rangeStart.pos, pos);
+      const posEnd=Math.max(rangeStart.pos, pos);
+      const startEl=rangeStart.el;
+      clearRangeState();
+      hideRangeNotice();
+      // Build pendingWord with range
+      _openFormForRange(surah, ayah, posStart, posEnd, startEl);
+      return;
+    } else {
+      // Tapped different verse — cancel range
+      clearRangeState();
+      hideRangeNotice();
+      showToast('Range cancelled — must be within the same verse');
+      // Fall through to normal single-word tap
+    }
+  }
+
+  // ── DESKTOP shift+click — enter range mode ──
+  if(shiftHeld){
+    activateRangeMode(el);
+    return;
+  }
+
+  // ── NORMAL SINGLE WORD ──
+  clearActiveSelect();
   el.classList.add('active-select');
-  const surah=+el.dataset.surah,ayah=+el.dataset.ayah,pos=+el.dataset.pos;
   const word=decodeURIComponent(el.dataset.word);
   const key=`${surah}:${ayah}`;
   const vw=allVerseWords[key]||[];
   const wIdx=vw.findIndex(w=>w.position===pos);
-  // FIX: context — before = words with lower position (come after in RTL reading)
-  //                after  = words with higher position (come before in RTL reading)
-  // In RTL: words are read right-to-left, so position 1 is rightmost.
-  // "words before mistake" = lower positions = appear to the RIGHT in text
-  // "words after mistake" = higher positions = appear to the LEFT in text
   const ctxBefore=[],ctxAfter=[];
   if(wIdx>=0){
     for(let i=Math.max(0,wIdx-2);i<wIdx;i++) ctxBefore.push(vw[i].text_uthmani||'');
     for(let i=wIdx+1;i<=Math.min(vw.length-1,wIdx+2);i++) ctxAfter.push(vw[i].text_uthmani||'');
   }
-  pendingWord={surah,ayah,wordPos:pos,wordText:word,wordEl:el,context:{before:ctxBefore,after:ctxAfter}};
+  pendingWord={surah,ayah,wordPos:pos,wordPosEnd:null,wordText:word,wordEl:el,context:{before:ctxBefore,after:ctxAfter}};
+  _openQuickForm(surah,ayah,word,null,ctxBefore,ctxAfter);
+}
+
+function _openFormForRange(surah,ayah,posStart,posEnd,startEl){
+  const key=`${surah}:${ayah}`;
+  const vw=allVerseWords[key]||[];
+  const startIdx=vw.findIndex(w=>w.position===posStart);
+  const endIdx=vw.findIndex(w=>w.position===posEnd);
+  // Joined word text
+  const rangeWords=vw.slice(startIdx<0?0:startIdx, endIdx<0?vw.length:endIdx+1);
+  const wordText=rangeWords.map(w=>w.text_uthmani||'').filter(Boolean).join(' ');
+  // Context: 2 words before start, 2 words after end
+  const ctxBefore=[],ctxAfter=[];
+  if(startIdx>=0){
+    for(let i=Math.max(0,startIdx-2);i<startIdx;i++) ctxBefore.push(vw[i].text_uthmani||'');
+  }
+  if(endIdx>=0){
+    for(let i=endIdx+1;i<=Math.min(vw.length-1,endIdx+2);i++) ctxAfter.push(vw[i].text_uthmani||'');
+  }
+  // Clear any previous highlights, then highlight all range words as active-select
+  clearActiveSelect();
+  for(let p=posStart;p<=posEnd;p++){
+    const el=document.querySelector(`.word-btn[data-surah="${surah}"][data-ayah="${ayah}"][data-pos="${p}"]`)
+           ||document.querySelector(`.qcf-word[data-surah="${surah}"][data-ayah="${ayah}"][data-pos="${p}"]`);
+    if(el) el.classList.add('active-select');
+  }
+  pendingWord={surah,ayah,wordPos:posStart,wordPosEnd:posEnd,wordText,wordEl:startEl,context:{before:ctxBefore,after:ctxAfter}};
+  _openQuickForm(surah,ayah,wordText,posEnd>posStart?`${surah}:${ayah} words ${posStart}–${posEnd}`:null,ctxBefore,ctxAfter);
+}
+
+function _openQuickForm(surah,ayah,word,rangeLabel,ctxBefore,ctxAfter){
   selectedType=null; selectedCorr=null;
-  document.getElementById('qfRef').textContent=`${surah}:${ayah}`;
+  document.getElementById('qfRef').textContent=rangeLabel||`${surah}:${ayah}`;
   document.getElementById('qfWord').textContent=word||'—';
-  // FIX: context display — in RTL layout, higher-position words appear on the LEFT.
-  // We render: [ctxAfter (left side)] TARGET [ctxBefore (right side)]
-  // Since the container is dir=rtl, rightmost text appears first visually.
-  // So we write: ctxBefore (rightmost) + target + ctxAfter (leftmost) — RTL engine places them correctly
   const ctxEl=document.getElementById('qfContext');
   if(ctxBefore.length||ctxAfter.length){
     ctxEl.innerHTML=`<span class="ctx-before">${ctxBefore.join(' ')}</span> <span class="ctx-target">${esc(word)}</span> <span class="ctx-after">${ctxAfter.join(' ')}</span>`;
@@ -1994,9 +2148,7 @@ function wordTapped(el) {
   document.getElementById('qfCorrOther').classList.remove('sel-c4');
   const qf=document.getElementById('quickForm');
   if(isMobile()){
-    // Move form to body so it overlays the quran panel, not inside the clipped sidebar
     if(qf.parentElement!==document.body) document.body.appendChild(qf);
-
   }
   qf.classList.remove('hidden');
   if(!isMobile()) qf.scrollIntoView({behavior:'smooth',block:'nearest'});
@@ -2031,12 +2183,14 @@ function selCorrOther(el){
   selectedCorr='c4';
 }
 function cancelForm(){
+  clearRangeState();
+  hideRangeNotice();
   const qf=document.getElementById('quickForm');
   qf.classList.add('hidden');
   // Restore form to sidebar after mobile use
   const tp=document.getElementById('trackerPanel');
   if(tp && qf.parentElement===document.body) tp.insertBefore(qf, document.getElementById('mistakesList'));
-  if(pendingWord?.wordEl) pendingWord.wordEl.classList.remove('active-select');
+  clearActiveSelect();
   pendingWord=null;selectedType=null;selectedCorr=null;
   document.getElementById('qfTypeOther').value='';
   document.getElementById('qfTypeOther').classList.remove('sel-m6');
@@ -2054,6 +2208,7 @@ function commitMistake(){
   const typeOtherText = selectedType==='m6' ? (document.getElementById('qfTypeOther').value.trim()||'') : '';
   const corrOtherText = effectiveCorr==='c4' ? (document.getElementById('qfCorrOther').value.trim()||'') : '';
   const m={id:Date.now(),surah:pendingWord.surah,ayah:pendingWord.ayah,wordPos:pendingWord.wordPos,
+    ...(pendingWord.wordPosEnd&&pendingWord.wordPosEnd!==pendingWord.wordPos?{wordPosEnd:pendingWord.wordPosEnd}:{}),
     word:pendingWord.wordText,context:pendingWord.context||{before:[],after:[]},
     type:selectedType,correction:effectiveCorr,
     ...(typeOtherText && {typeLabel:typeOtherText}),
@@ -2096,20 +2251,24 @@ function commitMistake(){
 }
 
 function applyMistakeToDOM(m){
+  // Clear ALL active-select highlights (covers single word and full range)
+  clearActiveSelect();
   if(pendingWord?.wordEl){
-    pendingWord.wordEl.classList.remove('active-select');
+    pendingWord.wordEl.classList.remove('range-start-word');
     const isQcf=pendingWord.wordEl.classList.contains('qcf-word');
-    // Preserve inline font-family style (mushaf words inherit from parent via CSS)
     const ff=isQcf?pendingWord.wordEl.style.fontFamily:'';
     pendingWord.wordEl.className=`${isQcf?'qcf-word':'word-btn'} marked-${m.type}`;
     if(ff) pendingWord.wordEl.style.fontFamily=ff;
   }
-  // Update any matching word in the DOM (for resume mode rerender)
+  // Mark all words in the range (or just the single word)
+  const posStart=m.wordPos, posEnd=m.wordPosEnd||m.wordPos;
   [`.word-btn`,`.qcf-word`].forEach(sel=>{
-    const el=document.querySelector(`${sel}[data-surah="${m.surah}"][data-ayah="${m.ayah}"][data-pos="${m.wordPos}"]`);
-    if(el){const ff=el.style.fontFamily;el.className=`${sel.slice(1)} marked-${m.type}`;if(ff)el.style.fontFamily=ff;}
+    for(let p=posStart;p<=posEnd;p++){
+      const el=document.querySelector(`${sel}[data-surah="${m.surah}"][data-ayah="${m.ayah}"][data-pos="${p}"]`);
+      if(el){const ff=el.style.fontFamily;el.classList.remove('range-preview','range-start-word');el.className=`${sel.slice(1)} marked-${m.type}`;if(ff)el.style.fontFamily=ff;}
+    }
   });
-  if(flowMode&&!showTranslation) return; // flow mode: no per-verse blocks
+  if(flowMode&&!showTranslation) return;
   const vb=document.getElementById(`vb-${m.surah}-${m.ayah}`);
   if(vb){
     vb.classList.add('has-mistake');
@@ -2119,7 +2278,10 @@ function applyMistakeToDOM(m){
   }
 }
 
-function getMC(s,a,p){const m=mistakes.find(x=>x.surah===s&&x.ayah===a&&x.wordPos===p);return m?`marked-${m.type}`:''}
+function getMC(s,a,p){
+  const m=mistakes.find(x=>x.surah===s&&x.ayah===a&&(x.wordPos===p||(x.wordPosEnd&&p>=x.wordPos&&p<=x.wordPosEnd)));
+  return m?`marked-${m.type}`:'';
+}
 function typeLabel(id){return getType(id).label;}
 
 // ═══════════════════════════════════════════════════════════════════
@@ -2843,6 +3005,83 @@ function initTzPicker(){
 document.addEventListener('click', e=>{
   if(!e.target.closest('#tzPickerWrap')) hideTzList();
 });
+(function(){
+  const LONG_PRESS_MS = 420;
+
+  function isWordEl(el){
+    return el && (el.classList.contains('word-btn')||el.classList.contains('qcf-word'));
+  }
+
+  // Touch: long press to activate range mode
+  document.addEventListener('touchstart', e=>{
+    const el=e.target.closest('.word-btn,.qcf-word');
+    if(!el) return;
+    clearTimeout(_longPressTimer);
+    _longPressTimer=setTimeout(()=>{
+      _longPressTimer=null;
+      if(rangeStart) return; // already in range mode
+      e.preventDefault();
+      activateRangeMode(el);
+    }, LONG_PRESS_MS);
+  }, {passive:false});
+
+  document.addEventListener('touchend', e=>{
+    clearTimeout(_longPressTimer);
+    _longPressTimer=null;
+  });
+
+  document.addEventListener('touchmove', e=>{
+    clearTimeout(_longPressTimer);
+    _longPressTimer=null;
+  });
+
+  // Verse number hover: highlight all words in that verse
+  let _hoveredVerse = null; // {surah, ayah}
+
+  function setVerseHover(surah, ayah, on){
+    document.querySelectorAll(
+      `.word-btn[data-surah="${surah}"][data-ayah="${ayah}"],` +
+      `.qcf-word[data-surah="${surah}"][data-ayah="${ayah}"]`
+    ).forEach(el => el.classList.toggle('verse-hover', on));
+    _hoveredVerse = on ? {surah, ayah} : null;
+  }
+
+  function getMarkerVerse(marker){
+    const onclick = marker.getAttribute('onclick')||'';
+    const m = onclick.match(/selectWholeVerse\((\d+),(\d+)\)/);
+    return m ? {surah:+m[1], ayah:+m[2]} : null;
+  }
+
+  document.addEventListener('mouseover', e=>{
+    // Range preview (existing)
+    if(rangeStart){
+      const el=e.target.closest('.word-btn,.qcf-word');
+      if(el) updateRangePreview(el);
+    }
+
+    // Verse hover: entering an end-marker
+    const marker = e.target.closest('.end-marker,.qcf-end-marker');
+    if(marker){
+      const v = getMarkerVerse(marker);
+      if(v && (!_hoveredVerse || _hoveredVerse.surah!==v.surah || _hoveredVerse.ayah!==v.ayah)){
+        if(_hoveredVerse) setVerseHover(_hoveredVerse.surah, _hoveredVerse.ayah, false);
+        setVerseHover(v.surah, v.ayah, true);
+      }
+      return;
+    }
+
+    // Clear verse hover when mouse moves to something outside that verse
+    if(_hoveredVerse){
+      const wordEl = e.target.closest('.word-btn,.qcf-word');
+      if(wordEl){
+        const s=+wordEl.dataset.surah, a=+wordEl.dataset.ayah;
+        if(s===_hoveredVerse.surah && a===_hoveredVerse.ayah) return; // still inside verse
+      }
+      setVerseHover(_hoveredVerse.surah, _hoveredVerse.ayah, false);
+    }
+  });
+})();
+
 
 function openSettings(){
   initTzPicker();
