@@ -12,6 +12,8 @@
   --parchment:#faf7f2;--parchment2:#f2ede4;--parchment3:#e8e0d4;
   --gold:#b8841a;--gold-light:#f5e8c8;--gold-pale:#fdf5e0;
   --green:#2d6a4f;--green-bg:#d8f3dc;
+  --lvl1-yellow:#c9a227;--lvl1-yellow-bg:#fdf3d4;
+  --lvl2-orange:#b8560c;--lvl2-orange-bg:#ffe2c2;
   --amber:#7d4e00;--amber-bg:#fff3cd;
   --red:#7d1f1f;--red-bg:#fde8e8;
   --teal:#0a5059;--teal-bg:#d0f0f3;
@@ -32,6 +34,17 @@ body{font-family:'Lora',Georgia,serif;background:var(--parchment);color:var(--in
 .topbar-nav{display:flex;align-items:center;gap:5px;flex-wrap:wrap;flex:1;justify-content:center;}
 .topbar-right{display:flex;align-items:center;gap:5px;flex-shrink:0;}
 .sel{background:#2d2820;border:.5px solid rgba(255,255,255,.25);color:#f5e8c8;border-radius:6px;padding:4px 7px;font-family:'Lora',serif;font-size:12px;cursor:pointer;}
+/* Live Surah:Ayah position control — read-only label that becomes editable on click */
+.pos-nav{position:relative;display:inline-flex;align-items:center;}
+.pos-nav-label{background:#2d2820;border:.5px solid rgba(255,255,255,.25);color:#f5e8c8;border-radius:6px;padding:4px 9px;font-family:'Lora',serif;font-size:12px;cursor:pointer;white-space:nowrap;transition:background .12s;max-width:150px;overflow:hidden;text-overflow:ellipsis;}
+.pos-nav-label:hover{background:#3a3328;}
+.pos-nav-edit{display:flex;align-items:center;gap:4px;background:#2d2820;border:.5px solid var(--gold);border-radius:6px;padding:3px 5px;}
+.pos-nav-edit select.sel{max-width:115px;}
+.pos-nav-edit input.pos-ayah-input{width:48px;background:#1f1b15;border:.5px solid rgba(255,255,255,.25);color:#f5e8c8;border-radius:5px;padding:4px 6px;font-family:'IBM Plex Mono',monospace;font-size:12px;}
+.pos-nav-edit input.pos-ayah-input.over-max{border-color:var(--red);color:#ff9999;}
+.pos-nav-ayah-max{font-family:'IBM Plex Mono',monospace;font-size:11px;color:rgba(255,255,255,.4);white-space:nowrap;}
+.pos-nav-edit .pos-go-btn{background:var(--gold);color:var(--ink);border:none;border-radius:5px;padding:4px 9px;font-family:'Lora',serif;font-size:11px;font-weight:600;cursor:pointer;}
+.pos-nav-edit .pos-go-btn:hover{opacity:.88;}
 .sel option{background:#2d2820;color:#f5e8c8;}
 .btn-t{background:rgba(255,255,255,.1);border:.5px solid rgba(255,255,255,.2);color:var(--parchment);border-radius:6px;padding:4px 8px;font-size:12px;cursor:pointer;transition:background .12s;white-space:nowrap;font-family:'Lora',serif;}
 .btn-t:hover{background:rgba(255,255,255,.2);}
@@ -89,28 +102,30 @@ body{font-family:'Lora',Georgia,serif;background:var(--parchment);color:var(--in
 .btn-nav:disabled{opacity:.35;cursor:default;}
 /* THE ACTUAL SCROLL CONTAINER */
 #pageContent{flex:1;overflow-y:auto;padding:14px 18px;}
-/* Mushaf mode: center fixed-width pages, remove side padding */
+/* Mushaf mode: pages center themselves via margin:auto (below), NOT via
+   flexbox align-items:center on this container. Flex-centering an overflowing
+   child only grants scrollable access to ONE side (the browser's "natural"
+   overflow direction) — at zoom > 100%, the page's far edge becomes
+   unreachable by scrolling. Margin-based centering on a normal block element
+   doesn't have this problem; the browser extends scrollable area symmetrically. */
 #pageContent.mushaf-view-mode{
   padding:16px 8px;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
 }
 
 /* MUSHAF PAGE */
 .mushaf-page{margin:0 0 26px;border:2px solid var(--gold);border-radius:2px;background:var(--parchment);box-shadow:0 3px 16px rgba(26,22,18,.1),inset 0 0 0 4px var(--parchment),inset 0 0 0 5px rgba(184,132,26,.25);}
-.mushaf-page-header{display:flex;align-items:center;justify-content:space-between;padding:6px 14px 5px;border-bottom:1px solid rgba(184,132,26,.3);background:var(--gold-pale);gap:8px;}
-.mph-juz{font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:600;color:var(--gold);white-space:nowrap;letter-spacing:.04em;text-transform:uppercase;min-width:44px;}
-.mph-surah{flex:1;text-align:center;font-family:'Scheherazade New','Amiri',serif;font-size:12px;color:var(--ink2);direction:rtl;}
-.mph-surah-en{font-family:'Lora',serif;font-size:8px;color:var(--ink3);text-align:center;letter-spacing:.05em;text-transform:uppercase;display:block;margin-top:1px;}
-.mph-right{min-width:44px;text-align:right;}
+.mushaf-page-header{display:flex;align-items:center;justify-content:space-between;padding:var(--mz-header-pad-v,6px) var(--mz-header-pad-h,14px);border-bottom:1px solid rgba(184,132,26,.3);background:var(--gold-pale);gap:var(--mz-header-gap,8px);}
+.mph-juz{font-family:'IBM Plex Mono',monospace;font-size:var(--mz-header-juz-font,9px);font-weight:600;color:var(--gold);white-space:nowrap;letter-spacing:.04em;text-transform:uppercase;min-width:var(--mz-header-minwidth,44px);}
+.mph-surah{flex:1;text-align:center;font-family:'Scheherazade New','Amiri',serif;font-size:var(--mz-header-surah-font,12px);color:var(--ink2);direction:rtl;}
+.mph-surah-en{font-family:'Lora',serif;font-size:var(--mz-header-surahen-font,8px);color:var(--ink3);text-align:center;letter-spacing:.05em;text-transform:uppercase;display:block;margin-top:1px;}
+.mph-right{min-width:var(--mz-header-minwidth,44px);text-align:right;}
 .mushaf-page-content{padding:12px 18px 8px;}
 .mushaf-page-content .flow-container{text-align:justify;text-align-last:right;}
-.mushaf-page-footer{border-top:1px solid rgba(184,132,26,.3);background:var(--gold-pale);display:flex;align-items:stretch;height:26px;}
-.mpf-ornament{flex:1;display:flex;align-items:center;overflow:hidden;padding:0 5px;}
-.mpf-ornament svg{width:100%;height:14px;display:block;}
+.mushaf-page-footer{border-top:1px solid rgba(184,132,26,.3);background:var(--gold-pale);display:flex;align-items:stretch;height:var(--mz-footer-height,26px);}
+.mpf-ornament{flex:1;display:flex;align-items:center;overflow:hidden;padding:0 var(--mz-footer-orn-pad,5px);}
+.mpf-ornament svg{width:100%;height:var(--mz-footer-orn-h,14px);display:block;}
 .mpf-divider{width:1px;background:rgba(184,132,26,.3);}
-.mpf-num{flex-shrink:0;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;color:var(--gold);padding:0 14px;display:flex;align-items:center;}
+.mpf-num{flex-shrink:0;font-family:'IBM Plex Mono',monospace;font-size:var(--mz-footer-num-font,10px);font-weight:600;color:var(--gold);padding:0 var(--mz-footer-num-pad,14px);display:flex;align-items:center;}
 
 /* SURAH ELEMENTS */
 .surah-break{text-align:center;margin:12px 0 8px;padding-bottom:6px;border-bottom:1px solid var(--border);}
@@ -138,14 +153,15 @@ body{font-family:'Lora',Georgia,serif;background:var(--parchment);color:var(--in
 
 /* WORD SPANS */
 .word-span{display:inline;padding:2px 2px;border-radius:3px;}
-.word-span.marked-m1{background:var(--amber-bg);color:var(--amber);border-bottom:2px solid var(--amber);cursor:pointer;}
-.word-span.marked-m2{background:var(--red-bg);color:var(--red);border-bottom:2px solid var(--red);cursor:pointer;}
-.word-span.marked-m3{background:var(--coral-bg);color:var(--coral);border-bottom:2px solid var(--coral);cursor:pointer;}
-.word-span.marked-m4{background:var(--purple-bg);color:var(--purple);border-bottom:2px solid var(--purple);cursor:pointer;}
-.word-span.marked-m5{background:var(--teal-bg);color:var(--teal);border-bottom:2px solid var(--teal);cursor:pointer;}
-.word-span.marked-m6{background:var(--parchment3);border-bottom:2px solid var(--ink3);cursor:pointer;}
+.word-span.type-m1{color:var(--amber);border-bottom:2px solid var(--amber);cursor:pointer;}
+.word-span.type-m2{color:var(--red);border-bottom:2px solid var(--red);cursor:pointer;}
+.word-span.type-m3{color:var(--coral);border-bottom:2px solid var(--coral);cursor:pointer;}
+.word-span.type-m4{color:var(--purple);border-bottom:2px solid var(--purple);cursor:pointer;}
+.word-span.type-m5{color:var(--teal);border-bottom:2px solid var(--teal);cursor:pointer;}
+.word-span.type-m6{border-bottom:2px solid var(--ink3);cursor:pointer;}
 .word-span.repeated{box-shadow:0 0 0 2px var(--gold);border-radius:4px;}
-.word-span[class*="marked-"]:hover{filter:brightness(.9);}
+.word-span.sev-3.repeated{box-shadow:0 0 0 1px var(--red),0 0 0 3px var(--gold);}
+.word-span[class*="type-"]:hover{filter:brightness(.9);}
 @keyframes flashW{
   0%{background:var(--gold)!important;color:var(--ink)!important;box-shadow:0 0 0 3px var(--gold);}
   60%{background:var(--gold)!important;color:var(--ink)!important;box-shadow:0 0 0 3px var(--gold);}
@@ -158,7 +174,7 @@ body{font-family:'Lora',Georgia,serif;background:var(--parchment);color:var(--in
 .flow-container::after{content:'';display:table;clear:both;}
 
 /* ── MUSHAF MODE ── */
-.mushaf-page.mushaf-fixed{width:680px;flex-shrink:0;transform-origin:top center;}
+.mushaf-page.mushaf-fixed{width:680px;flex-shrink:0;transform-origin:top center;margin-left:auto;margin-right:auto;}
 /* QCF page body — inner border + gutter for hizb markers */
 .mushaf-page-body{
   padding:10px 36px 8px;display:flex;flex-direction:column;gap:0;
@@ -183,20 +199,24 @@ body{font-family:'Lora',Georgia,serif;background:var(--parchment);color:var(--in
 .msl-basmala-text{font-family:'UthmanicHafs','Scheherazade New','Amiri',serif;font-size:0.88em;color:var(--ink);}
 /* QCF word span — read-only (no cursor:pointer on unmarked) */
 .qcf-word{display:inline-block;border-radius:3px;transition:background .1s,color .1s;padding:0 1px;font-family:inherit;font-size:inherit;line-height:1;color:inherit;background:none;border:none;-webkit-user-select:none;user-select:none;white-space:nowrap;flex-shrink:0;}
-.qcf-word.marked-m1{background:var(--amber-bg);color:var(--amber);border-bottom:2px solid var(--amber);cursor:pointer;}
-.qcf-word.marked-m2{background:var(--red-bg);color:var(--red);border-bottom:2px solid var(--red);cursor:pointer;}
-.qcf-word.marked-m3{background:var(--coral-bg);color:var(--coral);border-bottom:2px solid var(--coral);cursor:pointer;}
-.qcf-word.marked-m4{background:var(--purple-bg);color:var(--purple);border-bottom:2px solid var(--purple);cursor:pointer;}
-.qcf-word.marked-m5{background:var(--teal-bg);color:var(--teal);border-bottom:2px solid var(--teal);cursor:pointer;}
-.qcf-word.marked-m6{background:var(--parchment3);border-bottom:2px solid var(--ink3);cursor:pointer;}
+.qcf-word.type-m1{color:var(--amber);border-bottom:2px solid var(--amber);cursor:pointer;}
+.qcf-word.type-m2{color:var(--red);border-bottom:2px solid var(--red);cursor:pointer;}
+.qcf-word.type-m3{color:var(--coral);border-bottom:2px solid var(--coral);cursor:pointer;}
+.qcf-word.type-m4{color:var(--purple);border-bottom:2px solid var(--purple);cursor:pointer;}
+.qcf-word.type-m5{color:var(--teal);border-bottom:2px solid var(--teal);cursor:pointer;}
+.qcf-word.type-m6{border-bottom:2px solid var(--ink3);cursor:pointer;}
 .qcf-word.repeated{box-shadow:0 0 0 2px var(--gold);border-radius:4px;}
-.qcf-word[class*="marked-"]:hover{filter:brightness(.91);}
+.qcf-word.sev-3.repeated{box-shadow:0 0 0 1px var(--red),0 0 0 3px var(--gold);}
+.qcf-word[class*="type-"]:hover{filter:brightness(.91);}
 .qcf-end-marker{font-family:'Scheherazade New','Amiri',serif;display:inline;cursor:default;}
 /* Hizb circle in left gutter */
 .msl-hizb{position:absolute;left:-77px;top:50%;transform:translateY(-50%);width:34px;height:34px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:'Scheherazade New','Amiri',serif;font-size:7.5px;font-weight:600;line-height:1.2;border-radius:50%;color:var(--gold);background:var(--gold-pale);border:1.5px solid var(--gold);text-align:center;}
 .msl-hizb.hizb-full{background:var(--gold);color:var(--ink);font-size:12px;}
 .msl-hizb.hizb-half{background:var(--amber-bg);color:var(--amber);font-size:14px;border-color:var(--amber);}
 .msl-hizb.hizb-quarter{background:var(--parchment2);color:var(--ink3);font-size:14px;border-color:var(--border);}
+/* Decorative buffer panel — fills the vertical gap on pages with fewer lines than
+   the standard 15 (pages 1-2 of the Madinah mushaf have ornate, shorter layouts). */
+.msl-buffer{width:100%;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;}
 /* UthmanicHafs fallback for end markers */
 @font-face{font-family:'UthmanicHafs';src:url('https://verses.quran.foundation/fonts/quran/hafs/uthmanic_hafs/UthmanicHafs1Ver18.woff2') format('woff2');font-display:swap;}
 .loading-spinner{width:24px;height:24px;border:3px solid var(--parchment3);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 10px;}
@@ -271,10 +291,58 @@ body{font-family:'Lora',Georgia,serif;background:var(--parchment);color:var(--in
 /* Mistakes scroll */
 .mistakes-scroll{flex:1;overflow-y:auto;padding:6px 8px;min-height:0;}
 
+/* Mistake list controls — grouping + filters */
+.mlist-controls{padding:6px 8px 4px;border-bottom:1px solid var(--border);background:var(--parchment);flex-shrink:0;display:flex;flex-direction:column;gap:5px;}
+.mlist-row{display:flex;align-items:center;gap:4px;flex-wrap:wrap;}
+.mlist-row-label{font-size:8px;font-weight:600;color:var(--ink3);letter-spacing:.06em;text-transform:uppercase;flex-shrink:0;width:38px;}
+.mlist-chip{font-size:9px;padding:2px 7px;border-radius:999px;border:.5px solid var(--border2);background:var(--parchment2);color:var(--ink2);cursor:pointer;font-family:'Lora',serif;transition:all .12s;white-space:nowrap;}
+.mlist-chip:hover{background:var(--parchment3);}
+.mlist-chip.active{background:var(--gold);color:var(--ink);border-color:var(--gold);font-weight:600;}
+.mlist-chip.active.m1{background:var(--amber);color:white;border-color:var(--amber);}
+.mlist-chip.active.m2{background:var(--red);color:white;border-color:var(--red);}
+.mlist-chip.active.m3{background:var(--coral);color:white;border-color:var(--coral);}
+.mlist-chip.active.m4{background:var(--purple);color:white;border-color:var(--purple);}
+.mlist-chip.active.m5{background:var(--teal);color:white;border-color:var(--teal);}
+.mlist-chip.active.m6{background:var(--ink3);color:white;border-color:var(--ink3);}
+.mlist-reset{font-size:9px;color:var(--gold);cursor:pointer;text-decoration:underline;white-space:nowrap;margin-left:auto;}
+.mlist-reset:hover{color:var(--amber);}
+
+/* Group headers */
+.mgroup{margin-bottom:6px;}
+.mgroup-head{display:flex;align-items:center;gap:6px;padding:5px 7px;background:var(--parchment2);border-radius:5px;cursor:pointer;border:.5px solid var(--border);user-select:none;}
+.mgroup-head:hover{background:var(--parchment3);}
+.mgroup-arrow{font-size:9px;color:var(--ink3);transition:transform .15s;flex-shrink:0;width:10px;}
+.mgroup-head.collapsed .mgroup-arrow{transform:rotate(-90deg);}
+.mgroup-title{font-size:11px;font-weight:600;color:var(--ink);flex:1;}
+.mgroup-count{font-size:9px;color:var(--ink3);font-family:'IBM Plex Mono',monospace;background:var(--parchment);border-radius:999px;padding:1px 6px;flex-shrink:0;}
+.mgroup-body{padding-top:5px;}
+.mgroup-body.collapsed{display:none;}
+
+/* Severity — unscoped base rules apply to any element (words, cards, review spans) */
+.sev-0{background:var(--green-bg);}
+.sev-1{background:var(--lvl1-yellow-bg);}
+.sev-2{background:var(--lvl2-orange-bg);}
+.sev-3{background:var(--red-bg);}
+.sev-other{background:var(--parchment2);}
+/* Word-level extras for the most alarming level */
+.qcf-word.sev-3,.word-span.sev-3{box-shadow:0 0 0 1px var(--red);font-weight:600;}
+
 /* Mistake items */
 .mistake-item{background:var(--parchment);border-radius:6px;border:.5px solid var(--border);padding:6px 8px;margin-bottom:5px;display:flex;gap:5px;align-items:flex-start;cursor:pointer;transition:border-color .12s,background .12s,transform .1s;animation:slideIn .15s ease;}
 .mistake-item:hover{border-color:var(--gold);background:var(--gold-pale);transform:translateX(-2px);}
-.mistake-item.repeated-mistake{border-left:3px solid var(--gold);background:linear-gradient(90deg,var(--gold-pale),var(--parchment));}
+.mistake-item.sev-0:hover{filter:brightness(.96);}
+.mistake-item.sev-1:hover{filter:brightness(.96);}
+.mistake-item.sev-2:hover{filter:brightness(.96);}
+.mistake-item.sev-3:hover{filter:brightness(.96);}
+.mistake-item.sev-other:hover{background:var(--parchment2);}
+.mistake-item.repeated-mistake{box-shadow:inset 0 0 0 1px var(--gold);background:var(--gold-pale);}
+/* Card-level extras — background already comes from the unscoped .sev-N rules above */
+.mistake-item.sev-0{border-left:2px solid var(--green);}
+.mistake-item.sev-1{border-left:4px solid var(--lvl1-yellow);}
+.mistake-item.sev-2{border-left:4px solid var(--lvl2-orange);}
+.mistake-item.sev-3{border-left:5px solid var(--red);box-shadow:0 0 0 1px var(--red),0 1px 8px rgba(125,31,31,.25);}
+.mistake-item.sev-other{border-left:3px solid var(--ink3);}
+.mistake-item.repeated-mistake.sev-0,.mistake-item.repeated-mistake.sev-1,.mistake-item.repeated-mistake.sev-2,.mistake-item.repeated-mistake.sev-3,.mistake-item.repeated-mistake.sev-other{box-shadow:inset 0 0 0 1px var(--gold),0 0 0 1px rgba(184,132,26,.12);}
 @keyframes slideIn{from{opacity:0;transform:translateY(-3px);}to{opacity:1;transform:none;}}
 .m-badge{flex-shrink:0;padding:2px 5px;border-radius:999px;font-size:8px;font-weight:600;white-space:nowrap;margin-top:1px;font-family:'IBM Plex Mono',monospace;direction:ltr;unicode-bidi:isolate;display:inline-block;}
 .m-badge.m1{background:var(--amber-bg);color:var(--amber);}
@@ -287,9 +355,9 @@ body{font-family:'Lora',Georgia,serif;background:var(--parchment);color:var(--in
 .m-ref{font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--ink3);margin-bottom:1px;}
 .m-word{font-family:'Scheherazade New','Amiri',serif;font-size:14px;direction:rtl;color:var(--ink);display:block;}
 .m-corr{font-size:9px;margin-top:1px;}
-.m-corr.c0{color:var(--ink3);font-style:italic;}
-.m-corr.c1{color:var(--green);font-weight:600;}
-.m-corr.c2{color:var(--amber);font-weight:600;}
+.m-corr.c0{color:var(--green);font-style:italic;}
+.m-corr.c1{color:var(--lvl1-yellow);font-weight:600;}
+.m-corr.c2{color:var(--lvl2-orange);font-weight:600;}
 .m-corr.c3{color:var(--red);font-weight:600;}
 .m-corr.c4{color:var(--ink2);font-weight:600;}
 .m-note{font-size:8px;color:var(--ink3);font-style:italic;margin-top:1px;}
@@ -377,18 +445,52 @@ body{font-family:'Lora',Georgia,serif;background:var(--parchment);color:var(--in
 .review-verse{margin-bottom:9px;padding:8px 10px;border-radius:6px;border:.5px solid var(--border);background:var(--parchment2);}
 .review-verse-ref{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--ink3);margin-bottom:4px;}
 .review-verse-arabic{direction:rtl;text-align:right;line-height:2.6;font-size:18px;font-family:'Scheherazade New','Amiri',serif;margin-bottom:4px;}
-.rw-m1{background:var(--amber-bg);color:var(--amber);border-bottom:2px solid var(--amber);border-radius:2px;padding:1px 2px;}
-.rw-m2{background:var(--red-bg);color:var(--red);border-bottom:2px solid var(--red);border-radius:2px;padding:1px 2px;}
-.rw-m3{background:var(--coral-bg);color:var(--coral);border-bottom:2px solid var(--coral);border-radius:2px;padding:1px 2px;}
-.rw-m4{background:var(--purple-bg);color:var(--purple);border-bottom:2px solid var(--purple);border-radius:2px;padding:1px 2px;}
-.rw-m5{background:var(--teal-bg);color:var(--teal);border-bottom:2px solid var(--teal);border-radius:2px;padding:1px 2px;}
-.rw-m6{background:var(--parchment3);border-bottom:2px solid var(--ink3);border-radius:2px;padding:1px 2px;}
+.rw-type-m1{color:var(--amber);border-bottom:2px solid var(--amber);border-radius:2px;padding:1px 2px;}
+.rw-type-m2{color:var(--red);border-bottom:2px solid var(--red);border-radius:2px;padding:1px 2px;}
+.rw-type-m3{color:var(--coral);border-bottom:2px solid var(--coral);border-radius:2px;padding:1px 2px;}
+.rw-type-m4{color:var(--purple);border-bottom:2px solid var(--purple);border-radius:2px;padding:1px 2px;}
+.rw-type-m5{color:var(--teal);border-bottom:2px solid var(--teal);border-radius:2px;padding:1px 2px;}
+.rw-type-m6{border-bottom:2px solid var(--ink3);border-radius:2px;padding:1px 2px;}
+
+/* SPOT TEST POPUP */
+.spot-popup{max-width:480px;}
+.spot-popup-header{display:flex;align-items:center;gap:8px;margin-bottom:10px;padding-bottom:8px;border-bottom:.5px solid var(--border);}
+.spot-popup-header .spot-icon{font-size:20px;}
+.spot-popup-header .spot-title{font-size:14px;font-weight:600;color:var(--ink);}
+.spot-popup-header .spot-scope{font-size:10px;color:var(--ink3);font-family:'IBM Plex Mono',monospace;}
+.spot-summary-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;}
+.spot-summary-pill{padding:3px 8px;border-radius:999px;font-size:10px;font-weight:600;font-family:'IBM Plex Mono',monospace;}
+.spot-card-list{display:flex;flex-direction:column;gap:4px;max-height:240px;overflow-y:auto;margin-bottom:10px;}
+.spot-result-card{display:flex;align-items:center;gap:6px;padding:5px 7px;background:var(--parchment2);border-radius:5px;border:.5px solid var(--border);transition:background .12s;}
+.spot-result-card:hover{background:var(--parchment3);}
+.spot-result-num{font-family:'IBM Plex Mono',monospace;font-size:8px;color:#1a4a8a;font-weight:700;flex-shrink:0;}
+.spot-result-name{font-size:10px;color:var(--ink);flex:1;}
+.spot-result-ref{color:var(--ink3);font-size:9px;}
+.spot-result-outcome{font-size:10px;font-weight:600;flex-shrink:0;}
+.spot-result-mc{font-size:9px;color:var(--ink3);font-family:'IBM Plex Mono',monospace;}
+.spot-nav-row{display:flex;align-items:center;gap:6px;margin-bottom:10px;}
+.spot-nav-btn{background:none;border:.5px solid var(--border2);color:var(--ink2);border-radius:4px;padding:4px 8px;font-size:10px;font-family:'Lora',serif;cursor:pointer;}
+.spot-nav-btn:hover{background:var(--parchment3);}
+.spot-nav-btn:disabled{opacity:.3;cursor:default;}
+.spot-nav-btn.active{background:#ddeeff;border-color:#1a4a8a;color:#1a4a8a;font-weight:600;}
+.spot-nav-label{flex:1;text-align:center;font-size:10px;color:var(--ink3);}
+.spot-trend-box{background:var(--parchment2);border-radius:7px;padding:10px;border:.5px solid var(--border);margin-bottom:10px;}
+.spot-trend-box h4{font-size:10px;font-weight:600;color:var(--ink2);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px;}
+.spot-trend-bars{display:flex;align-items:flex-end;gap:3px;height:60px;}
+.spot-trend-bar{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;}
+.spot-trend-bar .bar-stack{width:100%;flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:1px;border-radius:2px 2px 0 0;overflow:hidden;min-height:4px;}
+.spot-trend-bar .bar-seg{width:100%;transition:height .3s;}
+.spot-trend-bar .bar-label{font-size:7px;color:var(--ink3);font-family:'IBM Plex Mono',monospace;text-align:center;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
 
 /* Sessions toolbar buttons */
 .sess-toolbar-btn{font-size:10px;background:rgba(184,132,26,.1);color:var(--gold);border:.5px solid var(--gold);border-radius:4px;padding:3px 7px;font-family:'Lora',serif;cursor:pointer;white-space:nowrap;}
 .sess-toolbar-btn:hover{background:rgba(184,132,26,.2);}
 .sess-toolbar-btn.accent{background:var(--gold);color:var(--ink);font-weight:600;}
 .sess-toolbar-btn.accent:hover{opacity:.87;}
+/* Help modal tabs */
+.sv-tab{padding:6px 10px;font-size:11px;cursor:pointer;color:var(--ink3);border-bottom:2px solid transparent;font-family:'Lora',serif;background:none;border-top:none;border-left:none;border-right:none;transition:all .12s;white-space:nowrap;flex:1;text-align:center;}
+.sv-tab:hover:not(.active){color:var(--ink2);}
+.sv-tab.active{color:var(--gold);border-bottom-color:var(--gold);font-weight:600;}
 /* Mobile topbar hide/show */
 .topbar-hide-btn{
   display:none; /* shown only on mobile via media query */
@@ -449,7 +551,7 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
 
 <div class="view-tabs">
   <div class="vtab-group">
-    <button class="vtab active" id="vtab-page" onclick="switchView('page')">📖 Page</button>
+    <button class="vtab active" id="vtab-page" onclick="switchView('page')">📖 Juz View</button>
     <button class="vtab" id="vtab-surah" onclick="switchView('surah')">📗 Surah</button>
     <button class="vtab" id="vtab-mushaf" onclick="switchView('mushaf')">📜 Mushaf</button>
   </div>
@@ -467,7 +569,20 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
   <div class="view-controls" id="mushafControls" style="display:none;">
     <span class="vc-label">Zoom:</span>
     <button class="vc-btn" onclick="changeMushafZoom(-1)">−</button>
+    <input type="range" class="mushaf-zoom-slider" id="mushafZoomSlider"
+      min="-9" max="68" value="0" step="1"
+      oninput="setMushafZoomLevel(this.value)"
+      title="Drag to resize the page"
+      style="width:80px;accent-color:var(--gold);vertical-align:middle;cursor:pointer;">
     <button class="vc-btn" onclick="changeMushafZoom(1)">+</button>
+    <button class="vc-btn" onclick="fitMushafToScreen()" title="Fit entire page to screen height" style="display:inline-flex;align-items:center;justify-content:center;padding:4px 7px;">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="15 3 21 3 21 9"></polyline>
+        <polyline points="9 21 3 21 3 15"></polyline>
+        <line x1="21" y1="3" x2="14" y2="10"></line>
+        <line x1="3" y1="21" x2="10" y2="14"></line>
+      </svg>
+    </button>
   </div>
 </div>
 
@@ -520,10 +635,11 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
         </div>
         <div class="stats-row">
           <div class="stat-pill"><span class="n" id="st0">0</span><span class="l">Total</span></div>
-          <div class="stat-pill"><span class="n" id="st1" style="color:var(--green)">0</span><span class="l">Lvl 1</span></div>
-          <div class="stat-pill"><span class="n" id="st2" style="color:var(--amber)">0</span><span class="l">Lvl 2</span></div>
+          <div class="stat-pill"><span class="n" id="st1" style="color:var(--lvl1-yellow)">0</span><span class="l">Lvl 1</span></div>
+          <div class="stat-pill"><span class="n" id="st2" style="color:var(--lvl2-orange)">0</span><span class="l">Lvl 2</span></div>
           <div class="stat-pill"><span class="n" id="st3" style="color:var(--red)">0</span><span class="l">Lvl 3</span></div>
         </div>
+        <div class="mlist-controls" id="mlistControls"></div>
         <div class="mistakes-scroll" id="mistakesList"></div>
       </div>
     </div>
@@ -552,30 +668,64 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
 
 <!-- INTERVENTION GUIDE MODAL -->
 <div class="modal-bg" id="interventionModal">
-  <div class="modal" style="max-width:440px;">
-    <div class="modal-title">Teacher Intervention Guide</div>
-    <div class="modal-sub">What each level means in this session's feedback</div>
-    <div style="display:flex;flex-direction:column;gap:6px;font-size:12px;">
-      <div style="display:flex;gap:8px;align-items:flex-start;padding:7px 10px;background:var(--parchment2);border-radius:6px;border-left:3px solid var(--border2);">
-        <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:700;color:var(--ink3);flex-shrink:0;padding-top:2px;white-space:nowrap;">Level 0</span>
-        <div><strong style="color:var(--ink2);">No intervention</strong> — You made a mistake but your teacher did not step in. You either self-corrected, moved past it, or your teacher chose to observe silently.</div>
-      </div>
-      <div style="display:flex;gap:8px;align-items:flex-start;padding:7px 10px;background:var(--green-bg);border-radius:6px;border-left:3px solid var(--green);">
-        <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:700;color:var(--green);flex-shrink:0;padding-top:2px;white-space:nowrap;">Level 1</span>
-        <div><strong style="color:var(--green);">Repeat</strong> — Your teacher asked you to stop and try again without giving any words. For a wrong word: "go back and try again". For a hesitation: "go back to the previous verse".</div>
-      </div>
-      <div style="display:flex;gap:8px;align-items:flex-start;padding:7px 10px;background:var(--amber-bg);border-radius:6px;border-left:3px solid var(--amber);">
-        <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:700;color:var(--amber);flex-shrink:0;padding-top:2px;white-space:nowrap;">Level 2</span>
-        <div><strong style="color:var(--amber);">Hint</strong> — Your teacher gave you the next word or a short prompt to help you continue, without reciting a full verse.</div>
-      </div>
-      <div style="display:flex;gap:8px;align-items:flex-start;padding:7px 10px;background:var(--red-bg);border-radius:6px;border-left:3px solid var(--red);">
-        <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:700;color:var(--red);flex-shrink:0;padding-top:2px;white-space:nowrap;">Level 3</span>
-        <div><strong style="color:var(--red);">Taught</strong> — Your teacher had to recite a full verse or a large portion of it for you to follow along and get back on track.</div>
+  <div class="modal" style="max-width:460px;padding:0;display:flex;flex-direction:column;max-height:86vh;overflow:hidden;">
+
+    <!-- sticky header -->
+    <div style="padding:14px 18px 0;flex-shrink:0;">
+      <div class="modal-title">Help &amp; Guide</div>
+      <div class="modal-sub" style="margin-bottom:8px;">Understanding your session feedback</div>
+      <div style="display:flex;gap:0;border-bottom:1px solid var(--border2);margin:0 -18px;padding:0 18px;">
+        <button class="sv-tab active" id="svt-types"  onclick="switchSvTab('types')">📝 Mistake Types</button>
+        <button class="sv-tab"        id="svt-levels" onclick="switchSvTab('levels')">🎯 Intervention Levels</button>
       </div>
     </div>
-    <div class="modal-btns">
+
+    <!-- scrollable content -->
+    <div style="flex:1;overflow-y:auto;padding:12px 18px;">
+
+      <!-- TAB: Mistake Types -->
+      <div id="svp-types">
+        <p style="font-size:11px;color:var(--ink3);font-style:italic;margin-bottom:10px;">What each highlighted colour means</p>
+        <div style="display:flex;flex-direction:column;gap:6px;font-size:11px;">
+          <div style="display:flex;gap:9px;align-items:flex-start;padding:7px 10px;border-radius:6px;background:var(--amber-bg);border-left:3px solid var(--amber);"><span class="m-badge m1" style="background:var(--amber-bg);color:var(--amber);flex-shrink:0;margin-top:1px;">Hesitation</span><span style="color:var(--ink2);">You stopped, paused, or repeated a word before continuing.</span></div>
+          <div style="display:flex;gap:9px;align-items:flex-start;padding:7px 10px;border-radius:6px;background:var(--red-bg);border-left:3px solid var(--red);"><span class="m-badge m2" style="background:var(--red-bg);color:var(--red);flex-shrink:0;margin-top:1px;">Wrong word</span><span style="color:var(--ink2);">You recited an incorrect word — substituted, transposed, or changed from the text.</span></div>
+          <div style="display:flex;gap:9px;align-items:flex-start;padding:7px 10px;border-radius:6px;background:var(--coral-bg);border-left:3px solid var(--coral);"><span class="m-badge m3" style="background:var(--coral-bg);color:var(--coral);flex-shrink:0;margin-top:1px;">Skipped</span><span style="color:var(--ink2);">You skipped a word or phrase entirely without reciting it.</span></div>
+          <div style="display:flex;gap:9px;align-items:flex-start;padding:7px 10px;border-radius:6px;background:var(--purple-bg);border-left:3px solid var(--purple);"><span class="m-badge m4" style="background:var(--purple-bg);color:var(--purple);flex-shrink:0;margin-top:1px;">Makhraj</span><span style="color:var(--ink2);">Incorrect pronunciation of a letter from its point of articulation (makhraj).</span></div>
+          <div style="display:flex;gap:9px;align-items:flex-start;padding:7px 10px;border-radius:6px;background:var(--teal-bg);border-left:3px solid var(--teal);"><span class="m-badge m5" style="background:var(--teal-bg);color:var(--teal);flex-shrink:0;margin-top:1px;">Tajweed</span><span style="color:var(--ink2);">Incorrect application of a tajweed rule — e.g. madd, ghunna, idgham.</span></div>
+          <div style="display:flex;gap:9px;align-items:flex-start;padding:7px 10px;border-radius:6px;background:var(--parchment3);border-left:3px solid var(--border2);"><span class="m-badge m6" style="background:var(--parchment3);color:var(--ink2);flex-shrink:0;margin-top:1px;">Other</span><span style="color:var(--ink2);">A mistake that didn't fit the standard categories — your teacher added a custom note.</span></div>
+        </div>
+      </div>
+
+      <!-- TAB: Intervention Levels -->
+      <div id="svp-levels" style="display:none;">
+        <p style="font-size:11px;color:var(--ink3);font-style:italic;margin-bottom:10px;">How much help your teacher provided at each mistake</p>
+        <div style="display:flex;flex-direction:column;gap:6px;font-size:11px;">
+          <div style="display:flex;gap:8px;align-items:flex-start;padding:7px 10px;background:var(--green-bg);border-radius:6px;border-left:3px solid var(--green);">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:700;color:var(--green);flex-shrink:0;padding-top:2px;white-space:nowrap;">Level 0</span>
+            <div><strong style="color:var(--green);">No intervention</strong> — You made a mistake but your teacher did not step in. You either self-corrected, moved past it, or your teacher chose to observe silently.</div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:flex-start;padding:7px 10px;background:var(--lvl1-yellow-bg);border-radius:6px;border-left:3px solid var(--lvl1-yellow);">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:700;color:var(--lvl1-yellow);flex-shrink:0;padding-top:2px;white-space:nowrap;">Level 1</span>
+            <div><strong style="color:var(--lvl1-yellow);">Repeat</strong> — Your teacher asked you to stop and try again without giving any words. "Go back and try again" or "go back to the previous verse".</div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:flex-start;padding:7px 10px;background:var(--lvl2-orange-bg);border-radius:6px;border-left:3px solid var(--lvl2-orange);">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:700;color:var(--lvl2-orange);flex-shrink:0;padding-top:2px;white-space:nowrap;">Level 2</span>
+            <div><strong style="color:var(--lvl2-orange);">Hint</strong> — Your teacher gave you the next word or a short prompt to help you continue, without reciting a full verse.</div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:flex-start;padding:7px 10px;background:var(--red-bg);border-radius:6px;border-left:3px solid var(--red);">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:700;color:var(--red);flex-shrink:0;padding-top:2px;white-space:nowrap;">Level 3</span>
+            <div><strong style="color:var(--red);">Taught</strong> — Your teacher had to recite a full verse or a large portion of it for you to follow along and get back on track.</div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- end scrollable -->
+
+    <!-- sticky footer -->
+    <div style="padding:10px 18px;border-top:1px solid var(--border);flex-shrink:0;display:flex;justify-content:flex-end;background:var(--parchment);">
       <button class="btn-m pri" onclick="closeModal('interventionModal')">Got it</button>
     </div>
+
   </div>
 </div>
 
@@ -603,6 +753,16 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
   </div>
 </div>
 
+<!-- SPOT TEST POPUP -->
+<div class="modal-bg" id="spotPopupModal">
+  <div class="modal spot-popup">
+    <div id="spotPopupContent"></div>
+    <div class="modal-btns">
+      <button class="btn-m sec" onclick="closeModal('spotPopupModal')">Close</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ── TOAST
 function showToast(msg){let t=document.getElementById('_t');if(!t){t=document.createElement('div');t.id='_t';t.style.cssText='position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--gold-light);padding:7px 18px;border-radius:999px;font-size:12px;font-family:Lora,serif;z-index:9999;pointer-events:none;opacity:0;transition:opacity .2s;white-space:nowrap;max-width:80vw;text-align:center;';document.body.appendChild(t);}t.textContent=msg;t.style.opacity='1';clearTimeout(t._x);t._x=setTimeout(()=>t.style.opacity='0',2400);}
@@ -613,6 +773,23 @@ const AR_NAMES=["الفاتحة","البقرة","آل عمران","النساء"
 const AYAH_COUNTS=[7,286,200,176,120,165,206,75,129,109,123,111,43,52,99,128,111,110,98,135,112,78,118,64,77,227,93,88,69,60,34,30,73,54,45,83,182,88,75,85,54,53,89,59,37,35,38,29,18,45,60,49,62,55,78,96,29,22,24,13,14,11,11,18,12,12,30,52,52,44,28,28,20,56,40,31,50,45,33,27,57,29,59,35,19,17,26,30,20,15,21,11,8,8,19,5,8,8,11,98,8,19,5,4,7,3,6,3,5,4,5,4,5,6,5,6,1,5,1,4,6,1,3,6,1];
 const JUZ_PAGES=[1,22,42,62,82,102,122,142,162,182,202,222,242,262,282,302,322,342,362,382,402,422,442,462,482,502,522,542,562,582];
 const JUZ_NAMES_LONG=["Juz 1 — Alif Lam Mim","Juz 2 — Sayaqul","Juz 3 — Tilka'r Rusul","Juz 4 — Lan Tana Lu","Juz 5 — Wal Muhsanat","Juz 6 — La Yuhibbullah","Juz 7 — Wa Idha Sami'u","Juz 8 — Wa Law Annana","Juz 9 — Qalal Mala","Juz 10 — Wa A'lamu","Juz 11 — Ya'tadhirun","Juz 12 — Wa Ma Min Dabbah","Juz 13 — Wa Ma Ubarri'u","Juz 14 — Rubama","Juz 15 — Subhanalladhi","Juz 16 — Qala Alam","Juz 17 — Iqtaraba","Juz 18 — Qad Aflaha","Juz 19 — Wa Qalallathina","Juz 20 — Amman Khalaq","Juz 21 — Utlu Ma Uhiya","Juz 22 — Wa Man Yaqnut","Juz 23 — Wa Mali","Juz 24 — Faman Azlamu","Juz 25 — Ilayhi Yuraddu","Juz 26 — Ha Mim","Juz 27 — Qala Fama Khatbukum","Juz 28 — Qad Sami'allah","Juz 29 — Tabarakalladhi","Juz 30 — Amma"];
+// Exact first verse of each juz — used to derive which juz a mistake belongs to
+const JUZ_START_VERSES=[
+  {s:1,a:1},   {s:2,a:142}, {s:2,a:253}, {s:3,a:93},  {s:4,a:24},
+  {s:4,a:148}, {s:5,a:82},  {s:6,a:111}, {s:7,a:88},  {s:8,a:41},
+  {s:9,a:93},  {s:11,a:6},  {s:12,a:53}, {s:15,a:1},  {s:17,a:1},
+  {s:18,a:75}, {s:21,a:1},  {s:23,a:1},  {s:25,a:21}, {s:27,a:56},
+  {s:29,a:46}, {s:33,a:31}, {s:36,a:28}, {s:39,a:32}, {s:41,a:47},
+  {s:46,a:1},  {s:51,a:31}, {s:58,a:1},  {s:67,a:1},  {s:78,a:1}
+];
+// Given a surah:ayah, return the juz number (1-30) it belongs to
+function juzForVerse(surah, ayah){
+  for(let j=JUZ_START_VERSES.length-1; j>=0; j--){
+    const start = JUZ_START_VERSES[j];
+    if(surah > start.s || (surah === start.s && ayah >= start.a)) return j+1;
+  }
+  return 1;
+}
 const MISTAKE_TYPES=[
   {id:'m1',label:'Hesitation', color:'var(--amber)', bgColor:'var(--amber-bg)',  borderColor:'var(--amber)'},
   {id:'m2',label:'Wrong word', color:'var(--red)',   bgColor:'var(--red-bg)',    borderColor:'var(--red)'},
@@ -635,6 +812,24 @@ const ID_MIGRATION={
 function getType(id){return MISTAKE_TYPES.find(t=>t.id===id)||MISTAKE_TYPES[5];}
 function getCorr(id){return CORRECTION_TYPES.find(c=>c.id===id)||CORRECTION_TYPES[0];}
 function migrateId(id){return ID_MIGRATION[id]||id;}
+// Severity class for a single mistake's correction level — drives background color everywhere
+function _sevClassForCorr(corr){
+  if(corr==='c1') return 'sev-1';
+  if(corr==='c2') return 'sev-2';
+  if(corr==='c3') return 'sev-3';
+  if(corr==='c4') return 'sev-other';
+  return 'sev-0';
+}
+// Worst (most alarming) intervention level among a set of mistakes on the same word
+function _worstSevClass(mList){
+  const sevRank={c3:3,c2:2,c1:1,c0:0,c4:-1};
+  let worst=null, worstRank=-2;
+  mList.forEach(m=>{
+    const r=sevRank[m.correction]??0;
+    if(r>worstRank){worstRank=r;worst=m.correction;}
+  });
+  return _sevClassForCorr(worst);
+}
 function migrateMistakes(mistakes){return(mistakes||[]).map(m=>({...m,type:migrateId(m.type),correction:migrateId(m.correction)}));}
 function typeLabel(id){return getType(id).label;}
 function typeLabelFor(cfg,id){if(cfg?.mistakeTypes){const t=cfg.mistakeTypes.find(t=>t.id===id);if(t)return t.label;}return typeLabel(id);}
@@ -650,18 +845,145 @@ const SESSION_COLORS=['#b8841a','#2d6a4f','#0a5059','#3d2d7a','#7d1f1f','#7d4e00
 let viewMode='page',currentJuz=1,currentSurah=null,pageVerses=[],allVerseWords={};
 let showTranslation=false,flowMode=true,arabicSize=28;
 let savedSessions=[],activeSessions=[],activeMistakes=[],repeatWordKeys=new Set();
+// Mistake list grouping & filtering state
+let mistakeGroupMode='juz'; // 'juz' | 'surah' | 'none'
+let mistakeFilterTypes=new Set();   // empty = show all types
+let mistakeFilterCorr=new Set();    // empty = show all correction levels
+let mistakeFilterRepeatedOnly=false;
+let mistakeCollapsedGroups=new Set(); // group keys currently collapsed (incl. default-collapsed)
+let mistakeExpandedGroups=new Set();  // group keys the user has explicitly expanded — survives re-renders
+let mistakeFiltersExpanded=false; // whether the Type/Level filter rows are shown
 let currentPanelTab='mistakes',panelOpen=false,_navBusy=false,_resetScroll=false;
 let mushafZoomLevel=0;
-const loadedQcfFonts=new Set();
+let _activeJuzs=[],_isFetchingJuz=false,_infiniteScrollObserver=null;
+const loadedQcfFonts=new Set(
+  JSON.parse(sessionStorage.getItem('qcf_loaded_fonts')||'[]')
+);
 
 // ── INIT
+// Line-aware Page Up/Down: instead of scrolling a flat clientHeight (which can
+// cut a line in half right at the new top), find the line boundary nearest the
+// viewport edge and snap to it. Scoped to only the 1-2 pages touching that edge
+// (not the whole document) so this stays cheap even with many pages loaded —
+// falls back to a flat clientHeight scroll if no usable line boundary is found.
+function scrollMushafByPage(direction){
+  const panel = document.getElementById('pageContent');
+  if(!panel) return false;
+  if(viewMode !== 'mushaf'){
+    panel.scrollBy({top: direction>0?panel.clientHeight:-panel.clientHeight, behavior:'smooth'});
+    return true;
+  }
+  const panelRect = panel.getBoundingClientRect();
+  const candidatePages = [...panel.querySelectorAll('.mushaf-page[id^="pg-"]')].filter(el=>{
+    const r = el.getBoundingClientRect();
+    return r.bottom >= panelRect.top - panelRect.height && r.top <= panelRect.bottom + panelRect.height;
+  });
+  if(!candidatePages.length){
+    panel.scrollBy({top: direction>0?panel.clientHeight:-panel.clientHeight, behavior:'smooth'});
+    return true;
+  }
+  const lines = candidatePages.flatMap(p=>[...p.querySelectorAll('.msl')]);
+  if(!lines.length){
+    panel.scrollBy({top: direction>0?panel.clientHeight:-panel.clientHeight, behavior:'smooth'});
+    return true;
+  }
+  if(direction > 0){
+    let lastFullyVisible=null, nextLine=null;
+    for(let i=0;i<lines.length;i++){
+      const r=lines[i].getBoundingClientRect();
+      if(r.bottom<=panelRect.bottom+1&&r.top>=panelRect.top-1){lastFullyVisible=lines[i];}
+      else if(lastFullyVisible&&r.top<panelRect.bottom){nextLine=lines[i];break;}
+    }
+    if(!nextLine&&lastFullyVisible){const idx=lines.indexOf(lastFullyVisible);nextLine=lines[idx+1]||null;}
+    if(nextLine){const r=nextLine.getBoundingClientRect();panel.scrollBy({top:r.top-panelRect.top,behavior:'smooth'});return true;}
+  } else {
+    let firstFullyVisible=null, prevLine=null;
+    for(let i=lines.length-1;i>=0;i--){
+      const r=lines[i].getBoundingClientRect();
+      if(r.top>=panelRect.top-1&&r.bottom<=panelRect.bottom+1){firstFullyVisible=lines[i];}
+      else if(firstFullyVisible&&r.bottom>panelRect.top){prevLine=lines[i];break;}
+    }
+    if(!prevLine&&firstFullyVisible){const idx=lines.indexOf(firstFullyVisible);prevLine=lines[idx-1]||null;}
+    if(prevLine){const r=prevLine.getBoundingClientRect();panel.scrollBy({top:r.bottom-panelRect.bottom,behavior:'smooth'});return true;}
+  }
+  panel.scrollBy({top: direction>0?panel.clientHeight:-panel.clientHeight, behavior:'smooth'});
+  return true;
+}
+
+function _countVisibleMslLines(panel){
+  const panelRect = panel.getBoundingClientRect();
+  const pages = [...panel.querySelectorAll('.mushaf-page[id^="pg-"]')].filter(el=>{
+    const r = el.getBoundingClientRect();
+    return r.bottom >= panelRect.top && r.top <= panelRect.bottom;
+  });
+  return pages.flatMap(p=>[...p.querySelectorAll('.msl')]).filter(l=>{
+    const r = l.getBoundingClientRect();
+    return r.top >= panelRect.top - 1 && r.bottom <= panelRect.bottom + 1;
+  }).length;
+}
+
+function scrollMushafByLines(lineCount, direction){
+  const panel = document.getElementById('pageContent');
+  if(!panel) return false;
+  if(viewMode !== 'mushaf'){
+    panel.scrollBy({top: direction>0?panel.clientHeight:-panel.clientHeight, behavior:'smooth'});
+    return true;
+  }
+  const panelRect = panel.getBoundingClientRect();
+  const candidatePages = [...panel.querySelectorAll('.mushaf-page[id^="pg-"]')].filter(el=>{
+    const r = el.getBoundingClientRect();
+    return r.bottom >= panelRect.top - panelRect.height && r.top <= panelRect.bottom + panelRect.height;
+  });
+  if(!candidatePages.length){
+    panel.scrollBy({top: direction>0?panel.clientHeight:-panel.clientHeight, behavior:'smooth'});
+    return true;
+  }
+  const lines = candidatePages.flatMap(p=>[...p.querySelectorAll('.msl')]);
+  if(!lines.length){
+    panel.scrollBy({top: direction>0?panel.clientHeight:-panel.clientHeight, behavior:'smooth'});
+    return true;
+  }
+  if(direction > 0){
+    let anchorIdx = 0;
+    for(let i=0; i<lines.length; i++){
+      const r = lines[i].getBoundingClientRect();
+      if(r.top >= panelRect.top - 1 && r.bottom <= panelRect.bottom + 1){
+        anchorIdx = i; break;
+      }
+    }
+    const targetIdx = Math.min(anchorIdx + lineCount, lines.length - 1);
+    const r = lines[targetIdx].getBoundingClientRect();
+    panel.scrollBy({top: r.top - panelRect.top, behavior:'smooth'});
+  } else {
+    let anchorIdx = 0;
+    for(let i=lines.length-1; i>=0; i--){
+      const r = lines[i].getBoundingClientRect();
+      if(r.top >= panelRect.top - 1 && r.bottom <= panelRect.bottom + 1){
+        anchorIdx = i; break;
+      }
+    }
+    const targetIdx = Math.max(anchorIdx - lineCount, 0);
+    const r = lines[targetIdx].getBoundingClientRect();
+    panel.scrollBy({top: r.bottom - panelRect.bottom, behavior:'smooth'});
+  }
+  return true;
+}
 window.addEventListener('DOMContentLoaded',()=>{
   document.documentElement.style.setProperty('--arabic-size',arabicSize+'px');
   // Start in mushaf mode (matching teacher app)
   viewMode='mushaf';
+  setupPosNavScrollTracking();
   ['page','surah','mushaf'].forEach(m=>{const t=document.getElementById(`vtab-${m}`);if(t)t.classList.toggle('active',m==='mushaf');});
   document.getElementById('viewControls').style.display='none';
   document.getElementById('mushafControls').style.display='';
+  // Derive the slider's range from the actual zoom constants rather than a
+  // second hardcoded -9/68 in the HTML — keeps them from ever drifting apart.
+  const _zSlider=document.getElementById('mushafZoomSlider');
+  if(_zSlider){
+    _zSlider.min=Math.round((MUSHAF_ZOOM_MIN_PCT-MUSHAF_ZOOM_BASE_PCT)/MUSHAF_ZOOM_STEP_PCT);
+    _zSlider.max=Math.round((MUSHAF_ZOOM_MAX_PCT-MUSHAF_ZOOM_BASE_PCT)/MUSHAF_ZOOM_STEP_PCT);
+    _zSlider.value=mushafZoomLevel;
+  }
   // Panel state: open on desktop, hidden on mobile
   panelOpen=window.innerWidth>700;
   const panel=document.getElementById('sessionPanel');
@@ -682,6 +1004,32 @@ window.addEventListener('DOMContentLoaded',()=>{
   document.addEventListener('keydown',e=>{
     const tag=document.activeElement?.tagName;
     if(tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT')return;
+    // ↑↓ scroll the Quran panel (mirrors teacher app — never changes juz)
+    if(e.key==='ArrowUp'||e.key==='ArrowDown'){
+      const panel=document.getElementById('pageContent');
+      if(panel){
+        e.preventDefault();
+        if(viewMode==='mushaf'){
+          const visible=_countVisibleMslLines(panel);
+          // Fixed midpoint equivalent (slider=7/15): carryOver ≈ visible/2
+          const carryOver=Math.max(2,Math.round(visible/2));
+          scrollMushafByLines(Math.max(1,visible-carryOver),e.key==='ArrowDown'?1:-1);
+        } else {
+          panel.scrollBy({top:e.key==='ArrowDown'?120:-120,behavior:'smooth'});
+        }
+      }
+      return;
+    }
+    // PageUp / PageDown — line-aware: snaps to the nearest line boundary
+    // instead of cutting a line in half at the new viewport edge.
+    if(e.key==='PageDown'||e.key==='PageUp'){
+      e.preventDefault();
+      scrollMushafByPage(e.key==='PageDown' ? 1 : -1);
+      return;
+    }
+    // ←→ navigate juz (mirrors teacher app)
+    if(e.key==='ArrowLeft'){e.preventDefault();changePage(1);return;}
+    if(e.key==='ArrowRight'){e.preventDefault();changePage(-1);return;}
     if(e.key==='+'||e.key==='='){
       if(viewMode==='mushaf')changeMushafZoom(1);else changeSize(2);
     } else if(e.key==='-'){
@@ -732,8 +1080,10 @@ function buildTopbarNav(){
   const nav=document.getElementById('topbarNav');
   if(viewMode==='surah'){
     nav.innerHTML=`<button class="btn-t" onclick="changeSurah(-1)" title="Previous surah" style="padding:4px 7px;font-size:13px;">◀</button><select class="sel" id="surahSel" onchange="loadSurah()" style="max-width:145px;"><option value="">— Choose Surah —</option>${SURAH_NAMES.map((n,i)=>`<option value="${i+1}">${i+1}. ${n}</option>`).join('')}</select><button class="btn-t" onclick="changeSurah(1)" title="Next surah" style="padding:4px 7px;font-size:13px;">▶</button><select class="sel" id="startAyah" style="width:70px;" onchange="scrollToAyah()"><option value="1">Ayah 1</option></select>`;
+  } else if(viewMode==='mushaf'){
+    nav.innerHTML=`<select class="sel" id="juzSel" onchange="goToJuz(this.value)" style="max-width:160px;"><option value="">— Jump to Juz —</option>${JUZ_NAMES_LONG.map((n,i)=>`<option value="${i+1}">${n}</option>`).join('')}</select><input type="number" id="jumpPageInput" min="1" max="604" placeholder="p.1–604" style="width:72px;background:#2d2820;border:.5px solid rgba(255,255,255,.25);color:#f5e8c8;border-radius:6px;padding:4px 6px;font-family:'Lora',serif;font-size:12px;" onchange="jumpToPageFromInput(this.value)" onkeydown="if(event.key==='Enter')jumpToPageFromInput(this.value)"/><div class="pos-nav" id="posNav"><span class="pos-nav-label" id="posNavLabel" onclick="openPosNavEdit()" title="Click to jump to a specific Surah:Ayah">—</span></div>`;
   } else {
-    // Page view and Mushaf view both use juz selector + page jump
+    // Juz View — unchanged
     nav.innerHTML=`<select class="sel" id="juzSel" onchange="goToJuz(this.value)" style="max-width:160px;"><option value="">— Jump to Juz —</option>${JUZ_NAMES_LONG.map((n,i)=>`<option value="${i+1}">${n}</option>`).join('')}</select><input type="number" id="jumpPageInput" min="1" max="604" placeholder="p.1–604" style="width:72px;background:#2d2820;border:.5px solid rgba(255,255,255,.25);color:#f5e8c8;border-radius:6px;padding:4px 6px;font-family:'Lora',serif;font-size:12px;" onchange="jumpToPageFromInput(this.value)" onkeydown="if(event.key==='Enter')jumpToPageFromInput(this.value)"/>`;
   }
 }
@@ -765,17 +1115,34 @@ function switchView(mode){
 
 // ── JUZ LOADING
 function goToJuz(n){if(!n)return;currentJuz=+n;_resetScroll=true;loadJuz(+n);}
-async function loadJuz(juzNum, scrollToPage=null){
-  currentJuz=juzNum;
+async function loadJuz(juzNum, appendMode='replace', scrollToPage=null){
+  if(_isFetchingJuz) return;
+  _isFetchingJuz=true;
+
   const sp=JUZ_PAGES[juzNum-1],ep=juzNum<30?JUZ_PAGES[juzNum]-1:604;
-  document.getElementById('juzInfoLabel').textContent=`Juz ${juzNum}`;
-  document.getElementById('pageInfoLabel').textContent=`Juz ${juzNum} (pp.${sp}–${ep})`;
-  document.getElementById('btnPrevPage').disabled=juzNum<=1;
-  document.getElementById('btnNextPage').disabled=juzNum>=30;
-  // Only reset the page input to juz start when NOT jumping to a specific page
-  const ji=document.getElementById('jumpPageInput');
-  if(ji) ji.value = scrollToPage || sp;
-  document.getElementById('pageContent').innerHTML=`<div class="loading-msg"><div class="loading-spinner"></div>Loading Juz ${juzNum}…</div>`;
+
+  if(appendMode==='replace'){
+    currentJuz=juzNum;
+    document.getElementById('juzInfoLabel').textContent=`Juz ${juzNum}`;
+    document.getElementById('pageInfoLabel').textContent=`Juz ${juzNum} (pp.${sp}–${ep})`;
+    document.getElementById('btnPrevPage').disabled=juzNum<=1;
+    document.getElementById('btnNextPage').disabled=juzNum>=30;
+    // Only reset the page input to juz start when NOT jumping to a specific page
+    const ji=document.getElementById('jumpPageInput');
+    if(ji) ji.value = scrollToPage || sp;
+    document.getElementById('pageContent').innerHTML=`<div class="loading-msg"><div class="loading-spinner"></div>Loading Juz ${juzNum}…</div>`;
+    _activeJuzs=[juzNum];
+  } else if(appendMode==='append'){
+    _activeJuzs.push(juzNum);
+  } else if(appendMode==='prepend'){
+    _activeJuzs.unshift(juzNum);
+  }
+
+  if(appendMode!=='replace'){
+    const minJ=Math.min(..._activeJuzs),maxJ=Math.max(..._activeJuzs);
+    document.getElementById('juzInfoLabel').textContent=`Juz ${minJ}${maxJ>minJ?'–'+maxJ:''}`;
+  }
+
   const pns=[];for(let p=sp;p<=ep;p++)pns.push(p);
 
   if(viewMode==='mushaf'){
@@ -788,24 +1155,25 @@ async function loadJuz(juzNum, scrollToPage=null){
     const uniquePns=[...new Set(pns)].sort((a,b)=>a-b);
     pns.length=0;pns.push(...uniquePns);
     try{
-      const results=await Promise.all(pns.map(p=>
-        fetch(`https://api.quran.com/api/v4/verses/by_page/${p}?words=true&word_fields=text_uthmani,char_type_name,code_v2,line_number,v2_page,page_number&per_page=50&fields=text_uthmani,juz_number,page_number,rub_el_hizb_number`)
-          .then(r=>r.json()).then(d=>({page:p,verses:d.verses||[]}))
-      ));
+      const results=await fetchPagesCached(pns);
       const pm={};
-      results.forEach(r=>{pm[r.page]=r.verses;r.verses.forEach(v=>{const w=(v.words||[]).filter(x=>x.char_type_name==='word');if(w.length)allVerseWords[v.verse_key]=w;});});
       const hizbByVerse={};
-      results.forEach(r=>r.verses.forEach(v=>{if(v.rub_el_hizb_number)hizbByVerse[v.verse_key]=v.rub_el_hizb_number;}));
+      results.forEach(r=>{pm[r.page]=r.verses;Object.assign(hizbByVerse,r.hizbByVerse||{});r.verses.forEach(v=>{const w=(v.words||[]).filter(x=>x.char_type_name==='word');if(w.length)allVerseWords[v.verse_key]=w;});});
       pageVerses=results.flatMap(r=>r.verses);
       const v2pages=new Set();
       pageVerses.forEach(v=>(v.words||[]).forEach(w=>{if(w.v2_page)v2pages.add(w.v2_page);}));
       if(!v2pages.size)pns.forEach(p=>v2pages.add(p));
-      await loadQcfFonts([...v2pages]);
-      renderMushafFromQuranCom(juzNum,pm,sp,ep,hizbByVerse);
+      // Skip bulk font loading for large ranges — fonts load lazily per page during upgrade.
+      // When appending/prepending a single juz, always pre-load fonts for the new pages.
+      const _svWillVirtualize = pns.length > (JUZ_PAGES[2]-JUZ_PAGES[0]);
+      if(!_svWillVirtualize || appendMode!=='replace') await loadQcfFonts([...v2pages]);
+      renderMushafFromQuranCom(juzNum,pm,sp,ep,hizbByVerse,appendMode);
       if(scrollToPage){await wf(4);await delay(80);const el=document.getElementById(`pg-${scrollToPage}`);if(el)scrollPC(el,'start');}
     }catch(err){
       console.error(err);
-      document.getElementById('pageContent').innerHTML=`<div class="loading-msg" style="color:var(--red)">Could not load Mushaf. Check internet.</div>`;
+      if(appendMode==='replace') document.getElementById('pageContent').innerHTML=`<div class="loading-msg" style="color:var(--red)">Could not load Mushaf. Check internet.</div>`;
+    } finally {
+      _isFetchingJuz=false;
     }
     return;
   }
@@ -815,7 +1183,11 @@ async function loadJuz(juzNum, scrollToPage=null){
     const pm={};res.forEach(r=>{pm[r.page]=r.verses;r.verses.forEach(v=>{const w=(v.words||[]).filter(x=>x.char_type_name==='word');if(w.length)allVerseWords[v.verse_key]=w;});});
     pageVerses=res.flatMap(r=>r.verses);renderJuzVerses(juzNum,pm,sp,ep);
     if(scrollToPage){await wf(3);const el=document.getElementById(`pg-${scrollToPage}`);if(el)scrollPC(el,'start');}
-  }catch{document.getElementById('pageContent').innerHTML=`<div class="loading-msg" style="color:var(--red)">Could not load. Check internet.</div>`;}
+  }catch{
+    if(appendMode==='replace') document.getElementById('pageContent').innerHTML=`<div class="loading-msg" style="color:var(--red)">Could not load. Check internet.</div>`;
+  } finally {
+    _isFetchingJuz=false;
+  }
 }
 
 function renderJuzVerses(juzNum,pm,sp,ep){
@@ -855,7 +1227,7 @@ async function jumpToPageFromInput(val){
   const sel=document.getElementById('juzSel');if(sel)sel.value=jn;
   // Pass scrollToPage so loadJuz handles the scroll after render internally,
   // bypassing the ji.value=sp reset and using the correct target page
-  await loadJuz(jn, pg);
+  await loadJuz(jn, 'replace', pg);
 }
 
 function hizbSpan(rub){const m=rub%4;if(m===1)return`<span class="hizb-marker full">حزب ${toAr(Math.ceil(rub/4))}</span>`;if(m===3)return`<span class="hizb-marker half">½ حزب</span>`;if(m===2)return`<span class="hizb-marker quarter">¼</span>`;if(m===0)return`<span class="hizb-marker quarter">¾</span>`;return'';}
@@ -898,49 +1270,566 @@ function wsHTML(text,sN,aN,pos){
   if(!mList.length)return`<span class="word-span" data-s="${sN}" data-a="${aN}">${text}</span>`;
   const pri=['m2','m3','m4','m5','m1','m6'];
   const bt=pri.find(t=>mList.some(m=>m.type===t))||mList[0].type;
+  const sevCls=_worstSevClass(mList);
   const isRep=repeatWordKeys.has(wk);
   const enc=encodeURIComponent(JSON.stringify(mList.map(m=>({type:m.type,correction:m.correction,note:m.note||'',sessionStudent:m.sessionStudent||'',sessionRange:m.sessionRange||'',sessionDate:m.sessionDate||'',ref:m.wordPosEnd&&m.wordPosEnd!==m.wordPos?`${sN}:${aN} words ${m.wordPos}–${m.wordPosEnd}`:`${sN}:${aN}`,word:m.word||text,typeConfig:m.typeConfig||null}))));
-  return`<span id="ws-${sN}-${aN}-${pos}" class="word-span marked-${bt}${isRep?' repeated':''}" data-s="${sN}" data-a="${aN}" onclick="showTT(event,this,'${enc}')">${text}</span>`;
+  return`<span id="ws-${sN}-${aN}-${pos}" class="word-span type-${bt} ${sevCls}${isRep?' repeated':''}" data-s="${sN}" data-a="${aN}" onclick="showTT(event,this,'${enc}')">${text}</span>`;
 }
 
 // ── MUSHAF HELPERS ────────────────────────────────────────────────
+// ── QURAN PAGE CACHE (shared with teacher app logic) ──────────────
+const QC_DB_NAME='tehfiz_quran_cache',QC_STORE='pages',QC_VERSION=1;
+let _qcDb=null;
+async function qcOpen(){if(_qcDb)return _qcDb;return new Promise((res,rej)=>{const req=indexedDB.open(QC_DB_NAME,1);req.onupgradeneeded=e=>{const db=e.target.result;if(!db.objectStoreNames.contains(QC_STORE))db.createObjectStore(QC_STORE,{keyPath:'page'});};req.onsuccess=e=>{_qcDb=e.target.result;res(_qcDb);};req.onerror=()=>rej(req.error);});}
+async function qcGet(p){try{const db=await qcOpen();return new Promise((res)=>{const req=db.transaction(QC_STORE,'readonly').objectStore(QC_STORE).get(p);req.onsuccess=()=>{const r=req.result;res(r&&r.cacheVersion===QC_VERSION?r:null);};req.onerror=()=>res(null);});}catch{return null;}}
+async function qcPut(p,verses,hizbByVerse){try{const db=await qcOpen();return new Promise(res=>{const tx=db.transaction(QC_STORE,'readwrite');tx.objectStore(QC_STORE).put({page:p,cacheVersion:QC_VERSION,fetchedAt:new Date().toISOString(),verses,hizbByVerse});tx.oncomplete=()=>res(true);tx.onerror=()=>res(false);});}catch{return false;}}
+const SV_PAGE_URL=p=>`https://api.quran.com/api/v4/verses/by_page/${p}?words=true&word_fields=text_uthmani,char_type_name,code_v2,line_number,v2_page,page_number&per_page=50&fields=text_uthmani,juz_number,page_number,rub_el_hizb_number`;
+async function fetchPageCached(p){const cached=await qcGet(p);if(cached)return{page:p,verses:cached.verses,hizbByVerse:cached.hizbByVerse,fromCache:true};const d=await fetch(SV_PAGE_URL(p)).then(r=>r.json());const verses=d.verses||[];const hizbByVerse={};verses.forEach(v=>{if(v.rub_el_hizb_number)hizbByVerse[v.verse_key]=v.rub_el_hizb_number;});qcPut(p,verses,hizbByVerse);return{page:p,verses,hizbByVerse,fromCache:false};}
+async function fetchPagesCached(pageNums,concurrency=8){const results=new Array(pageNums.length);let next=0;async function worker(){while(next<pageNums.length){const i=next++;results[i]=await fetchPageCached(pageNums[i]);}}await Promise.all(Array.from({length:Math.min(concurrency,pageNums.length)},worker));return results;}
+
 async function loadQcfFonts(pages){
   const CDN='https://verses.quran.foundation';
   await Promise.all(pages.map(async pg=>{
     const fname=`qcf-p${pg}-v2`;
     if(loadedQcfFonts.has(fname))return;
-    try{const ff=new FontFace(fname,`url('${CDN}/fonts/quran/hafs/v2/woff2/p${pg}.woff2')`);ff.display='block';await ff.load();document.fonts.add(ff);loadedQcfFonts.add(fname);}
+    try{const ff=new FontFace(fname,`url('${CDN}/fonts/quran/hafs/v2/woff2/p${pg}.woff2')`);ff.display='block';await ff.load();document.fonts.add(ff);loadedQcfFonts.add(fname);
+      try{sessionStorage.setItem('qcf_loaded_fonts',JSON.stringify([...loadedQcfFonts]));}catch{}
+    }
     catch(e){console.warn(`QCF font p${pg} failed:`,e);}
   }));
 }
 
-const MUSHAF_PAGE_WIDTH=680;
-function scaleMushafPages(){
-  const panel=document.getElementById('pageContent');if(!panel)return;
-  const scale=Math.min(1,(panel.clientWidth-16)/MUSHAF_PAGE_WIDTH);
-  document.querySelectorAll('.mushaf-page.mushaf-fixed').forEach(el=>{
-    el.style.transform=scale<1?`scale(${scale})`:'';
-    el.style.marginBottom=scale<1?`${(el.offsetHeight*scale)-el.offsetHeight+32}px`:'32px';
+// ── MUSHAF ZOOM — viewport-relative model ──────────────────────────
+// mushafZoomLevel is a step index (each step = 5% of viewport width).
+// Default level 0 = 60% of viewport width. Width is the single source of
+// truth; font size and all gutter/marker dimensions are derived from it.
+// There is no separate CSS transform/scale fighting with width — what you
+// set IS what renders, full stop.
+const MUSHAF_ZOOM_BASE_PCT=60;
+const MUSHAF_ZOOM_STEP_PCT=5;
+const MUSHAF_ZOOM_MIN_PCT=15;
+const MUSHAF_ZOOM_MAX_PCT=150;
+// A pure percentage floor breaks down on narrow windows: 15% of a 1920px screen
+// is a workable 288px, but 15% of a 700px screen is an unworkable 105px. This
+// absolute pixel floor is taken together with the percentage floor (whichever
+// gives the larger width wins) so small windows never collapse below a still-
+// renderable minimum even at the lowest zoom step.
+const MUSHAF_ABS_MIN_WIDTH_PX=240;
+const MUSHAF_REF_WIDTH=680;
+const MUSHAF_REF_FONT=26;
+// Fixed reference-scale (680px/26px) offsets that must scale together as ONE
+// coherent layout, not as independently-floored values — otherwise the hizb
+// marker's position relative to the margin drifts at the extremes.
+const MUSHAF_REF_INNER_PADDING=36;
+const MUSHAF_REF_GUTTER_MARGIN_L=48;
+const MUSHAF_REF_GUTTER_MARGIN_R=24; // student viewer: no spot-track gutter on the right
+const MUSHAF_REF_HIZB_GAP=29; // hizb marker sits this far OUTSIDE the left margin, at ref scale (77-48)
+const MUSHAF_REF_HIZB_SIZE=34;
+const MUSHAF_REF_HIZB_FONT_FULL=12;
+const MUSHAF_REF_HIZB_FONT_HALFQ=14;
+const MUSHAF_REF_HIZB_FONT_BASE=7.5;
+// Header/footer reference-scale values — student viewer's own chrome baseline
+// (smaller than the teacher app's), previously hardcoded and never zoom-aware.
+const MUSHAF_REF_HEADER_PAD_V=6;
+const MUSHAF_REF_HEADER_PAD_H=14;
+const MUSHAF_REF_HEADER_GAP=8;
+const MUSHAF_REF_HEADER_JUZ_FONT=9;
+const MUSHAF_REF_HEADER_SURAH_FONT=12;
+const MUSHAF_REF_HEADER_SURAHEN_FONT=8;
+const MUSHAF_REF_HEADER_MINWIDTH=44;
+const MUSHAF_REF_FOOTER_HEIGHT=26;
+const MUSHAF_REF_FOOTER_ORN_PAD=5;
+const MUSHAF_REF_FOOTER_ORN_H=14;
+const MUSHAF_REF_FOOTER_NUM_FONT=10;
+const MUSHAF_REF_FOOTER_NUM_PAD=14;
+
+// Single source of truth: given the current mushafZoomLevel and viewport,
+// compute every derived dimension. Every call site (render, live zoom change,
+// resize, virtualizer placeholders) must use this — never re-derive locally.
+function computeMushafZoomMetrics(){
+  const panel=document.getElementById('pageContent');
+  // Read the panel's REAL horizontal padding from computed style rather than
+  // guessing a constant — this is what was making the page render too wide.
+  let viewportW=MUSHAF_REF_WIDTH;
+  if(panel){
+    const cs=getComputedStyle(panel);
+    const padL=parseFloat(cs.paddingLeft)||0;
+    const padR=parseFloat(cs.paddingRight)||0;
+    viewportW=Math.max(100,panel.clientWidth-padL-padR);
+  }
+  const widthPct=Math.max(MUSHAF_ZOOM_MIN_PCT,Math.min(MUSHAF_ZOOM_MAX_PCT,
+    MUSHAF_ZOOM_BASE_PCT+mushafZoomLevel*MUSHAF_ZOOM_STEP_PCT));
+  // Percentage floor AND absolute pixel floor both apply — whichever gives the
+  // larger (safer) width wins.
+  const width=Math.max(MUSHAF_ABS_MIN_WIDTH_PX,Math.round(viewportW*widthPct/100));
+  const font=Math.max(1,width*MUSHAF_REF_FONT/MUSHAF_REF_WIDTH);
+  const scale=font/MUSHAF_REF_FONT;
+
+  const marginLeft=Math.max(12,Math.round(MUSHAF_REF_GUTTER_MARGIN_L*scale));
+  const marginRight=Math.max(6,Math.round(MUSHAF_REF_GUTTER_MARGIN_R*scale));
+  const innerPadding=Math.max(8,Math.round(MUSHAF_REF_INNER_PADDING*scale));
+
+  // Hizb marker position is LOCKED to marginLeft as a single combined offset —
+  // never independently floored — so the marker always sits the same
+  // proportional distance outside the margin, at every zoom level.
+  const hizbGap=Math.round(MUSHAF_REF_HIZB_GAP*scale);
+  const hizbLeft=marginLeft+Math.max(4,hizbGap);
+
+  return {
+    viewportW, widthPct, width, font, scale,
+    marginLeft, marginRight, innerPadding, hizbLeft,
+    hizbSize:    Math.max(14,Math.round(MUSHAF_REF_HIZB_SIZE*scale)),
+    hizbFontFull: Math.max(6,Math.round(MUSHAF_REF_HIZB_FONT_FULL*scale)),
+    hizbFontHalfQuarter: Math.max(6,Math.round(MUSHAF_REF_HIZB_FONT_HALFQ*scale)),
+    hizbFontBase: Math.max(4,Math.round(MUSHAF_REF_HIZB_FONT_BASE*scale)),
+    headerPadV: Math.max(2,Math.round(MUSHAF_REF_HEADER_PAD_V*scale)),
+    headerPadH: Math.max(4,Math.round(MUSHAF_REF_HEADER_PAD_H*scale)),
+    headerGap:  Math.max(2,Math.round(MUSHAF_REF_HEADER_GAP*scale)),
+    headerJuzFont: Math.max(6,Math.round(MUSHAF_REF_HEADER_JUZ_FONT*scale)),
+    headerSurahFont: Math.max(7,Math.round(MUSHAF_REF_HEADER_SURAH_FONT*scale)),
+    headerSurahEnFont: Math.max(5,Math.round(MUSHAF_REF_HEADER_SURAHEN_FONT*scale)),
+    headerMinWidth: Math.max(20,Math.round(MUSHAF_REF_HEADER_MINWIDTH*scale)),
+    footerHeight: Math.max(14,Math.round(MUSHAF_REF_FOOTER_HEIGHT*scale)),
+    footerOrnPad: Math.max(2,Math.round(MUSHAF_REF_FOOTER_ORN_PAD*scale)),
+    footerOrnH:   Math.max(6,Math.round(MUSHAF_REF_FOOTER_ORN_H*scale)),
+    footerNumFont: Math.max(6,Math.round(MUSHAF_REF_FOOTER_NUM_FONT*scale)),
+    footerNumPad: Math.max(4,Math.round(MUSHAF_REF_FOOTER_NUM_PAD*scale)),
+  };
+}
+
+// ── LIVE POSITION NAV (Mushaf view only) ────────────────────────────
+// Tracks which Juz/Page/Surah/Ayah is currently at the top of the viewport and
+// keeps the topbar's Juz/Page selects and the Surah:Ayah label in sync as the
+// user scrolls — similar to how a PDF reader updates its page-number readout.
+let _posNavScrollHandlerAttached = false;
+let _posNavRafPending = false;
+let _posNavAyahDebounceTimer = null;
+let _posNavEditing = false;    // true while the Surah:Ayah label is in edit mode
+let _posNavNavigating = false; // true from confirmPosNavEdit() until scroll fully settles
+
+function setupPosNavScrollTracking(){
+  const panel = document.getElementById('pageContent');
+  if(!panel || _posNavScrollHandlerAttached) return;
+  panel.addEventListener('scroll', ()=>{
+    if(viewMode !== 'mushaf') return;
+    if(!_posNavRafPending){
+      _posNavRafPending = true;
+      requestAnimationFrame(()=>{
+        _posNavRafPending = false;
+        updateLivePosition_cheap();
+      });
+    }
+    clearTimeout(_posNavAyahDebounceTimer);
+    _posNavAyahDebounceTimer = setTimeout(updateLivePosition_ayah, 180);
+  }, {passive:true});
+  _posNavScrollHandlerAttached = true;
+}
+
+function _posNavTopPage(){
+  const panel = document.getElementById('pageContent');
+  if(!panel) return null;
+  const panelRect = panel.getBoundingClientRect();
+  const pages = panel.querySelectorAll('.mushaf-page[id^="pg-"]');
+  for(const el of pages){
+    const r = el.getBoundingClientRect();
+    if(r.bottom > panelRect.top) return el;
+  }
+  return pages.length ? pages[pages.length-1] : null;
+}
+
+let _posNavLastTopPage = null;
+let _posNavLastSurah = null;
+let _posNavLastAyah = null;
+
+function updateLivePosition_cheap(){
+  if(_posNavEditing || _posNavNavigating) return;
+  const topEl = _posNavTopPage();
+  if(!topEl) return;
+  const m = topEl.id.match(/^pg-(\d+)$/);
+  if(!m) return;
+  const pg = +m[1];
+  let pageJuz = 1;
+  for(let j=JUZ_PAGES.length-1;j>=0;j--){ if(pg>=JUZ_PAGES[j]){ pageJuz=j+1; break; } }
+  const ji = document.getElementById('jumpPageInput');
+  if(ji && document.activeElement!==ji) ji.value = pg;
+  const juzSelEl = document.getElementById('juzSel');
+  if(juzSelEl && document.activeElement!==juzSelEl) juzSelEl.value = pageJuz;
+  const surahFirst = +(topEl.dataset.surahFirst||0);
+  _posNavLastTopPage = topEl;
+  _posNavLastSurah = surahFirst || _posNavLastSurah;
+  _renderPosNavLabel(surahFirst, _posNavLastAyah);
+}
+
+// Heavier update: walks the top page's lines to find the first COMPLETE verse
+// (its first word fully visible at/below the viewport top).
+function updateLivePosition_ayah(){
+  if(_posNavEditing || _posNavNavigating || viewMode!=='mushaf') return;
+  const panel = document.getElementById('pageContent');
+  const topEl = _posNavTopPage();
+  if(!panel || !topEl) return;
+  const panelRect = panel.getBoundingClientRect();
+  const words = topEl.querySelectorAll('.qcf-word[data-s][data-a][data-pos]');
+  let best = null;
+  for(const w of words){
+    if(+w.dataset.pos !== 1) continue;
+    const r = w.getBoundingClientRect();
+    if(r.top >= panelRect.top - 2){ best = w; break; }
+  }
+  if(best){
+    _posNavLastSurah = +best.dataset.s;
+    _posNavLastAyah = +best.dataset.a;
+    _renderPosNavLabel(_posNavLastSurah, _posNavLastAyah);
+  }
+}
+
+function _renderPosNavLabel(surah, ayah){
+  const label = document.getElementById('posNavLabel');
+  if(!label) return;
+  if(!surah){ label.textContent = '—'; return; }
+  const name = SURAH_NAMES[surah-1] || '';
+  const maxAyah = AYAH_COUNTS[surah-1] || 1;
+  label.textContent = ayah ? `${name}: ${ayah} / ${maxAyah}` : name;
+}
+
+function openPosNavEdit(){
+  const wrap = document.getElementById('posNav');
+  if(!wrap) return;
+  _posNavEditing = true;
+  const surah = _posNavLastSurah || 1;
+  const ayah = _posNavLastAyah || 1;
+  const maxAyah = AYAH_COUNTS[surah-1] || 1;
+  wrap.innerHTML = `
+    <div class="pos-nav-edit">
+      <select class="sel" id="posNavSurahSel" onchange="_posNavSurahChanged()">
+        ${SURAH_NAMES.map((n,i)=>`<option value="${i+1}" ${i+1===surah?'selected':''}>${i+1}. ${n}</option>`).join('')}
+      </select>
+      <input type="number" class="pos-ayah-input" id="posNavAyahInput" min="1" max="${maxAyah}" value="${ayah}"
+        onkeydown="if(event.key==='Enter')confirmPosNavEdit()"
+        oninput="_posNavAyahInputChanged()"/>
+      <span class="pos-nav-ayah-max" id="posNavAyahMax">/ ${maxAyah}</span>
+      <button class="pos-go-btn" onclick="confirmPosNavEdit()">Go</button>
+    </div>`;
+  document.getElementById('posNavAyahInput')?.focus();
+  document.getElementById('posNavAyahInput')?.select();
+  setTimeout(()=>document.addEventListener('click', _posNavOutsideClick), 0);
+}
+
+function _posNavAyahInputChanged(){
+  const input = document.getElementById('posNavAyahInput');
+  const maxEl = document.getElementById('posNavAyahMax');
+  if(!input) return;
+  const max = parseInt(input.max, 10) || 1;
+  const val = parseInt(input.value, 10);
+  const over = !isNaN(val) && val > max;
+  input.classList.toggle('over-max', over);
+  if(maxEl) maxEl.style.color = over ? '#ff9999' : 'rgba(255,255,255,.4)';
+}
+
+function _posNavSurahChanged(){
+  const sel = document.getElementById('posNavSurahSel');
+  const input = document.getElementById('posNavAyahInput');
+  const maxEl = document.getElementById('posNavAyahMax');
+  if(!sel || !input) return;
+  const surah = +sel.value;
+  const maxAyah = AYAH_COUNTS[surah-1] || 1;
+  input.max = maxAyah;
+  input.value = 1;
+  input.classList.remove('over-max');
+  if(maxEl){ maxEl.textContent = `/ ${maxAyah}`; maxEl.style.color = 'rgba(255,255,255,.4)'; }
+}
+
+function _posNavOutsideClick(e){
+  const wrap = document.getElementById('posNav');
+  if(wrap && !wrap.contains(e.target)){
+    closePosNavEdit();
+  }
+}
+
+function closePosNavEdit(){
+  document.removeEventListener('click', _posNavOutsideClick);
+  _posNavEditing = false;
+  const wrap = document.getElementById('posNav');
+  if(!wrap) return;
+  wrap.innerHTML = `<span class="pos-nav-label" id="posNavLabel" onclick="openPosNavEdit()" title="Click to jump to a specific Surah:Ayah">—</span>`;
+  _renderPosNavLabel(_posNavLastSurah, _posNavLastAyah);
+}
+
+async function confirmPosNavEdit(){
+  const sel = document.getElementById('posNavSurahSel');
+  const input = document.getElementById('posNavAyahInput');
+  if(!sel || !input) return;
+  const surah = +sel.value;
+  const maxAyah = AYAH_COUNTS[surah-1] || 1;
+  let ayah = parseInt(input.value, 10) || 1;
+  ayah = Math.max(1, Math.min(maxAyah, ayah));
+  document.removeEventListener('click', _posNavOutsideClick);
+  _posNavEditing = false;
+  _posNavNavigating = true; // pause live tracking for the full async navigation
+  // Update the label to the TARGET immediately so the user sees their
+  // selection, not whatever was at the top of the screen before.
+  _posNavLastSurah = surah;
+  _posNavLastAyah = ayah;
+  closePosNavEdit(); // now renders the target surah:ayah in the label
+  await navigateToVerse(surah, ayah, 1);
+  // Instead of a fixed timeout, poll until the viewport has actually reached
+  // the target verse (or a 3-second hard cap in case the verse isn't found).
+  _posNavWaitForScrollArrival(surah, ayah);
+}
+
+function _posNavWaitForScrollArrival(targetSurah, targetAyah){
+  const started = Date.now();
+  const HARD_CAP_MS = 3000;
+  function check(){
+    // Check whether the live-position logic now agrees with our target.
+    // Re-use the same first-visible-word walk as updateLivePosition_ayah.
+    const panel = document.getElementById('pageContent');
+    const topEl = _posNavTopPage();
+    if(panel && topEl){
+      const panelRect = panel.getBoundingClientRect();
+      const words = topEl.querySelectorAll('.qcf-word[data-surah][data-ayah][data-pos]');
+      for(const w of words){
+        if(+w.dataset.pos !== 1) continue;
+        const r = w.getBoundingClientRect();
+        if(r.top >= panelRect.top - 2){
+          if(+w.dataset.surah === targetSurah && +w.dataset.ayah === targetAyah){
+            // Viewport has arrived — resume live tracking
+            _posNavNavigating = false;
+            return;
+          }
+          break; // found the first visible word, it's not ours yet
+        }
+      }
+    }
+    if(Date.now() - started < HARD_CAP_MS){
+      requestAnimationFrame(check);
+    } else {
+      _posNavNavigating = false; // give up and let live tracking take over
+    }
+  }
+  requestAnimationFrame(check);
+}
+
+// Finds whichever .mushaf-page is currently at the top of the viewport and
+// records HOW FAR INTO that page (as a fraction of its height, not a pixel
+// offset) the viewport's top edge currently sits. A fraction survives the
+// page's height changing; a raw pixel offset would not.
+function captureMushafScrollAnchor(){
+  const panel=document.getElementById('pageContent');
+  if(!panel) return null;
+  const panelRect=panel.getBoundingClientRect();
+  const pages=panel.querySelectorAll('.mushaf-page[id^="pg-"]');
+  for(const el of pages){
+    const r=el.getBoundingClientRect();
+    if(r.bottom>panelRect.top){
+      const pageHeight=r.height||1;
+      const fraction=(panelRect.top-r.top)/pageHeight;
+      return {pageId:el.id, fraction};
+    }
+  }
+  return null;
+}
+
+// Restores scroll position using a previously captured anchor — finds the same
+// page (now resized) and scrolls so the viewport top sits at the same
+// fractional position within it.
+function restoreMushafScrollAnchor(anchor){
+  if(!anchor) return;
+  const panel=document.getElementById('pageContent');
+  const el=anchor.pageId?document.getElementById(anchor.pageId):null;
+  if(!panel||!el) return;
+  const panelRect=panel.getBoundingClientRect();
+  const r=el.getBoundingClientRect();
+  const targetTopInViewport=anchor.fraction*r.height;
+  const pageTopInScroll=panel.scrollTop+(r.top-panelRect.top);
+  panel.scrollTop=pageTopInScroll+targetTopInViewport;
+}
+
+// Applies the page-frame/body sizing (width, font, margin, padding, CSS zoom
+// vars, buffer blocks) to a specific set of page elements. Pulled out as its
+// own function so applyMushafZoomToDOM can call it twice: once synchronously
+// for visible pages, then again in progressive batches for everything else.
+function _applyMushafZoomToPages(pages, m){
+  pages.forEach(el=>{
+    el.style.width=m.width+'px';
+    el.style.transform='';
+    el.style.marginBottom='32px';
+    el.style.setProperty('--mz-header-pad-v', m.headerPadV+'px');
+    el.style.setProperty('--mz-header-pad-h', m.headerPadH+'px');
+    el.style.setProperty('--mz-header-gap', m.headerGap+'px');
+    el.style.setProperty('--mz-header-juz-font', m.headerJuzFont+'px');
+    el.style.setProperty('--mz-header-surah-font', m.headerSurahFont+'px');
+    el.style.setProperty('--mz-header-surahen-font', m.headerSurahEnFont+'px');
+    el.style.setProperty('--mz-header-minwidth', m.headerMinWidth+'px');
+    el.style.setProperty('--mz-footer-height', m.footerHeight+'px');
+    el.style.setProperty('--mz-footer-orn-pad', m.footerOrnPad+'px');
+    el.style.setProperty('--mz-footer-orn-h', m.footerOrnH+'px');
+    el.style.setProperty('--mz-footer-num-font', m.footerNumFont+'px');
+    el.style.setProperty('--mz-footer-num-pad', m.footerNumPad+'px');
+    const body=el.querySelector('.mushaf-page-body');
+    if(body){
+      body.style.fontSize=m.font+'px';
+      body.style.margin=`10px ${m.marginRight}px 10px ${m.marginLeft}px`;
+      body.style.padding=`10px ${m.innerPadding}px 8px`;
+    }
+    el.querySelectorAll('.msl-buffer').forEach(bEl=>{
+      const half=parseFloat(bEl.dataset.halfDeficit);
+      if(!isNaN(half)) bEl.style.height=Math.round(half*MSL_LINE_HEIGHT_EM*m.font)+'px';
+    });
+    el.dataset.zoomApplied='1';
   });
 }
-function attachMushafScaler(){
-  requestAnimationFrame(scaleMushafPages);
-  if(window._mushafResizeHandler)window.removeEventListener('resize',window._mushafResizeHandler);
-  window._mushafResizeHandler=scaleMushafPages;
-  window.addEventListener('resize',window._mushafResizeHandler);
+
+// Hizb markers are purely cosmetic positioning within already-sized pages —
+// they don't affect page height, so they can lag behind the resize itself.
+function _applyHizbZoomToPages(pages, m){
+  pages.forEach(pageEl=>{
+    pageEl.querySelectorAll('.msl-hizb').forEach(el=>{
+      el.style.left=`-${m.hizbLeft}px`;
+      el.style.width=m.hizbSize+'px';
+      el.style.height=m.hizbSize+'px';
+      el.style.fontSize=(el.classList.contains('hizb-full')?m.hizbFontFull
+        :(el.classList.contains('hizb-half')||el.classList.contains('hizb-quarter'))?m.hizbFontHalfQuarter
+        :m.hizbFontBase)+'px';
+    });
+  });
 }
-function changeMushafZoom(delta){
-  mushafZoomLevel=Math.max(-4,Math.min(6,mushafZoomLevel+delta));
-  const newWidth=680+mushafZoomLevel*40,newFont=26+mushafZoomLevel;
-  document.querySelectorAll('.mushaf-page.mushaf-fixed').forEach(el=>{el.style.width=newWidth+'px';});
-  document.querySelectorAll('.mushaf-page-body').forEach(el=>{el.style.fontSize=newFont+'px';});
+
+let _mushafZoomBatchToken=0; // invalidates any in-flight batch when a new zoom change starts
+
+function applyMushafZoomToDOM(m){
+  const _zoomAnchor=captureMushafScrollAnchor();
   const panel=document.getElementById('pageContent');
-  if(panel){const scale=Math.min(1,(panel.clientWidth-16)/newWidth);document.querySelectorAll('.mushaf-page.mushaf-fixed').forEach(el=>{el.style.transform=scale<1?`scale(${scale})`:'';el.style.marginBottom=scale<1?`${(el.offsetHeight*scale)-el.offsetHeight+32}px`:'32px';});}
+  const allPages=panel?[...panel.querySelectorAll('.mushaf-page[id^="pg-"]')]:[];
+
+  const myToken=++_mushafZoomBatchToken;
+
+  // STEP 1 — find which pages are actually visible (or just outside the
+  // viewport) right now. Only reads getBoundingClientRect on page wrappers
+  // (one per page), so cost scales with page count, never content density.
+  let visiblePages=allPages, restPages=[];
+  if(panel && allPages.length){
+    const panelRect=panel.getBoundingClientRect();
+    const margin=panelRect.height;
+    visiblePages=allPages.filter(el=>{
+      const r=el.getBoundingClientRect();
+      return r.bottom>=panelRect.top-margin && r.top<=panelRect.bottom+margin;
+    });
+    const visibleSet=new Set(visiblePages);
+    restPages=allPages.filter(el=>!visibleSet.has(el));
+  }
+
+  // STEP 2 — resize the visible set synchronously. This is what the user is
+  // watching, so it must be instant regardless of how many more pages are
+  // loaded elsewhere in the document.
+  _applyMushafZoomToPages(visiblePages, m);
+  updateMushafZoomIndicator();
+
+  // STEP 3 — restore scroll position next frame.
+  requestAnimationFrame(()=>{
+    if(myToken!==_mushafZoomBatchToken) return;
+    restoreMushafScrollAnchor(_zoomAnchor);
+    _applyHizbZoomToPages(visiblePages, m);
+
+    // STEP 4 — catch up every other loaded page in small batches across
+    // subsequent frames, nearest-to-viewport first.
+    if(restPages.length){
+      const panelRectNow=panel.getBoundingClientRect();
+      const center=(panelRectNow.top+panelRectNow.bottom)/2;
+      restPages.sort((a,b)=>{
+        const da=Math.abs((a.getBoundingClientRect().top)-center);
+        const db=Math.abs((b.getBoundingClientRect().top)-center);
+        return da-db;
+      });
+      let idx=0;
+      const BATCH_SIZE=4;
+      function nextBatch(){
+        if(myToken!==_mushafZoomBatchToken) return;
+        const batch=restPages.slice(idx, idx+BATCH_SIZE);
+        idx+=BATCH_SIZE;
+        _applyMushafZoomToPages(batch, m);
+        _applyHizbZoomToPages(batch, m);
+        if(idx<restPages.length) requestAnimationFrame(nextBatch);
+      }
+      requestAnimationFrame(nextBatch);
+    }
+  });
+}
+
+// Keeps the slider's thumb position in sync with mushafZoomLevel, whichever
+// path changed it (buttons, keyboard, Fit, or the slider itself). No numeric
+// readout — the slider position alone communicates relative size.
+function updateMushafZoomIndicator(){
+  const slider=document.getElementById('mushafZoomSlider');
+  if(slider && +slider.value!==mushafZoomLevel) slider.value=mushafZoomLevel;
+}
+
+// Called directly by the slider's oninput — jumps straight to the dragged level.
+function setMushafZoomLevel(level){
+  mushafZoomLevel=parseInt(level,10)||0;
+  applyMushafZoomToDOM(computeMushafZoomMetrics());
+}
+
+function attachMushafScaler(){
+  applyMushafZoomToDOM(computeMushafZoomMetrics());
+  if(window._mushafResizeHandler)window.removeEventListener('resize',window._mushafResizeHandler);
+  window._mushafResizeHandler=reapplyMushafZoomOnResize;
+  window.addEventListener('resize',window._mushafResizeHandler);
+  // Refresh the live Surah:Ayah/Page readout immediately after a render —
+  // otherwise it would show stale data until the user's next scroll.
+  if(viewMode==='mushaf'){
+    updateLivePosition_cheap();
+    clearTimeout(_posNavAyahDebounceTimer);
+    _posNavAyahDebounceTimer = setTimeout(updateLivePosition_ayah, 180);
+  }
+}
+
+function changeMushafZoom(delta){
+  mushafZoomLevel+=delta;
+  applyMushafZoomToDOM(computeMushafZoomMetrics());
+}
+
+function reapplyMushafZoomOnResize(){
+  if(viewMode!=='mushaf')return;
+  applyMushafZoomToDOM(computeMushafZoomMetrics());
+}
+
+function fitMushafToScreen(){
+  const panel=document.getElementById('pageContent');
+  if(!panel)return;
+  if(!document.querySelector('.mushaf-page.mushaf-fixed')){ showToast('Load the Mushaf first'); return; }
+  // Height renders reliably from known constants, so solve directly for the font
+  // size that fits panel.clientHeight rather than sampling/estimating from the DOM.
+  const viewportH=panel.clientHeight;
+  const headerEl=document.querySelector('.mushaf-page-header');
+  const footerEl=document.querySelector('.mushaf-page-footer');
+  const fixedChrome=(headerEl?.offsetHeight||34)+(footerEl?.offsetHeight||32)+20+24;
+  const availableForLines=Math.max(50,viewportH-fixedChrome);
+  const targetFont=availableForLines/(STANDARD_LINES_PER_PAGE*MSL_LINE_HEIGHT_EM);
+  const targetWidth=targetFont*MUSHAF_REF_WIDTH/MUSHAF_REF_FONT;
+  const cs=getComputedStyle(panel);
+  const viewportW=Math.max(100,panel.clientWidth-(parseFloat(cs.paddingLeft)||0)-(parseFloat(cs.paddingRight)||0));
+  const targetWidthPct=Math.max(MUSHAF_ZOOM_MIN_PCT,Math.min(MUSHAF_ZOOM_MAX_PCT,targetWidth/viewportW*100));
+  const targetLevel=Math.round((targetWidthPct-MUSHAF_ZOOM_BASE_PCT)/MUSHAF_ZOOM_STEP_PCT);
+  mushafZoomLevel=targetLevel;
+  applyMushafZoomToDOM(computeMushafZoomMetrics());
+  showToast('Fit to screen ✓');
 }
 
 function ornamentSVG(id){
   return`<svg viewBox="0 0 400 18" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="orn${id}" x="0" y="0" width="40" height="18" patternUnits="userSpaceOnUse"><line x1="0" y1="9" x2="40" y2="9" stroke="#b8841a" stroke-width=".6" opacity=".4"/><circle cx="20" cy="9" r="3.5" fill="none" stroke="#b8841a" stroke-width=".8" opacity=".6"/><circle cx="0" cy="9" r="1.5" fill="#b8841a" opacity=".35"/><circle cx="40" cy="9" r="1.5" fill="#b8841a" opacity=".35"/><path d="M14,9 Q17,5 20,9 Q23,13 26,9" fill="none" stroke="#b8841a" stroke-width=".7" opacity=".5"/></pattern></defs><rect width="400" height="18" fill="url(#orn${id})"/></svg>`;
 }
+// Plain spacer block — fills the vertical gap on pages 1-2 (Madinah mushaf's
+// ornate, shorter opening layout) so they match the height of a standard page.
+// Left as blank space for now; can be restyled with decoration later.
+// data-half-deficit stores the HALF-deficit this block represents (in line
+// units, not px) so applyMushafZoomToDOM can recompute its height live when
+// zoom changes, without needing a full page re-render.
+function mushafBufferBlock(pg, heightPx, halfDeficitLines){
+  if(heightPx < 6) return '';
+  return `<div class="msl-buffer" data-half-deficit="${halfDeficitLines}" style="height:${heightPx}px;"></div>`;
+}
+const STANDARD_LINES_PER_PAGE = 15;
+const MSL_LINE_HEIGHT_EM = 2.55;
 function mushafPageHeader(pg,juzNum,vv){
   let pageJuz=juzNum;for(let j=JUZ_PAGES.length-1;j>=0;j--){if(pg>=JUZ_PAGES[j]){pageJuz=j+1;break;}}
   const sNums=[...new Set(vv.map(v=>+v.verse_key.split(':')[0]))];
@@ -954,7 +1843,7 @@ function mushafPageFooter(pg){
 }
 
 // ── MUSHAF RENDERER ───────────────────────────────────────────────
-function renderMushafFromQuranCom(juzNum,pageMap,startPage,endPage,hizbByVerse={}){
+function renderMushafFromQuranCom(juzNum,pageMap,startPage,endPage,hizbByVerse={},appendMode='replace'){
   const contentEl=document.getElementById('pageContent');
   contentEl.classList.add('mushaf-view-mode');
 
@@ -998,6 +1887,7 @@ function renderMushafFromQuranCom(juzNum,pageMap,startPage,endPage,hizbByVerse={
   // at least one word from this juz (catches split pages that straddle two juz).
   const qcPages=Object.keys(byPage).map(Number)
     .filter(p=>{
+      if(appendMode!=='replace'&&document.getElementById(`pg-${p}`))return false;
       if(p>=startPage&&p<=endPage)return true;
       // Boundary page: include if any token on it belongs to this juz
       const tokens=Object.values(byPage[p]).flat();
@@ -1005,6 +1895,7 @@ function renderMushafFromQuranCom(juzNum,pageMap,startPage,endPage,hizbByVerse={
     })
     .sort((a,b)=>a-b);
 
+  const pageHtmlChunks=[];
   let html='';
 
   qcPages.forEach(qpg=>{
@@ -1018,17 +1909,38 @@ function renderMushafFromQuranCom(juzNum,pageMap,startPage,endPage,hizbByVerse={
     const surahNums=[...new Set(pageTokens.map(t=>t.sNum))];
     const vvFake=surahNums.map(s=>({verse_key:`${s}:1`}));
 
-    html+=`<div class="mushaf-page mushaf-fixed" id="pg-${qpg}">`;
+    const _zm=computeMushafZoomMetrics();
+    html+=`<div class="mushaf-page mushaf-fixed" id="pg-${qpg}" data-surah-first="${surahNums[0]||''}" data-surah-last="${surahNums[surahNums.length-1]||''}" style="width:${_zm.width}px;--mz-header-pad-v:${_zm.headerPadV}px;--mz-header-pad-h:${_zm.headerPadH}px;--mz-header-gap:${_zm.headerGap}px;--mz-header-juz-font:${_zm.headerJuzFont}px;--mz-header-surah-font:${_zm.headerSurahFont}px;--mz-header-surahen-font:${_zm.headerSurahEnFont}px;--mz-header-minwidth:${_zm.headerMinWidth}px;--mz-footer-height:${_zm.footerHeight}px;--mz-footer-orn-pad:${_zm.footerOrnPad}px;--mz-footer-orn-h:${_zm.footerOrnH}px;--mz-footer-num-font:${_zm.footerNumFont}px;--mz-footer-num-pad:${_zm.footerNumPad}px;">`;
     html+=mushafPageHeader(qpg,juzNum,vvFake);
-    html+=`<div class="mushaf-page-body" style="font-family:'${defaultFont}','UthmanicHafs',serif;">`;
+    const _renderFontPx=_zm.font;
+    const _renderMarginL=_zm.marginLeft;
+    const _renderMarginR=_zm.marginRight;
+    html+=`<div class="mushaf-page-body" style="font-family:'${defaultFont}','UthmanicHafs',serif;font-size:${_renderFontPx}px;margin:10px ${_renderMarginR}px 10px ${_renderMarginL}px;padding:10px ${_zm.innerPadding}px 8px;">`;
+
+    // Pages 1-2 of the Madinah mushaf (Al-Fatihah / opening of Al-Baqarah) have an
+    // ornate, shorter layout — fewer real text lines than the standard 15. Restrict
+    // the buffer to exactly these two pages; every other page's natural variance
+    // (surah headers, basmala blocks, etc.) is real content and left untouched.
+    const textLineCount=lineKeys.length;
+    const lineDeficit=qpg<=2?(STANDARD_LINES_PER_PAGE-textLineCount):0;
+    let topBufferPx=0,botBufferPx=0;
+    if(lineDeficit>0){
+      const halfDeficitLines=lineDeficit/2;
+      const deficitPx=lineDeficit*MSL_LINE_HEIGHT_EM*_zm.font;
+      topBufferPx=Math.round(deficitPx/2);
+      botBufferPx=Math.round(deficitPx-topBufferPx);
+      html+=mushafBufferBlock(qpg+'-top',topBufferPx,halfDeficitLines);
+    }
 
     const surahsStartingHere=new Set(pageTokens.filter(t=>t.aNum===1).map(t=>t.sNum));
     const firstSurahOnPage=pageTokens.length?pageTokens[0].sNum:null;
     const firstSurahStartsHere=firstSurahOnPage&&surahsStartingHere.has(firstSurahOnPage);
 
-    if(firstSurahStartsHere&&firstSurahOnPage!==1){
-      html+=`<div class="msl msl-surah-header"><div class="msl-surah-ornament"><span class="msl-surah-name">${AR_NAMES[firstSurahOnPage-1]||''}</span></div></div>`;
-      if(firstSurahOnPage!==9)html+=`<div class="msl msl-basmala"><span class="msl-basmala-text">بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ</span></div>`;
+    if(firstSurahStartsHere){
+      html+=`<div class="msl msl-surah-header" data-surah="${firstSurahOnPage}"><div class="msl-surah-ornament"><span class="msl-surah-name">${AR_NAMES[firstSurahOnPage-1]||''}</span></div></div>`;
+      // Surah 1 (Al-Fatihah): basmala is encoded in the QCF page font — don't inject a second one.
+      // Surah 9 (At-Tawbah): starts without basmala by Islamic tradition.
+      if(firstSurahOnPage!==9&&firstSurahOnPage!==1)html+=`<div class="msl msl-basmala"><span class="msl-basmala-text">بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ</span></div>`;
     }
 
     let prevSurah=firstSurahOnPage;
@@ -1048,7 +1960,7 @@ function renderMushafFromQuranCom(juzNum,pageMap,startPage,endPage,hizbByVerse={
       const lineWords=lineGroups[lk];
       const lineSurah=lineWords[0].sNum;
       if(lineSurah!==prevSurah){
-        html+=`<div class="msl msl-surah-header"><div class="msl-surah-ornament"><span class="msl-surah-name">${AR_NAMES[lineSurah-1]||''}</span></div></div>`;
+        html+=`<div class="msl msl-surah-header" data-surah="${lineSurah}"><div class="msl-surah-ornament"><span class="msl-surah-name">${AR_NAMES[lineSurah-1]||''}</span></div></div>`;
         if(lineSurah!==9&&lineSurah!==1)html+=`<div class="msl msl-basmala"><span class="msl-basmala-text">بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ</span></div>`;
       }
       prevSurah=lineSurah;
@@ -1060,7 +1972,7 @@ function renderMushafFromQuranCom(juzNum,pageMap,startPage,endPage,hizbByVerse={
           (m.wordPos===w.position||(m.wordPosEnd&&w.position>=m.wordPos&&w.position<=m.wordPosEnd)));
         const isRep=repeatWordKeys.has(`${w.sNum}:${w.aNum}:${w.position}`);
         let cls='qcf-word';
-        if(mList.length){const pri=['m2','m3','m4','m5','m1','m6'];const bt=pri.find(t=>mList.some(m=>m.type===t))||mList[0].type;cls+=` marked-${bt}`;if(isRep)cls+=' repeated';}
+        if(mList.length){const pri=['m2','m3','m4','m5','m1','m6'];const bt=pri.find(t=>mList.some(m=>m.type===t))||mList[0].type;cls+=` type-${bt} ${_worstSevClass(mList)}`;if(isRep)cls+=' repeated';}
         const wFont=`qcf-p${w.v2page}-v2`;
         const fs=w.v2page!==defaultV2page?`font-family:'${wFont}','UthmanicHafs',serif;`:'';
         if(mList.length){
@@ -1073,10 +1985,10 @@ function renderMushafFromQuranCom(juzNum,pageMap,startPage,endPage,hizbByVerse={
 
       const sc=lineWords.filter(w=>!w.isEnd).length===1?' msl-single':'';
       let hizbMarker='';
-      // Check ALL non-end words on this line for a rub boundary at position===1 of their ayah
-      // (the boundary word may not be the first word on the line)
+      // Scan all non-end words on this line for a rub_el_hizb boundary.
+      // Do NOT require position===1 — the boundary verse may start mid-line.
       for(const fwt of lineWords){
-        if(fwt.isEnd||fwt.position!==1)continue;
+        if(fwt.isEnd)continue;
         const vkey=`${fwt.sNum}:${fwt.aNum}`,rub=hizbByVerse[vkey];
         if(rub&&rub!==prevRubOnPage){
           const mod=rub%4;let hClass,hText;
@@ -1084,7 +1996,8 @@ function renderMushafFromQuranCom(juzNum,pageMap,startPage,endPage,hizbByVerse={
           else if(mod===2){hClass='hizb-quarter';hText='¼';}
           else if(mod===3){hClass='hizb-half';hText='½';}
           else{hClass='hizb-quarter';hText='¾';}
-          hizbMarker=`<span class="msl-hizb ${hClass}">${hText}</span>`;
+          const _hizbFont=hClass==='hizb-full'?_zm.hizbFontFull:_zm.hizbFontHalfQuarter;
+          hizbMarker=`<span class="msl-hizb ${hClass}" style="left:-${_zm.hizbLeft}px;width:${_zm.hizbSize}px;height:${_zm.hizbSize}px;font-size:${_hizbFont}px;">${hText}</span>`;
           prevRubOnPage=rub;
           break; // at most one marker per line
         }
@@ -1094,18 +2007,220 @@ function renderMushafFromQuranCom(juzNum,pageMap,startPage,endPage,hizbByVerse={
       html+=`<div class="msl msl-text${sc}${centerLast}" dir="rtl" style="position:relative;">${hizbMarker}${wordSpans}</div>`;
     });
 
+    if(botBufferPx>0) html+=mushafBufferBlock(qpg+'-bot',botBufferPx,lineDeficit/2);
     html+=`</div>`;
     html+=mushafPageFooter(qpg);
     html+=`</div>`;
+    pageHtmlChunks.push(html);
+    html='';
   });
 
-  contentEl.innerHTML=html;
-  if(_resetScroll){contentEl.scrollTop=0;_resetScroll=false;}
-  attachMushafScaler();
+  if(appendMode==='replace'){
+    contentEl.innerHTML='';
+    if(_resetScroll){contentEl.scrollTop=0;_resetScroll=false;}
+  }
+
+  const useVirtual = appendMode==='replace' && pageHtmlChunks.length > (JUZ_PAGES[2] - JUZ_PAGES[0]);
+  if(useVirtual){
+    _svRenderVirtualized(contentEl, pageHtmlChunks, qcPages, juzNum);
+  } else {
+    (async function(){
+      const frag = document.createDocumentFragment();
+      const referenceNode = appendMode==='prepend' ? contentEl.firstChild : null;
+      for(let i=0;i<pageHtmlChunks.length;i++){
+        const tmp=document.createElement('div');
+        tmp.innerHTML=pageHtmlChunks[i];
+        while(tmp.firstChild) frag.appendChild(tmp.firstChild);
+        if((i+1)%3===0||i===pageHtmlChunks.length-1){
+          if(appendMode==='prepend'){
+            const oldScrollHeight=contentEl.scrollHeight;
+            const oldScrollTop=contentEl.scrollTop;
+            contentEl.insertBefore(frag,referenceNode);
+            const newScrollHeight=contentEl.scrollHeight;
+            contentEl.scrollTop=oldScrollTop+(newScrollHeight-oldScrollHeight);
+          } else {
+            contentEl.appendChild(frag);
+          }
+          await new Promise(r=>requestAnimationFrame(r));
+        }
+      }
+      attachMushafScaler();
+      _svEnforceMaxJuzLimit(contentEl, appendMode);
+      _svUpdateInfiniteScrollTriggers();
+    })();
+  }
 }
 
+// ── INFINITE SCROLL: enforce 3-juz window, trim oldest end ─────────
+function _svEnforceMaxJuzLimit(contentEl, appendMode){
+  if(_activeJuzs.length>3){
+    if(appendMode==='prepend'){
+      // We prepended, so the oldest (highest juz) is now at the far end
+      const juzToRemove=_activeJuzs.pop();
+      _svRemoveJuzFromDOM(contentEl,juzToRemove,'bottom');
+    } else if(appendMode==='append'){
+      // We appended, so the oldest (lowest juz) is now at the front
+      const juzToRemove=_activeJuzs.shift();
+      _svRemoveJuzFromDOM(contentEl,juzToRemove,'top');
+    }
+  }
+}
 
-// Scroll the #pageContent div (the actual overflow:auto container) to show el
+function _svRemoveJuzFromDOM(contentEl,juzToRemove,position){
+  const sp=JUZ_PAGES[juzToRemove-1],ep=juzToRemove<30?JUZ_PAGES[juzToRemove]-1:604;
+  const pagesToRemove=[];
+  contentEl.querySelectorAll('.mushaf-page').forEach(el=>{
+    const m=el.id.match(/^pg-(\d+)$/);
+    if(m){const pNum=parseInt(m[1]);if(pNum>=sp&&pNum<=ep)pagesToRemove.push(el);}
+  });
+  if(position==='top'){
+    let removedHeight=0;
+    pagesToRemove.forEach(el=>{
+      removedHeight+=el.getBoundingClientRect().height;
+      const style=window.getComputedStyle(el);
+      removedHeight+=parseInt(style.marginBottom||0);
+      el.remove();
+    });
+    contentEl.scrollTop-=removedHeight;
+  } else {
+    pagesToRemove.forEach(el=>el.remove());
+  }
+}
+
+function _svUpdateInfiniteScrollTriggers(){
+  if(_infiniteScrollObserver) _infiniteScrollObserver.disconnect();
+  const contentEl=document.getElementById('pageContent');
+  if(!contentEl||!_activeJuzs.length) return;
+
+  const minJuz=Math.min(..._activeJuzs),maxJuz=Math.max(..._activeJuzs);
+
+  _infiniteScrollObserver=new IntersectionObserver(entries=>{
+    entries.forEach(entry=>{
+      if(entry.isIntersecting){
+        if(entry.target.dataset.triggerType==='prepend'&&minJuz>1){
+          loadJuz(minJuz-1,'prepend');
+        } else if(entry.target.dataset.triggerType==='append'&&maxJuz<30){
+          loadJuz(maxJuz+1,'append');
+        }
+      }
+    });
+  },{root:contentEl,rootMargin:'200px',threshold:0});
+
+  const minJuzStartPage=JUZ_PAGES[minJuz-1];
+  const prependTriggerEl=document.getElementById(`pg-${minJuzStartPage+1}`)||document.getElementById(`pg-${minJuzStartPage}`);
+  if(prependTriggerEl){prependTriggerEl.dataset.triggerType='prepend';_infiniteScrollObserver.observe(prependTriggerEl);}
+
+  const maxJuzEndPage=maxJuz<30?JUZ_PAGES[maxJuz]-1:604;
+  const appendTriggerEl=document.getElementById(`pg-${maxJuzEndPage-1}`)||document.getElementById(`pg-${maxJuzEndPage}`);
+  if(appendTriggerEl){appendTriggerEl.dataset.triggerType='append';_infiniteScrollObserver.observe(appendTriggerEl);}
+}
+
+// ── STUDENT VIEWER: VIRTUALIZED RENDERER ─────────────────────────
+let _svVirtObserver=null;
+let _svDowngradeTimers=new Map();
+
+function _svRenderVirtualized(contentEl, pageHtmlChunks, qcPages, juzNum){
+  if(_svVirtObserver){_svVirtObserver.disconnect();_svVirtObserver=null;}
+  _svDowngradeTimers.forEach(t=>clearTimeout(t));
+  _svDowngradeTimers.clear();
+  // Expose for _scrollToVerse poll so it can force-upgrade placeholder pages
+  window._svVirtData = {pageHtmlChunks, qcPages, contentEl, juzNum};
+
+  const frag=document.createDocumentFragment();
+  qcPages.forEach((qpg,i)=>{
+    const el=document.createElement('div');
+    el.className='mushaf-page mushaf-fixed';
+    el.id=`pg-${qpg}`;
+    el.dataset.pageNum=qpg;
+    el.dataset.fullIdx=i;
+    el.dataset.rendered='placeholder';
+    // Extract the real surah-first/last values from the already-built full HTML
+    // chunk for this page (pageHtmlChunks[i]) so the live position tracker has
+    // correct data even before this placeholder upgrades to full content.
+    const _chunkMatch = pageHtmlChunks[i]?.match(/data-surah-first="(\d*)" data-surah-last="(\d*)"/);
+    if(_chunkMatch){
+      el.dataset.surahFirst = _chunkMatch[1];
+      el.dataset.surahLast = _chunkMatch[2];
+    }
+    // Width must track the CURRENT zoom level, not the CSS default (680px).
+    const _placeholderWidth=computeMushafZoomMetrics().width;
+    el.style.cssText=`min-height:520px;width:${_placeholderWidth}px;`;
+    const vvFake=[{verse_key:`1:1`}];
+    el.innerHTML=`${mushafPageHeader(qpg,juzNum,vvFake)}
+      <div class="mushaf-page-body" style="min-height:420px;display:flex;align-items:center;justify-content:center;opacity:.25;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--gold);letter-spacing:.1em;">${qpg}</span>
+      </div>
+      ${mushafPageFooter(qpg)}`;
+    frag.appendChild(el);
+  });
+  contentEl.appendChild(frag);
+  attachMushafScaler();
+
+  _svVirtObserver=new IntersectionObserver(entries=>{
+    entries.forEach(entry=>{
+      const el=entry.target;
+      const pageNum=+el.dataset.pageNum;
+      const idx=+el.dataset.fullIdx;
+      if(entry.isIntersecting){
+        if(_svDowngradeTimers.has(pageNum)){clearTimeout(_svDowngradeTimers.get(pageNum));_svDowngradeTimers.delete(pageNum);}
+        for(let d=-2;d<=2;d++){
+          const ni=idx+d;
+          if(ni>=0&&ni<qcPages.length) _svUpgradePage(qcPages[ni],ni,pageHtmlChunks[ni],contentEl,juzNum);
+        }
+      } else {
+        if(el.dataset.rendered==='full'&&!_svDowngradeTimers.has(pageNum)){
+          const t=setTimeout(()=>{
+            const rect=el.getBoundingClientRect();
+            const pc=contentEl.getBoundingClientRect();
+            const dist=Math.min(Math.abs(rect.bottom-pc.top),Math.abs(rect.top-pc.bottom));
+            if(dist>pc.height*3) _svDowngradePage(el,pageNum,juzNum);
+            _svDowngradeTimers.delete(pageNum);
+          },500);
+          _svDowngradeTimers.set(pageNum,t);
+        }
+      }
+    });
+  },{root:contentEl,rootMargin:'400px 0px 400px 0px',threshold:0});
+
+  contentEl.querySelectorAll('.mushaf-page[data-page-num]').forEach(el=>_svVirtObserver.observe(el));
+}
+
+function _svUpgradePage(qpg,idx,fullHtml,contentEl,juzNum){
+  const el=document.getElementById(`pg-${qpg}`);
+  if(!el||el.dataset.rendered==='full') return;
+  el.dataset.rendered='full';
+  const tmp=document.createElement('div');
+  tmp.innerHTML=fullHtml;
+  const src=tmp.firstElementChild;
+  if(src){
+    el.innerHTML=src.innerHTML;
+    el.className=src.className;
+    // Adopt src's baked-in width AND zoom CSS variables instead of wiping all
+    // inline styles — a flat removeAttribute('style') would drop everything.
+    const _srcStyle=src.getAttribute('style')||'';
+    el.removeAttribute('style');
+    if(_srcStyle) el.setAttribute('style',_srcStyle);
+    el.style.minHeight='';
+  }
+  // No separate scale-transform needed — width (adopted from src above) is the
+  // single source of truth for visual size in this model.
+  el.style.transform='';
+  el.style.marginBottom='32px';
+  // Load this page's QCF font lazily — non-blocking so upgrade is instant
+  loadQcfFonts([qpg]);
+}
+
+function _svDowngradePage(el,qpg,juzNum){
+  el.dataset.rendered='placeholder';
+  el.style.minHeight='520px';
+  el.innerHTML=`${mushafPageHeader(qpg,juzNum,[{verse_key:'1:1'}])}
+    <div class="mushaf-page-body" style="min-height:420px;display:flex;align-items:center;justify-content:center;opacity:.25;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--gold);letter-spacing:.1em;">${qpg}</span>
+    </div>
+    ${mushafPageFooter(qpg)}`;
+  el.style.transform='';
+  el.style.marginBottom='32px';
+}
 function scrollPC(el, block){
   const pc = document.getElementById('pageContent');
   if(!pc || !el) return;
@@ -1152,7 +2267,6 @@ async function _nav(surah,ayah,wordPos){
       currentSurah=surah;
       const s=document.getElementById('surahSel');if(s)s.value=surah;
       await loadSurahByNum(surah);
-      await wf(4); await delay(80);
     }
   } else {
     // page or mushaf view
@@ -1161,10 +2275,9 @@ async function _nav(surah,ayah,wordPos){
       try{const r=await fetch(`https://api.quran.com/api/v4/verses/by_key/${surah}:${ayah}?fields=juz_number`);const d=await r.json();if(d.verse?.juz_number)jn=d.verse.juz_number;}catch{}
       const s=document.getElementById('juzSel');if(s)s.value=jn;
       await loadJuz(jn);
-      await wf(4); await delay(120);
     }
   }
-  // 2. Find the verse element and scroll to it
+  // 2. Find the verse element and scroll to it (mushaf mode polls for DOM readiness)
   _scrollToVerse(surah, ayah, wordPos);
 }
 
@@ -1178,30 +2291,79 @@ function _scrollToVerse(surah, ayah, wordPos){
   };
 
   if(viewMode==='mushaf'){
-    const targetSel=wordPos
-      ?`[data-s="${surah}"][data-a="${ayah}"][data-pos="${wordPos}"]`
-      :`[data-s="${surah}"][data-a="${ayah}"]`;
-    const ws=document.querySelector(targetSel)
-           ||document.querySelector(`[data-s="${surah}"][data-a="${ayah}"]`);
-    if(ws){
-      // CSS transform (scale) breaks offsetTop chains.
-      // Use getBoundingClientRect which always returns actual rendered positions.
-      const pc=document.getElementById('pageContent');
-      const pcRect=pc.getBoundingClientRect();
-      const wsRect=ws.getBoundingClientRect();
-      // Compute where the word currently sits relative to pageContent's scroll container
-      const wordTopInContainer=wsRect.top - pcRect.top + pc.scrollTop;
-      const wordH=wsRect.height;
-      const pcH=pc.clientHeight;
-      // Scroll to center the word vertically
-      const target=wordTopInContainer - (pcH/2) + (wordH/2);
-      pc.scrollTo({top:Math.max(0,target),behavior:'smooth'});
-      flashWord(ws, 650);
-    } else {
-      // Fallback: any span from this surah — scroll its page into view
-      const any=document.querySelector(`[data-s="${surah}"]`);
-      if(any){const pg=any.closest('.mushaf-page');if(pg)scrollPC(pg,'start');}
+    const pc=document.getElementById('pageContent');
+    if(!pc) return;
+    const primarySel = wordPos
+      ? `[data-s="${surah}"][data-a="${ayah}"][data-pos="${wordPos}"]`
+      : `[data-s="${surah}"][data-a="${ayah}"]`;
+    const fallbackSel = `[data-s="${surah}"][data-a="${ayah}"]`;
+    const POLL_CAP = 5000;
+    const started = Date.now();
+    let lastScrollTop = -1;
+    let stableFrames = 0;
+
+    function pollForWord(){
+      const ws = document.querySelector(primarySel) || document.querySelector(fallbackSel);
+
+      if(!ws){
+        // Word not in DOM yet — try to force-upgrade any nearby placeholder page
+        const any = document.querySelector(`[data-s="${surah}"]`);
+        if(any){
+          const pg = any.closest('.mushaf-page');
+          if(pg && pg.dataset.rendered === 'placeholder'){
+            const idx = +pg.dataset.fullIdx;
+            if(!isNaN(idx) && window._svVirtData){
+              const {pageHtmlChunks, qcPages, contentEl, juzNum} = window._svVirtData;
+              for(let d=-1;d<=1;d++){
+                const ni=idx+d;
+                if(ni>=0&&ni<qcPages.length) _svUpgradePage(qcPages[ni],ni,pageHtmlChunks[ni],contentEl,juzNum);
+              }
+            }
+          }
+        }
+        if(Date.now() - started < POLL_CAP) requestAnimationFrame(pollForWord);
+        return;
+      }
+
+      // Phase 2: element exists — compute and issue scroll every frame,
+      // re-measuring each time because injectProgressively may still be
+      // inserting pages above this one and shifting its position.
+      const pcRect = pc.getBoundingClientRect();
+      const wsRect = ws.getBoundingClientRect();
+
+      let anchorTop = wsRect.top;
+      if(ayah === 1){
+        const banner = document.querySelector(`.msl-surah-header[data-surah="${surah}"]`);
+        if(banner) anchorTop = banner.getBoundingClientRect().top;
+      }
+
+      const anchorTopInPanel = anchorTop - pcRect.top + pc.scrollTop;
+      const targetScrollTop = Math.max(0, anchorTopInPanel - 24);
+      const dist = Math.abs(pc.scrollTop - targetScrollTop);
+
+      // Always scroll if not within tolerance — return and re-poll
+      if(dist > 4){
+        pc.scrollTo({top: targetScrollTop, behavior:'smooth'});
+        stableFrames = 0;
+        lastScrollTop = pc.scrollTop;
+        if(Date.now() - started < POLL_CAP) requestAnimationFrame(pollForWord);
+        return;
+      }
+
+      // Within tolerance — count frames where scrollTop has also stopped moving
+      if(Math.abs(pc.scrollTop - lastScrollTop) < 2) stableFrames++;
+      else stableFrames = 0;
+      lastScrollTop = pc.scrollTop;
+
+      if(stableFrames >= 4){
+        ws.classList.remove('flash-word'); void ws.offsetWidth;
+        ws.classList.add('flash-word');
+        setTimeout(()=>ws.classList.remove('flash-word'), 1400);
+        return;
+      }
+      if(Date.now() - started < POLL_CAP) requestAnimationFrame(pollForWord);
     }
+    requestAnimationFrame(pollForWord);
     return;
   }
 
@@ -1316,26 +2478,121 @@ function renderSessionsList(){
       <div class="sess-card-head"><div style="flex:1;min-width:0;">
         <div style="display:flex;align-items:center;gap:5px;"><span class="sess-name">${esc(s.student)}</span>${isA?`<span style="font-size:8px;background:${col};color:white;padding:1px 4px;border-radius:999px;font-family:'IBM Plex Mono',monospace;font-weight:700;">ON</span>`:''}</div>
         <div class="sess-range">${esc(s.range||'')}</div>
+        ${s.spotTest?.enabled ? `<div style="font-size:9px;color:#1a4a8a;font-family:'IBM Plex Mono',monospace;margin-top:2px;background:#ddeeff;border-radius:3px;padding:1px 5px;display:inline-block;cursor:pointer;" onclick="event.stopPropagation();openSpotPopup(${s.id})" title="View spot test results">🎲 Spot test · ${s.spotTest.spots?.length||0} spots</div>` : ''}
         <div class="sess-date">${s.date||''} · ${s.duration||''}</div>
         ${s.remarks?`<div style="font-size:9px;color:var(--ink2);font-style:italic;margin-top:3px;padding:3px 5px;background:var(--parchment2);border-radius:3px;border-left:2px solid var(--gold);">${esc(s.remarks)}</div>`:''}
       </div><button class="sess-del" onclick="event.stopPropagation();deleteSession(${s.id})">✕</button></div>
-      <div class="sess-counts"><span>${(s.mistakes||[]).length} mistakes</span><span style="color:var(--green)">Lvl 1 ${sf}</span><span style="color:var(--amber)">Lvl 2 ${sp}</span><span style="color:var(--red)">Lvl 3 ${st}</span></div>
+      <div class="sess-counts"><span>${(s.mistakes||[]).length} mistakes</span><span style="color:var(--lvl1-yellow)">Lvl 1 ${sf}</span><span style="color:var(--lvl2-orange)">Lvl 2 ${sp}</span><span style="color:var(--red)">Lvl 3 ${st}</span></div>
     </div>`;
   }).join('');
 }
 
-// ── MISTAKES LIST
+// ── MISTAKE LIST: GROUPING, FILTERS, RENDERING ────────────────────
+function renderMlistControls(){
+  const el=document.getElementById('mlistControls');
+  if(!el) return;
+  const hasMistakes = activeMistakes.length>0;
+  if(!hasMistakes){ el.innerHTML=''; return; }
+
+  const groupBtn=(mode,label)=>`<button class="mlist-chip${mistakeGroupMode===mode?' active':''}" onclick="setMistakeGroupMode('${mode}')">${label}</button>`;
+  const typeBtn=(t)=>`<button class="mlist-chip${mistakeFilterTypes.has(t.id)?' active '+t.id:''}" onclick="toggleMistakeTypeFilter('${t.id}')">${t.label}</button>`;
+  const corrBtn=(c)=>`<button class="mlist-chip${mistakeFilterCorr.has(c.id)?' active':''}" onclick="toggleMistakeCorrFilter('${c.id}')">${c.shortLabel}</button>`;
+  const activeFilterCount = mistakeFilterTypes.size + mistakeFilterCorr.size + (mistakeFilterRepeatedOnly?1:0);
+  const hasActiveFilters = activeFilterCount>0;
+
+  el.innerHTML=`
+    <div class="mlist-row">
+      <span class="mlist-row-label">Group</span>
+      ${groupBtn('juz','Juz')}${groupBtn('surah','Surah')}${groupBtn('none','None')}
+      <button class="mlist-chip${hasActiveFilters?' active':''}" onclick="toggleMlistFiltersExpanded()" style="margin-left:auto;">
+        ⚙ Filters${hasActiveFilters?` (${activeFilterCount})`:''} ${mistakeFiltersExpanded?'▴':'▾'}
+      </button>
+    </div>
+    ${mistakeFiltersExpanded?`
+    <div class="mlist-row">
+      <span class="mlist-row-label">Type</span>
+      ${MISTAKE_TYPES.map(typeBtn).join('')}
+    </div>
+    <div class="mlist-row">
+      <span class="mlist-row-label">Level</span>
+      ${CORRECTION_TYPES.filter(c=>c.id!=='c0').map(corrBtn).join('')}
+      <button class="mlist-chip${mistakeFilterRepeatedOnly?' active':''}" onclick="toggleRepeatedOnlyFilter()" style="margin-left:auto;">⚠ Repeated only</button>
+    </div>
+    ${hasActiveFilters?`<div class="mlist-row"><span class="mlist-reset" onclick="resetMistakeFilters()">Reset filters</span></div>`:''}
+    `:''}`;
+}
+
+function toggleMlistFiltersExpanded(){
+  mistakeFiltersExpanded=!mistakeFiltersExpanded;
+  renderMlistControls();
+}
+
+function setMistakeGroupMode(mode){
+  mistakeGroupMode=mode;
+  mistakeCollapsedGroups.clear();
+  mistakeExpandedGroups.clear();
+  renderMistakesList(); // also re-renders controls
+}
+function toggleMistakeTypeFilter(id){
+  if(mistakeFilterTypes.has(id)) mistakeFilterTypes.delete(id); else mistakeFilterTypes.add(id);
+  renderMistakesList();
+}
+function toggleMistakeCorrFilter(id){
+  if(mistakeFilterCorr.has(id)) mistakeFilterCorr.delete(id); else mistakeFilterCorr.add(id);
+  renderMistakesList();
+}
+function toggleRepeatedOnlyFilter(){
+  mistakeFilterRepeatedOnly=!mistakeFilterRepeatedOnly;
+  renderMistakesList();
+}
+function resetMistakeFilters(){
+  mistakeFilterTypes.clear();mistakeFilterCorr.clear();mistakeFilterRepeatedOnly=false;
+  renderMistakesList();
+}
+function toggleMgroup(key){
+  if(mistakeCollapsedGroups.has(key)){
+    mistakeCollapsedGroups.delete(key);
+    mistakeExpandedGroups.add(key); // user explicitly expanded — remember across re-renders
+  } else {
+    mistakeCollapsedGroups.add(key);
+    mistakeExpandedGroups.delete(key);
+  }
+  const head=document.querySelector(`.mgroup-head[data-key="${CSS.escape(key)}"]`);
+  const body=document.querySelector(`.mgroup-body[data-key="${CSS.escape(key)}"]`);
+  if(head) head.classList.toggle('collapsed');
+  if(body) body.classList.toggle('collapsed');
+}
+
 function renderMistakesList(){
   const list=document.getElementById('mistakesList');
+  renderMlistControls();
   if(!activeMistakes.length){list.innerHTML=`<div class="empty-hint">No mistakes in selected session(s).</div>`;return;}
-  const sorted=[...activeMistakes].sort((a,b)=>a.surah-b.surah||a.ayah-b.ayah||a.wordPos-b.wordPos);
+
+  // Apply filters
+  let filtered=activeMistakes.filter(m=>{
+    if(mistakeFilterTypes.size && !mistakeFilterTypes.has(m.type)) return false;
+    if(mistakeFilterCorr.size && !mistakeFilterCorr.has(m.correction)) return false;
+    if(mistakeFilterRepeatedOnly){
+      const wk=`${m.surah}:${m.ayah}:${m.wordPos}`;
+      if(!repeatWordKeys.has(wk)) return false;
+    }
+    return true;
+  });
+
+  if(!filtered.length){
+    list.innerHTML=`<div class="empty-hint">No mistakes match the current filters.<br><span class="mlist-reset" onclick="resetMistakeFilters()" style="cursor:pointer;">Reset filters</span></div>`;
+    return;
+  }
+
+  const sorted=[...filtered].sort((a,b)=>a.surah-b.surah||a.ayah-b.ayah||a.wordPos-b.wordPos);
   const wkm={};sorted.forEach(m=>{const wk=`${m.surah}:${m.ayah}:${m.wordPos}`;if(!wkm[wk])wkm[wk]=[];wkm[wk].push(m.sessionId);});
-  list.innerHTML=sorted.map(m=>{
+
+  const renderCard=(m)=>{
     const cfg=m.typeConfig||null;
     const wk=`${m.surah}:${m.ayah}:${m.wordPos}`;const isR=wkm[wk].length>1;
     const refLabel=m.wordPosEnd&&m.wordPosEnd!==m.wordPos?`${m.surah}:${m.ayah} (words ${m.wordPos}–${m.wordPosEnd})`:`${m.surah}:${m.ayah}`;
     const sessInfo=`${m.sessionStudent||''}${m.sessionRange?' · '+m.sessionRange:''}${m.sessionDate?' · '+m.sessionDate:''}`;
-    return`<div class="mistake-item${isR?' repeated-mistake':''}" onclick="navigateToVerse(${m.surah},${m.ayah},${m.wordPos||0})">
+    return`<div class="mistake-item ${_sevClassForCorr(m.correction)}${isR?' repeated-mistake':''}" onclick="navigateToVerse(${m.surah},${m.ayah},${m.wordPos||0})">
       <span class="m-badge ${m.type}">${mTypeLabel(m,cfg)}</span>
       <div class="m-body">
         <div class="m-ref">${refLabel} · ${m.time||''}${isR?`<span class="repeat-badge">×${wkm[wk].length}</span>`:''}</div>
@@ -1343,6 +2600,41 @@ function renderMistakesList(){
         <div class="m-corr ${corrClass2[m.correction]}">${mCorrLabel(m,cfg)}</div>
         ${m.note?`<div class="m-note">${esc(m.note)}</div>`:''}
         ${sessInfo?`<div class="m-sess-tag">${esc(sessInfo)}</div>`:''}
+      </div>
+    </div>`;
+  };
+
+  if(mistakeGroupMode==='none'){
+    list.innerHTML=sorted.map(renderCard).join('');
+    return;
+  }
+
+  // Group by juz or surah
+  const groups=new Map(); // key -> {label, items[]}
+  sorted.forEach(m=>{
+    let key, label;
+    if(mistakeGroupMode==='juz'){
+      const jn=juzForVerse(m.surah,m.ayah);
+      key=`j${jn}`; label=JUZ_NAMES_LONG[jn-1]||`Juz ${jn}`;
+    } else {
+      key=`s${m.surah}`; label=`${m.surah}. ${SURAH_NAMES[m.surah-1]||''}`;
+    }
+    if(!groups.has(key)) groups.set(key,{label,items:[]});
+    // Default new groups to collapsed unless the user has explicitly expanded them
+    if(!mistakeExpandedGroups.has(key)) mistakeCollapsedGroups.add(key);
+    groups.get(key).items.push(m);
+  });
+
+  list.innerHTML=[...groups.entries()].map(([key,g])=>{
+    const collapsed=mistakeCollapsedGroups.has(key);
+    return`<div class="mgroup">
+      <div class="mgroup-head${collapsed?' collapsed':''}" data-key="${key}" onclick="toggleMgroup('${key}')">
+        <span class="mgroup-arrow">▾</span>
+        <span class="mgroup-title">${esc(g.label)}</span>
+        <span class="mgroup-count">${g.items.length}</span>
+      </div>
+      <div class="mgroup-body${collapsed?' collapsed':''}" data-key="${key}">
+        ${g.items.map(renderCard).join('')}
       </div>
     </div>`;
   }).join('');
@@ -1365,6 +2657,11 @@ function openReview(){
     date:activeSessions.map(s=>s.date).filter(Boolean).join(', '),
     duration:'',
     remarks:activeSessions.length===1?(activeSessions[0].remarks||''):activeSessions.map(s=>s.remarks).filter(Boolean).join(' / '),
+    spotTest:activeSessions.length===1?(activeSessions[0].spotTest||null):null,
+    // For multi-session, collect all spot tests
+    allSpotTests:activeSessions.filter(s=>s.spotTest?.enabled&&s.spotTest.spots?.length).map(s=>({
+      student:s.student, range:s.range, date:s.date, spotTest:s.spotTest, mistakes:s.mistakes||[]
+    })),
     mistakes:activeMistakes
   };
   document.getElementById('reviewContent').innerHTML=buildReviewHTML(s);
@@ -1393,28 +2690,70 @@ function buildReviewHTML(s){
     }
     <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:6px;">
       <span class="m-badge" style="background:var(--parchment3);color:var(--ink2);font-size:9px;">${total} mistakes</span>
-      ${noInt?`<span class="m-badge" style="background:var(--parchment3);color:var(--ink3);font-size:9px;">Lvl 0 · ${noInt}</span>`:''}
-      <span class="m-badge" style="background:var(--green-bg);color:var(--green);font-size:9px;">Lvl 1 · ${self}</span>
-      <span class="m-badge" style="background:var(--amber-bg);color:var(--amber);font-size:9px;">Lvl 2 · ${prompted}</span>
+      ${noInt?`<span class="m-badge" style="background:var(--green-bg);color:var(--green);font-size:9px;">Lvl 0 · ${noInt}</span>`:''}
+      <span class="m-badge" style="background:var(--lvl1-yellow-bg);color:var(--lvl1-yellow);font-size:9px;">Lvl 1 · ${self}</span>
+      <span class="m-badge" style="background:var(--lvl2-orange-bg);color:var(--lvl2-orange);font-size:9px;">Lvl 2 · ${prompted}</span>
       <span class="m-badge" style="background:var(--red-bg);color:var(--red);font-size:9px;">Lvl 3 · ${teacher}</span>
       ${other4?`<span class="m-badge" style="background:var(--parchment3);color:var(--ink2);font-size:9px;">◌ ${other4}</span>`:''}
     </div>
   </div>`;
-  const cD=[{label:'Lvl 0 · None',val:noInt,color:'var(--ink3)'},{label:'Lvl 1 · Repeat',val:self,color:'var(--green)'},{label:'Lvl 2 · Hint',val:prompted,color:'var(--amber)'},{label:'Lvl 3 · Taught',val:teacher,color:'var(--red)'},{label:'Other',val:other4,color:'var(--ink2)'}];
+  const cD=[{label:'Lvl 0 · None',val:noInt,color:'var(--green)'},{label:'Lvl 1 · Repeat',val:self,color:'var(--lvl1-yellow)'},{label:'Lvl 2 · Hint',val:prompted,color:'var(--lvl2-orange)'},{label:'Lvl 3 · Taught',val:teacher,color:'var(--red)'},{label:'Other',val:other4,color:'var(--ink2)'}];
   h+=`<div class="charts-row"><div class="chart-box"><h4>Mistake types</h4><div class="bar-chart">${types.map(t=>`<div class="bar-row"><div class="bar-label">${typeLabelFor(sessionCfg,t)}</div><div class="bar-track"><div class="bar-fill" style="width:${total?Math.round(tc[t]/maxT*100):0}%;background:${TYPE_COLORS[t]};"></div></div><div class="bar-count">${tc[t]}</div></div>`).join('')}</div></div><div class="chart-box"><h4>Teacher intervention</h4><div style="font-size:8px;color:var(--ink3);margin-bottom:6px;font-style:italic;">How much help was needed per mistake</div><div class="donut-wrap">${donutSVG(cD,total)}<div class="donut-center"><span class="big">${total}</span><span class="lbl">total</span></div></div><div class="donut-legend">${cD.map(d=>`<div class="dl-row"><div class="dl-dot" style="background:${d.color};"></div><span>${d.label} — ${d.val}</span></div>`).join('')}</div></div></div>`;
   if(repeatWordKeys.size>0)h+=`<div class="chart-box" style="margin-bottom:10px;background:var(--gold-pale);border-color:var(--gold-light);"><h4 style="color:var(--amber);">⚠ ${repeatWordKeys.size} word${repeatWordKeys.size>1?'s':''} repeated across sessions — focus here</h4></div>`;
   if(ml.length){const sorted=[...ml].sort((a,b)=>a.surah-b.surah||a.ayah-b.ayah||a.wordPos-b.wordPos);h+=`<div class="chart-box" style="margin-bottom:10px;"><h4>Mistake map</h4><div class="legend-row">${types.map(t=>`<div class="leg-item"><div class="leg-dot" style="background:${TYPE_COLORS[t]};"></div>${typeLabelFor(sessionCfg,t)}</div>`).join('')}</div><div class="timeline">${sorted.map((m,i)=>`<div class="tl-dot ${m.type}" title="${m.surah}:${m.ayah} — ${typeLabelFor(getCfg(m),m.type)}\n${corrLabelFor(getCfg(m),m.correction)}${m.note?'\n'+m.note:''}">${i+1}</div>`).join('')}</div></div>`;}
+  // ── SPOT TEST SECTION ──
+  if(s.spotTest?.enabled && s.spotTest.spots?.length){
+    const spots = s.spotTest.spots;
+    const pass    = spots.filter(x=>x.outcome==='pass').length;
+    const partial = spots.filter(x=>x.outcome==='partial').length;
+    const fail    = spots.filter(x=>x.outcome==='fail').length;
+    const none    = spots.filter(x=>!x.outcome).length;
+    h += `<div style="margin-bottom:14px;padding:10px 12px;background:#ddeeff;border-radius:8px;border-left:3px solid #1a4a8a;">
+      <div style="font-size:10px;font-weight:600;color:#1a4a8a;letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;">🎲 Spot Test Results</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
+        <span style="background:var(--green-bg);color:var(--green);font-size:10px;padding:2px 7px;border-radius:999px;font-weight:600;">✓ ${pass} passed</span>
+        <span style="background:var(--amber-bg);color:var(--amber);font-size:10px;padding:2px 7px;border-radius:999px;font-weight:600;">~ ${partial} partial</span>
+        <span style="background:var(--red-bg);color:var(--red);font-size:10px;padding:2px 7px;border-radius:999px;font-weight:600;">✗ ${fail} failed</span>
+        ${none?`<span style="background:var(--parchment3);color:var(--ink3);font-size:10px;padding:2px 7px;border-radius:999px;">○ ${none} not assessed</span>`:''}
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;">
+        ${spots.map((sp,i)=>{
+          const mc = ml.filter(m=>m.spotId===sp.id).length;
+          const outcomeColor = {pass:'var(--green)',partial:'var(--amber)',fail:'var(--red)'}[sp.outcome] || 'var(--ink3)';
+          const outcomeLabel = {pass:'✓ Pass',partial:'~ Partial',fail:'✗ Fail'}[sp.outcome] || '○ —';
+          return `<div style="display:flex;align-items:center;gap:6px;padding:4px 6px;background:white;border-radius:5px;border:.5px solid var(--border);">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:#1a4a8a;font-weight:700;flex-shrink:0;">#${i+1}</span>
+            <span style="font-size:10px;color:var(--ink);flex:1;">${sp.surahName} <span style="color:var(--ink3);">${sp.surah}:${sp.ayah}</span></span>
+            <span style="font-size:10px;color:${outcomeColor};font-weight:600;flex-shrink:0;">${outcomeLabel}</span>
+            ${mc?`<span style="font-size:9px;color:var(--ink3);font-family:'IBM Plex Mono',monospace;">${mc}✕</span>`:''}
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  }
+
+  // ── MULTI-SESSION SPOT TESTS ──
+  if(s.allSpotTests?.length > 1){
+    h += `<div style="margin-bottom:14px;padding:10px 12px;background:#ddeeff;border-radius:8px;border-left:3px solid #1a4a8a;">
+      <div style="font-size:10px;font-weight:600;color:#1a4a8a;letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;">🎲 Spot Tests Across Sessions</div>
+      <div style="font-size:9px;color:var(--ink3);margin-bottom:8px;">${s.allSpotTests.length} sessions with spot tests — click to compare</div>
+      <button class="btn-m" style="background:#1a4a8a;color:white;border:none;font-size:11px;padding:5px 12px;" onclick="openSpotPopupMulti()">📊 View Spot Test Performance</button>
+    </div>`;
+  }
+
   h+=`<div class="review-verses-title">Mistakes by verse</div>`;
   Object.keys(byAyah).sort((a,b)=>{const[as,aa]=a.split(':').map(Number),[bs,ba]=b.split(':').map(Number);return as-bs||aa-ba;}).forEach(key=>{
     const[sn,an]=key.split(':').map(Number);const ayahM=[...byAyah[key]].sort((a,b)=>a.wordPos-b.wordPos);
-    let wH='';let lp=0;ayahM.forEach(m=>{if(m.wordPos>lp+1)wH+=`<span style="color:var(--ink3);padding:0 3px;">…</span>`;const isR2=repeatWordKeys.has(`${sn}:${an}:${m.wordPos}`);wH+=`<span class="rw-${m.type}" style="font-size:1.1em;font-weight:700;${isR2?'box-shadow:0 0 0 2px var(--gold);border-radius:3px;padding:1px 2px;':''}">${m.word}</span> `;lp=m.wordPos;});
+    let wH='';let lp=0;ayahM.forEach(m=>{if(m.wordPos>lp+1)wH+=`<span style="color:var(--ink3);padding:0 3px;">…</span>`;const isR2=repeatWordKeys.has(`${sn}:${an}:${m.wordPos}`);wH+=`<span class="rw-type-${m.type} ${_sevClassForCorr(m.correction)}" style="font-size:1.1em;font-weight:700;${isR2?'box-shadow:0 0 0 2px var(--gold);border-radius:3px;padding:1px 2px;':''}">${m.word}</span> `;lp=m.wordPos;});
     h+=`<div class="review-verse"><div class="review-verse-ref">${key} — ${SURAH_NAMES[sn-1]||''}</div><div class="review-verse-arabic">${wH}</div><div>${ayahM.map(m=>{
       const cfg=getCfg(m);const t=getType(m.type);
+      const sevBg={c0:'var(--green-bg)',c1:'var(--lvl1-yellow-bg)',c2:'var(--lvl2-orange-bg)',c3:'var(--red-bg)',c4:'var(--parchment2)'}[m.correction]||'var(--parchment2)';
       const bef=(m.context?.before||[]).join(' ');const aft=(m.context?.after||[]).join(' ');
       const ctx=bef||aft
-        ?`<div style="direction:rtl;text-align:right;font-family:'Scheherazade New','Amiri',serif;font-size:16px;line-height:2.2;margin:4px 0;padding:4px 8px;background:var(--parchment);border-radius:5px;border:.5px solid var(--border);unicode-bidi:isolate;">${bef?`<span style="color:var(--ink3);opacity:.75;">${bef}</span> `:''}<span style="background:${t.bgColor};color:${t.color};border-bottom:2px solid ${t.borderColor};border-radius:3px;padding:1px 3px;font-weight:700;font-size:17px;">${m.word}</span>${aft?` <span style="color:var(--ink3);opacity:.75;">${aft}</span>`:''}</div>`
-        :`<div style="direction:rtl;text-align:right;font-family:'Scheherazade New','Amiri',serif;font-size:16px;line-height:2.2;margin:4px 0;padding:4px 8px;background:var(--parchment);border-radius:5px;border:.5px solid var(--border);"><span style="background:${t.bgColor};color:${t.color};border-bottom:2px solid ${t.borderColor};border-radius:3px;padding:1px 3px;font-weight:700;font-size:17px;">${m.word}</span></div>`;
-      return`<div style="flex-direction:column;align-items:stretch;gap:2px;margin-bottom:7px;padding-bottom:7px;border-bottom:.5px solid var(--border);display:flex;"><div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;"><span class="m-badge ${m.type}">${mTypeLabel(m,cfg)}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--ink3);">${m.surah}:${m.ayah}</span><span class="m-corr ${corrClass2[m.correction]}" style="font-size:9px;margin-left:auto;">${mCorrLabel(m,cfg)}</span>${m.sessionLabel&&activeSessions.length>1?`<span style="font-size:8px;color:var(--ink3);font-family:'IBM Plex Mono',monospace;">${esc(m.sessionLabel)}</span>`:''}</div>${ctx}${m.note?`<div style="padding:0 3px;font-size:9px;color:var(--ink3);font-style:italic;">${esc(m.note)}</div>`:''}</div>`;
+        ?`<div style="direction:rtl;text-align:right;font-family:'Scheherazade New','Amiri',serif;font-size:16px;line-height:2.2;margin:4px 0;padding:4px 8px;background:var(--parchment);border-radius:5px;border:.5px solid var(--border);unicode-bidi:isolate;">${bef?`<span style="color:var(--ink3);opacity:.75;">${bef}</span> `:''}<span style="background:${sevBg};color:${t.color};border-bottom:2px solid ${t.borderColor};border-radius:3px;padding:1px 3px;font-weight:700;font-size:17px;">${m.word}</span>${aft?` <span style="color:var(--ink3);opacity:.75;">${aft}</span>`:''}</div>`
+        :`<div style="direction:rtl;text-align:right;font-family:'Scheherazade New','Amiri',serif;font-size:16px;line-height:2.2;margin:4px 0;padding:4px 8px;background:var(--parchment);border-radius:5px;border:.5px solid var(--border);"><span style="background:${sevBg};color:${t.color};border-bottom:2px solid ${t.borderColor};border-radius:3px;padding:1px 3px;font-weight:700;font-size:17px;">${m.word}</span></div>`;
+      const sevColor={c0:'var(--green)',c1:'var(--lvl1-yellow)',c2:'var(--lvl2-orange)',c3:'var(--red)',c4:'var(--ink3)'}[m.correction]||'var(--border2)';
+      return`<div style="flex-direction:column;align-items:stretch;gap:2px;margin-bottom:7px;padding:6px 0 7px 8px;border-bottom:.5px solid var(--border);border-left:3px solid ${sevColor};display:flex;"><div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;"><span class="m-badge ${m.type}">${mTypeLabel(m,cfg)}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--ink3);">${m.surah}:${m.ayah}</span><span class="m-corr ${corrClass2[m.correction]}" style="font-size:9px;margin-left:auto;">${mCorrLabel(m,cfg)}</span>${m.sessionLabel&&activeSessions.length>1?`<span style="font-size:8px;color:var(--ink3);font-family:'IBM Plex Mono',monospace;">${esc(m.sessionLabel)}</span>`:''}</div>${ctx}${m.note?`<div style="padding:0 3px;font-size:9px;color:var(--ink3);font-style:italic;">${esc(m.note)}</div>`:''}</div>`;
     }).join('')}</div></div>`;
   });
   return h;
@@ -1435,6 +2774,23 @@ function buildReport(sessions,mistakes){
   t+=`📊 Summary : ${mistakes.length} mistakes  |  Lvl 1: ${sf}  |  Lvl 2: ${sp}  |  Lvl 3: ${st}${so?`  |  Other: ${so}`:''}\n`;
   if(repeatWordKeys.size>0)t+=`⚠ Repeated: ${repeatWordKeys.size} words appear in multiple sessions\n`;
   t+='━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n';
+  // Spot test section (single session only)
+  if(sessions.length===1 && sessions[0].spotTest?.enabled && sessions[0].spotTest.spots?.length){
+    const spots=sessions[0].spotTest.spots;
+    const pass=spots.filter(x=>x.outcome==='pass').length;
+    const partial=spots.filter(x=>x.outcome==='partial').length;
+    const fail=spots.filter(x=>x.outcome==='fail').length;
+    t+=`🎲 *Spot Test* — ${spots.length} spots\n`;
+    t+=`   Score: ✓ ${pass} passed  |  ~ ${partial} partial  |  ✗ ${fail} failed\n\n`;
+    spots.forEach((spot,i)=>{
+      const outLabel={pass:'✓ Pass',partial:'~ Partial',fail:'✗ Fail'}[spot.outcome]||'○ —';
+      const mc=mistakes.filter(m=>m.spotId===spot.id).length;
+      t+=`   ${i+1}. ${spot.surahName} ${spot.surah}:${spot.ayah}  ${outLabel}${mc?`  (${mc} mistake${mc!==1?'s':''})`:''}`;
+      if(spot.note) t+=`  — ${spot.note}`;
+      t+='\n';
+    });
+    t+='\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n';
+  }
   [...mistakes].sort((a,b)=>a.surah-b.surah||a.ayah-b.ayah||a.wordPos-b.wordPos).forEach((m,i)=>{
     const cfg=m.typeConfig||null;
     const bef=(m.context?.before||[]).join(' '),aft=(m.context?.after||[]).join(' ');
@@ -1513,9 +2869,203 @@ async function _processFiles(files){
 // ── UTILS
 function toAr(n){return n.toString().replace(/[0-9]/g,d=>'٠١٢٣٤٥٦٧٨٩'[d]);}
 function closeModal(id){document.getElementById(id).classList.remove('open');}
-function openInterventionGuide(){document.getElementById('interventionModal').classList.add('open');}
+function switchSvTab(tab){
+  ['types','levels'].forEach(t=>{
+    document.getElementById(`svt-${t}`).classList.toggle('active', t===tab);
+    document.getElementById(`svp-${t}`).style.display = t===tab ? '' : 'none';
+  });
+}
+function openInterventionGuide(tab){
+  document.getElementById('interventionModal').classList.add('open');
+  switchSvTab(tab||'types');
+}
 document.querySelectorAll('.modal-bg').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)closeModal(m.id);}));
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+// ═══════════════════════════════════════════════════════════════════
+// SPOT TEST POPUP
+// ═══════════════════════════════════════════════════════════════════
+let _spotPopupSessions = [];
+let _spotPopupIdx = 0;
+
+function openSpotPopup(sessionId){
+  const sess = savedSessions.find(s=>s.id===sessionId);
+  if(!sess || !sess.spotTest?.enabled || !sess.spotTest.spots?.length){
+    showToast('No spot test data in this session');
+    return;
+  }
+  _spotPopupSessions = [sess];
+  _spotPopupIdx = 0;
+  document.getElementById('spotPopupContent').innerHTML = buildSpotPopupHTML(sess);
+  document.getElementById('spotPopupModal').classList.add('open');
+}
+
+function openSpotPopupMulti(){
+  // Collect all sessions with spot tests, sorted chronologically (oldest first)
+  const withSpots = savedSessions
+    .filter(s=>s.spotTest?.enabled && s.spotTest.spots?.length)
+    .sort((a,b)=>(a.id||0)-(b.id||0));
+  if(!withSpots.length){
+    showToast('No sessions with spot test data');
+    return;
+  }
+  _spotPopupSessions = withSpots;
+  _spotPopupIdx = withSpots.length - 1; // Start at most recent
+  _renderSpotPopupMulti();
+  document.getElementById('spotPopupModal').classList.add('open');
+}
+
+function _renderSpotPopupMulti(){
+  const sess = _spotPopupSessions[_spotPopupIdx];
+  let h = '';
+
+  // Navigation row (if multiple sessions)
+  if(_spotPopupSessions.length > 1){
+    h += `<div class="spot-nav-row">
+      <button class="spot-nav-btn" onclick="_spotPopupNav(-1)" ${_spotPopupIdx<=0?'disabled':''}>← Older</button>`;
+    // Session pills
+    _spotPopupSessions.forEach((s,i)=>{
+      const label = s.date || `Session ${i+1}`;
+      h += `<button class="spot-nav-btn${i===_spotPopupIdx?' active':''}" onclick="_spotPopupNav(${i},true)" style="font-size:8px;padding:3px 5px;">${label}</button>`;
+    });
+    h += `<button class="spot-nav-btn" onclick="_spotPopupNav(1)" ${_spotPopupIdx>=_spotPopupSessions.length-1?'disabled':''}>Newer →</button>
+    </div>`;
+
+    // Performance trend chart
+    h += buildSpotTrendChart(_spotPopupSessions, _spotPopupIdx);
+  }
+
+  h += buildSpotPopupHTML(sess);
+  document.getElementById('spotPopupContent').innerHTML = h;
+}
+
+function _spotPopupNav(delta, isAbsolute){
+  if(isAbsolute) _spotPopupIdx = delta;
+  else _spotPopupIdx = Math.max(0, Math.min(_spotPopupSessions.length-1, _spotPopupIdx + delta));
+  _renderSpotPopupMulti();
+}
+
+function buildSpotPopupHTML(sess){
+  const st = sess.spotTest;
+  const spots = st.spots;
+  const ml = sess.mistakes || [];
+  const pass = spots.filter(x=>x.outcome==='pass').length;
+  const partial = spots.filter(x=>x.outcome==='partial').length;
+  const fail = spots.filter(x=>x.outcome==='fail').length;
+  const none = spots.filter(x=>!x.outcome).length;
+  const total = spots.length;
+  const pct = total ? Math.round(pass/total*100) : 0;
+
+  let h = `<div class="spot-popup-header">
+    <span class="spot-icon">🎲</span>
+    <div>
+      <div class="spot-title">Spot Test Results</div>
+      <div class="spot-scope">${esc(sess.student||'')} · ${esc(sess.range||'')} · ${sess.date||''}</div>
+    </div>
+  </div>`;
+
+  // Score summary
+  h += `<div class="spot-summary-row">
+    <span class="spot-summary-pill" style="background:var(--green-bg);color:var(--green);">✓ ${pass} passed</span>
+    <span class="spot-summary-pill" style="background:var(--amber-bg);color:var(--amber);">~ ${partial} partial</span>
+    <span class="spot-summary-pill" style="background:var(--red-bg);color:var(--red);">✗ ${fail} failed</span>
+    ${none?`<span class="spot-summary-pill" style="background:var(--parchment3);color:var(--ink3);">○ ${none}</span>`:''}
+    <span class="spot-summary-pill" style="background:var(--parchment2);color:var(--ink2);">${pct}% pass rate</span>
+  </div>`;
+
+  // Score donut (small inline SVG)
+  const r=20, sw=8, ci=2*Math.PI*r;
+  let off=0;
+  const slices=[
+    {val:pass,color:'var(--green)'},{val:partial,color:'var(--amber)'},
+    {val:fail,color:'var(--red)'},{val:none,color:'var(--parchment3)'}
+  ];
+  h += `<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+    <svg viewBox="0 0 50 50" style="width:50px;height:50px;flex-shrink:0;">
+      ${total ? slices.map(s=>{
+        const d=(s.val/total)*ci;
+        const p=`<circle cx="25" cy="25" r="${r}" fill="none" stroke="${s.color}" stroke-width="${sw}" stroke-dasharray="${d} ${ci-d}" stroke-dashoffset="${-off}" transform="rotate(-90 25 25)" opacity="${s.val?1:0}"/>`;
+        off+=d; return p;
+      }).join('') : `<circle cx="25" cy="25" r="${r}" fill="none" stroke="var(--parchment3)" stroke-width="${sw}"/>`}
+    </svg>
+    <div style="font-size:20px;font-weight:700;color:var(--ink);">${pct}<span style="font-size:11px;color:var(--ink3);font-weight:400;">%</span></div>
+    <div style="font-size:10px;color:var(--ink3);line-height:1.5;">
+      ${pass} of ${total} spots passed<br>
+      ${ml.length} total mistakes logged
+    </div>
+  </div>`;
+
+  // Individual spots list
+  h += `<div class="spot-card-list">`;
+  spots.forEach((sp, i) => {
+    const mc = ml.filter(m=>m.spotId===sp.id).length;
+    const outcomeColor = {pass:'var(--green)',partial:'var(--amber)',fail:'var(--red)'}[sp.outcome] || 'var(--ink3)';
+    const outcomeLabel = {pass:'✓ Pass',partial:'~ Partial',fail:'✗ Fail'}[sp.outcome] || '○ —';
+    const outcomeBg = {pass:'var(--green-bg)',partial:'var(--amber-bg)',fail:'var(--red-bg)'}[sp.outcome] || 'var(--parchment3)';
+    h += `<div class="spot-result-card">
+      <span class="spot-result-num">#${i+1}</span>
+      <span class="spot-result-name">${sp.surahName||''} <span class="spot-result-ref">${sp.surah}:${sp.ayah}</span></span>
+      <span class="spot-result-outcome" style="color:${outcomeColor};background:${outcomeBg};padding:2px 6px;border-radius:999px;">${outcomeLabel}</span>
+      ${mc?`<span class="spot-result-mc">${mc}✕</span>`:''}
+    </div>`;
+  });
+  h += `</div>`;
+
+  return h;
+}
+
+function buildSpotTrendChart(sessions, activeIdx){
+  if(sessions.length < 2) return '';
+  const maxSpots = Math.max(...sessions.map(s=>s.spotTest.spots.length));
+
+  let h = `<div class="spot-trend-box">
+    <h4>📈 Performance Over Time</h4>
+    <div class="spot-trend-bars">`;
+
+  sessions.forEach((sess, i) => {
+    const spots = sess.spotTest.spots;
+    const total = spots.length;
+    const pass = spots.filter(x=>x.outcome==='pass').length;
+    const partial = spots.filter(x=>x.outcome==='partial').length;
+    const fail = spots.filter(x=>x.outcome==='fail').length;
+    const none = total - pass - partial - fail;
+    const isActive = i === activeIdx;
+    const pct = total ? Math.round(pass/total*100) : 0;
+    // Heights proportional to maxSpots
+    const scale = 50; // max height in px
+    const pH = total ? (pass/maxSpots)*scale : 0;
+    const parH = total ? (partial/maxSpots)*scale : 0;
+    const fH = total ? (fail/maxSpots)*scale : 0;
+    const nH = total ? (none/maxSpots)*scale : 0;
+    const dateLabel = sess.date || `#${i+1}`;
+
+    h += `<div class="spot-trend-bar" style="cursor:pointer;${isActive?'opacity:1;':'opacity:.6;'}" onclick="_spotPopupNav(${i},true)">
+      <div style="font-size:8px;color:${isActive?'var(--ink)':'var(--ink3)'};font-weight:${isActive?'700':'400'};">${pct}%</div>
+      <div class="bar-stack">
+        ${nH?`<div class="bar-seg" style="height:${nH}px;background:var(--parchment3);"></div>`:''}
+        ${fH?`<div class="bar-seg" style="height:${fH}px;background:var(--red);"></div>`:''}
+        ${parH?`<div class="bar-seg" style="height:${parH}px;background:var(--amber);"></div>`:''}
+        ${pH?`<div class="bar-seg" style="height:${pH}px;background:var(--green);"></div>`:''}
+      </div>
+      <div class="bar-label" style="${isActive?'color:#1a4a8a;font-weight:700;':''}">${dateLabel.length>8?dateLabel.slice(-8):dateLabel}</div>
+    </div>`;
+  });
+
+  h += `</div>
+    <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:8px;color:var(--ink3);">
+      <span>← Oldest</span>
+      <span style="display:flex;gap:8px;">
+        <span><span style="display:inline-block;width:6px;height:6px;border-radius:1px;background:var(--green);vertical-align:middle;"></span> Pass</span>
+        <span><span style="display:inline-block;width:6px;height:6px;border-radius:1px;background:var(--amber);vertical-align:middle;"></span> Partial</span>
+        <span><span style="display:inline-block;width:6px;height:6px;border-radius:1px;background:var(--red);vertical-align:middle;"></span> Fail</span>
+      </span>
+      <span>Newest →</span>
+    </div>
+  </div>`;
+
+  return h;
+}
+
 </script>
 </body>
 </html>
