@@ -19,6 +19,7 @@
   --teal:#0a5059;--teal-bg:#d0f0f3;
   --purple:#3d2d7a;--purple-bg:#ede8ff;
   --coral:#7d3010;--coral-bg:#fde8d8;
+  --spot-blue:#1a4a8a;--spot-blue-bg:#ddeeff;
   --border:rgba(90,82,72,0.15);--border2:rgba(90,82,72,0.28);
   --radius:10px;--shadow-lg:0 8px 32px rgba(26,22,18,0.16);
   --arabic-size:22px;
@@ -539,7 +540,13 @@ input.corr-btn.sel-c4{background:var(--parchment3);color:var(--ink2);border-colo
 
 /* MISTAKES LIST */
 .mistakes-scroll{flex:1;overflow-y:auto;padding:7px 9px;}
-.mistake-item{background:var(--parchment);border-radius:6px;border:.5px solid var(--border);padding:7px 9px;margin-bottom:6px;display:flex;gap:6px;align-items:flex-start;animation:slideIn .18s ease;}
+.mistake-item{border-radius:6px;border:.5px solid var(--border);padding:7px 9px;margin-bottom:6px;display:flex;gap:6px;align-items:flex-start;animation:slideIn .18s ease;}
+/* The card's own background is only a fallback for a card with no severity
+   class. Guarded with :not() rather than left to source order: as a plain
+   `.mistake-item{background:…}` it ties with the unscoped .sev-N rules at
+   equal specificity, so whichever block happens to come second wins — which
+   is how the two apps silently diverged. */
+.mistake-item:not([class*="sev-"]){background:var(--parchment);}
 /* Severity — unscoped base rules apply to any element (words, cards, review spans) */
 .sev-0{background:var(--green-bg);}
 .sev-1{background:var(--lvl1-yellow-bg);}
@@ -557,7 +564,8 @@ input.corr-btn.sel-c4{background:var(--parchment3);color:var(--ink2);border-colo
 .mistake-item.sev-2:hover{filter:brightness(.97);}
 .mistake-item.sev-3:hover{filter:brightness(.97);}
 .mistake-item.sev-other:hover{background:var(--parchment2);}
-/* Card-level extras — background already comes from the unscoped .sev-N rules above */
+/* Card-level extras — background comes from the unscoped .sev-N rules, wherever
+   in the sheet those sit; these add only the escalating left border. */
 .mistake-item.sev-0{border-left:2px solid var(--green);}
 .mistake-item.sev-1{border-left:4px solid var(--lvl1-yellow);}
 .mistake-item.sev-2{border-left:4px solid var(--lvl2-orange);}
@@ -670,6 +678,39 @@ input.corr-btn.sel-c4{background:var(--parchment3);color:var(--ink2);border-colo
 .rml-detail{flex:1;color:var(--ink2);}
 .rml-note{color:var(--ink3);font-style:italic;}
 
+/* Review layout — extracted from inline styles so the builders above stay
+   readable and the two apps can share one stylesheet after a front/back split.
+   Anything genuinely data-driven (a type's colour, a severity border) is still
+   applied per-instance; only fixed structure lives here. */
+.rv-head{margin-bottom:14px;}
+.rv-head h2{font-size:17px;font-weight:600;}
+.rv-sub{font-size:11px;color:var(--ink3);}
+.rv-remarks{font-size:11px;color:var(--ink2);font-style:italic;margin-top:4px;padding:5px 8px;background:var(--parchment2);border-radius:5px;border-left:3px solid var(--gold);}
+.rv-badges{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px;}
+.rv-badges .m-badge{font-size:10px;}
+.chart-note{font-size:8px;color:var(--ink3);margin-bottom:6px;font-style:italic;}
+.h4-hint{font-size:8px;font-weight:400;color:var(--ink3);}
+.rv-gap{color:var(--ink3);padding:0 4px;}
+.rv-ref{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--ink3);}
+.rv-mistake{flex-direction:column;align-items:stretch;gap:2px;margin-bottom:8px;padding:6px 0 8px 8px;border-bottom:.5px solid var(--border);border-left-width:3px;border-left-style:solid;}
+.rv-mistake-top{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+/* Context strip: grey surroundings, the mistaken word carried by .sev-N */
+.rv-ctx{direction:rtl;text-align:right;font-family:'Scheherazade New','Amiri',serif;font-size:17px;line-height:2.4;margin:5px 0 3px;padding:5px 10px;background:var(--parchment);border-radius:6px;border:.5px solid var(--border);unicode-bidi:isolate;}
+.rv-ctx-side{color:var(--ink3);opacity:.75;}
+.rv-ctx-target{border-radius:3px;padding:1px 4px;font-weight:700;font-size:19px;border-bottom-width:2.5px;border-bottom-style:solid;}
+/* Spot test card */
+.spot-card{margin-bottom:14px;padding:10px 12px;background:var(--spot-blue-bg);border-radius:8px;border-left:3px solid var(--spot-blue);}
+.spot-card-title{font-size:10px;font-weight:600;color:var(--spot-blue);letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;}
+.spot-badges{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;}
+.spot-badges .m-badge{font-size:10px;}
+.spot-rows{display:flex;flex-direction:column;gap:4px;}
+.spot-row{display:flex;align-items:center;gap:6px;padding:4px 6px;background:var(--parchment);border-radius:5px;border:.5px solid var(--border);}
+.spot-row-n{font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--spot-blue);font-weight:700;flex-shrink:0;}
+.spot-row-ref{font-size:10px;color:var(--ink);flex:1;}
+.spot-row-ref span{color:var(--ink3);}
+.spot-row-outcome{font-size:10px;font-weight:600;flex-shrink:0;}
+.spot-row-count{font-size:9px;color:var(--ink3);font-family:'IBM Plex Mono',monospace;}
+
 
 /* EDIT MODAL */
 .edit-form-group{margin-bottom:10px;}
@@ -708,7 +749,7 @@ input.corr-btn.sel-c4{background:var(--parchment3);color:var(--ink2);border-colo
 ::-webkit-scrollbar-thumb{background:var(--parchment3);border-radius:999px;}
 
 /* ── SPOT TESTING PANEL ── */
-:root { --spot-blue:#1a4a8a; --spot-blue-bg:#ddeeff; --spot-panel-w:280px; }
+:root { --spot-blue:var(--spot-blue); --spot-blue-bg:var(--spot-blue-bg); --spot-panel-w:280px; }
 .spot-panel{
   width:var(--spot-panel-w);flex-shrink:0;display:flex;flex-direction:column;
   background:var(--parchment2);border-right:1px solid var(--border2);
@@ -1484,8 +1525,53 @@ function typeDotStyle(cfg, id){
   const t = resolveType(cfg, id);
   return t.id==='other' ? `background:var(--ink3);` : `background:${t.color};`;
 }
-const corrLabel     = Object.fromEntries(CORRECTION_TYPES.map(c=>[c.id, c.label]));
 const corrClass2    = Object.fromEntries(CORRECTION_TYPES.map(c=>[c.id, c.cssClass]));
+
+// ═══════════════════════════════════════════════════════════════════
+// DOMAIN HELPERS — pure
+// ───────────────────────────────────────────────────────────────────
+// Nothing below touches the DOM or mutable app state: every function is a
+// pure function of session/mistake data. Keep it that way. If the app is
+// later split front/back, this block lifts out as a shared module verbatim
+// and can render reports server-side without a browser.
+// ═══════════════════════════════════════════════════════════════════
+
+// Single source of truth for how an intervention level presents itself.
+// Previously these three facets were four separate literal maps scattered
+// across the review builder and the mistakes list, which drifted apart.
+const SEVERITY = {
+  c0:{cls:'sev-0',     color:'var(--green)',       bg:'var(--green-bg)'},
+  c1:{cls:'sev-1',     color:'var(--lvl1-yellow)', bg:'var(--lvl1-yellow-bg)'},
+  c2:{cls:'sev-2',     color:'var(--lvl2-orange)', bg:'var(--lvl2-orange-bg)'},
+  c3:{cls:'sev-3',     color:'var(--red)',         bg:'var(--red-bg)'},
+  c4:{cls:'sev-other', color:'var(--ink3)',        bg:'var(--parchment2)'},
+};
+// Unrecorded/absent correction reads as "no intervention" — matches how the
+// tallies below bucket a missing correction.
+function sev(corr){ return SEVERITY[corr] || SEVERITY.c0; }
+
+// Count mistakes per intervention level. `c0` deliberately absorbs mistakes
+// with no correction recorded at all.
+function corrTally(mistakes){
+  const ml = mistakes || [];
+  const n = id => ml.filter(m=>m.correction===id).length;
+  return {
+    total: ml.length,
+    c0: ml.filter(m=>m.correction==='c0' || !m.correction).length,
+    c1: n('c1'), c2: n('c2'), c3: n('c3'), c4: n('c4'),
+  };
+}
+
+// Count spot-test outcomes. `none` = generated but never assessed.
+function spotTally(spots){
+  const sp = spots || [];
+  const n = o => sp.filter(x=>x.outcome===o).length;
+  return {
+    total: sp.length,
+    pass: n('pass'), partial: n('partial'), fail: n('fail'),
+    none: sp.filter(x=>!x.outcome).length,
+  };
+}
 
 // ═══════════════════════════════════════════════════════════════════
 // STATE
@@ -3859,7 +3945,7 @@ function renderJuzVerses(juzNum, pageMap, startPage, endPage) {
           html+=`<div class="verse-block${vm.length?' has-mistake':''}" id="vb-${sNum}-${aNum}">
             <div class="verse-arabic" id="va-${sNum}-${aNum}">${wHtml}</div>
             ${showTranslation&&trans?`<div class="verse-translation">${trans.replace(/<[^>]+>/g,'')}</div>`:''}
-            ${vm.length?`<div class="verse-mistakes-row" id="vm-${sNum}-${aNum}">${vm.map(x=>`<span class="m-badge" style="${typeBadgeStyle(null,x.type)}">${typeLabel(x.type)}</span>`).join('')}</div>`:''}
+            ${vm.length?`<div class="verse-mistakes-row" id="vm-${sNum}-${aNum}">${vm.map(x=>`<span class="m-badge" style="${typeBadgeStyle(x.typeConfig||null,x.type)}">${mTypeLabel(x,null)}</span>`).join('')}</div>`:''}
             <div class="verse-num-row">${hizbH}<span class="verse-key-badge">${v.verse_key}</span></div>
           </div>`;
         }
@@ -4055,7 +4141,7 @@ function renderSurahVerses(n, vv) {
       html+=`<div class="verse-block${vm.length?' has-mistake':''}" id="vb-${sNum}-${aNum}">
         <div class="verse-arabic" id="va-${sNum}-${aNum}">${wHtml}</div>
         ${showTranslation&&trans?`<div class="verse-translation">${trans.replace(/<[^>]+>/g,'')}</div>`:''}
-        ${vm.length?`<div class="verse-mistakes-row" id="vm-${sNum}-${aNum}">${vm.map(x=>`<span class="m-badge" style="${typeBadgeStyle(null,x.type)}">${typeLabel(x.type)}</span>`).join('')}</div>`:''}
+        ${vm.length?`<div class="verse-mistakes-row" id="vm-${sNum}-${aNum}">${vm.map(x=>`<span class="m-badge" style="${typeBadgeStyle(x.typeConfig||null,x.type)}">${mTypeLabel(x,null)}</span>`).join('')}</div>`:''}
         <div class="verse-num-row">${hizbH}<span class="verse-key-badge">${v.verse_key}</span></div>
       </div>`;
     });
@@ -4641,7 +4727,7 @@ function applyMistakeToDOM(m){
     vb.classList.add('has-mistake');
     let vm=document.getElementById(`vm-${m.surah}-${m.ayah}`);
     if(!vm){vm=document.createElement('div');vm.className='verse-mistakes-row';vm.id=`vm-${m.surah}-${m.ayah}`;vb.appendChild(vm);}
-    vm.innerHTML=mistakes.filter(x=>x.surah===m.surah&&x.ayah===m.ayah).map(x=>`<span class="m-badge" style="${typeBadgeStyle(null,x.type)}">${typeLabel(x.type)}</span>`).join('');
+    vm.innerHTML=mistakes.filter(x=>x.surah===m.surah&&x.ayah===m.ayah).map(x=>`<span class="m-badge" style="${typeBadgeStyle(x.typeConfig||null,x.type)}">${mTypeLabel(x,null)}</span>`).join('');
   }
 }
 
@@ -4652,20 +4738,16 @@ function getMC(s,a,p){
 // ═══════════════════════════════════════════════════════════════════
 // MISTAKES LIST
 // ═══════════════════════════════════════════════════════════════════
-function _sevClassForCorr(corr){
-  if(corr==='c1') return 'sev-1';
-  if(corr==='c2') return 'sev-2';
-  if(corr==='c3') return 'sev-3';
-  if(corr==='c4') return 'sev-other';
-  return 'sev-0';
-}
+// Thin alias kept because it reads better at the ~10 call sites that only
+// want the class name. The mapping itself lives in SEVERITY.
+function _sevClassForCorr(corr){ return sev(corr).cls; }
 
 function renderMistakesList(){
   const list=document.getElementById('mistakesList');
   if(!mistakes.length){list.innerHTML=`<div class="empty-hint"><span class="arrow">↑</span>Tap any Arabic word to log a mistake</div>`;return;}
   list.innerHTML=[...mistakes].sort((a,b)=>a.surah-b.surah||a.ayah-b.ayah||a.wordPos-b.wordPos).map(m=>`
     <div class="mistake-item ${_sevClassForCorr(m.correction)}">
-      <span class="m-badge" style="${typeBadgeStyle(null,m.type)}">${mTypeLabel(m)}</span>
+      <span class="m-badge" style="${typeBadgeStyle(m.typeConfig||null,m.type)}">${mTypeLabel(m)}</span>
       <div class="m-body" onclick="navigateToVerse(${m.surah},${m.ayah},${m.wordPos})">
         <div class="m-ref">${m.surah}:${m.ayah} · ${m.time}</div>
         ${(()=>{const b=(m.context?.before||[]).join(' '),a=(m.context?.after||[]).join(' ');return(b||a)?`<div class="m-ctx">${b?`<span class="m-ctx-side">${b}</span> `:''}<span class="m-ctx-word">${m.word}</span>${a?` <span class="m-ctx-side">${a}</span>`:''}</div>`:`<span class="m-word">${m.word}</span>`;})()}
@@ -4717,7 +4799,7 @@ function deleteMistake(id){
           document.getElementById(`vm-${m.surah}-${m.ayah}`)?.remove();
         } else {
           const vm = document.getElementById(`vm-${m.surah}-${m.ayah}`);
-          if(vm) vm.innerHTML = rem.map(x=>`<span class="m-badge" style="${typeBadgeStyle(null,x.type)}">${typeLabel(x.type)}</span>`).join('');
+          if(vm) vm.innerHTML = rem.map(x=>`<span class="m-badge" style="${typeBadgeStyle(x.typeConfig||null,x.type)}">${mTypeLabel(x,null)}</span>`).join('');
         }
       }
     }
@@ -4726,11 +4808,14 @@ function deleteMistake(id){
 }
 
 function updateStats(){
-  document.getElementById('st0').textContent=mistakes.length;
-  document.getElementById('st1').textContent=mistakes.filter(m=>m.correction==='c1').length;
-  document.getElementById('st2').textContent=mistakes.filter(m=>m.correction==='c2').length;
-  document.getElementById('st3').textContent=mistakes.filter(m=>m.correction==='c3').length;
-  document.getElementById('st4').textContent=mistakes.filter(m=>m.correction==='c4'||m.correction==='c0'||!m.correction).length;
+  const t=corrTally(mistakes);
+  document.getElementById('st0').textContent=t.total;
+  document.getElementById('st1').textContent=t.c1;
+  document.getElementById('st2').textContent=t.c2;
+  document.getElementById('st3').textContent=t.c3;
+  // The "Other" pill deliberately pools c4 with the no-intervention bucket —
+  // both mean "nothing escalated", and five pills don't fit the strip.
+  document.getElementById('st4').textContent=t.c4+t.c0;
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -4787,7 +4872,7 @@ function saveEdit(){
   // Update verse badge
   if(!flowMode||showTranslation){
     const vm=document.getElementById(`vm-${m.surah}-${m.ayah}`);
-    if(vm) vm.innerHTML=mistakes.filter(x=>x.surah===m.surah&&x.ayah===m.ayah).map(x=>`<span class="m-badge" style="${typeBadgeStyle(null,x.type)}">${typeLabel(x.type)}</span>`).join('');
+    if(vm) vm.innerHTML=mistakes.filter(x=>x.surah===m.surah&&x.ayah===m.ayah).map(x=>`<span class="m-badge" style="${typeBadgeStyle(x.typeConfig||null,x.type)}">${mTypeLabel(x,null)}</span>`).join('');
   }
   closeModal('editModal');
   editingMistakeId=null;editType=null;editCorr=null;
@@ -4999,7 +5084,7 @@ function reApplyHighlights(){
         vb.classList.add('has-mistake');
         let vm=document.getElementById(`vm-${m.surah}-${m.ayah}`);
         if(!vm){vm=document.createElement('div');vm.className='verse-mistakes-row';vm.id=`vm-${m.surah}-${m.ayah}`;vb.appendChild(vm);}
-        vm.innerHTML=mistakes.filter(x=>x.surah===m.surah&&x.ayah===m.ayah).map(x=>`<span class="m-badge" style="${typeBadgeStyle(null,x.type)}">${typeLabel(x.type)}</span>`).join('');
+        vm.innerHTML=mistakes.filter(x=>x.surah===m.surah&&x.ayah===m.ayah).map(x=>`<span class="m-badge" style="${typeBadgeStyle(x.typeConfig||null,x.type)}">${mTypeLabel(x,null)}</span>`).join('');
       }
     }
   });
@@ -5012,17 +5097,14 @@ function renderSessionsList(){
   const sessions=getSessions(),el=document.getElementById('sessionsListInner');
   if(!sessions.length){el.innerHTML='<div style="text-align:center;padding:24px;color:var(--ink3);font-style:italic;">No saved sessions yet</div>';return;}
   el.innerHTML=sessions.map(s=>{
-    const self=s.mistakes.filter(m=>m.correction==='c1').length;
-    const prompted=s.mistakes.filter(m=>m.correction==='c2').length;
-    const teacher=s.mistakes.filter(m=>m.correction==='c3').length;
-    const other=s.mistakes.filter(m=>m.correction==='c4').length;
+    const {c1:self,c2:prompted,c3:teacher,c4:other}=corrTally(s.mistakes);
     const safeS=JSON.stringify(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;');
     return`<div class="sess-card">
       <div class="sess-card-head">
         <div>
           <div class="sess-name">${esc(s.student)}</div>
           <div class="sess-meta">${esc(s.range)} · ${s.date} · ${s.duration}</div>
-          ${s.spotTest?.enabled?`<div style="font-size:9px;color:#1a4a8a;font-family:'IBM Plex Mono',monospace;margin-top:2px;background:#ddeeff;border-radius:3px;padding:1px 5px;display:inline-block;">🎲 Spot test · ${s.spotTest.spots?.length||0} spots</div>`:''}
+          ${s.spotTest?.enabled?`<div style="font-size:9px;color:var(--spot-blue);font-family:'IBM Plex Mono',monospace;margin-top:2px;background:var(--spot-blue-bg);border-radius:3px;padding:1px 5px;display:inline-block;">🎲 Spot test · ${s.spotTest.spots?.length||0} spots</div>`:''}
           <div style="margin-top:4px;display:flex;gap:6px;font-size:10px;flex-wrap:wrap;">
             <span>${s.mistakes.length} mistakes</span>
             <span style="color:var(--lvl1-yellow)">Lvl 1 ${self}</span>
@@ -5125,141 +5207,164 @@ function reviewSession(id){
   document.getElementById('sessionsOverlay').classList.remove('open');
 }
 
-function buildReviewHTML(s){
-  const cfg=s.typeConfig||null;
-  const ml=s.mistakes,total=ml.length;
-  const self=ml.filter(m=>m.correction==='c1').length;
-  const prompted=ml.filter(m=>m.correction==='c2').length;
-  const teacher=ml.filter(m=>m.correction==='c3').length;
-  const other=ml.filter(m=>m.correction==='c4').length;
-  const noInt=ml.filter(m=>m.correction==='c0'||!m.correction).length;
-  const baseTypes=(cfg?.mistakeTypes||mistakeTypesActive).map(t=>t.id);
-  const types=baseTypes.includes('other') ? baseTypes : [...baseTypes,'other'];
-  const tc=Object.fromEntries(types.map(t=>[t,ml.filter(m=>m.type===t).length]));
-  const maxT=Math.max(1,...Object.values(tc));
-  const byAyah={};
-  ml.forEach(m=>{const k=`${m.surah}:${m.ayah}`;if(!byAyah[k])byAyah[k]=[];byAyah[k].push(m);});
+// ═══════════════════════════════════════════════════════════════════
+// REVIEW — HTML BUILDERS
+// ───────────────────────────────────────────────────────────────────
+// Split into one builder per section. Each takes everything it needs as
+// arguments and returns a string — no DOM reads, no globals — so the whole
+// report can be rendered outside a browser (e.g. server-side for an emailed
+// or printed report) once the app is split front/back. buildReviewHTML is
+// just the assembly line.
+// ═══════════════════════════════════════════════════════════════════
 
-  let h=`<div style="margin-bottom:14px;">
-    <h2 style="font-size:17px;font-weight:600;">${esc(s.student)}</h2>
-    <p style="font-size:11px;color:var(--ink3);">${esc(s.range)} · ${s.date} · ${s.duration}</p>
-    ${s.remarks?`<p style="font-size:11px;color:var(--ink2);font-style:italic;margin-top:4px;padding:5px 8px;background:var(--parchment2);border-radius:5px;border-left:3px solid var(--gold);">${esc(s.remarks)}</p>`:''}
-    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:7px;">
-      <span class="m-badge" style="background:var(--parchment3);color:var(--ink2);font-size:10px;">${total} mistakes</span>
-      ${noInt?`<span class="m-badge" style="background:var(--green-bg);color:var(--green);font-size:10px;">Lvl 0 · ${noInt}</span>`:''}
-      <span class="m-badge" style="background:var(--lvl1-yellow-bg);color:var(--lvl1-yellow);font-size:10px;">Lvl 1 · ${self}</span>
-      <span class="m-badge" style="background:var(--lvl2-orange-bg);color:var(--lvl2-orange);font-size:10px;">Lvl 2 · ${prompted}</span>
-      <span class="m-badge" style="background:var(--red-bg);color:var(--red);font-size:10px;">Lvl 3 · ${teacher}</span>
-      <span class="m-badge" style="background:var(--parchment3);color:var(--ink2);font-size:10px;">◌ ${other} other</span>
+function buildReviewHTML(s){
+  const cfg   = s.typeConfig || null;
+  const ml    = s.mistakes;
+  const tally = corrTally(ml);
+  // "other" is always offered as a bucket even when it isn't in the catalog,
+  // since older sessions may carry mistakes logged against it.
+  const baseTypes = (cfg?.mistakeTypes || mistakeTypesActive).map(t=>t.id);
+  const types = baseTypes.includes('other') ? baseTypes : [...baseTypes,'other'];
+
+  return _rvHeader(s, tally)
+       + _rvCharts(ml, cfg, types, tally)
+       + _rvTimeline(ml, cfg, types)
+       + _rvSpotTest(s.spotTest, ml)
+       + _rvVerses(ml, cfg);
+}
+
+// ── Header: who/what/when, remarks, and the level badge strip ──────
+function _rvHeader(s, t){
+  return `<div class="rv-head">
+    <h2>${esc(s.student)}</h2>
+    <p class="rv-sub">${esc(s.range)} · ${s.date} · ${s.duration}</p>
+    ${s.remarks?`<p class="rv-remarks">${esc(s.remarks)}</p>`:''}
+    <div class="rv-badges">
+      <span class="m-badge" style="background:var(--parchment3);color:var(--ink2);">${t.total} mistakes</span>
+      ${t.c0?`<span class="m-badge" style="background:var(--green-bg);color:var(--green);">Lvl 0 · ${t.c0}</span>`:''}
+      <span class="m-badge" style="background:var(--lvl1-yellow-bg);color:var(--lvl1-yellow);">Lvl 1 · ${t.c1}</span>
+      <span class="m-badge" style="background:var(--lvl2-orange-bg);color:var(--lvl2-orange);">Lvl 2 · ${t.c2}</span>
+      <span class="m-badge" style="background:var(--red-bg);color:var(--red);">Lvl 3 · ${t.c3}</span>
+      <span class="m-badge" style="background:var(--parchment3);color:var(--ink2);">◌ ${t.c4} other</span>
     </div>
   </div>`;
+}
 
-  const corrData=[{label:'Lvl 0 · None',val:noInt,color:'var(--green)'},{label:'Lvl 1 · Repeat',val:self,color:'var(--lvl1-yellow)'},{label:'Lvl 2 · Hint',val:prompted,color:'var(--lvl2-orange)'},{label:'Lvl 3 · Taught',val:teacher,color:'var(--red)'},{label:'Other',val:other,color:'var(--ink2)'}];
-  h+=`<div class="charts-row">
+// ── Charts: type frequency bars + intervention donut ──────────────
+function _rvCharts(ml, cfg, types, t){
+  const tc   = Object.fromEntries(types.map(id=>[id, ml.filter(m=>m.type===id).length]));
+  const maxT = Math.max(1, ...Object.values(tc));
+  const corrData = [
+    {label:'Lvl 0 · None',   val:t.c0, color:sev('c0').color},
+    {label:'Lvl 1 · Repeat', val:t.c1, color:sev('c1').color},
+    {label:'Lvl 2 · Hint',   val:t.c2, color:sev('c2').color},
+    {label:'Lvl 3 · Taught', val:t.c3, color:sev('c3').color},
+    {label:'Other',          val:t.c4, color:'var(--ink2)'},
+  ];
+  return `<div class="charts-row">
     <div class="chart-box"><h4>Mistake types</h4><div class="bar-chart">
-      ${types.map(t=>`<div class="bar-row"><div class="bar-label">${typeLabelFor(cfg,t)}</div><div class="bar-track"><div class="bar-fill" style="width:${total?Math.round(tc[t]/maxT*100):0}%;background:${resolveType(cfg,t).color||'var(--ink3)'};"></div></div><div class="bar-count">${tc[t]}</div></div>`).join('')}
+      ${types.map(id=>`<div class="bar-row"><div class="bar-label">${typeLabelFor(cfg,id)}</div><div class="bar-track"><div class="bar-fill" style="width:${t.total?Math.round(tc[id]/maxT*100):0}%;background:${resolveType(cfg,id).color||'var(--ink3)'};"></div></div><div class="bar-count">${tc[id]}</div></div>`).join('')}
     </div></div>
-    <div class="chart-box"><h4>Teacher intervention</h4><div style="font-size:8px;color:var(--ink3);margin-bottom:6px;font-style:italic;">How much help was needed per mistake</div>
-      <div class="donut-wrap">${donutSVG(corrData,total)}<div class="donut-center"><span class="big">${total}</span><span class="lbl">total</span></div></div>
+    <div class="chart-box"><h4>Teacher intervention</h4><div class="chart-note">How much help was needed per mistake</div>
+      <div class="donut-wrap">${donutSVG(corrData,t.total)}<div class="donut-center"><span class="big">${t.total}</span><span class="lbl">total</span></div></div>
       <div class="donut-legend">${corrData.map(d=>`<div class="dl-row"><div class="dl-dot" style="background:${d.color};"></div><span>${d.label} — ${d.val}</span></div>`).join('')}</div>
     </div>
   </div>`;
+}
 
-  if(ml.length){
-    const sorted=[...ml].sort((a,b)=>a.surah-b.surah||a.ayah-b.ayah||a.wordPos-b.wordPos);
-    h+=`<div class="chart-box" style="margin-bottom:12px;">
-      <h4>Mistake map <span style="font-size:8px;font-weight:400;color:var(--ink3);">hover for details</span></h4>
-      <div class="legend-row" style="margin-top:5px;">${types.map(t=>`<div class="leg-item"><div class="leg-dot" style="background:${resolveType(cfg,t).color||'var(--ink3)'};"></div>${typeLabelFor(cfg,t)}</div>`).join('')}</div>
-      <div class="timeline">${sorted.map((m,i)=>`<div class="tl-dot" style="${typeDotStyle(cfg,m.type)}" title="${m.surah}:${m.ayah} — ${mTypeLabel(m,cfg)}\n${mCorrLabel(m,cfg)}${m.note?'\n'+m.note:''}">${i+1}</div>`).join('')}</div>
-    </div>`;
-  }
+// ── Timeline: every mistake as a dot, in recitation order ─────────
+function _rvTimeline(ml, cfg, types){
+  if(!ml.length) return '';
+  const sorted=[...ml].sort((a,b)=>a.surah-b.surah||a.ayah-b.ayah||a.wordPos-b.wordPos);
+  return `<div class="chart-box" style="margin-bottom:12px;">
+    <h4>Mistake map <span class="h4-hint">hover for details</span></h4>
+    <div class="legend-row" style="margin-top:5px;">${types.map(id=>`<div class="leg-item"><div class="leg-dot" style="background:${resolveType(cfg,id).color||'var(--ink3)'};"></div>${typeLabelFor(cfg,id)}</div>`).join('')}</div>
+    <div class="timeline">${sorted.map((m,i)=>`<div class="tl-dot" style="${typeDotStyle(cfg,m.type)}" title="${m.surah}:${m.ayah} — ${mTypeLabel(m,cfg)}\n${mCorrLabel(m,cfg)}${m.note?'\n'+m.note:''}">${i+1}</div>`).join('')}</div>
+  </div>`;
+}
 
-  // ── SPOT TEST SECTION ──
-  if(s.spotTest?.enabled && s.spotTest.spots?.length){
-    const spots = s.spotTest.spots;
-    const pass    = spots.filter(x=>x.outcome==='pass').length;
-    const partial = spots.filter(x=>x.outcome==='partial').length;
-    const fail    = spots.filter(x=>x.outcome==='fail').length;
-    const none    = spots.filter(x=>!x.outcome).length;
-    h += `<div style="margin-bottom:14px;padding:10px 12px;background:#ddeeff;border-radius:8px;border-left:3px solid #1a4a8a;">
-      <div style="font-size:10px;font-weight:600;color:#1a4a8a;letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;">🎲 Spot Test — ${s.spotTest.scopeInput||''} · ${spots.length} spots</div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
-        <span class="m-badge" style="background:var(--green-bg);color:var(--green);font-size:10px;">✓ ${pass} passed</span>
-        <span class="m-badge" style="background:var(--amber-bg);color:var(--amber);font-size:10px;">~ ${partial} partial</span>
-        <span class="m-badge" style="background:var(--red-bg);color:var(--red);font-size:10px;">✗ ${fail} failed</span>
-        ${none?`<span class="m-badge" style="background:var(--parchment3);color:var(--ink3);font-size:10px;">○ ${none} not assessed</span>`:''}
-      </div>
-      <div style="display:flex;flex-direction:column;gap:4px;">
-        ${spots.map((sp,i)=>{
-          const mc = ml.filter(m=>m.spotId===sp.id).length;
-          const outcomeColor = {pass:'var(--green)',partial:'var(--amber)',fail:'var(--red)'}[sp.outcome]||'var(--ink3)';
-          const outcomeLabel = {pass:'✓ Pass',partial:'~ Partial',fail:'✗ Fail'}[sp.outcome]||'○ —';
-          return `<div style="display:flex;align-items:center;gap:6px;padding:4px 6px;background:white;border-radius:5px;border:.5px solid var(--border);">
-            <span style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:#1a4a8a;font-weight:700;flex-shrink:0;">#${i+1}</span>
-            <span style="font-size:10px;color:var(--ink);flex:1;">${sp.surahName} <span style="color:var(--ink3);">${sp.surah}:${sp.ayah}</span></span>
-            <span style="font-size:10px;color:${outcomeColor};font-weight:600;flex-shrink:0;">${outcomeLabel}</span>
-            ${mc?`<span style="font-size:9px;color:var(--ink3);font-family:'IBM Plex Mono',monospace;">${mc}✕</span>`:''}
-          </div>`;
-        }).join('')}
-      </div>
-    </div>`;
-  }
+// ── Spot test: scope, outcome tally, and a row per spot ───────────
+function _rvSpotTest(spotTest, ml){
+  if(!spotTest?.enabled || !spotTest.spots?.length) return '';
+  const spots = spotTest.spots;
+  const {pass,partial,fail,none} = spotTally(spots);
+  return `<div class="spot-card">
+    <div class="spot-card-title">🎲 Spot Test — ${spotTest.scopeInput||''} · ${spots.length} spots</div>
+    <div class="spot-badges">
+      <span class="m-badge" style="background:var(--green-bg);color:var(--green);">✓ ${pass} passed</span>
+      <span class="m-badge" style="background:var(--amber-bg);color:var(--amber);">~ ${partial} partial</span>
+      <span class="m-badge" style="background:var(--red-bg);color:var(--red);">✗ ${fail} failed</span>
+      ${none?`<span class="m-badge" style="background:var(--parchment3);color:var(--ink3);">○ ${none} not assessed</span>`:''}
+    </div>
+    <div class="spot-rows">${spots.map((sp,i)=>{
+      const mc = ml.filter(m=>m.spotId===sp.id).length;
+      const color = {pass:'var(--green)',partial:'var(--amber)',fail:'var(--red)'}[sp.outcome]||'var(--ink3)';
+      const label = {pass:'✓ Pass',partial:'~ Partial',fail:'✗ Fail'}[sp.outcome]||'○ —';
+      return `<div class="spot-row">
+        <span class="spot-row-n">#${i+1}</span>
+        <span class="spot-row-ref">${sp.surahName} <span>${sp.surah}:${sp.ayah}</span></span>
+        <span class="spot-row-outcome" style="color:${color};">${label}</span>
+        ${mc?`<span class="spot-row-count">${mc}✕</span>`:''}
+      </div>`;
+    }).join('')}</div>
+  </div>`;
+}
 
-  h+=`<div class="review-verses-title">Mistakes by verse</div>`;
-  Object.keys(byAyah).sort((a,b)=>{const[as,aa]=a.split(':').map(Number),[bs,ba]=b.split(':').map(Number);return as-bs||aa-ba;}).forEach(key=>{
-    const[sn,an]=key.split(':').map(Number);
+// ── Mistakes grouped by verse, each with its RTL context strip ────
+function _rvVerses(ml, cfg){
+  const byAyah={};
+  ml.forEach(m=>{const k=`${m.surah}:${m.ayah}`;(byAyah[k]=byAyah[k]||[]).push(m);});
+  const keys=Object.keys(byAyah).sort((a,b)=>{
+    const[as,aa]=a.split(':').map(Number),[bs,ba]=b.split(':').map(Number);
+    return as-bs||aa-ba;
+  });
+  let h=`<div class="review-verses-title">Mistakes by verse</div>`;
+  keys.forEach(key=>{
+    const[sn]=key.split(':').map(Number);
     const ayahM=[...byAyah[key]].sort((a,b)=>a.wordPos-b.wordPos);
-    let wordHtml='';let lastPos=0;
+    // Header line: just the mistaken words, with … standing in for the gaps
+    let wordHtml='', lastPos=0;
     ayahM.forEach(m=>{
-      if(m.wordPos>lastPos+1) wordHtml+=`<span style="color:var(--ink3);padding:0 4px;">…</span>`;
-      wordHtml+=`<span class="rw-type-tag ${_sevClassForCorr(m.correction)}" style="font-size:1.1em;font-weight:700;${typeWordStyle(cfg,m.type)}">${m.word}</span> `;
+      if(m.wordPos>lastPos+1) wordHtml+=`<span class="rv-gap">…</span>`;
+      wordHtml+=`<span class="rw-type-tag ${sev(m.correction).cls}" style="font-size:1.1em;font-weight:700;${typeWordStyle(cfg,m.type)}">${m.word}</span> `;
       lastPos=m.wordPos;
     });
     h+=`<div class="review-verse">
       <div class="review-verse-ref">${key} — ${SURAH_NAMES[sn-1]||''}</div>
       <div class="review-verse-arabic">${wordHtml}</div>
-      <div>${ayahM.map(m=>{
-        // Context strip: before(grey) TARGET(color-coded+bold) after(grey), RTL
-        const bef=(m.context?.before||[]).join(' ');
-        const aft=(m.context?.after||[]).join(' ');
-        // Type keeps its own color for the text/border (secondary signal).
-        // Resolved from the session's embedded typeConfig (falling back to the
-        // live catalog) — types are a variable, teacher-editable list, so this
-        // can't be a fixed id→color map. "Other" carries no color of its own,
-        // hence the neutral fallbacks.
-        const mt=resolveType(cfg,m.type);
-        const typeCol=mt.color||'var(--ink2)';
-        const typeBdr=mt.borderColor||mt.color||'var(--border2)';
-        // Severity drives the background — the dominant signal, escalating with intervention level
-        const sevBg={c0:'var(--green-bg)',c1:'var(--lvl1-yellow-bg)',c2:'var(--lvl2-orange-bg)',c3:'var(--red-bg)',c4:'var(--parchment2)'}[m.correction]||'var(--parchment2)';
-        let ctxHtml='';
-        if(bef||aft){
-          // dir=rtl: write bef (rightmost in RTL) then target then aft (leftmost in RTL)
-          ctxHtml=`<div style="direction:rtl;text-align:right;font-family:'Scheherazade New','Amiri',serif;font-size:17px;line-height:2.4;margin:5px 0 3px;padding:5px 10px;background:var(--parchment);border-radius:6px;border:.5px solid var(--border);unicode-bidi:isolate;">`;
-          if(bef) ctxHtml+=`<span style="color:var(--ink3);opacity:.75;">${bef}</span> `;
-          ctxHtml+=`<span style="background:${sevBg};color:${typeCol};border-bottom:2.5px solid ${typeBdr};border-radius:3px;padding:1px 4px;font-weight:700;font-size:19px;">${m.word}</span>`;
-          if(aft) ctxHtml+=` <span style="color:var(--ink3);opacity:.75;">${aft}</span>`;
-          ctxHtml+=`</div>`;
-        } else {
-          // No context — show the word alone highlighted
-          ctxHtml=`<div style="direction:rtl;text-align:right;font-family:'Scheherazade New','Amiri',serif;font-size:17px;line-height:2.4;margin:5px 0 3px;padding:5px 10px;background:var(--parchment);border-radius:6px;border:.5px solid var(--border);">
-            <span style="background:${sevBg};color:${typeCol};border-bottom:2.5px solid ${typeBdr};border-radius:3px;padding:1px 4px;font-weight:700;font-size:19px;">${m.word}</span>
-          </div>`;
-        }
-        const sevColor={c0:'var(--green)',c1:'var(--lvl1-yellow)',c2:'var(--lvl2-orange)',c3:'var(--red)',c4:'var(--ink3)'}[m.correction]||'var(--border2)';
-        return`<div class="rml-item" style="flex-direction:column;align-items:stretch;gap:2px;margin-bottom:8px;padding:6px 0 8px 8px;border-bottom:.5px solid var(--border);border-left:3px solid ${sevColor};">
-          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-            <span class="m-badge" style="${typeBadgeStyle(cfg,m.type)}">${mTypeLabel(m,cfg)}</span>
-            <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--ink3);">${m.surah}:${m.ayah}</span>
-            <span class="m-corr ${corrClass2[m.correction]}" style="font-size:9px;margin-left:auto;">${mCorrLabel(m,cfg)}</span>
-          </div>
-          ${ctxHtml}
-          ${m.note?`<div class="rml-note" style="padding:0 4px;font-size:10px;">${esc(m.note)}</div>`:''}
-        </div>`;
-      }).join('')}</div>
+      <div>${ayahM.map(m=>_rvMistakeRow(m,cfg)).join('')}</div>
     </div>`;
   });
   return h;
+}
+
+// ── One mistake: badges, then the word in context ─────────────────
+// Severity drives the background (via the shared .sev-N classes) and the
+// row's left border; mistake type keeps the text colour and underline as a
+// secondary signal. Unlike the mushaf, there's no clash here — this is
+// serif text on parchment, not a QCF glyph on a coloured wash.
+function _rvMistakeRow(m, cfg){
+  const mt   = resolveType(cfg, m.type);
+  const tCol = mt.color || 'var(--ink2)';
+  const tBdr = mt.borderColor || mt.color || 'var(--border2)';
+  const bef  = (m.context?.before||[]).join(' ');
+  const aft  = (m.context?.after ||[]).join(' ');
+  const target = `<span class="rv-ctx-target ${sev(m.correction).cls}" style="color:${tCol};border-bottom-color:${tBdr};">${m.word}</span>`;
+  // dir=rtl: `before` is written first but renders rightmost.
+  const ctxHtml = `<div class="rv-ctx">`
+    + (bef?`<span class="rv-ctx-side">${bef}</span> `:'')
+    + target
+    + (aft?` <span class="rv-ctx-side">${aft}</span>`:'')
+    + `</div>`;
+  return `<div class="rv-mistake rml-item" style="border-left-color:${sev(m.correction).color};">
+    <div class="rv-mistake-top">
+      <span class="m-badge" style="${typeBadgeStyle(cfg,m.type)}">${mTypeLabel(m,cfg)}</span>
+      <span class="rv-ref">${m.surah}:${m.ayah}</span>
+      <span class="m-corr ${corrClass2[m.correction]}" style="font-size:9px;margin-left:auto;">${mCorrLabel(m,cfg)}</span>
+    </div>
+    ${ctxHtml}
+    ${m.note?`<div class="rml-note" style="padding:0 4px;font-size:10px;">${esc(m.note)}</div>`:''}
+  </div>`;
 }
 
 function donutSVG(slices,total){
@@ -5273,10 +5378,7 @@ function donutSVG(slices,total){
 // ═══════════════════════════════════════════════════════════════════
 function buildTextReport(s){
   const cfg=s.typeConfig||null;
-  const self=s.mistakes.filter(m=>m.correction==='c1').length;
-  const prompted=s.mistakes.filter(m=>m.correction==='c2').length;
-  const teacher=s.mistakes.filter(m=>m.correction==='c3').length;
-  const other=s.mistakes.filter(m=>m.correction==='c4').length;
+  const {c1:self,c2:prompted,c3:teacher,c4:other}=corrTally(s.mistakes);
   let t='📖 *Quran Recitation Session Report*\n';
   t+='━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
   t+=`👤 Student : ${s.student}\n`;
@@ -5289,9 +5391,7 @@ function buildTextReport(s){
   // Spot test section
   if(s.spotTest?.enabled && s.spotTest.spots?.length){
     const sp = s.spotTest.spots;
-    const pass = sp.filter(x=>x.outcome==='pass').length;
-    const partial = sp.filter(x=>x.outcome==='partial').length;
-    const fail = sp.filter(x=>x.outcome==='fail').length;
+    const {pass,partial,fail} = spotTally(sp);
     t+=`🎲 *Spot Test* — ${sp.length} spots\n`;
     t+=`   Score: ✓ ${pass} passed  |  ~ ${partial} partial  |  ✗ ${fail} failed\n\n`;
     sp.forEach((spot,i)=>{
@@ -5705,9 +5805,7 @@ function syncBottomBar(){
   } else {
     labelEl.textContent = `🎲 Spot Testing — ${total} spots`;
   }
-  const pass = spotState.spots.filter(s=>s.outcome==='pass').length;
-  const partial = spotState.spots.filter(s=>s.outcome==='partial').length;
-  const fail = spotState.spots.filter(s=>s.outcome==='fail').length;
+  const {pass,partial,fail} = spotTally(spotState.spots);
   scoreEl.textContent = `✓${pass} ~${partial} ✗${fail} of ${total}`;
   if(prevBtn) prevBtn.disabled = idx <= 0;
   if(nextBtn) nextBtn.disabled = idx >= total-1;
@@ -6140,9 +6238,7 @@ function updateSpotNav(){
     score.textContent = `${s.surahName} ${s.surah}:${s.ayah}`;
   }
   // Running score
-  const pass = spotState.spots.filter(s=>s.outcome==='pass').length;
-  const partial = spotState.spots.filter(s=>s.outcome==='partial').length;
-  const fail = spotState.spots.filter(s=>s.outcome==='fail').length;
+  const {pass,partial,fail} = spotTally(spotState.spots);
   if(pass+partial+fail > 0){
     score.textContent += ` · ✓${pass} ~${partial} ✗${fail}`;
   }
