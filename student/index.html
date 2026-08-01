@@ -19,6 +19,7 @@
   --teal:#0a5059;--teal-bg:#d0f0f3;
   --purple:#3d2d7a;--purple-bg:#ede8ff;
   --coral:#7d3010;--coral-bg:#fde8d8;
+  --spot-blue:#1a4a8a;--spot-blue-bg:#ddeeff;
   --border:rgba(90,82,72,0.15);--border2:rgba(90,82,72,0.28);
   --shadow-lg:0 8px 32px rgba(26,22,18,0.18);
   --arabic-size:28px;
@@ -412,7 +413,13 @@ body.compact-ui .panel-footer{flex-shrink:0;}
 .qcf-word.sev-3,.word-span.sev-3{box-shadow:0 0 0 1px var(--red);}
 
 /* Mistake items */
-.mistake-item{background:var(--parchment);border-radius:6px;border:.5px solid var(--border);padding:6px 8px;margin-bottom:5px;display:flex;gap:5px;align-items:flex-start;cursor:pointer;transition:border-color .12s,background .12s,transform .1s;animation:slideIn .15s ease;}
+.mistake-item{border-radius:6px;border:.5px solid var(--border);padding:6px 8px;margin-bottom:5px;display:flex;gap:5px;align-items:flex-start;cursor:pointer;transition:border-color .12s,background .12s,transform .1s;animation:slideIn .15s ease;}
+/* The card's own background is only a fallback for a card with no severity
+   class. Guarded with :not() rather than left to source order: as a plain
+   `.mistake-item{background:…}` it ties with the unscoped .sev-N rules at
+   equal specificity, so whichever block happens to come second wins — which
+   is how the two apps silently diverged. */
+.mistake-item:not([class*="sev-"]){background:var(--parchment);}
 .mistake-item:hover{border-color:var(--gold);background:var(--gold-pale);transform:translateX(-2px);}
 .mistake-item.sev-0:hover{filter:brightness(.96);}
 .mistake-item.sev-1:hover{filter:brightness(.96);}
@@ -420,7 +427,8 @@ body.compact-ui .panel-footer{flex-shrink:0;}
 .mistake-item.sev-3:hover{filter:brightness(.96);}
 .mistake-item.sev-other:hover{background:var(--parchment2);}
 .mistake-item.repeated-mistake{box-shadow:inset 0 0 0 1px var(--gold);background:var(--gold-pale);}
-/* Card-level extras — background already comes from the unscoped .sev-N rules above */
+/* Card-level extras — background comes from the unscoped .sev-N rules, wherever
+   in the sheet those sit; these add only the escalating left border. */
 .mistake-item.sev-0{border-left:2px solid var(--green);}
 .mistake-item.sev-1{border-left:4px solid var(--lvl1-yellow);}
 .mistake-item.sev-2{border-left:4px solid var(--lvl2-orange);}
@@ -521,6 +529,50 @@ body.compact-ui .panel-footer{flex-shrink:0;}
 .review-verse-arabic{direction:rtl;text-align:right;line-height:2.6;font-size:18px;font-family:'Scheherazade New','Amiri',serif;margin-bottom:4px;}
 .rw-type-tag{border-bottom:2px solid currentColor;border-radius:2px;padding:1px 2px;}
 
+/* Review layout — extracted from inline styles so the builders above stay
+   readable and the two apps can share one stylesheet after a front/back split.
+   Anything genuinely data-driven (a type's colour, a severity border) is still
+   applied per-instance; only fixed structure lives here. */
+.rv-head{margin-bottom:12px;}
+.rv-head h2{font-size:16px;font-weight:600;}
+.rv-sub{font-size:11px;color:var(--ink3);}
+.rv-remarks{font-size:11px;color:var(--ink2);font-style:italic;margin-top:5px;padding:5px 8px;background:var(--parchment2);border-radius:5px;border-left:3px solid var(--gold);}
+.rv-badges{display:flex;gap:5px;flex-wrap:wrap;margin-top:7px;}
+.rv-badges .m-badge{font-size:9px;}
+.chart-note{font-size:8px;color:var(--ink3);margin-bottom:6px;font-style:italic;}
+.h4-hint{font-size:8px;font-weight:400;color:var(--ink3);}
+.rv-gap{color:var(--ink3);padding:0 3px;}
+.rv-ref{font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--ink3);}
+.rv-mistake{display:flex;flex-direction:column;align-items:stretch;gap:2px;margin-bottom:7px;padding:6px 0 7px 8px;border-bottom:.5px solid var(--border);border-left-width:3px;border-left-style:solid;}
+.rv-mistake-top{display:flex;align-items:center;gap:5px;flex-wrap:wrap;}
+/* Context strip: grey surroundings, the mistaken word carried by .sev-N */
+.rv-ctx{direction:rtl;text-align:right;font-family:'Scheherazade New','Amiri',serif;font-size:16px;line-height:2.2;margin:4px 0;padding:4px 8px;background:var(--parchment);border-radius:6px;border:.5px solid var(--border);unicode-bidi:isolate;}
+.rv-ctx-side{color:var(--ink3);opacity:.75;}
+.rv-ctx-target{border-radius:3px;padding:1px 3px;font-weight:700;font-size:17px;border-bottom-width:2px;border-bottom-style:solid;}
+/* Spot test card */
+.spot-card{margin-bottom:14px;padding:10px 12px;background:var(--spot-blue-bg);border-radius:8px;border-left:3px solid var(--spot-blue);}
+.spot-card-title{font-size:10px;font-weight:600;color:var(--spot-blue);letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;}
+.spot-badges{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;}
+.spot-badges .m-badge{font-size:10px;}
+.spot-rows{display:flex;flex-direction:column;gap:4px;}
+.spot-row{display:flex;align-items:center;gap:6px;padding:4px 6px;background:var(--parchment);border-radius:5px;border:.5px solid var(--border);}
+.spot-row-n{font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--spot-blue);font-weight:700;flex-shrink:0;}
+.spot-row-ref{font-size:10px;color:var(--ink);flex:1;}
+.spot-row-ref span{color:var(--ink3);}
+.spot-row-outcome{font-size:10px;font-weight:600;flex-shrink:0;}
+.spot-row-count{font-size:9px;color:var(--ink3);font-family:'IBM Plex Mono',monospace;}
+.rw-repeated{box-shadow:0 0 0 2px var(--gold);border-radius:3px;padding:1px 2px;}
+.rv-remarks-multi{margin-top:7px;display:flex;flex-direction:column;gap:4px;}
+.rv-remark-line{font-size:10px;padding:4px 8px;background:var(--parchment2);border-radius:4px;border-left-width:3px;border-left-style:solid;}
+.rv-remark-who{font-weight:600;color:var(--ink2);}
+.rv-remark-text{font-style:italic;color:var(--ink3);}
+.rv-repeat-notice{margin-bottom:10px;background:var(--gold-pale);border-color:var(--gold-light);}
+.rv-repeat-notice h4{color:var(--amber);}
+.rv-session-tag{font-size:8px;color:var(--ink3);font-family:'IBM Plex Mono',monospace;}
+.rv-note{padding:0 3px;font-size:9px;color:var(--ink3);font-style:italic;}
+.spot-card-sub{font-size:9px;color:var(--ink3);margin-bottom:8px;}
+.spot-cta{background:var(--spot-blue);color:white;border:none;font-size:11px;padding:5px 12px;}
+
 /* SPOT TEST POPUP */
 .spot-popup{max-width:480px;}
 .spot-popup-header{display:flex;align-items:center;gap:8px;margin-bottom:10px;padding-bottom:8px;border-bottom:.5px solid var(--border);}
@@ -532,7 +584,7 @@ body.compact-ui .panel-footer{flex-shrink:0;}
 .spot-card-list{display:flex;flex-direction:column;gap:4px;max-height:240px;overflow-y:auto;margin-bottom:10px;}
 .spot-result-card{display:flex;align-items:center;gap:6px;padding:5px 7px;background:var(--parchment2);border-radius:5px;border:.5px solid var(--border);transition:background .12s;}
 .spot-result-card:hover{background:var(--parchment3);}
-.spot-result-num{font-family:'IBM Plex Mono',monospace;font-size:8px;color:#1a4a8a;font-weight:700;flex-shrink:0;}
+.spot-result-num{font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--spot-blue);font-weight:700;flex-shrink:0;}
 .spot-result-name{font-size:10px;color:var(--ink);flex:1;}
 .spot-result-ref{color:var(--ink3);font-size:9px;}
 .spot-result-outcome{font-size:10px;font-weight:600;flex-shrink:0;}
@@ -541,7 +593,7 @@ body.compact-ui .panel-footer{flex-shrink:0;}
 .spot-nav-btn{background:none;border:.5px solid var(--border2);color:var(--ink2);border-radius:4px;padding:4px 8px;font-size:10px;font-family:'Lora',serif;cursor:pointer;}
 .spot-nav-btn:hover{background:var(--parchment3);}
 .spot-nav-btn:disabled{opacity:.3;cursor:default;}
-.spot-nav-btn.active{background:#ddeeff;border-color:#1a4a8a;color:#1a4a8a;font-weight:600;}
+.spot-nav-btn.active{background:var(--spot-blue-bg);border-color:var(--spot-blue);color:var(--spot-blue);font-weight:600;}
 .spot-nav-label{flex:1;text-align:center;font-size:10px;color:var(--ink3);}
 .spot-trend-box{background:var(--parchment2);border-radius:7px;padding:10px;border:.5px solid var(--border);margin-bottom:10px;}
 .spot-trend-box h4{font-size:10px;font-weight:600;color:var(--ink2);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px;}
@@ -972,13 +1024,9 @@ function getType(id){
 function getCorr(id){return CORRECTION_TYPES.find(c=>c.id===id)||CORRECTION_TYPES[0];}
 function migrateId(id){return ID_MIGRATION[id]||id;}
 // Severity class for a single mistake's correction level — drives background color everywhere
-function _sevClassForCorr(corr){
-  if(corr==='c1') return 'sev-1';
-  if(corr==='c2') return 'sev-2';
-  if(corr==='c3') return 'sev-3';
-  if(corr==='c4') return 'sev-other';
-  return 'sev-0';
-}
+// Thin alias kept because it reads better at the call sites that only want the
+// class name. The mapping itself lives in SEVERITY.
+function _sevClassForCorr(corr){ return sev(corr).cls; }
 // Worst (most alarming) intervention level among a set of mistakes on the same word
 function _worstSevClass(mList){
   const sevRank={c3:3,c2:2,c1:1,c0:0,c4:-1};
@@ -1017,7 +1065,50 @@ function typeDotStyle(cfg,id){
   const t=resolveType(cfg,id);
   return t.id==='other' ? `background:var(--ink3);` : `background:${t.color};`;
 }
-const corrLabel=Object.fromEntries(CORRECTION_TYPES.map(c=>[c.id,c.label]));
+
+// ═══════════════════════════════════════════════════════════════════
+// DOMAIN HELPERS — pure
+// ───────────────────────────────────────────────────────────────────
+// Nothing below touches the DOM or mutable app state: every function is a
+// pure function of session/mistake data. Keep it that way. If the app is
+// later split front/back, this block lifts out as a shared module verbatim
+// and can render reports server-side without a browser. Kept byte-identical
+// to the teacher app's copy so the two stay diffable.
+// ═══════════════════════════════════════════════════════════════════
+
+// Single source of truth for how an intervention level presents itself.
+const SEVERITY = {
+  c0:{cls:'sev-0',     color:'var(--green)',       bg:'var(--green-bg)'},
+  c1:{cls:'sev-1',     color:'var(--lvl1-yellow)', bg:'var(--lvl1-yellow-bg)'},
+  c2:{cls:'sev-2',     color:'var(--lvl2-orange)', bg:'var(--lvl2-orange-bg)'},
+  c3:{cls:'sev-3',     color:'var(--red)',         bg:'var(--red-bg)'},
+  c4:{cls:'sev-other', color:'var(--ink3)',        bg:'var(--parchment2)'},
+};
+// Unrecorded/absent correction reads as "no intervention".
+function sev(corr){ return SEVERITY[corr] || SEVERITY.c0; }
+
+// Count mistakes per intervention level. `c0` deliberately absorbs mistakes
+// with no correction recorded at all.
+function corrTally(mistakes){
+  const ml = mistakes || [];
+  const n = id => ml.filter(m=>m.correction===id).length;
+  return {
+    total: ml.length,
+    c0: ml.filter(m=>m.correction==='c0' || !m.correction).length,
+    c1: n('c1'), c2: n('c2'), c3: n('c3'), c4: n('c4'),
+  };
+}
+
+// Count spot-test outcomes. `none` = generated but never assessed.
+function spotTally(spots){
+  const sp = spots || [];
+  const n = o => sp.filter(x=>x.outcome===o).length;
+  return {
+    total: sp.length,
+    pass: n('pass'), partial: n('partial'), fail: n('fail'),
+    none: sp.filter(x=>!x.outcome).length,
+  };
+}
 const corrClass2=Object.fromEntries(CORRECTION_TYPES.map(c=>[c.id,c.cssClass]));
 const SESSION_COLORS=['#b8841a','#2d6a4f','#0a5059','#3d2d7a','#7d1f1f','#7d4e00'];
 
@@ -1494,8 +1585,8 @@ function renderJuzVerses(juzNum,pm,sp,ep){
       if(v.juz_number!==pJ&&pJ!==null)html+=`<span class="hizb-marker full" style="font-size:9px;padding:2px 5px;">جزء ${toAr(v.juz_number)}</span> `;pJ=v.juz_number;
       let hH='';if(v.rub_el_hizb_number&&v.rub_el_hizb_number!==pR){hH=hizbSpan(v.rub_el_hizb_number);pR=v.rub_el_hizb_number;}
       const vm=activeMistakes.filter(m=>m.surah===sN&&m.ayah===aN);
-      if(isF){if(hH)html+=hH+' ';words.forEach(w=>{html+=wsHTML(w.text_uthmani||'',sN,aN,w.position)+' ';});html+=`<span class="end-marker">${toAr(aN)}</span> <span class="verse-key-badge" style="font-size:7px;vertical-align:middle;">${v.verse_key}</span> `;if(vm.length)html+=vm.map(x=>`<span class="m-badge" style="font-size:7px;vertical-align:middle;${typeBadgeStyle(null,x.type)}">${typeLabel(x.type)}</span>`).join('')+' ';}
-      else{const wH=words.map(w=>wsHTML(w.text_uthmani||'',sN,aN,w.position)).join(' ')+` <span class="end-marker">${toAr(aN)}</span>`;const tr=v.translations?.[0]?.text||'';html+=`<div class="verse-block${vm.length?' has-mistake':''}" id="vb-${sN}-${aN}"><div class="verse-arabic">${wH}</div>${showTranslation&&tr?`<div class="verse-translation">${tr.replace(/<[^>]+>/g,'')}</div>`:''} ${vm.length?`<div class="verse-mistakes-row">${vm.map(x=>`<span class="m-badge" style="${typeBadgeStyle(null,x.type)}">${typeLabel(x.type)}</span>`).join('')}</div>`:''}<div class="verse-num-row">${hH}<span class="verse-key-badge">${v.verse_key}</span></div></div>`;}
+      if(isF){if(hH)html+=hH+' ';words.forEach(w=>{html+=wsHTML(w.text_uthmani||'',sN,aN,w.position)+' ';});html+=`<span class="end-marker">${toAr(aN)}</span> <span class="verse-key-badge" style="font-size:7px;vertical-align:middle;">${v.verse_key}</span> `;if(vm.length)html+=vm.map(x=>`<span class="m-badge" style="font-size:7px;vertical-align:middle;${typeBadgeStyle(x.typeConfig||null,x.type)}">${mTypeLabel(x,null)}</span>`).join('')+' ';}
+      else{const wH=words.map(w=>wsHTML(w.text_uthmani||'',sN,aN,w.position)).join(' ')+` <span class="end-marker">${toAr(aN)}</span>`;const tr=v.translations?.[0]?.text||'';html+=`<div class="verse-block${vm.length?' has-mistake':''}" id="vb-${sN}-${aN}"><div class="verse-arabic">${wH}</div>${showTranslation&&tr?`<div class="verse-translation">${tr.replace(/<[^>]+>/g,'')}</div>`:''} ${vm.length?`<div class="verse-mistakes-row">${vm.map(x=>`<span class="m-badge" style="${typeBadgeStyle(x.typeConfig||null,x.type)}">${mTypeLabel(x,null)}</span>`).join('')}</div>`:''}<div class="verse-num-row">${hH}<span class="verse-key-badge">${v.verse_key}</span></div></div>`;}
     });
     if(isF)html+='</div>';
     html+=`</div><div class="mushaf-page-footer"><div class="mpf-ornament">${orn(pg+'a')}</div><div class="mpf-divider"></div><div class="mpf-num">${pg}</div><div class="mpf-divider"></div><div class="mpf-ornament">${orn(pg+'b')}</div></div></div>`;
@@ -1612,8 +1703,8 @@ function renderSurahVerses(n,vv){
   const c=document.getElementById('pageContent');let pR=null;const isF=(flowMode&&!showTranslation);
   let html=`<div class="surah-break"><div class="ar">${AR_NAMES[n-1]||''}</div><div class="en">Surah ${n} — ${SURAH_NAMES[n-1]}</div></div>`;
   if(n!==9&&n!==1)html+=`<div class="bismillah">بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ</div>`;
-  if(isF){html+=`<div class="flow-container">`;vv.forEach(v=>{const[sN,aN]=v.verse_key.split(':').map(Number);const words=(v.words||[]).filter(w=>w.char_type_name==='word');if(v.rub_el_hizb_number&&v.rub_el_hizb_number!==pR){html+=hizbSpan(v.rub_el_hizb_number)+' ';pR=v.rub_el_hizb_number;}words.forEach(w=>{html+=wsHTML(w.text_uthmani||'',sN,aN,w.position)+' ';});html+=`<span class="end-marker">${toAr(aN)}</span> `;const vm=activeMistakes.filter(m=>m.surah===sN&&m.ayah===aN);if(vm.length)html+=vm.map(x=>`<span class="m-badge" style="font-size:7px;vertical-align:middle;${typeBadgeStyle(null,x.type)}">${typeLabel(x.type)}</span>`).join('')+' ';});html+='</div>';}
-  else{vv.forEach(v=>{const[sN,aN]=v.verse_key.split(':').map(Number);const words=(v.words||[]).filter(w=>w.char_type_name==='word');let hH='';if(v.rub_el_hizb_number&&v.rub_el_hizb_number!==pR){hH=hizbSpan(v.rub_el_hizb_number);pR=v.rub_el_hizb_number;}const vm=activeMistakes.filter(m=>m.surah===sN&&m.ayah===aN);const wH=words.map(w=>wsHTML(w.text_uthmani||'',sN,aN,w.position)).join(' ')+` <span class="end-marker">${toAr(aN)}</span>`;const tr=v.translations?.[0]?.text||v.translation||'';html+=`<div class="verse-block${vm.length?' has-mistake':''}" id="vb-${sN}-${aN}"><div class="verse-arabic">${wH}</div>${showTranslation&&tr?`<div class="verse-translation">${tr.replace(/<[^>]+>/g,'')}</div>`:''} ${vm.length?`<div class="verse-mistakes-row">${vm.map(x=>`<span class="m-badge" style="${typeBadgeStyle(null,x.type)}">${typeLabel(x.type)}</span>`).join('')}</div>`:''}<div class="verse-num-row">${hH}<span class="verse-key-badge">${v.verse_key}</span></div></div>`;});}
+  if(isF){html+=`<div class="flow-container">`;vv.forEach(v=>{const[sN,aN]=v.verse_key.split(':').map(Number);const words=(v.words||[]).filter(w=>w.char_type_name==='word');if(v.rub_el_hizb_number&&v.rub_el_hizb_number!==pR){html+=hizbSpan(v.rub_el_hizb_number)+' ';pR=v.rub_el_hizb_number;}words.forEach(w=>{html+=wsHTML(w.text_uthmani||'',sN,aN,w.position)+' ';});html+=`<span class="end-marker">${toAr(aN)}</span> `;const vm=activeMistakes.filter(m=>m.surah===sN&&m.ayah===aN);if(vm.length)html+=vm.map(x=>`<span class="m-badge" style="font-size:7px;vertical-align:middle;${typeBadgeStyle(x.typeConfig||null,x.type)}">${mTypeLabel(x,null)}</span>`).join('')+' ';});html+='</div>';}
+  else{vv.forEach(v=>{const[sN,aN]=v.verse_key.split(':').map(Number);const words=(v.words||[]).filter(w=>w.char_type_name==='word');let hH='';if(v.rub_el_hizb_number&&v.rub_el_hizb_number!==pR){hH=hizbSpan(v.rub_el_hizb_number);pR=v.rub_el_hizb_number;}const vm=activeMistakes.filter(m=>m.surah===sN&&m.ayah===aN);const wH=words.map(w=>wsHTML(w.text_uthmani||'',sN,aN,w.position)).join(' ')+` <span class="end-marker">${toAr(aN)}</span>`;const tr=v.translations?.[0]?.text||v.translation||'';html+=`<div class="verse-block${vm.length?' has-mistake':''}" id="vb-${sN}-${aN}"><div class="verse-arabic">${wH}</div>${showTranslation&&tr?`<div class="verse-translation">${tr.replace(/<[^>]+>/g,'')}</div>`:''} ${vm.length?`<div class="verse-mistakes-row">${vm.map(x=>`<span class="m-badge" style="${typeBadgeStyle(x.typeConfig||null,x.type)}">${mTypeLabel(x,null)}</span>`).join('')}</div>`:''}<div class="verse-num-row">${hH}<span class="verse-key-badge">${v.verse_key}</span></div></div>`;});}
   c.innerHTML=html;
 }
 function scrollToAyah(){
@@ -3092,10 +3183,11 @@ function updatePanel(){
   const b=document.getElementById('activeBanner');
   if(has){b.style.display='flex';document.getElementById('activeBannerText').textContent=`${activeSessions.length} session${activeSessions.length>1?'s':''} · ${activeMistakes.length} mistake${activeMistakes.length!==1?'s':''}`;}
   else b.style.display='none';
-  document.getElementById('st0').textContent=activeMistakes.length;
-  document.getElementById('st1').textContent=activeMistakes.filter(m=>m.correction==='c1').length;
-  document.getElementById('st2').textContent=activeMistakes.filter(m=>m.correction==='c2').length;
-  document.getElementById('st3').textContent=activeMistakes.filter(m=>m.correction==='c3').length;
+  const t=corrTally(activeMistakes);
+  document.getElementById('st0').textContent=t.total;
+  document.getElementById('st1').textContent=t.c1;
+  document.getElementById('st2').textContent=t.c2;
+  document.getElementById('st3').textContent=t.c3;
   renderMistakesList();
 }
 
@@ -3110,14 +3202,12 @@ function renderSessionsList(){
   el.innerHTML=sorted.map((s,si)=>{
     const isA=activeSessions.some(a=>a.id===s.id);
     const col=SESSION_COLORS[savedSessions.indexOf(s)%SESSION_COLORS.length];
-    const sf=(s.mistakes||[]).filter(m=>m.correction==='c1').length;
-    const sp=(s.mistakes||[]).filter(m=>m.correction==='c2').length;
-    const st=(s.mistakes||[]).filter(m=>m.correction==='c3').length;
+    const {c1:sf,c2:sp,c3:st}=corrTally(s.mistakes);
     return`<div class="sess-card${isA?' active-sess':''}" onclick="toggleSessionActive(${s.id})" style="${isA?`border-left:3px solid ${col};`:''}">
       <div class="sess-card-head"><div style="flex:1;min-width:0;">
         <div style="display:flex;align-items:center;gap:5px;"><span class="sess-name">${esc(s.student)}</span>${isA?`<span style="font-size:8px;background:${col};color:white;padding:1px 4px;border-radius:999px;font-family:'IBM Plex Mono',monospace;font-weight:700;">ON</span>`:''}</div>
         <div class="sess-range">${esc(s.range||'')}</div>
-        ${s.spotTest?.enabled ? `<div style="font-size:9px;color:#1a4a8a;font-family:'IBM Plex Mono',monospace;margin-top:2px;background:#ddeeff;border-radius:3px;padding:1px 5px;display:inline-block;cursor:pointer;" onclick="event.stopPropagation();openSpotPopup(${s.id})" title="View spot test results">🎲 Spot test · ${s.spotTest.spots?.length||0} spots</div>` : ''}
+        ${s.spotTest?.enabled ? `<div style="font-size:9px;color:var(--spot-blue);font-family:'IBM Plex Mono',monospace;margin-top:2px;background:var(--spot-blue-bg);border-radius:3px;padding:1px 5px;display:inline-block;cursor:pointer;" onclick="event.stopPropagation();openSpotPopup(${s.id})" title="View spot test results">🎲 Spot test · ${s.spotTest.spots?.length||0} spots</div>` : ''}
         <div class="sess-date">${s.date||''} · ${s.duration||''}</div>
         ${s.remarks?`<div style="font-size:9px;color:var(--ink2);font-style:italic;margin-top:3px;padding:3px 5px;background:var(--parchment2);border-radius:3px;border-left:2px solid var(--gold);">${esc(s.remarks)}</div>`:''}
       </div><button class="sess-del" onclick="event.stopPropagation();deleteSession(${s.id})">✕</button></div>
@@ -3315,107 +3405,205 @@ function openReview(){
   document.getElementById('reviewContent').innerHTML=buildReviewHTML(s);
   document.getElementById('reviewModal').classList.add('open');
 }
+// ═══════════════════════════════════════════════════════════════════
+// REVIEW — HTML BUILDERS
+// ───────────────────────────────────────────────────────────────────
+// One builder per section, mirroring the teacher app's split. Everything a
+// builder needs arrives as an argument — `sessions` and `repeats` used to be
+// read straight off the activeSessions/repeatWordKeys globals — so the whole
+// report can be rendered outside a browser once the app is split front/back.
+// ═══════════════════════════════════════════════════════════════════
+
 function buildReviewHTML(s){
-  const ml=s.mistakes,total=ml.length;
-  // For multi-session review, cfg comes per-mistake; for single use session cfg
-  const sessionCfg=activeSessions.length===1?(activeSessions[0].typeConfig||null):null;
-  const getCfg=(m)=>m.typeConfig||sessionCfg||null;
-  const self=ml.filter(m=>m.correction==='c1').length,prompted=ml.filter(m=>m.correction==='c2').length,teacher=ml.filter(m=>m.correction==='c3').length,other4=ml.filter(m=>m.correction==='c4').length,noInt=ml.filter(m=>m.correction==='c0'||!m.correction).length;
-  const types=[...new Set(ml.map(m=>m.type))];
-  const tc=Object.fromEntries(types.map(t=>[t,ml.filter(m=>m.type===t).length]));
-  const maxT=Math.max(1,...Object.values(tc));
-  const byAyah={};ml.forEach(m=>{const k=`${m.surah}:${m.ayah}`;if(!byAyah[k])byAyah[k]=[];byAyah[k].push(m);});
-  let h=`<div style="margin-bottom:12px;">
-    <h2 style="font-size:16px;font-weight:600;">${esc(s.student)}</h2>
-    <p style="font-size:11px;color:var(--ink3);">${esc(s.range)} · ${s.date}</p>
-    ${activeSessions.length===1&&s.remarks
-      ?`<p style="font-size:11px;color:var(--ink2);font-style:italic;margin-top:5px;padding:5px 8px;background:var(--parchment2);border-radius:5px;border-left:3px solid var(--gold);">${esc(s.remarks)}</p>`
-      :activeSessions.length>1
-        ?`<div style="margin-top:7px;display:flex;flex-direction:column;gap:4px;">${activeSessions.map((sess,i)=>sess.remarks
-          ?`<div style="font-size:10px;padding:4px 8px;background:var(--parchment2);border-radius:4px;border-left:3px solid ${SESSION_COLORS[i%SESSION_COLORS.length]};"><span style="font-weight:600;color:var(--ink2);">${esc(sess.range||sess.student)} (${sess.date}):</span> <span style="font-style:italic;color:var(--ink3);">${esc(sess.remarks)}</span></div>`
-          :'').filter(Boolean).join('')}</div>`
-        :''
-    }
-    <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:6px;">
-      <span class="m-badge" style="background:var(--parchment3);color:var(--ink2);font-size:9px;">${total} mistakes</span>
-      ${noInt?`<span class="m-badge" style="background:var(--green-bg);color:var(--green);font-size:9px;">Lvl 0 · ${noInt}</span>`:''}
-      <span class="m-badge" style="background:var(--lvl1-yellow-bg);color:var(--lvl1-yellow);font-size:9px;">Lvl 1 · ${self}</span>
-      <span class="m-badge" style="background:var(--lvl2-orange-bg);color:var(--lvl2-orange);font-size:9px;">Lvl 2 · ${prompted}</span>
-      <span class="m-badge" style="background:var(--red-bg);color:var(--red);font-size:9px;">Lvl 3 · ${teacher}</span>
-      ${other4?`<span class="m-badge" style="background:var(--parchment3);color:var(--ink2);font-size:9px;">◌ ${other4}</span>`:''}
+  const ml       = s.mistakes;
+  const sessions = activeSessions;
+  const repeats  = repeatWordKeys;
+  const tally    = corrTally(ml);
+  // Single session: one embedded config governs everything. Multi-session:
+  // configs can differ per mistake, so resolve per-mistake instead.
+  const sessionCfg = sessions.length===1 ? (sessions[0].typeConfig||null) : null;
+  const getCfg = m => m.typeConfig || sessionCfg || null;
+  const types  = [...new Set(ml.map(m=>m.type))];
+
+  return _rvHeader(s, tally, sessions)
+       + _rvCharts(ml, sessionCfg, getCfg, types, tally)
+       + _rvRepeatNotice(repeats)
+       + _rvTimeline(ml, sessionCfg, getCfg, types)
+       + _rvSpotTest(s.spotTest, ml)
+       + _rvMultiSpotTests(s.allSpotTests)
+       + _rvVerses(ml, getCfg, repeats, sessions);
+}
+
+// ── Header: who/what/when, remarks, and the level badge strip ──────
+// With several sessions loaded each one's remarks get its own colour-coded
+// line, keyed to the same SESSION_COLORS used everywhere else.
+function _rvHeader(s, t, sessions){
+  const remarks = sessions.length===1 && s.remarks
+    ? `<p class="rv-remarks">${esc(s.remarks)}</p>`
+    : sessions.length>1
+      ? `<div class="rv-remarks-multi">${sessions.map((sess,i)=>sess.remarks
+          ? `<div class="rv-remark-line" style="border-left-color:${SESSION_COLORS[i%SESSION_COLORS.length]};"><span class="rv-remark-who">${esc(sess.range||sess.student)} (${sess.date}):</span> <span class="rv-remark-text">${esc(sess.remarks)}</span></div>`
+          : '').filter(Boolean).join('')}</div>`
+      : '';
+  return `<div class="rv-head">
+    <h2>${esc(s.student)}</h2>
+    <p class="rv-sub">${esc(s.range)} · ${s.date}</p>
+    ${remarks}
+    <div class="rv-badges">
+      <span class="m-badge" style="background:var(--parchment3);color:var(--ink2);">${t.total} mistakes</span>
+      ${t.c0?`<span class="m-badge" style="background:var(--green-bg);color:var(--green);">Lvl 0 · ${t.c0}</span>`:''}
+      <span class="m-badge" style="background:var(--lvl1-yellow-bg);color:var(--lvl1-yellow);">Lvl 1 · ${t.c1}</span>
+      <span class="m-badge" style="background:var(--lvl2-orange-bg);color:var(--lvl2-orange);">Lvl 2 · ${t.c2}</span>
+      <span class="m-badge" style="background:var(--red-bg);color:var(--red);">Lvl 3 · ${t.c3}</span>
+      ${t.c4?`<span class="m-badge" style="background:var(--parchment3);color:var(--ink2);">◌ ${t.c4}</span>`:''}
     </div>
   </div>`;
-  const cD=[{label:'Lvl 0 · None',val:noInt,color:'var(--green)'},{label:'Lvl 1 · Repeat',val:self,color:'var(--lvl1-yellow)'},{label:'Lvl 2 · Hint',val:prompted,color:'var(--lvl2-orange)'},{label:'Lvl 3 · Taught',val:teacher,color:'var(--red)'},{label:'Other',val:other4,color:'var(--ink2)'}];
-  h+=`<div class="charts-row"><div class="chart-box"><h4>Mistake types</h4><div class="bar-chart">${types.map(t=>`<div class="bar-row"><div class="bar-label">${typeLabelFor(sessionCfg,t)}</div><div class="bar-track"><div class="bar-fill" style="width:${total?Math.round(tc[t]/maxT*100):0}%;background:${resolveType(sessionCfg,t).color||'var(--ink3)'};"></div></div><div class="bar-count">${tc[t]}</div></div>`).join('')}</div></div><div class="chart-box"><h4>Teacher intervention</h4><div style="font-size:8px;color:var(--ink3);margin-bottom:6px;font-style:italic;">How much help was needed per mistake</div><div class="donut-wrap">${donutSVG(cD,total)}<div class="donut-center"><span class="big">${total}</span><span class="lbl">total</span></div></div><div class="donut-legend">${cD.map(d=>`<div class="dl-row"><div class="dl-dot" style="background:${d.color};"></div><span>${d.label} — ${d.val}</span></div>`).join('')}</div></div></div>`;
-  if(repeatWordKeys.size>0)h+=`<div class="chart-box" style="margin-bottom:10px;background:var(--gold-pale);border-color:var(--gold-light);"><h4 style="color:var(--amber);">⚠ ${repeatWordKeys.size} word${repeatWordKeys.size>1?'s':''} repeated across sessions — focus here</h4></div>`;
-  if(ml.length){const sorted=[...ml].sort((a,b)=>a.surah-b.surah||a.ayah-b.ayah||a.wordPos-b.wordPos);h+=`<div class="chart-box" style="margin-bottom:10px;"><h4>Mistake map</h4><div class="legend-row">${types.map(t=>`<div class="leg-item"><div class="leg-dot" style="background:${resolveType(sessionCfg,t).color||'var(--ink3)'};"></div>${typeLabelFor(sessionCfg,t)}</div>`).join('')}</div><div class="timeline">${sorted.map((m,i)=>`<div class="tl-dot" style="${typeDotStyle(getCfg(m),m.type)}" title="${m.surah}:${m.ayah} — ${typeLabelFor(getCfg(m),m.type)}\n${corrLabelFor(getCfg(m),m.correction)}${m.note?'\n'+m.note:''}">${i+1}</div>`).join('')}</div></div>`;}
-  // ── SPOT TEST SECTION ──
-  if(s.spotTest?.enabled && s.spotTest.spots?.length){
-    const spots = s.spotTest.spots;
-    const pass    = spots.filter(x=>x.outcome==='pass').length;
-    const partial = spots.filter(x=>x.outcome==='partial').length;
-    const fail    = spots.filter(x=>x.outcome==='fail').length;
-    const none    = spots.filter(x=>!x.outcome).length;
-    h += `<div style="margin-bottom:14px;padding:10px 12px;background:#ddeeff;border-radius:8px;border-left:3px solid #1a4a8a;">
-      <div style="font-size:10px;font-weight:600;color:#1a4a8a;letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;">🎲 Spot Test Results</div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
-        <span style="background:var(--green-bg);color:var(--green);font-size:10px;padding:2px 7px;border-radius:999px;font-weight:600;">✓ ${pass} passed</span>
-        <span style="background:var(--amber-bg);color:var(--amber);font-size:10px;padding:2px 7px;border-radius:999px;font-weight:600;">~ ${partial} partial</span>
-        <span style="background:var(--red-bg);color:var(--red);font-size:10px;padding:2px 7px;border-radius:999px;font-weight:600;">✗ ${fail} failed</span>
-        ${none?`<span style="background:var(--parchment3);color:var(--ink3);font-size:10px;padding:2px 7px;border-radius:999px;">○ ${none} not assessed</span>`:''}
-      </div>
-      <div style="display:flex;flex-direction:column;gap:4px;">
-        ${spots.map((sp,i)=>{
-          const mc = ml.filter(m=>m.spotId===sp.id).length;
-          const outcomeColor = {pass:'var(--green)',partial:'var(--amber)',fail:'var(--red)'}[sp.outcome] || 'var(--ink3)';
-          const outcomeLabel = {pass:'✓ Pass',partial:'~ Partial',fail:'✗ Fail'}[sp.outcome] || '○ —';
-          return `<div style="display:flex;align-items:center;gap:6px;padding:4px 6px;background:white;border-radius:5px;border:.5px solid var(--border);">
-            <span style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:#1a4a8a;font-weight:700;flex-shrink:0;">#${i+1}</span>
-            <span style="font-size:10px;color:var(--ink);flex:1;">${sp.surahName} <span style="color:var(--ink3);">${sp.surah}:${sp.ayah}</span></span>
-            <span style="font-size:10px;color:${outcomeColor};font-weight:600;flex-shrink:0;">${outcomeLabel}</span>
-            ${mc?`<span style="font-size:9px;color:var(--ink3);font-family:'IBM Plex Mono',monospace;">${mc}✕</span>`:''}
-          </div>`;
-        }).join('')}
-      </div>
-    </div>`;
-  }
+}
 
-  // ── MULTI-SESSION SPOT TESTS ──
-  if(s.allSpotTests?.length > 1){
-    h += `<div style="margin-bottom:14px;padding:10px 12px;background:#ddeeff;border-radius:8px;border-left:3px solid #1a4a8a;">
-      <div style="font-size:10px;font-weight:600;color:#1a4a8a;letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;">🎲 Spot Tests Across Sessions</div>
-      <div style="font-size:9px;color:var(--ink3);margin-bottom:8px;">${s.allSpotTests.length} sessions with spot tests — click to compare</div>
-      <button class="btn-m" style="background:#1a4a8a;color:white;border:none;font-size:11px;padding:5px 12px;" onclick="openSpotPopupMulti()">📊 View Spot Test Performance</button>
-    </div>`;
-  }
+// ── Charts: type frequency bars + intervention donut ──────────────
+// Labels resolve through getCfg on a representative mistake rather than the
+// session config, which is null whenever more than one session is loaded.
+function _rvCharts(ml, sessionCfg, getCfg, types, t){
+  const cfgForType = id => getCfg(ml.find(m=>m.type===id) || {});
+  const tc   = Object.fromEntries(types.map(id=>[id, ml.filter(m=>m.type===id).length]));
+  const maxT = Math.max(1, ...Object.values(tc));
+  const cD = [
+    {label:'Lvl 0 · None',   val:t.c0, color:sev('c0').color},
+    {label:'Lvl 1 · Repeat', val:t.c1, color:sev('c1').color},
+    {label:'Lvl 2 · Hint',   val:t.c2, color:sev('c2').color},
+    {label:'Lvl 3 · Taught', val:t.c3, color:sev('c3').color},
+    {label:'Other',          val:t.c4, color:'var(--ink2)'},
+  ];
+  return `<div class="charts-row">
+    <div class="chart-box"><h4>Mistake types</h4><div class="bar-chart">
+      ${types.map(id=>`<div class="bar-row"><div class="bar-label">${typeLabelFor(cfgForType(id),id)}</div><div class="bar-track"><div class="bar-fill" style="width:${t.total?Math.round(tc[id]/maxT*100):0}%;background:${resolveType(cfgForType(id),id).color||'var(--ink3)'};"></div></div><div class="bar-count">${tc[id]}</div></div>`).join('')}
+    </div></div>
+    <div class="chart-box"><h4>Teacher intervention</h4><div class="chart-note">How much help was needed per mistake</div>
+      <div class="donut-wrap">${donutSVG(cD,t.total)}<div class="donut-center"><span class="big">${t.total}</span><span class="lbl">total</span></div></div>
+      <div class="donut-legend">${cD.map(d=>`<div class="dl-row"><div class="dl-dot" style="background:${d.color};"></div><span>${d.label} — ${d.val}</span></div>`).join('')}</div>
+    </div>
+  </div>`;
+}
 
-  h+=`<div class="review-verses-title">Mistakes by verse</div>`;
-  Object.keys(byAyah).sort((a,b)=>{const[as,aa]=a.split(':').map(Number),[bs,ba]=b.split(':').map(Number);return as-bs||aa-ba;}).forEach(key=>{
-    const[sn,an]=key.split(':').map(Number);const ayahM=[...byAyah[key]].sort((a,b)=>a.wordPos-b.wordPos);
-    let wH='';let lp=0;ayahM.forEach(m=>{if(m.wordPos>lp+1)wH+=`<span style="color:var(--ink3);padding:0 3px;">…</span>`;const isR2=repeatWordKeys.has(`${sn}:${an}:${m.wordPos}`);wH+=`<span class="rw-type-tag ${_sevClassForCorr(m.correction)}" style="font-size:1.1em;font-weight:700;${typeWordStyle(getCfg(m),m.type)}${isR2?'box-shadow:0 0 0 2px var(--gold);border-radius:3px;padding:1px 2px;':''}">${m.word}</span> `;lp=m.wordPos;});
-    h+=`<div class="review-verse"><div class="review-verse-ref">${key} — ${SURAH_NAMES[sn-1]||''}</div><div class="review-verse-arabic">${wH}</div><div>${ayahM.map(m=>{
-      // resolveType(cfg,…) — not getType(…): getType reads THIS browser's local
-      // catalog, which in a read-only viewer is the student's defaults, not the
-      // teacher's. The session's embedded typeConfig is the source of truth, so
-      // custom teacher types keep their colours here.
-      const cfg=getCfg(m);const t=resolveType(cfg,m.type);
-      const tCol=t.color||'var(--ink2)';const tBdr=t.borderColor||t.color||'var(--border2)';
-      const sevBg={c0:'var(--green-bg)',c1:'var(--lvl1-yellow-bg)',c2:'var(--lvl2-orange-bg)',c3:'var(--red-bg)',c4:'var(--parchment2)'}[m.correction]||'var(--parchment2)';
-      const bef=(m.context?.before||[]).join(' ');const aft=(m.context?.after||[]).join(' ');
-      const ctx=bef||aft
-        ?`<div style="direction:rtl;text-align:right;font-family:'Scheherazade New','Amiri',serif;font-size:16px;line-height:2.2;margin:4px 0;padding:4px 8px;background:var(--parchment);border-radius:5px;border:.5px solid var(--border);unicode-bidi:isolate;">${bef?`<span style="color:var(--ink3);opacity:.75;">${bef}</span> `:''}<span style="background:${sevBg};color:${tCol};border-bottom:2px solid ${tBdr};border-radius:3px;padding:1px 3px;font-weight:700;font-size:17px;">${m.word}</span>${aft?` <span style="color:var(--ink3);opacity:.75;">${aft}</span>`:''}</div>`
-        :`<div style="direction:rtl;text-align:right;font-family:'Scheherazade New','Amiri',serif;font-size:16px;line-height:2.2;margin:4px 0;padding:4px 8px;background:var(--parchment);border-radius:5px;border:.5px solid var(--border);"><span style="background:${sevBg};color:${tCol};border-bottom:2px solid ${tBdr};border-radius:3px;padding:1px 3px;font-weight:700;font-size:17px;">${m.word}</span></div>`;
-      const sevColor={c0:'var(--green)',c1:'var(--lvl1-yellow)',c2:'var(--lvl2-orange)',c3:'var(--red)',c4:'var(--ink3)'}[m.correction]||'var(--border2)';
-      return`<div style="flex-direction:column;align-items:stretch;gap:2px;margin-bottom:7px;padding:6px 0 7px 8px;border-bottom:.5px solid var(--border);border-left:3px solid ${sevColor};display:flex;"><div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;"><span class="m-badge" style="${typeBadgeStyle(cfg,m.type)}">${mTypeLabel(m,cfg)}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--ink3);">${m.surah}:${m.ayah}</span><span class="m-corr ${corrClass2[m.correction]}" style="font-size:9px;margin-left:auto;">${mCorrLabel(m,cfg)}</span>${m.sessionLabel&&activeSessions.length>1?`<span style="font-size:8px;color:var(--ink3);font-family:'IBM Plex Mono',monospace;">${esc(m.sessionLabel)}</span>`:''}</div>${ctx}${m.note?`<div style="padding:0 3px;font-size:9px;color:var(--ink3);font-style:italic;">${esc(m.note)}</div>`:''}</div>`;
-    }).join('')}</div></div>`;
+// ── Words missed in more than one session — the highest-value signal ──
+function _rvRepeatNotice(repeats){
+  if(!repeats.size) return '';
+  return `<div class="chart-box rv-repeat-notice"><h4>⚠ ${repeats.size} word${repeats.size>1?'s':''} repeated across sessions — focus here</h4></div>`;
+}
+
+// ── Timeline: every mistake as a dot, in recitation order ─────────
+function _rvTimeline(ml, sessionCfg, getCfg, types){
+  if(!ml.length) return '';
+  const cfgForType = id => getCfg(ml.find(m=>m.type===id) || {});
+  const sorted=[...ml].sort((a,b)=>a.surah-b.surah||a.ayah-b.ayah||a.wordPos-b.wordPos);
+  return `<div class="chart-box" style="margin-bottom:10px;">
+    <h4>Mistake map</h4>
+    <div class="legend-row">${types.map(id=>`<div class="leg-item"><div class="leg-dot" style="background:${resolveType(cfgForType(id),id).color||'var(--ink3)'};"></div>${typeLabelFor(cfgForType(id),id)}</div>`).join('')}</div>
+    <div class="timeline">${sorted.map((m,i)=>`<div class="tl-dot" style="${typeDotStyle(getCfg(m),m.type)}" title="${m.surah}:${m.ayah} — ${typeLabelFor(getCfg(m),m.type)}\n${corrLabelFor(getCfg(m),m.correction)}${m.note?'\n'+m.note:''}">${i+1}</div>`).join('')}</div>
+  </div>`;
+}
+
+// ── Spot test: outcome tally and a row per spot ───────────────────
+function _rvSpotTest(spotTest, ml){
+  if(!spotTest?.enabled || !spotTest.spots?.length) return '';
+  const spots = spotTest.spots;
+  const {pass,partial,fail,none} = spotTally(spots);
+  return `<div class="spot-card">
+    <div class="spot-card-title">🎲 Spot Test Results</div>
+    <div class="spot-badges">
+      <span class="m-badge" style="background:var(--green-bg);color:var(--green);">✓ ${pass} passed</span>
+      <span class="m-badge" style="background:var(--amber-bg);color:var(--amber);">~ ${partial} partial</span>
+      <span class="m-badge" style="background:var(--red-bg);color:var(--red);">✗ ${fail} failed</span>
+      ${none?`<span class="m-badge" style="background:var(--parchment3);color:var(--ink3);">○ ${none} not assessed</span>`:''}
+    </div>
+    <div class="spot-rows">${spots.map((sp,i)=>{
+      const mc = ml.filter(m=>m.spotId===sp.id).length;
+      const color = {pass:'var(--green)',partial:'var(--amber)',fail:'var(--red)'}[sp.outcome]||'var(--ink3)';
+      const label = {pass:'✓ Pass',partial:'~ Partial',fail:'✗ Fail'}[sp.outcome]||'○ —';
+      return `<div class="spot-row">
+        <span class="spot-row-n">#${i+1}</span>
+        <span class="spot-row-ref">${sp.surahName} <span>${sp.surah}:${sp.ayah}</span></span>
+        <span class="spot-row-outcome" style="color:${color};">${label}</span>
+        ${mc?`<span class="spot-row-count">${mc}✕</span>`:''}
+      </div>`;
+    }).join('')}</div>
+  </div>`;
+}
+
+// ── Several sessions with spot tests — offer the comparison view ──
+function _rvMultiSpotTests(allSpotTests){
+  if(!(allSpotTests?.length > 1)) return '';
+  return `<div class="spot-card">
+    <div class="spot-card-title">🎲 Spot Tests Across Sessions</div>
+    <div class="spot-card-sub">${allSpotTests.length} sessions with spot tests — click to compare</div>
+    <button class="btn-m spot-cta" onclick="openSpotPopupMulti()">📊 View Spot Test Performance</button>
+  </div>`;
+}
+
+// ── Mistakes grouped by verse, each with its RTL context strip ────
+function _rvVerses(ml, getCfg, repeats, sessions){
+  const byAyah={};
+  ml.forEach(m=>{const k=`${m.surah}:${m.ayah}`;(byAyah[k]=byAyah[k]||[]).push(m);});
+  const keys=Object.keys(byAyah).sort((a,b)=>{
+    const[as,aa]=a.split(':').map(Number),[bs,ba]=b.split(':').map(Number);
+    return as-bs||aa-ba;
+  });
+  let h=`<div class="review-verses-title">Mistakes by verse</div>`;
+  keys.forEach(key=>{
+    const[sn,an]=key.split(':').map(Number);
+    const ayahM=[...byAyah[key]].sort((a,b)=>a.wordPos-b.wordPos);
+    // Header line: just the mistaken words, with … standing in for the gaps.
+    // A gold ring marks words also missed in another loaded session.
+    let wH='', lp=0;
+    ayahM.forEach(m=>{
+      if(m.wordPos>lp+1) wH+=`<span class="rv-gap">…</span>`;
+      const isRep=repeats.has(`${sn}:${an}:${m.wordPos}`);
+      wH+=`<span class="rw-type-tag ${sev(m.correction).cls}${isRep?' rw-repeated':''}" style="font-size:1.1em;font-weight:700;${typeWordStyle(getCfg(m),m.type)}">${m.word}</span> `;
+      lp=m.wordPos;
+    });
+    h+=`<div class="review-verse">
+      <div class="review-verse-ref">${key} — ${SURAH_NAMES[sn-1]||''}</div>
+      <div class="review-verse-arabic">${wH}</div>
+      <div>${ayahM.map(m=>_rvMistakeRow(m,getCfg(m),sessions)).join('')}</div>
+    </div>`;
   });
   return h;
+}
+
+// ── One mistake: badges, then the word in context ─────────────────
+// Severity drives the background (via the shared .sev-N classes) and the
+// row's left border; mistake type keeps the text colour and underline as a
+// secondary signal. Unlike the mushaf, there's no clash here — this is
+// serif text on parchment, not a QCF glyph on a coloured wash.
+function _rvMistakeRow(m, cfg, sessions){
+  const mt   = resolveType(cfg, m.type);
+  const tCol = mt.color || 'var(--ink2)';
+  const tBdr = mt.borderColor || mt.color || 'var(--border2)';
+  const bef  = (m.context?.before||[]).join(' ');
+  const aft  = (m.context?.after ||[]).join(' ');
+  const target = `<span class="rv-ctx-target ${sev(m.correction).cls}" style="color:${tCol};border-bottom-color:${tBdr};">${m.word}</span>`;
+  // dir=rtl: `before` is written first but renders rightmost.
+  const ctx = `<div class="rv-ctx">`
+    + (bef?`<span class="rv-ctx-side">${bef}</span> `:'')
+    + target
+    + (aft?` <span class="rv-ctx-side">${aft}</span>`:'')
+    + `</div>`;
+  return `<div class="rv-mistake" style="border-left-color:${sev(m.correction).color};">
+    <div class="rv-mistake-top">
+      <span class="m-badge" style="${typeBadgeStyle(cfg,m.type)}">${mTypeLabel(m,cfg)}</span>
+      <span class="rv-ref">${m.surah}:${m.ayah}</span>
+      <span class="m-corr ${corrClass2[m.correction]}" style="font-size:9px;margin-left:auto;">${mCorrLabel(m,cfg)}</span>
+      ${m.sessionLabel && sessions.length>1?`<span class="rv-session-tag">${esc(m.sessionLabel)}</span>`:''}
+    </div>
+    ${ctx}
+    ${m.note?`<div class="rv-note">${esc(m.note)}</div>`:''}
+  </div>`;
 }
 function donutSVG(sl,total){if(!total)return`<svg viewBox="0 0 88 88"><circle cx="44" cy="44" r="31" fill="none" stroke="var(--parchment3)" stroke-width="14"/></svg>`;const r=31,sw=14,ci=2*Math.PI*r;let off=0;return`<svg viewBox="0 0 88 88">${sl.map(s=>{const d=(s.val/total)*ci;const p=`<circle cx="44" cy="44" r="${r}" fill="none" stroke="${s.color}" stroke-width="${sw}" stroke-dasharray="${d} ${ci-d}" stroke-dashoffset="${-off}" transform="rotate(-90 44 44)" opacity="${s.val?1:0}"/>`;off+=d;return p;}).join('')}</svg>`;}
 
 // ── SHARE
 function buildReport(sessions,mistakes){
-  const sf=mistakes.filter(m=>m.correction==='c1').length,sp=mistakes.filter(m=>m.correction==='c2').length,st=mistakes.filter(m=>m.correction==='c3').length,so=mistakes.filter(m=>m.correction==='c4').length;
+  const {c1:sf,c2:sp,c3:st,c4:so}=corrTally(mistakes);
   let t='📖 *Quran Recitation Session Report*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
   if(sessions.length===1){
     t+=`👤 Student : ${sessions[0].student}\n📜 Passage : ${sessions[0].range}\n📅 Date    : ${sessions[0].date}   ⏱ ${sessions[0].duration}\n`;
@@ -3430,9 +3618,7 @@ function buildReport(sessions,mistakes){
   // Spot test section (single session only)
   if(sessions.length===1 && sessions[0].spotTest?.enabled && sessions[0].spotTest.spots?.length){
     const spots=sessions[0].spotTest.spots;
-    const pass=spots.filter(x=>x.outcome==='pass').length;
-    const partial=spots.filter(x=>x.outcome==='partial').length;
-    const fail=spots.filter(x=>x.outcome==='fail').length;
+    const {pass,partial,fail} = spotTally(spots);
     t+=`🎲 *Spot Test* — ${spots.length} spots\n`;
     t+=`   Score: ✓ ${pass} passed  |  ~ ${partial} partial  |  ✗ ${fail} failed\n\n`;
     spots.forEach((spot,i)=>{
@@ -3602,9 +3788,7 @@ function buildSpotPopupHTML(sess){
   const st = sess.spotTest;
   const spots = st.spots;
   const ml = sess.mistakes || [];
-  const pass = spots.filter(x=>x.outcome==='pass').length;
-  const partial = spots.filter(x=>x.outcome==='partial').length;
-  const fail = spots.filter(x=>x.outcome==='fail').length;
+  const {pass,partial,fail} = spotTally(spots);
   const none = spots.filter(x=>!x.outcome).length;
   const total = spots.length;
   const pct = total ? Math.round(pass/total*100) : 0;
@@ -3678,9 +3862,7 @@ function buildSpotTrendChart(sessions, activeIdx){
   sessions.forEach((sess, i) => {
     const spots = sess.spotTest.spots;
     const total = spots.length;
-    const pass = spots.filter(x=>x.outcome==='pass').length;
-    const partial = spots.filter(x=>x.outcome==='partial').length;
-    const fail = spots.filter(x=>x.outcome==='fail').length;
+    const {pass,partial,fail} = spotTally(spots);
     const none = total - pass - partial - fail;
     const isActive = i === activeIdx;
     const pct = total ? Math.round(pass/total*100) : 0;
@@ -3700,7 +3882,7 @@ function buildSpotTrendChart(sessions, activeIdx){
         ${parH?`<div class="bar-seg" style="height:${parH}px;background:var(--amber);"></div>`:''}
         ${pH?`<div class="bar-seg" style="height:${pH}px;background:var(--green);"></div>`:''}
       </div>
-      <div class="bar-label" style="${isActive?'color:#1a4a8a;font-weight:700;':''}">${dateLabel.length>8?dateLabel.slice(-8):dateLabel}</div>
+      <div class="bar-label" style="${isActive?'color:var(--spot-blue);font-weight:700;':''}">${dateLabel.length>8?dateLabel.slice(-8):dateLabel}</div>
     </div>`;
   });
 
