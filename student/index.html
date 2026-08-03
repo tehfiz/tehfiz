@@ -19,6 +19,7 @@
   --teal:#0a5059;--teal-bg:#d0f0f3;
   --purple:#3d2d7a;--purple-bg:#ede8ff;
   --coral:#7d3010;--coral-bg:#fde8d8;
+  --spot-blue:#1a4a8a;--spot-blue-bg:#ddeeff;
   --border:rgba(90,82,72,0.15);--border2:rgba(90,82,72,0.28);
   --shadow-lg:0 8px 32px rgba(26,22,18,0.18);
   --arabic-size:28px;
@@ -56,9 +57,49 @@ body{font-family:'Lora',Georgia,serif;background:var(--parchment);color:var(--in
   cursor:pointer;font-family:'Lora',serif;transition:background .12s;white-space:nowrap;
 }
 #panelToggleBtn:hover{background:rgba(255,255,255,.22);}
-/* Mobile: hide topbar toggle, show FAB instead */
-@media(max-width:700px){#panelToggleBtn{display:none!important;}}
-@media(min-width:701px){.panel-fab{display:none!important;}}
+/* Mobile: hide topbar toggle, show FAB instead.
+   Was @media(max-width:700px)/(min-width:701px) — now keyed off body.compact-ui
+   so landscape phones (short but wide) get this too; see isCompactViewport()
+   in the script, which reacts live to rotation unlike a plain media query pair. */
+body.compact-ui #panelToggleBtn{display:none!important;}
+body.compact-ui .btn-t-label{display:none;}
+body.compact-ui .btn-t{padding:4px 7px;}
+body:not(.compact-ui) .panel-fab{display:none!important;}
+/* Auto-scroll: toolbar version (desktop) vs floating mobile control.
+   Bottom-LEFT specifically so it never overlaps the sessions-panel FAB
+   (bottom-right). */
+body.compact-ui #autoscrollControls{display:none;}
+.autoscroll-fab-wrap{
+  display:none;
+  position:fixed;bottom:20px;left:16px;z-index:120;
+  align-items:center;gap:6px;
+  transition:opacity .4s ease;
+}
+body.compact-ui .autoscroll-fab-wrap{display:flex;}
+.autoscroll-fab-wrap.idle{opacity:.35;}
+.autoscroll-fab{
+  width:44px;height:44px;border-radius:50%;flex-shrink:0;
+  background:var(--gold);color:var(--ink);border:none;
+  font-size:16px;cursor:pointer;
+  box-shadow:0 4px 16px rgba(26,22,18,.3);
+  display:flex;align-items:center;justify-content:center;
+  transition:transform .15s,background .15s,color .15s;
+}
+.autoscroll-fab:hover{transform:scale(1.08);}
+.autoscroll-fab.active-vc{background:var(--ink);color:var(--gold-light);}
+.autoscroll-fab-speed{
+  align-items:center;gap:4px;flex-shrink:0;
+  background:var(--ink);color:var(--gold-light);
+  border-radius:999px;padding:4px 8px;
+  font-size:11px;font-family:'IBM Plex Mono',monospace;
+  box-shadow:0 4px 16px rgba(26,22,18,.25);
+}
+.autoscroll-fab-mini{
+  width:20px;height:20px;border-radius:50%;flex-shrink:0;
+  background:rgba(255,255,255,.12);border:none;color:var(--gold-light);
+  font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;
+}
+.autoscroll-fab-mini:hover{background:rgba(255,255,255,.22);}
 
 /* Floating Action Button — mobile only, bottom-right */
 .panel-fab{
@@ -110,6 +151,7 @@ body{font-family:'Lora',Georgia,serif;background:var(--parchment);color:var(--in
    doesn't have this problem; the browser extends scrollable area symmetrically. */
 #pageContent.mushaf-view-mode{
   padding:16px 8px;
+  overflow-x: auto;
 }
 
 /* MUSHAF PAGE */
@@ -153,12 +195,16 @@ body{font-family:'Lora',Georgia,serif;background:var(--parchment);color:var(--in
 
 /* WORD SPANS */
 .word-span{display:inline;padding:2px 2px;border-radius:3px;}
-.word-span.type-m1{color:var(--amber);border-bottom:2px solid var(--amber);cursor:pointer;}
-.word-span.type-m2{color:var(--red);border-bottom:2px solid var(--red);cursor:pointer;}
-.word-span.type-m3{color:var(--coral);border-bottom:2px solid var(--coral);cursor:pointer;}
-.word-span.type-m4{color:var(--purple);border-bottom:2px solid var(--purple);cursor:pointer;}
-.word-span.type-m5{color:var(--teal);border-bottom:2px solid var(--teal);cursor:pointer;}
-.word-span.type-m6{border-bottom:2px solid var(--ink3);cursor:pointer;}
+/* Word highlights are keyed to INTERVENTION LEVEL only. Mistake type is carried
+   by the badge row, tooltip and mistake list instead — signalling both on the
+   same glyph put a type hue on a severity wash and read as a colour clash. The
+   Quran text stays ink; the wash plus this underline carry the whole signal. */
+.word-span.type-tag{border-bottom-width:2px;border-bottom-style:solid;border-bottom-color:var(--border2);cursor:pointer;}
+.word-span.sev-0,.qcf-word.sev-0{border-bottom-color:var(--green);}
+.word-span.sev-1,.qcf-word.sev-1{border-bottom-color:var(--lvl1-yellow);}
+.word-span.sev-2,.qcf-word.sev-2{border-bottom-color:var(--lvl2-orange);}
+.word-span.sev-3,.qcf-word.sev-3{border-bottom-color:var(--red);}
+.word-span.sev-other,.qcf-word.sev-other{border-bottom-color:var(--ink3);}
 .word-span.repeated{box-shadow:0 0 0 2px var(--gold);border-radius:4px;}
 .word-span.sev-3.repeated{box-shadow:0 0 0 1px var(--red),0 0 0 3px var(--gold);}
 .word-span[class*="type-"]:hover{filter:brightness(.9);}
@@ -199,12 +245,7 @@ body{font-family:'Lora',Georgia,serif;background:var(--parchment);color:var(--in
 .msl-basmala-text{font-family:'UthmanicHafs','Scheherazade New','Amiri',serif;font-size:0.88em;color:var(--ink);}
 /* QCF word span — read-only (no cursor:pointer on unmarked) */
 .qcf-word{display:inline-block;border-radius:3px;transition:background .1s,color .1s;padding:0 1px;font-family:inherit;font-size:inherit;line-height:1;color:inherit;background:none;border:none;-webkit-user-select:none;user-select:none;white-space:nowrap;flex-shrink:0;}
-.qcf-word.type-m1{color:var(--amber);border-bottom:2px solid var(--amber);cursor:pointer;}
-.qcf-word.type-m2{color:var(--red);border-bottom:2px solid var(--red);cursor:pointer;}
-.qcf-word.type-m3{color:var(--coral);border-bottom:2px solid var(--coral);cursor:pointer;}
-.qcf-word.type-m4{color:var(--purple);border-bottom:2px solid var(--purple);cursor:pointer;}
-.qcf-word.type-m5{color:var(--teal);border-bottom:2px solid var(--teal);cursor:pointer;}
-.qcf-word.type-m6{border-bottom:2px solid var(--ink3);cursor:pointer;}
+.qcf-word.type-tag{border-bottom-width:2px;border-bottom-style:solid;border-bottom-color:var(--border2);cursor:pointer;}
 .qcf-word.repeated{box-shadow:0 0 0 2px var(--gold);border-radius:4px;}
 .qcf-word.sev-3.repeated{box-shadow:0 0 0 1px var(--red),0 0 0 3px var(--gold);}
 .qcf-word[class*="type-"]:hover{filter:brightness(.91);}
@@ -230,33 +271,78 @@ body{font-family:'Lora',Georgia,serif;background:var(--parchment);color:var(--in
   z-index:10;overflow:hidden;
 }
 
-/* Desktop collapsed: slide fully off-screen to the right */
-@media(min-width:701px){
-  .session-panel{transform:none;}
-  .session-panel.panel-collapsed{
-    width:0;border-left:none;
-    pointer-events:none;
-  }
-  .panel-drag-handle{display:none!important;}
+/* Desktop collapsed: slide fully off-screen to the right.
+   Was @media(min-width:701px) — now the "not compact" case explicitly, so
+   landscape phones (caught by compact-ui via height, even though often wide)
+   don't fall through to this desktop behavior by accident. */
+body:not(.compact-ui) .session-panel{transform:none;}
+body:not(.compact-ui) .session-panel.panel-collapsed{
+  width:0;border-left:none;
+  pointer-events:none;
 }
+body:not(.compact-ui) .panel-drag-handle{display:none!important;}
 
-/* Mobile: full-width bottom sheet overlay */
-@media(max-width:700px){
-  :root{--panel-w:100%;}
-  .topbar-nav{display:none;}
-  .vc-label{display:none;}
-  .session-panel{
-    position:fixed;bottom:0;left:0;right:0;
-    width:100%!important;height:62vh;
-    border-left:none;border-top:1px solid var(--border2);
-    border-radius:16px 16px 0 0;
-    box-shadow:0 -6px 32px rgba(26,22,18,.22);
-    transform:translateY(100%);
-    z-index:100;
-  }
-  .session-panel.panel-open{transform:translateY(0);}
-  .panel-drag-handle{display:flex!important;}
+/* Portrait/narrow compact mode: full-width bottom sheet overlay.
+   Was @media(max-width:700px) — now body.compact-ui, EXCLUDING the landscape
+   case below (a landscape phone gets a right-side drawer instead — a 62vh
+   sheet is only ~200px tall on a short landscape screen, too cramped to use). */
+body.compact-ui:not(.compact-ui-landscape){--panel-w:100%;}
+body.compact-ui:not(.compact-ui-landscape) .topbar-nav{display:none;}
+body.compact-ui:not(.compact-ui-landscape) .vc-label{display:none;}
+body.compact-ui:not(.compact-ui-landscape) .session-panel{
+  position:fixed;bottom:0;left:0;right:0;
+  width:100%!important;height:62vh;
+  border-left:none;border-top:1px solid var(--border2);
+  border-radius:16px 16px 0 0;
+  box-shadow:0 -6px 32px rgba(26,22,18,.22);
+  transform:translateY(100%);
+  z-index:100;
 }
+body.compact-ui:not(.compact-ui-landscape) .session-panel.panel-open{transform:translateY(0);}
+body.compact-ui:not(.compact-ui-landscape) .panel-drag-handle{display:flex!important;}
+
+/* Landscape phone: right-side full-height drawer instead of a bottom sheet
+   (matches the teacher app's tracker-panel — same reasoning: a short viewport
+   leaves no room for a sheet, but plenty of width for a side panel). */
+body.compact-ui-landscape .topbar-nav{display:none;}
+body.compact-ui-landscape .vc-label{display:none;}
+body.compact-ui-landscape .session-panel{
+  position:fixed;top:0;right:0;bottom:0;left:auto;
+  width:min(320px,92vw)!important;height:auto;
+  border-left:1px solid var(--border2);border-top:none;
+  border-radius:0;
+  box-shadow:-4px 0 24px rgba(26,22,18,.18);
+  transform:translateX(100%);
+  z-index:100;
+}
+body.compact-ui-landscape .session-panel.panel-open{transform:translateX(0);}
+body.compact-ui-landscape .panel-drag-handle{display:none!important;}
+
+/* Scroll the ENTIRE panel as one unit in compact mode (both the portrait
+   bottom-sheet and the landscape drawer) rather than pinning the tabs/banner/
+   stats/footer and only scrolling the mistakes or sessions list internally —
+   a short viewport doesn't leave room for all that pinned chrome AND a
+   usable list at the same time. Several of the inner containers set
+   overflow/flex via inline style in the HTML, so !important is needed here
+   to win over that.
+*/
+body.compact-ui .session-panel{overflow-y:auto;overflow-x:hidden;}
+body.compact-ui #panelMistakes,
+body.compact-ui #panelSessions,
+body.compact-ui #mistakesLoaded{
+  flex:none!important;
+  overflow:visible!important;
+}
+body.compact-ui .mistakes-scroll,
+body.compact-ui .sess-list-inner{
+  flex:none;
+  overflow-y:visible;
+}
+body.compact-ui .panel-tabs,
+body.compact-ui .active-banner,
+body.compact-ui .stats-row,
+body.compact-ui .sessions-toolbar,
+body.compact-ui .panel-footer{flex-shrink:0;}
 
 /* Drag handle for mobile bottom sheet */
 .panel-drag-handle{justify-content:center;padding:10px 0 4px;background:var(--parchment);border-radius:16px 16px 0 0;cursor:pointer;flex-shrink:0;display:none;}
@@ -298,12 +384,9 @@ body{font-family:'Lora',Georgia,serif;background:var(--parchment);color:var(--in
 .mlist-chip{font-size:9px;padding:2px 7px;border-radius:999px;border:.5px solid var(--border2);background:var(--parchment2);color:var(--ink2);cursor:pointer;font-family:'Lora',serif;transition:all .12s;white-space:nowrap;}
 .mlist-chip:hover{background:var(--parchment3);}
 .mlist-chip.active{background:var(--gold);color:var(--ink);border-color:var(--gold);font-weight:600;}
-.mlist-chip.active.m1{background:var(--amber);color:white;border-color:var(--amber);}
-.mlist-chip.active.m2{background:var(--red);color:white;border-color:var(--red);}
-.mlist-chip.active.m3{background:var(--coral);color:white;border-color:var(--coral);}
-.mlist-chip.active.m4{background:var(--purple);color:white;border-color:var(--purple);}
-.mlist-chip.active.m5{background:var(--teal);color:white;border-color:var(--teal);}
-.mlist-chip.active.m6{background:var(--ink3);color:white;border-color:var(--ink3);}
+/* Selected-type color comes from --type-color set inline per-chip at render
+   time (see typeBtn() in renderMlistControls) rather than fixed per-id rules. */
+.mlist-chip.active.type-chip{background:var(--type-color,var(--gold));color:white;border-color:var(--type-color,var(--gold));}
 .mlist-reset{font-size:9px;color:var(--gold);cursor:pointer;text-decoration:underline;white-space:nowrap;margin-left:auto;}
 .mlist-reset:hover{color:var(--amber);}
 
@@ -324,11 +407,19 @@ body{font-family:'Lora',Georgia,serif;background:var(--parchment);color:var(--in
 .sev-2{background:var(--lvl2-orange-bg);}
 .sev-3{background:var(--red-bg);}
 .sev-other{background:var(--parchment2);}
-/* Word-level extras for the most alarming level */
-.qcf-word.sev-3,.word-span.sev-3{box-shadow:0 0 0 1px var(--red);font-weight:600;}
+/* Word-level extra for the most alarming level. No font-weight here: QCF V2 are
+   single-weight per-page glyph fonts, so any bold request is synthesised by the
+   browser smearing each glyph, which visibly distorts the ligatures. */
+.qcf-word.sev-3,.word-span.sev-3{box-shadow:0 0 0 1px var(--red);}
 
 /* Mistake items */
-.mistake-item{background:var(--parchment);border-radius:6px;border:.5px solid var(--border);padding:6px 8px;margin-bottom:5px;display:flex;gap:5px;align-items:flex-start;cursor:pointer;transition:border-color .12s,background .12s,transform .1s;animation:slideIn .15s ease;}
+.mistake-item{border-radius:6px;border:.5px solid var(--border);padding:6px 8px;margin-bottom:5px;display:flex;gap:5px;align-items:flex-start;cursor:pointer;transition:border-color .12s,background .12s,transform .1s;animation:slideIn .15s ease;}
+/* The card's own background is only a fallback for a card with no severity
+   class. Guarded with :not() rather than left to source order: as a plain
+   `.mistake-item{background:…}` it ties with the unscoped .sev-N rules at
+   equal specificity, so whichever block happens to come second wins — which
+   is how the two apps silently diverged. */
+.mistake-item:not([class*="sev-"]){background:var(--parchment);}
 .mistake-item:hover{border-color:var(--gold);background:var(--gold-pale);transform:translateX(-2px);}
 .mistake-item.sev-0:hover{filter:brightness(.96);}
 .mistake-item.sev-1:hover{filter:brightness(.96);}
@@ -336,7 +427,8 @@ body{font-family:'Lora',Georgia,serif;background:var(--parchment);color:var(--in
 .mistake-item.sev-3:hover{filter:brightness(.96);}
 .mistake-item.sev-other:hover{background:var(--parchment2);}
 .mistake-item.repeated-mistake{box-shadow:inset 0 0 0 1px var(--gold);background:var(--gold-pale);}
-/* Card-level extras — background already comes from the unscoped .sev-N rules above */
+/* Card-level extras — background comes from the unscoped .sev-N rules, wherever
+   in the sheet those sit; these add only the escalating left border. */
 .mistake-item.sev-0{border-left:2px solid var(--green);}
 .mistake-item.sev-1{border-left:4px solid var(--lvl1-yellow);}
 .mistake-item.sev-2{border-left:4px solid var(--lvl2-orange);}
@@ -345,12 +437,7 @@ body{font-family:'Lora',Georgia,serif;background:var(--parchment);color:var(--in
 .mistake-item.repeated-mistake.sev-0,.mistake-item.repeated-mistake.sev-1,.mistake-item.repeated-mistake.sev-2,.mistake-item.repeated-mistake.sev-3,.mistake-item.repeated-mistake.sev-other{box-shadow:inset 0 0 0 1px var(--gold),0 0 0 1px rgba(184,132,26,.12);}
 @keyframes slideIn{from{opacity:0;transform:translateY(-3px);}to{opacity:1;transform:none;}}
 .m-badge{flex-shrink:0;padding:2px 5px;border-radius:999px;font-size:8px;font-weight:600;white-space:nowrap;margin-top:1px;font-family:'IBM Plex Mono',monospace;direction:ltr;unicode-bidi:isolate;display:inline-block;}
-.m-badge.m1{background:var(--amber-bg);color:var(--amber);}
-.m-badge.m2{background:var(--red-bg);color:var(--red);}
-.m-badge.m3{background:var(--coral-bg);color:var(--coral);}
-.m-badge.m4{background:var(--purple-bg);color:var(--purple);}
-.m-badge.m5{background:var(--teal-bg);color:var(--teal);}
-.m-badge.m6{background:var(--parchment3);color:var(--ink2);}
+
 .m-body{flex:1;min-width:0;}
 .m-ref{font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--ink3);margin-bottom:1px;}
 .m-word{font-family:'Scheherazade New','Amiri',serif;font-size:14px;direction:rtl;color:var(--ink);display:block;}
@@ -435,22 +522,56 @@ body{font-family:'Lora',Georgia,serif;background:var(--parchment);color:var(--in
 .timeline{display:flex;gap:2px;flex-wrap:wrap;margin-bottom:8px;}
 .tl-dot{width:14px;height:14px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:7px;cursor:default;transition:transform .1s;font-family:'IBM Plex Mono',monospace;color:white;font-weight:600;}
 .tl-dot:hover{transform:scale(1.4);}
-.tl-dot.m1{background:var(--amber);}
-.tl-dot.m2{background:var(--red);}
-.tl-dot.m3{background:var(--coral);}
-.tl-dot.m4{background:var(--purple);}
-.tl-dot.m5{background:var(--teal);}
-.tl-dot.m6{background:var(--ink3);}
+
 .review-verses-title{font-size:10px;font-weight:600;color:var(--ink2);letter-spacing:.06em;text-transform:uppercase;margin-bottom:7px;padding-top:4px;border-top:.5px solid var(--border);}
 .review-verse{margin-bottom:9px;padding:8px 10px;border-radius:6px;border:.5px solid var(--border);background:var(--parchment2);}
 .review-verse-ref{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--ink3);margin-bottom:4px;}
 .review-verse-arabic{direction:rtl;text-align:right;line-height:2.6;font-size:18px;font-family:'Scheherazade New','Amiri',serif;margin-bottom:4px;}
-.rw-type-m1{color:var(--amber);border-bottom:2px solid var(--amber);border-radius:2px;padding:1px 2px;}
-.rw-type-m2{color:var(--red);border-bottom:2px solid var(--red);border-radius:2px;padding:1px 2px;}
-.rw-type-m3{color:var(--coral);border-bottom:2px solid var(--coral);border-radius:2px;padding:1px 2px;}
-.rw-type-m4{color:var(--purple);border-bottom:2px solid var(--purple);border-radius:2px;padding:1px 2px;}
-.rw-type-m5{color:var(--teal);border-bottom:2px solid var(--teal);border-radius:2px;padding:1px 2px;}
-.rw-type-m6{border-bottom:2px solid var(--ink3);border-radius:2px;padding:1px 2px;}
+.rw-type-tag{border-bottom:2px solid currentColor;border-radius:2px;padding:1px 2px;}
+
+/* Review layout — extracted from inline styles so the builders above stay
+   readable and the two apps can share one stylesheet after a front/back split.
+   Anything genuinely data-driven (a type's colour, a severity border) is still
+   applied per-instance; only fixed structure lives here. */
+.rv-head{margin-bottom:12px;}
+.rv-head h2{font-size:16px;font-weight:600;}
+.rv-sub{font-size:11px;color:var(--ink3);}
+.rv-remarks{font-size:11px;color:var(--ink2);font-style:italic;margin-top:5px;padding:5px 8px;background:var(--parchment2);border-radius:5px;border-left:3px solid var(--gold);}
+.rv-badges{display:flex;gap:5px;flex-wrap:wrap;margin-top:7px;}
+.rv-badges .m-badge{font-size:9px;}
+.chart-note{font-size:8px;color:var(--ink3);margin-bottom:6px;font-style:italic;}
+.h4-hint{font-size:8px;font-weight:400;color:var(--ink3);}
+.rv-gap{color:var(--ink3);padding:0 3px;}
+.rv-ref{font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--ink3);}
+.rv-mistake{display:flex;flex-direction:column;align-items:stretch;gap:2px;margin-bottom:7px;padding:6px 0 7px 8px;border-bottom:.5px solid var(--border);border-left-width:3px;border-left-style:solid;}
+.rv-mistake-top{display:flex;align-items:center;gap:5px;flex-wrap:wrap;}
+/* Context strip: grey surroundings, the mistaken word carried by .sev-N */
+.rv-ctx{direction:rtl;text-align:right;font-family:'Scheherazade New','Amiri',serif;font-size:16px;line-height:2.2;margin:4px 0;padding:4px 8px;background:var(--parchment);border-radius:6px;border:.5px solid var(--border);unicode-bidi:isolate;}
+.rv-ctx-side{color:var(--ink3);opacity:.75;}
+.rv-ctx-target{border-radius:3px;padding:1px 3px;font-weight:700;font-size:17px;border-bottom-width:2px;border-bottom-style:solid;}
+/* Spot test card */
+.spot-card{margin-bottom:14px;padding:10px 12px;background:var(--spot-blue-bg);border-radius:8px;border-left:3px solid var(--spot-blue);}
+.spot-card-title{font-size:10px;font-weight:600;color:var(--spot-blue);letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;}
+.spot-badges{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;}
+.spot-badges .m-badge{font-size:10px;}
+.spot-rows{display:flex;flex-direction:column;gap:4px;}
+.spot-row{display:flex;align-items:center;gap:6px;padding:4px 6px;background:var(--parchment);border-radius:5px;border:.5px solid var(--border);}
+.spot-row-n{font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--spot-blue);font-weight:700;flex-shrink:0;}
+.spot-row-ref{font-size:10px;color:var(--ink);flex:1;}
+.spot-row-ref span{color:var(--ink3);}
+.spot-row-outcome{font-size:10px;font-weight:600;flex-shrink:0;}
+.spot-row-count{font-size:9px;color:var(--ink3);font-family:'IBM Plex Mono',monospace;}
+.rw-repeated{box-shadow:0 0 0 2px var(--gold);border-radius:3px;padding:1px 2px;}
+.rv-remarks-multi{margin-top:7px;display:flex;flex-direction:column;gap:4px;}
+.rv-remark-line{font-size:10px;padding:4px 8px;background:var(--parchment2);border-radius:4px;border-left-width:3px;border-left-style:solid;}
+.rv-remark-who{font-weight:600;color:var(--ink2);}
+.rv-remark-text{font-style:italic;color:var(--ink3);}
+.rv-repeat-notice{margin-bottom:10px;background:var(--gold-pale);border-color:var(--gold-light);}
+.rv-repeat-notice h4{color:var(--amber);}
+.rv-session-tag{font-size:8px;color:var(--ink3);font-family:'IBM Plex Mono',monospace;}
+.rv-note{padding:0 3px;font-size:9px;color:var(--ink3);font-style:italic;}
+.spot-card-sub{font-size:9px;color:var(--ink3);margin-bottom:8px;}
+.spot-cta{background:var(--spot-blue);color:white;border:none;font-size:11px;padding:5px 12px;}
 
 /* SPOT TEST POPUP */
 .spot-popup{max-width:480px;}
@@ -463,7 +584,7 @@ body{font-family:'Lora',Georgia,serif;background:var(--parchment);color:var(--in
 .spot-card-list{display:flex;flex-direction:column;gap:4px;max-height:240px;overflow-y:auto;margin-bottom:10px;}
 .spot-result-card{display:flex;align-items:center;gap:6px;padding:5px 7px;background:var(--parchment2);border-radius:5px;border:.5px solid var(--border);transition:background .12s;}
 .spot-result-card:hover{background:var(--parchment3);}
-.spot-result-num{font-family:'IBM Plex Mono',monospace;font-size:8px;color:#1a4a8a;font-weight:700;flex-shrink:0;}
+.spot-result-num{font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--spot-blue);font-weight:700;flex-shrink:0;}
 .spot-result-name{font-size:10px;color:var(--ink);flex:1;}
 .spot-result-ref{color:var(--ink3);font-size:9px;}
 .spot-result-outcome{font-size:10px;font-weight:600;flex-shrink:0;}
@@ -472,7 +593,7 @@ body{font-family:'Lora',Georgia,serif;background:var(--parchment);color:var(--in
 .spot-nav-btn{background:none;border:.5px solid var(--border2);color:var(--ink2);border-radius:4px;padding:4px 8px;font-size:10px;font-family:'Lora',serif;cursor:pointer;}
 .spot-nav-btn:hover{background:var(--parchment3);}
 .spot-nav-btn:disabled{opacity:.3;cursor:default;}
-.spot-nav-btn.active{background:#ddeeff;border-color:#1a4a8a;color:#1a4a8a;font-weight:600;}
+.spot-nav-btn.active{background:var(--spot-blue-bg);border-color:var(--spot-blue);color:var(--spot-blue);font-weight:600;}
 .spot-nav-label{flex:1;text-align:center;font-size:10px;color:var(--ink3);}
 .spot-trend-box{background:var(--parchment2);border-radius:7px;padding:10px;border:.5px solid var(--border);margin-bottom:10px;}
 .spot-trend-box h4{font-size:10px;font-weight:600;color:var(--ink2);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px;}
@@ -509,11 +630,17 @@ body{font-family:'Lora',Georgia,serif;background:var(--parchment);color:var(--in
   border:none;letter-spacing:.04em;
   box-shadow:0 2px 8px rgba(26,22,18,.2);
 }
-@media(max-width:700px){
-  .topbar-hide-btn{display:block;}
-  /* Hide mushaf zoom controls — scaling is unreliable on mobile */
-  #mushafControls{display:none!important;}
-}
+/* Was @media(max-width:700px) — now body.compact-ui, so this also fires for
+   landscape phones (where the topbar takes up disproportionate vertical space). */
+body.compact-ui .topbar-hide-btn{display:block;}
+/* Zoom buttons/slider are hidden on mobile — pinch-to-zoom (below) is the
+   mobile interaction instead, freeing up the cramped toolbar row. */
+body.compact-ui #mushafControls{display:none!important;}
+/* Let a single finger scroll vertically as normal; two-finger pinch is
+   intercepted by JS (see MUSHAF PINCH-TO-ZOOM) rather than left to the
+   browser, which is blocked from native pinch-zoom by the viewport meta tag
+   anyway and would otherwise just do nothing. */
+#pageContent.mushaf-view-mode{touch-action:pan-x pan-y;}
 /* When topbar is hidden, the restore strip shows */
 body.topbar-hidden .topbar,
 body.topbar-hidden .view-tabs,
@@ -542,8 +669,9 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
   <div class="topbar-right">
     <!-- Desktop sidebar toggle — hidden on mobile (FAB used instead) -->
     <button id="panelToggleBtn" onclick="togglePanel()" title="Toggle sessions panel">📋 Sessions</button>
-    <button class="btn-t" onclick="openInterventionGuide()" title="Intervention guide">❓ Help</button>
-    <label class="btn-t gold" style="cursor:pointer;font-size:11px;">⬇ Import
+    <button class="btn-t" onclick="openSettings()" title="Settings">⚙<span class="btn-t-label"> Settings</span></button>
+    <button class="btn-t" onclick="openInterventionGuide()" title="Intervention guide">❓<span class="btn-t-label"> Help</span></button>
+    <label class="btn-t gold" style="cursor:pointer;font-size:11px;">⬇<span class="btn-t-label"> Import</span>
       <input type="file" accept=".qrs" multiple style="display:none;" onchange="importSession(event)">
     </label>
   </div>
@@ -583,6 +711,18 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
         <line x1="3" y1="21" x2="10" y2="14"></line>
       </svg>
     </button>
+  </div>
+  <!-- Auto-scroll: always visible regardless of view mode -->
+  <div class="view-controls" id="autoscrollControls">
+    <button class="vc-btn" id="asToggleBtn" onclick="toggleAutoScroll()" title="Auto-scroll (a)">⏫</button>
+    <span class="vc-label" id="asSpeedLabel" style="display:none;">1.0x</span>
+    <button class="vc-btn" id="asSlower" onclick="changeAutoScrollSpeed(-0.1)" title="Slower (s)" style="display:none;">−</button>
+    <input type="range" class="autoscroll-speed-slider" id="asSlider"
+      min="0.3" max="3" value="1" step="0.1"
+      oninput="setAutoScrollSpeed(this.value)"
+      title="Drag to change auto-scroll speed"
+      style="width:70px;accent-color:var(--gold);vertical-align:middle;cursor:pointer;display:none;">
+    <button class="vc-btn" id="asFaster" onclick="changeAutoScrollSpeed(0.1)" title="Faster (d)" style="display:none;">+</button>
   </div>
 </div>
 
@@ -666,6 +806,29 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
   </div>
 </div>
 
+<!-- SETTINGS MODAL -->
+<div class="modal-bg" id="settingsModal">
+  <div class="modal" style="max-width:380px;">
+    <div class="modal-title">⚙︎ Settings</div>
+    <div class="modal-sub">Preferences are saved on this device.</div>
+
+    <div style="border-top:.5px solid var(--border);padding-top:10px;margin-top:4px;">
+      <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;">
+        <span>⏫ Auto-scroll</span>
+        <span style="font-size:10px;color:var(--ink3);font-weight:400;margin-right:6px;font-family:'Lora',serif;">Hands-free scrolling</span>
+        <button id="asEnabledSwitch" onclick="toggleAutoscrollEnabled()" style="position:relative;width:40px;height:22px;border-radius:11px;border:none;cursor:pointer;transition:background .2s;background:var(--gold);flex-shrink:0;">
+          <span id="asEnabledThumb" style="position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:white;transition:transform .2s;display:block;transform:translateX(18px);box-shadow:0 1px 4px rgba(0,0,0,.2);"></span>
+        </button>
+      </label>
+      <div style="font-size:10px;color:var(--ink3);margin-top:4px;line-height:1.5;">Turn off to hide the auto-scroll controls entirely if you don't use them.</div>
+    </div>
+
+    <div class="modal-btns">
+      <button class="btn-m pri" onclick="closeModal('settingsModal')">Done</button>
+    </div>
+  </div>
+</div>
+
 <!-- INTERVENTION GUIDE MODAL -->
 <div class="modal-bg" id="interventionModal">
   <div class="modal" style="max-width:460px;padding:0;display:flex;flex-direction:column;max-height:86vh;overflow:hidden;">
@@ -677,11 +840,43 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
       <div style="display:flex;gap:0;border-bottom:1px solid var(--border2);margin:0 -18px;padding:0 18px;">
         <button class="sv-tab active" id="svt-types"  onclick="switchSvTab('types')">📝 Mistake Types</button>
         <button class="sv-tab"        id="svt-levels" onclick="switchSvTab('levels')">🎯 Intervention Levels</button>
+        <button class="sv-tab"        id="svt-keys"   onclick="switchSvTab('keys')">⌨ Shortcuts</button>
       </div>
     </div>
 
     <!-- scrollable content -->
     <div style="flex:1;overflow-y:auto;padding:12px 18px;">
+
+      <!-- TAB: Shortcuts -->
+      <div id="svp-keys" style="display:none;">
+        <table style="width:100%;border-collapse:collapse;font-size:12px;">
+          <thead>
+            <tr style="border-bottom:.5px solid var(--border2);">
+              <th style="text-align:left;padding:5px 8px;color:var(--ink3);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.05em;">Key</th>
+              <th style="text-align:left;padding:5px 8px;color:var(--ink3);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.05em;">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom:.5px solid var(--border);"><td style="padding:6px 8px;font-family:'IBM Plex Mono',monospace;background:var(--parchment2);border-radius:3px;color:var(--ink2);">↑ / ↓</td><td style="padding:6px 8px;color:var(--ink2);">Scroll Quran text up / down</td></tr>
+            <tr style="border-bottom:.5px solid var(--border);"><td style="padding:6px 8px;font-family:'IBM Plex Mono',monospace;background:var(--parchment2);border-radius:3px;color:var(--ink2);">PgUp / PgDn</td><td style="padding:6px 8px;color:var(--ink2);">Scroll one full screen up / down</td></tr>
+            <tr style="border-bottom:.5px solid var(--border);"><td style="padding:6px 8px;font-family:'IBM Plex Mono',monospace;background:var(--parchment2);border-radius:3px;color:var(--ink2);">← / →</td><td style="padding:6px 8px;color:var(--ink2);">Previous / Next Juz</td></tr>
+            <tr style="border-bottom:.5px solid var(--border);"><td style="padding:6px 8px;font-family:'IBM Plex Mono',monospace;background:var(--parchment2);border-radius:3px;color:var(--ink2);">t</td><td style="padding:6px 8px;color:var(--ink2);">Toggle translation on/off</td></tr>
+            <tr style="border-bottom:.5px solid var(--border);"><td style="padding:6px 8px;font-family:'IBM Plex Mono',monospace;background:var(--parchment2);border-radius:3px;color:var(--ink2);">c</td><td style="padding:6px 8px;color:var(--ink2);">Toggle compact/expanded mode</td></tr>
+            <tr style="border-bottom:.5px solid var(--border);"><td style="padding:6px 8px;font-family:'IBM Plex Mono',monospace;background:var(--parchment2);border-radius:3px;color:var(--ink2);">+ / −</td><td style="padding:6px 8px;color:var(--ink2);">Increase / decrease font size</td></tr>
+            <tr style="border-bottom:.5px solid var(--border);"><td style="padding:6px 8px;font-family:'IBM Plex Mono',monospace;background:var(--parchment2);border-radius:3px;color:var(--ink2);">Esc</td><td style="padding:6px 8px;color:var(--ink2);">Close whatever's open</td></tr>
+            <tr><td style="padding:6px 8px;font-family:'IBM Plex Mono',monospace;background:var(--parchment2);border-radius:3px;color:var(--ink2);">? or /</td><td style="padding:6px 8px;color:var(--ink2);">Open this Help &amp; Guide panel</td></tr>
+          </tbody>
+        </table>
+        <table style="width:100%;border-collapse:collapse;font-size:12px;margin-top:10px;">
+          <tbody>
+            <tr style="background:var(--gold-pale);"><td colspan="2" style="padding:5px 8px;font-size:10px;color:var(--gold);font-weight:600;text-transform:uppercase;letter-spacing:.05em;border-radius:4px;">Auto-scroll</td></tr>
+            <tr style="border-bottom:.5px solid var(--border);"><td style="padding:6px 8px;font-family:'IBM Plex Mono',monospace;background:var(--parchment2);border-radius:3px;color:var(--ink2);">a</td><td style="padding:6px 8px;color:var(--ink2);">Toggle auto-scroll on / off</td></tr>
+            <tr style="border-bottom:.5px solid var(--border);"><td style="padding:6px 8px;font-family:'IBM Plex Mono',monospace;background:var(--parchment2);border-radius:3px;color:var(--ink2);">Shift + A</td><td style="padding:6px 8px;color:var(--ink2);">Turn the auto-scroll setting on (and start it) or off, from anywhere</td></tr>
+            <tr style="border-bottom:.5px solid var(--border);"><td style="padding:6px 8px;font-family:'IBM Plex Mono',monospace;background:var(--parchment2);border-radius:3px;color:var(--ink2);">s</td><td style="padding:6px 8px;color:var(--ink2);">Slower</td></tr>
+            <tr style="border-bottom:.5px solid var(--border);"><td style="padding:6px 8px;font-family:'IBM Plex Mono',monospace;background:var(--parchment2);border-radius:3px;color:var(--ink2);">d</td><td style="padding:6px 8px;color:var(--ink2);">Faster</td></tr>
+          </tbody>
+        </table>
+      </div>
 
       <!-- TAB: Mistake Types -->
       <div id="svp-types">
@@ -790,14 +985,23 @@ function juzForVerse(surah, ayah){
   }
   return 1;
 }
-const MISTAKE_TYPES=[
-  {id:'m1',label:'Hesitation', color:'var(--amber)', bgColor:'var(--amber-bg)',  borderColor:'var(--amber)'},
-  {id:'m2',label:'Wrong word', color:'var(--red)',   bgColor:'var(--red-bg)',    borderColor:'var(--red)'},
-  {id:'m3',label:'Skipped',    color:'var(--coral)', bgColor:'var(--coral-bg)',  borderColor:'var(--coral)'},
-  {id:'m4',label:'Makhraj',    color:'var(--purple)',bgColor:'var(--purple-bg)', borderColor:'var(--purple)'},
-  {id:'m5',label:'Tajweed',    color:'var(--teal)',  bgColor:'var(--teal-bg)',   borderColor:'var(--teal)'},
-  {id:'m6',label:'Other',      color:'var(--ink3)',  bgColor:'var(--parchment3)',borderColor:'var(--border2)'},
-];
+// Curated library reference (for label/category lookups only — this is a
+// read-only viewer, so there's no teacher-editable active list here; display
+// always resolves from each session's own embedded typeConfig first, since
+// that's the source of truth for what a teacher's catalog looked like when
+// that session was logged).
+const MISTAKE_TYPE_OTHER={id:'other',label:'Other',category:'other',color:'',bgColor:'var(--parchment3)',borderColor:'var(--border2)'};
+// Frozen definitions for the old m1-m6 scheme — kept ONLY so mistakes from
+// sessions saved before this feature existed (with no embedded typeConfig at
+// all) still resolve to something sensible.
+const LEGACY_TYPE_FALLBACK={
+  m1:{id:'m1',label:'Hesitation',color:'var(--amber)', bgColor:'var(--amber-bg)', borderColor:'var(--amber)'},
+  m2:{id:'m2',label:'Wrong word',color:'var(--red)',   bgColor:'var(--red-bg)',   borderColor:'var(--red)'},
+  m3:{id:'m3',label:'Skipped',   color:'var(--coral)', bgColor:'var(--coral-bg)', borderColor:'var(--coral)'},
+  m4:{id:'m4',label:'Makhraj',   color:'var(--purple)',bgColor:'var(--purple-bg)',borderColor:'var(--purple)'},
+  m5:{id:'m5',label:'Tajweed',   color:'var(--teal)',  bgColor:'var(--teal-bg)',  borderColor:'var(--teal)'},
+  m6:{id:'m6',label:'Other',     color:'',             bgColor:'var(--parchment3)',borderColor:'var(--border2)'},
+};
 const CORRECTION_TYPES=[
   {id:'c0', label:'Lvl 0 · No intervention', shortLabel:'Lvl 0', cssClass:'c0'},
   {id:'c1', label:'Lvl 1 · Repeat',          shortLabel:'Lvl 1', cssClass:'c1'},
@@ -805,21 +1009,24 @@ const CORRECTION_TYPES=[
   {id:'c3', label:'Lvl 3 · Taught',          shortLabel:'Lvl 3', cssClass:'c3'},
   {id:'c4', label:'◌ Other',                 shortLabel:'Other', cssClass:'c4'},
 ];
+// Migration map — translates old .qrs IDs (pre-dating even the m1-m6 scheme)
+// straight to the new stable ids, matching the teacher app.
 const ID_MIGRATION={
-  pause:'m1',error:'m2',skip:'m3',makhraj:'m4',tajweed:'m5',other:'m6',
+  pause:'hesitation',error:'wrong-word',skip:'skipped',
+  makhraj:'makhraj',tajweed:'tajweed-general',other:'other',
   self:'c1',prompted:'c2',teacher:'c3'
 };
-function getType(id){return MISTAKE_TYPES.find(t=>t.id===id)||MISTAKE_TYPES[5];}
+function getType(id){
+  if(id==='other') return MISTAKE_TYPE_OTHER;
+  if(LEGACY_TYPE_FALLBACK[id]) return LEGACY_TYPE_FALLBACK[id];
+  return MISTAKE_TYPE_OTHER;
+}
 function getCorr(id){return CORRECTION_TYPES.find(c=>c.id===id)||CORRECTION_TYPES[0];}
 function migrateId(id){return ID_MIGRATION[id]||id;}
 // Severity class for a single mistake's correction level — drives background color everywhere
-function _sevClassForCorr(corr){
-  if(corr==='c1') return 'sev-1';
-  if(corr==='c2') return 'sev-2';
-  if(corr==='c3') return 'sev-3';
-  if(corr==='c4') return 'sev-other';
-  return 'sev-0';
-}
+// Thin alias kept because it reads better at the call sites that only want the
+// class name. The mapping itself lives in SEVERITY.
+function _sevClassForCorr(corr){ return sev(corr).cls; }
 // Worst (most alarming) intervention level among a set of mistakes on the same word
 function _worstSevClass(mList){
   const sevRank={c3:3,c2:2,c1:1,c0:0,c4:-1};
@@ -831,13 +1038,77 @@ function _worstSevClass(mList){
   return _sevClassForCorr(worst);
 }
 function migrateMistakes(mistakes){return(mistakes||[]).map(m=>({...m,type:migrateId(m.type),correction:migrateId(m.correction)}));}
+// Resolve a full type object from a session's embedded typeConfig first,
+// falling back to the legacy/global default — a session's own snapshot
+// always wins so historical data keeps displaying exactly as it was logged.
+function resolveType(cfg,id){
+  if(cfg?.mistakeTypes){ const t=cfg.mistakeTypes.find(x=>x.id===id); if(t) return t; }
+  return getType(id);
+}
 function typeLabel(id){return getType(id).label;}
-function typeLabelFor(cfg,id){if(cfg?.mistakeTypes){const t=cfg.mistakeTypes.find(t=>t.id===id);if(t)return t.label;}return typeLabel(id);}
+function typeLabelFor(cfg,id){return resolveType(cfg,id).label;}
 function corrLabelFor(cfg,id){if(cfg?.correctionTypes){const c=cfg.correctionTypes.find(c=>c.id===id);if(c)return c.label;}return getCorr(id).label;}
 function mTypeLabel(m,cfg){return m.typeLabel||typeLabelFor(cfg||m.typeConfig||null,m.type);}
 function mCorrLabel(m,cfg){return m.corrLabel||corrLabelFor(cfg||m.typeConfig||null,m.correction);}
-const TYPE_COLORS=Object.fromEntries(MISTAKE_TYPES.map(t=>[t.id,t.color]));
-const corrLabel=Object.fromEntries(CORRECTION_TYPES.map(c=>[c.id,c.label]));
+// Inline-style fragments for a mistake type's color — types are a variable,
+// teacher-editable list rather than a fixed set with hardcoded per-id CSS
+// rules, so color is applied per-instance from the resolved type.
+function typeBadgeStyle(cfg,id){
+  const t=resolveType(cfg,id);
+  return t.id==='other' ? `background:var(--parchment3);color:var(--ink2);` : `background:${t.bgColor};color:${t.color};`;
+}
+function typeWordStyle(cfg,id){
+  const t=resolveType(cfg,id);
+  return t.id==='other' ? `border-bottom:2px solid var(--ink3);` : `color:${t.color};border-bottom:2px solid ${t.color};`;
+}
+function typeDotStyle(cfg,id){
+  const t=resolveType(cfg,id);
+  return t.id==='other' ? `background:var(--ink3);` : `background:${t.color};`;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// DOMAIN HELPERS — pure
+// ───────────────────────────────────────────────────────────────────
+// Nothing below touches the DOM or mutable app state: every function is a
+// pure function of session/mistake data. Keep it that way. If the app is
+// later split front/back, this block lifts out as a shared module verbatim
+// and can render reports server-side without a browser. Kept byte-identical
+// to the teacher app's copy so the two stay diffable.
+// ═══════════════════════════════════════════════════════════════════
+
+// Single source of truth for how an intervention level presents itself.
+const SEVERITY = {
+  c0:{cls:'sev-0',     color:'var(--green)',       bg:'var(--green-bg)'},
+  c1:{cls:'sev-1',     color:'var(--lvl1-yellow)', bg:'var(--lvl1-yellow-bg)'},
+  c2:{cls:'sev-2',     color:'var(--lvl2-orange)', bg:'var(--lvl2-orange-bg)'},
+  c3:{cls:'sev-3',     color:'var(--red)',         bg:'var(--red-bg)'},
+  c4:{cls:'sev-other', color:'var(--ink3)',        bg:'var(--parchment2)'},
+};
+// Unrecorded/absent correction reads as "no intervention".
+function sev(corr){ return SEVERITY[corr] || SEVERITY.c0; }
+
+// Count mistakes per intervention level. `c0` deliberately absorbs mistakes
+// with no correction recorded at all.
+function corrTally(mistakes){
+  const ml = mistakes || [];
+  const n = id => ml.filter(m=>m.correction===id).length;
+  return {
+    total: ml.length,
+    c0: ml.filter(m=>m.correction==='c0' || !m.correction).length,
+    c1: n('c1'), c2: n('c2'), c3: n('c3'), c4: n('c4'),
+  };
+}
+
+// Count spot-test outcomes. `none` = generated but never assessed.
+function spotTally(spots){
+  const sp = spots || [];
+  const n = o => sp.filter(x=>x.outcome===o).length;
+  return {
+    total: sp.length,
+    pass: n('pass'), partial: n('partial'), fail: n('fail'),
+    none: sp.filter(x=>!x.outcome).length,
+  };
+}
 const corrClass2=Object.fromEntries(CORRECTION_TYPES.map(c=>[c.id,c.cssClass]));
 const SESSION_COLORS=['#b8841a','#2d6a4f','#0a5059','#3d2d7a','#7d1f1f','#7d4e00'];
 
@@ -856,6 +1127,38 @@ let mistakeFiltersExpanded=false; // whether the Type/Level filter rows are show
 let currentPanelTab='mistakes',panelOpen=false,_navBusy=false,_resetScroll=false;
 let mushafZoomLevel=0;
 let _activeJuzs=[],_isFetchingJuz=false,_infiniteScrollObserver=null;
+
+// ═══════════════════════════════════════════════════════════════════
+// COMPACT UI DETECTION — single source of truth for "mobile mode"
+// ═══════════════════════════════════════════════════════════════════
+// Width alone misses landscape phones (most are 750–930px wide, well past
+// the old 700px breakpoint). A phone in landscape is short instead of narrow,
+// so we also flag anything short AND touch-capable (pointer:coarse excludes
+// a desktop user who's just resized a mouse-driven window short). CSS keys
+// off body.compact-ui/.compact-ui-landscape instead of raw @media so this JS
+// check and the stylesheet can never disagree, and both react live to rotation.
+// compact-ui-landscape additionally distinguishes landscape phones (which get
+// a right-side drawer, like the teacher app) from portrait phones (which keep
+// the bottom-sheet panel) — both are "mobile", but need different panel shapes.
+function isCompactViewport(){
+  const shortLandscape = window.innerHeight <= 500 &&
+    window.matchMedia('(pointer:coarse)').matches;
+  return window.innerWidth <= 700 || shortLandscape;
+}
+function isMobileUI(){ return document.body.classList.contains('compact-ui'); }
+function syncCompactUI(){
+  const compact = isCompactViewport();
+  document.body.classList.toggle('compact-ui', compact);
+  document.body.classList.toggle('compact-ui-landscape', compact && window.innerWidth > window.innerHeight);
+}
+syncCompactUI(); // run immediately — body already exists at this point in the document
+let _compactUiResizeTimer=null;
+window.addEventListener('resize', ()=>{
+  clearTimeout(_compactUiResizeTimer);
+  _compactUiResizeTimer=setTimeout(syncCompactUI, 120);
+});
+window.addEventListener('orientationchange', ()=>setTimeout(syncCompactUI, 120));
+
 const loadedQcfFonts=new Set(
   JSON.parse(sessionStorage.getItem('qcf_loaded_fonts')||'[]')
 );
@@ -984,12 +1287,12 @@ window.addEventListener('DOMContentLoaded',()=>{
     _zSlider.max=Math.round((MUSHAF_ZOOM_MAX_PCT-MUSHAF_ZOOM_BASE_PCT)/MUSHAF_ZOOM_STEP_PCT);
     _zSlider.value=mushafZoomLevel;
   }
-  // Panel state: open on desktop, hidden on mobile
-  panelOpen=window.innerWidth>700;
+  // Panel state: open on desktop, hidden on mobile (portrait or landscape)
+  panelOpen=!isCompactViewport();
   const panel=document.getElementById('sessionPanel');
   const btn=document.getElementById('panelToggleBtn');
   const fab=document.getElementById('panelFab');
-  if(window.innerWidth<=700){
+  if(isCompactViewport()){
     panel.classList.remove('panel-open','panel-collapsed');
     if(fab){fab.textContent='📋';fab.classList.remove('open');}
   } else {
@@ -998,14 +1301,40 @@ window.addEventListener('DOMContentLoaded',()=>{
   }
   buildTopbarNav();loadSavedSessionsFromStorage();_resetScroll=true;loadJuz(1);
   document.addEventListener('click',e=>{if(!e.target.closest('.word-span')&&!e.target.closest('.qcf-word'))hideTooltip();});
-  // Auto-hide hint bar after 5 minutes
-  setTimeout(()=>{const h=document.getElementById('hintBar');if(h)h.style.display='none';}, 5*60*1000);
+  // Auto-hide hint bar after 5 minutes — uses a real wall-clock timestamp rather
+  // than trusting a single setTimeout to fire exactly on schedule (a busy main
+  // thread, or the tab being backgrounded, can throttle/delay a lone timer).
+  // Re-checking on an interval and on visibility change catches up reliably.
+  (function(){
+    const HINT_BAR_LIFETIME_MS = 5*60*1000;
+    const shownAt = Date.now();
+    function checkHintBar(){
+      const h=document.getElementById('hintBar');
+      if(!h) return true;
+      if(h.style.display==='none') return true;
+      if(Date.now()-shownAt >= HINT_BAR_LIFETIME_MS){ h.style.display='none'; return true; }
+      return false;
+    }
+    const iv=setInterval(()=>{ if(checkHintBar()) clearInterval(iv); }, 10000);
+    document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) checkHintBar(); });
+  })();
   // Keyboard shortcuts: +/- for font size (page/surah) or zoom (mushaf)
   document.addEventListener('keydown',e=>{
     const tag=document.activeElement?.tagName;
     if(tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT')return;
+    const modalOpen=document.querySelector('.modal-bg.open');
+
+    // Escape closes whatever's open — checked before the modal guard below
+    // would otherwise swallow it while a modal is open.
+    if(e.key==='Escape' && modalOpen){
+      e.preventDefault();
+      closeModal(modalOpen.id);
+      return;
+    }
+
     // ↑↓ scroll the Quran panel (mirrors teacher app — never changes juz)
     if(e.key==='ArrowUp'||e.key==='ArrowDown'){
+      _onAutoScrollManualInput();
       const panel=document.getElementById('pageContent');
       if(panel){
         e.preventDefault();
@@ -1023,6 +1352,7 @@ window.addEventListener('DOMContentLoaded',()=>{
     // PageUp / PageDown — line-aware: snaps to the nearest line boundary
     // instead of cutting a line in half at the new viewport edge.
     if(e.key==='PageDown'||e.key==='PageUp'){
+      _onAutoScrollManualInput();
       e.preventDefault();
       scrollMushafByPage(e.key==='PageDown' ? 1 : -1);
       return;
@@ -1030,17 +1360,49 @@ window.addEventListener('DOMContentLoaded',()=>{
     // ←→ navigate juz (mirrors teacher app)
     if(e.key==='ArrowLeft'){e.preventDefault();changePage(1);return;}
     if(e.key==='ArrowRight'){e.preventDefault();changePage(-1);return;}
-    if(e.key==='+'||e.key==='='){
-      if(viewMode==='mushaf')changeMushafZoom(1);else changeSize(2);
-    } else if(e.key==='-'){
-      if(viewMode==='mushaf')changeMushafZoom(-1);else changeSize(-2);
+
+    if(modalOpen) return;
+    // Letters matched case-insensitively (Caps Lock shouldn't break a
+    // shortcut), same approach as the teacher app. Shift-held letters are
+    // skipped here entirely and handled in the dedicated block below instead,
+    // so a Shift-combo can't also trigger its plain-letter counterpart.
+    const isLetterKey=e.key.length===1 && /[a-zA-Z]/.test(e.key);
+    const k=isLetterKey ? e.key.toLowerCase() : e.key;
+    if(!(isLetterKey && e.shiftKey)){
+      if(k==='+'||k==='='){
+        if(viewMode==='mushaf')changeMushafZoom(1);else changeSize(2);
+      } else if(k==='-'){
+        if(viewMode==='mushaf')changeMushafZoom(-1);else changeSize(-2);
+      } else if(k==='t'){
+        toggleTranslation();
+      } else if(k==='c'){
+        toggleFlow();
+      } else if(k==='?'||k==='/'){
+        openInterventionGuide('keys');
+      } else if(k==='a'){
+        toggleAutoScroll();
+      } else if(k==='s'){
+        changeAutoScrollSpeed(-AUTOSCROLL_STEP);
+      } else if(k==='d'){
+        changeAutoScrollSpeed(AUTOSCROLL_STEP);
+      }
+    }
+    // Shift+A = toggle the auto-scroll Settings switch itself (on→off, or
+    // off→on-and-start) — plain 'a' deliberately stays inert while disabled
+    // (respecting "I turned this off"), so this is the deliberate way to
+    // flip that setting without opening Settings. Compared case-insensitively
+    // (see isLetterKey/k above) so Caps Lock can't break it.
+    if(e.shiftKey && k==='a'){
+      e.preventDefault();
+      if(appSettings.autoscrollEnabled){ _applyAutoscrollToggle(false); }
+      else { _applyAutoscrollToggle(true); startAutoScroll(); }
     }
   });
 });
 
 // ── MOBILE PANEL TOGGLE
 function togglePanel(){
-  const isMobile=window.innerWidth<=700;
+  const isMobile=isMobileUI();
   const panel=document.getElementById('sessionPanel');
   const btn=document.getElementById('panelToggleBtn');
   const fab=document.getElementById('panelFab');
@@ -1123,10 +1485,6 @@ async function loadJuz(juzNum, appendMode='replace', scrollToPage=null){
 
   if(appendMode==='replace'){
     currentJuz=juzNum;
-    document.getElementById('juzInfoLabel').textContent=`Juz ${juzNum}`;
-    document.getElementById('pageInfoLabel').textContent=`Juz ${juzNum} (pp.${sp}–${ep})`;
-    document.getElementById('btnPrevPage').disabled=juzNum<=1;
-    document.getElementById('btnNextPage').disabled=juzNum>=30;
     // Only reset the page input to juz start when NOT jumping to a specific page
     const ji=document.getElementById('jumpPageInput');
     if(ji) ji.value = scrollToPage || sp;
@@ -1138,9 +1496,21 @@ async function loadJuz(juzNum, appendMode='replace', scrollToPage=null){
     _activeJuzs.unshift(juzNum);
   }
 
-  if(appendMode!=='replace'){
-    const minJ=Math.min(..._activeJuzs),maxJ=Math.max(..._activeJuzs);
+  // Keep the juz/page range label and Prev/Next buttons in sync regardless of
+  // how we got here — a straight replace, or the infinite-scroll observer
+  // quietly appending/prepending another juz as the reader (or auto-scroll)
+  // nears the edge. This previously only ran for 'replace', so "Juz N (pp. …)"
+  // and the Prev/Next disabled-state went stale the moment more was appended.
+  {
+    const minJ=Math.min(..._activeJuzs), maxJ=Math.max(..._activeJuzs);
+    const rangeStartPage=JUZ_PAGES[minJ-1];
+    const rangeEndPage=maxJ<30?JUZ_PAGES[maxJ]-1:604;
     document.getElementById('juzInfoLabel').textContent=`Juz ${minJ}${maxJ>minJ?'–'+maxJ:''}`;
+    document.getElementById('pageInfoLabel').textContent = maxJ>minJ
+      ? `Juz ${minJ}–${maxJ} (pp.${rangeStartPage}–${rangeEndPage})`
+      : `Juz ${minJ} (pp.${rangeStartPage}–${rangeEndPage})`;
+    document.getElementById('btnPrevPage').disabled=minJ<=1;
+    document.getElementById('btnNextPage').disabled=maxJ>=30;
   }
 
   const pns=[];for(let p=sp;p<=ep;p++)pns.push(p);
@@ -1159,16 +1529,22 @@ async function loadJuz(juzNum, appendMode='replace', scrollToPage=null){
       const pm={};
       const hizbByVerse={};
       results.forEach(r=>{pm[r.page]=r.verses;Object.assign(hizbByVerse,r.hizbByVerse||{});r.verses.forEach(v=>{const w=(v.words||[]).filter(x=>x.char_type_name==='word');if(w.length)allVerseWords[v.verse_key]=w;});});
-      pageVerses=results.flatMap(r=>r.verses);
+      const newVerses=results.flatMap(r=>r.verses);
+      if(appendMode==='replace'){
+        pageVerses = newVerses;
+      } else {
+        const existingKeys=new Set(pageVerses.map(v=>v.verse_key));
+        const toAdd=newVerses.filter(v=>!existingKeys.has(v.verse_key));
+        pageVerses = appendMode==='prepend' ? toAdd.concat(pageVerses) : pageVerses.concat(toAdd);
+      }
       const v2pages=new Set();
-      pageVerses.forEach(v=>(v.words||[]).forEach(w=>{if(w.v2_page)v2pages.add(w.v2_page);}));
+      newVerses.forEach(v=>(v.words||[]).forEach(w=>{if(w.v2_page)v2pages.add(w.v2_page);}));
       if(!v2pages.size)pns.forEach(p=>v2pages.add(p));
       // Skip bulk font loading for large ranges — fonts load lazily per page during upgrade.
       // When appending/prepending a single juz, always pre-load fonts for the new pages.
       const _svWillVirtualize = pns.length > (JUZ_PAGES[2]-JUZ_PAGES[0]);
       if(!_svWillVirtualize || appendMode!=='replace') await loadQcfFonts([...v2pages]);
       renderMushafFromQuranCom(juzNum,pm,sp,ep,hizbByVerse,appendMode);
-      if(scrollToPage){await wf(4);await delay(80);const el=document.getElementById(`pg-${scrollToPage}`);if(el)scrollPC(el,'start');}
     }catch(err){
       console.error(err);
       if(appendMode==='replace') document.getElementById('pageContent').innerHTML=`<div class="loading-msg" style="color:var(--red)">Could not load Mushaf. Check internet.</div>`;
@@ -1182,7 +1558,6 @@ async function loadJuz(juzNum, appendMode='replace', scrollToPage=null){
     const res=await Promise.all(pns.map(p=>fetch(`https://api.quran.com/api/v4/verses/by_page/${p}?language=en&words=true&word_fields=text_uthmani,char_type_name&translations=20&per_page=50&fields=text_uthmani,juz_number,hizb_number,rub_el_hizb_number,page_number`).then(r=>r.json()).then(d=>({page:p,verses:d.verses||[]}))));
     const pm={};res.forEach(r=>{pm[r.page]=r.verses;r.verses.forEach(v=>{const w=(v.words||[]).filter(x=>x.char_type_name==='word');if(w.length)allVerseWords[v.verse_key]=w;});});
     pageVerses=res.flatMap(r=>r.verses);renderJuzVerses(juzNum,pm,sp,ep);
-    if(scrollToPage){await wf(3);const el=document.getElementById(`pg-${scrollToPage}`);if(el)scrollPC(el,'start');}
   }catch{
     if(appendMode==='replace') document.getElementById('pageContent').innerHTML=`<div class="loading-msg" style="color:var(--red)">Could not load. Check internet.</div>`;
   } finally {
@@ -1210,8 +1585,8 @@ function renderJuzVerses(juzNum,pm,sp,ep){
       if(v.juz_number!==pJ&&pJ!==null)html+=`<span class="hizb-marker full" style="font-size:9px;padding:2px 5px;">جزء ${toAr(v.juz_number)}</span> `;pJ=v.juz_number;
       let hH='';if(v.rub_el_hizb_number&&v.rub_el_hizb_number!==pR){hH=hizbSpan(v.rub_el_hizb_number);pR=v.rub_el_hizb_number;}
       const vm=activeMistakes.filter(m=>m.surah===sN&&m.ayah===aN);
-      if(isF){if(hH)html+=hH+' ';words.forEach(w=>{html+=wsHTML(w.text_uthmani||'',sN,aN,w.position)+' ';});html+=`<span class="end-marker">${toAr(aN)}</span> <span class="verse-key-badge" style="font-size:7px;vertical-align:middle;">${v.verse_key}</span> `;if(vm.length)html+=vm.map(x=>`<span class="m-badge ${x.type}" style="font-size:7px;vertical-align:middle;">${typeLabel(x.type)}</span>`).join('')+' ';}
-      else{const wH=words.map(w=>wsHTML(w.text_uthmani||'',sN,aN,w.position)).join(' ')+` <span class="end-marker">${toAr(aN)}</span>`;const tr=v.translations?.[0]?.text||'';html+=`<div class="verse-block${vm.length?' has-mistake':''}" id="vb-${sN}-${aN}"><div class="verse-arabic">${wH}</div>${showTranslation&&tr?`<div class="verse-translation">${tr.replace(/<[^>]+>/g,'')}</div>`:''} ${vm.length?`<div class="verse-mistakes-row">${vm.map(x=>`<span class="m-badge ${x.type}">${typeLabel(x.type)}</span>`).join('')}</div>`:''}<div class="verse-num-row">${hH}<span class="verse-key-badge">${v.verse_key}</span></div></div>`;}
+      if(isF){if(hH)html+=hH+' ';words.forEach(w=>{html+=wsHTML(w.text_uthmani||'',sN,aN,w.position)+' ';});html+=`<span class="end-marker">${toAr(aN)}</span> <span class="verse-key-badge" style="font-size:7px;vertical-align:middle;">${v.verse_key}</span> `;if(vm.length)html+=vm.map(x=>`<span class="m-badge" style="font-size:7px;vertical-align:middle;${typeBadgeStyle(x.typeConfig||null,x.type)}">${mTypeLabel(x,null)}</span>`).join('')+' ';}
+      else{const wH=words.map(w=>wsHTML(w.text_uthmani||'',sN,aN,w.position)).join(' ')+` <span class="end-marker">${toAr(aN)}</span>`;const tr=v.translations?.[0]?.text||'';html+=`<div class="verse-block${vm.length?' has-mistake':''}" id="vb-${sN}-${aN}"><div class="verse-arabic">${wH}</div>${showTranslation&&tr?`<div class="verse-translation">${tr.replace(/<[^>]+>/g,'')}</div>`:''} ${vm.length?`<div class="verse-mistakes-row">${vm.map(x=>`<span class="m-badge" style="${typeBadgeStyle(x.typeConfig||null,x.type)}">${mTypeLabel(x,null)}</span>`).join('')}</div>`:''}<div class="verse-num-row">${hH}<span class="verse-key-badge">${v.verse_key}</span></div></div>`;}
     });
     if(isF)html+='</div>';
     html+=`</div><div class="mushaf-page-footer"><div class="mpf-ornament">${orn(pg+'a')}</div><div class="mpf-divider"></div><div class="mpf-num">${pg}</div><div class="mpf-divider"></div><div class="mpf-ornament">${orn(pg+'b')}</div></div></div>`;
@@ -1225,9 +1600,91 @@ async function jumpToPageFromInput(val){
   const pg=parseInt(val);if(isNaN(pg)||pg<1||pg>604)return;
   let jn=1;for(let i=JUZ_PAGES.length-1;i>=0;i--){if(pg>=JUZ_PAGES[i]){jn=i+1;break;}}
   const sel=document.getElementById('juzSel');if(sel)sel.value=jn;
-  // Pass scrollToPage so loadJuz handles the scroll after render internally,
-  // bypassing the ji.value=sp reset and using the correct target page
-  await loadJuz(jn, 'replace', pg);
+
+  // Skip the reload entirely if this juz is already active (loaded via infinite
+  // scroll or a previous jump) — avoids destroying accumulated scroll state.
+  if(!_activeJuzs.includes(jn)){
+    // Don't pass pg to loadJuz — we handle the scroll ourselves below with a
+    // proper poll instead of loadJuz's fixed-wait-then-single-attempt scroll.
+    await loadJuz(jn, 'replace', pg);
+  } else {
+    const ji=document.getElementById('jumpPageInput');
+    if(ji) ji.value = pg;
+  }
+
+  _svScrollToPageWhenReady(pg);
+}
+
+// Poll for the target page element instead of a fixed wait — progressive
+// rendering and virtualization mean actual render time varies a lot with
+// juz size and device speed, so a fixed wait is either too short (page not
+// in the DOM yet, scroll silently fails) or wastefully long.
+function _svScrollToPageWhenReady(pg){
+  const panel = document.getElementById('pageContent');
+  if(!panel) return;
+  const POLL_CAP = 6000;
+  const started = Date.now();
+  let lastScrollTop = -1;
+  let stableFrames = 0;
+
+  function findTargetEl(){
+    let target = document.getElementById(`pg-${pg}`);
+    if(!target){
+      const allPages=[...document.querySelectorAll('.mushaf-page[id^="pg-"]')];
+      if(allPages.length){
+        let best=null, bestDiff=Infinity;
+        allPages.forEach(el=>{
+          const num=parseInt(el.id.replace('pg-',''));
+          const diff=Math.abs(num-pg);
+          if(diff<bestDiff){bestDiff=diff;best=el;}
+        });
+        target=best;
+      }
+    }
+    return target;
+  }
+
+  function poll(){
+    let target = findTargetEl();
+    if(!target){
+      if(Date.now()-started < POLL_CAP) requestAnimationFrame(poll);
+      return;
+    }
+
+    // If virtualized and this page is still a placeholder, force-upgrade it
+    // and its neighbours so real content (and its true height) is in the DOM.
+    if(window._svVirtData && target.dataset.rendered === 'placeholder'){
+      const {pageHtmlChunks, qcPages, contentEl, juzNum} = window._svVirtData;
+      const idx = qcPages.indexOf(pg);
+      if(idx >= 0){
+        for(let d=-2; d<=2; d++){
+          const ni = idx+d;
+          if(ni>=0 && ni<qcPages.length) _svUpgradePage(qcPages[ni], ni, pageHtmlChunks[ni], contentEl, juzNum);
+        }
+      }
+    }
+
+    const panelRect = panel.getBoundingClientRect();
+    const tRect = target.getBoundingClientRect();
+    const targetTop = panel.scrollTop + (tRect.top - panelRect.top) - 16;
+    const dist = Math.abs(panel.scrollTop - targetTop);
+
+    if(dist > 4){
+      panel.scrollTo({top: Math.max(0, targetTop), behavior:'smooth'});
+      stableFrames = 0;
+      lastScrollTop = panel.scrollTop;
+      if(Date.now()-started < POLL_CAP) requestAnimationFrame(poll);
+      return;
+    }
+
+    if(Math.abs(panel.scrollTop - lastScrollTop) < 2) stableFrames++;
+    else stableFrames = 0;
+    lastScrollTop = panel.scrollTop;
+
+    if(stableFrames >= 4) return;
+    if(Date.now()-started < POLL_CAP) requestAnimationFrame(poll);
+  }
+  requestAnimationFrame(poll);
 }
 
 function hizbSpan(rub){const m=rub%4;if(m===1)return`<span class="hizb-marker full">حزب ${toAr(Math.ceil(rub/4))}</span>`;if(m===3)return`<span class="hizb-marker half">½ حزب</span>`;if(m===2)return`<span class="hizb-marker quarter">¼</span>`;if(m===0)return`<span class="hizb-marker quarter">¾</span>`;return'';}
@@ -1246,8 +1703,8 @@ function renderSurahVerses(n,vv){
   const c=document.getElementById('pageContent');let pR=null;const isF=(flowMode&&!showTranslation);
   let html=`<div class="surah-break"><div class="ar">${AR_NAMES[n-1]||''}</div><div class="en">Surah ${n} — ${SURAH_NAMES[n-1]}</div></div>`;
   if(n!==9&&n!==1)html+=`<div class="bismillah">بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ</div>`;
-  if(isF){html+=`<div class="flow-container">`;vv.forEach(v=>{const[sN,aN]=v.verse_key.split(':').map(Number);const words=(v.words||[]).filter(w=>w.char_type_name==='word');if(v.rub_el_hizb_number&&v.rub_el_hizb_number!==pR){html+=hizbSpan(v.rub_el_hizb_number)+' ';pR=v.rub_el_hizb_number;}words.forEach(w=>{html+=wsHTML(w.text_uthmani||'',sN,aN,w.position)+' ';});html+=`<span class="end-marker">${toAr(aN)}</span> `;const vm=activeMistakes.filter(m=>m.surah===sN&&m.ayah===aN);if(vm.length)html+=vm.map(x=>`<span class="m-badge ${x.type}" style="font-size:7px;vertical-align:middle;">${typeLabel(x.type)}</span>`).join('')+' ';});html+='</div>';}
-  else{vv.forEach(v=>{const[sN,aN]=v.verse_key.split(':').map(Number);const words=(v.words||[]).filter(w=>w.char_type_name==='word');let hH='';if(v.rub_el_hizb_number&&v.rub_el_hizb_number!==pR){hH=hizbSpan(v.rub_el_hizb_number);pR=v.rub_el_hizb_number;}const vm=activeMistakes.filter(m=>m.surah===sN&&m.ayah===aN);const wH=words.map(w=>wsHTML(w.text_uthmani||'',sN,aN,w.position)).join(' ')+` <span class="end-marker">${toAr(aN)}</span>`;const tr=v.translations?.[0]?.text||v.translation||'';html+=`<div class="verse-block${vm.length?' has-mistake':''}" id="vb-${sN}-${aN}"><div class="verse-arabic">${wH}</div>${showTranslation&&tr?`<div class="verse-translation">${tr.replace(/<[^>]+>/g,'')}</div>`:''} ${vm.length?`<div class="verse-mistakes-row">${vm.map(x=>`<span class="m-badge ${x.type}">${typeLabel(x.type)}</span>`).join('')}</div>`:''}<div class="verse-num-row">${hH}<span class="verse-key-badge">${v.verse_key}</span></div></div>`;});}
+  if(isF){html+=`<div class="flow-container">`;vv.forEach(v=>{const[sN,aN]=v.verse_key.split(':').map(Number);const words=(v.words||[]).filter(w=>w.char_type_name==='word');if(v.rub_el_hizb_number&&v.rub_el_hizb_number!==pR){html+=hizbSpan(v.rub_el_hizb_number)+' ';pR=v.rub_el_hizb_number;}words.forEach(w=>{html+=wsHTML(w.text_uthmani||'',sN,aN,w.position)+' ';});html+=`<span class="end-marker">${toAr(aN)}</span> `;const vm=activeMistakes.filter(m=>m.surah===sN&&m.ayah===aN);if(vm.length)html+=vm.map(x=>`<span class="m-badge" style="font-size:7px;vertical-align:middle;${typeBadgeStyle(x.typeConfig||null,x.type)}">${mTypeLabel(x,null)}</span>`).join('')+' ';});html+='</div>';}
+  else{vv.forEach(v=>{const[sN,aN]=v.verse_key.split(':').map(Number);const words=(v.words||[]).filter(w=>w.char_type_name==='word');let hH='';if(v.rub_el_hizb_number&&v.rub_el_hizb_number!==pR){hH=hizbSpan(v.rub_el_hizb_number);pR=v.rub_el_hizb_number;}const vm=activeMistakes.filter(m=>m.surah===sN&&m.ayah===aN);const wH=words.map(w=>wsHTML(w.text_uthmani||'',sN,aN,w.position)).join(' ')+` <span class="end-marker">${toAr(aN)}</span>`;const tr=v.translations?.[0]?.text||v.translation||'';html+=`<div class="verse-block${vm.length?' has-mistake':''}" id="vb-${sN}-${aN}"><div class="verse-arabic">${wH}</div>${showTranslation&&tr?`<div class="verse-translation">${tr.replace(/<[^>]+>/g,'')}</div>`:''} ${vm.length?`<div class="verse-mistakes-row">${vm.map(x=>`<span class="m-badge" style="${typeBadgeStyle(x.typeConfig||null,x.type)}">${mTypeLabel(x,null)}</span>`).join('')}</div>`:''}<div class="verse-num-row">${hH}<span class="verse-key-badge">${v.verse_key}</span></div></div>`;});}
   c.innerHTML=html;
 }
 function scrollToAyah(){
@@ -1268,12 +1725,12 @@ function wsHTML(text,sN,aN,pos){
   const mList=activeMistakes.filter(m=>m.surah===sN&&m.ayah===aN&&
     (m.wordPos===pos||(m.wordPosEnd&&pos>=m.wordPos&&pos<=m.wordPosEnd)));
   if(!mList.length)return`<span class="word-span" data-s="${sN}" data-a="${aN}">${text}</span>`;
-  const pri=['m2','m3','m4','m5','m1','m6'];
-  const bt=pri.find(t=>mList.some(m=>m.type===t))||mList[0].type;
+  // Word styling is severity-only, so there's no longer any need to pick a
+  // "primary" type when several cover the same word — the tooltip lists them all.
   const sevCls=_worstSevClass(mList);
   const isRep=repeatWordKeys.has(wk);
   const enc=encodeURIComponent(JSON.stringify(mList.map(m=>({type:m.type,correction:m.correction,note:m.note||'',sessionStudent:m.sessionStudent||'',sessionRange:m.sessionRange||'',sessionDate:m.sessionDate||'',ref:m.wordPosEnd&&m.wordPosEnd!==m.wordPos?`${sN}:${aN} words ${m.wordPos}–${m.wordPosEnd}`:`${sN}:${aN}`,word:m.word||text,typeConfig:m.typeConfig||null}))));
-  return`<span id="ws-${sN}-${aN}-${pos}" class="word-span type-${bt} ${sevCls}${isRep?' repeated':''}" data-s="${sN}" data-a="${aN}" onclick="showTT(event,this,'${enc}')">${text}</span>`;
+  return`<span id="ws-${sN}-${aN}-${pos}" class="word-span type-tag ${sevCls}${isRep?' repeated':''}" data-s="${sN}" data-a="${aN}" onclick="showTT(event,this,'${enc}')">${text}</span>`;
 }
 
 // ── MUSHAF HELPERS ────────────────────────────────────────────────
@@ -1788,6 +2245,274 @@ function changeMushafZoom(delta){
   applyMushafZoomToDOM(computeMushafZoomMetrics());
 }
 
+// ── MUSHAF PINCH-TO-ZOOM (mobile) ──────────────────────────────────
+// Two fingers drive mushafZoomLevel continuously while the gesture is active,
+// reusing the exact same computeMushafZoomMetrics/applyMushafZoomToDOM pipeline
+// as the +/- buttons and slider (so scroll-anchoring, hizb repositioning, and
+// the batched off-screen catch-up all just work without any new code path).
+// On release the level snaps to the nearest whole step so the slider/indicator
+// stay in sync with the discrete step model used everywhere else.
+(function(){
+  let pinching=false, startDist=0, startLevel=0, liveLevel=0, rafQueued=false;
+
+  function touchDist(t1,t2){
+    return Math.hypot(t1.clientX-t2.clientX, t1.clientY-t2.clientY);
+  }
+  function levelBounds(){
+    return {
+      min: Math.round((MUSHAF_ZOOM_MIN_PCT-MUSHAF_ZOOM_BASE_PCT)/MUSHAF_ZOOM_STEP_PCT),
+      max: Math.round((MUSHAF_ZOOM_MAX_PCT-MUSHAF_ZOOM_BASE_PCT)/MUSHAF_ZOOM_STEP_PCT),
+    };
+  }
+  function queueLiveApply(){
+    if(rafQueued) return;
+    rafQueued=true;
+    requestAnimationFrame(()=>{
+      rafQueued=false;
+      if(!pinching) return;
+      mushafZoomLevel=liveLevel;
+      applyMushafZoomToDOM(computeMushafZoomMetrics());
+    });
+  }
+  function onTouchStart(e){
+    if(viewMode!=='mushaf' || e.touches.length!==2) return;
+    pinching=true;
+    startDist=touchDist(e.touches[0],e.touches[1]);
+    startLevel=mushafZoomLevel;
+    liveLevel=startLevel;
+  }
+  function onTouchMove(e){
+    if(!pinching || e.touches.length!==2 || !startDist) return;
+    e.preventDefault();
+    const d=touchDist(e.touches[0],e.touches[1]);
+    // Widening the pinch by X% grows the page by roughly X% too — a direct,
+    // 1:1-feeling ratio rather than a stepped or logarithmic mapping.
+    const startPct=MUSHAF_ZOOM_BASE_PCT+startLevel*MUSHAF_ZOOM_STEP_PCT;
+    const livePct=startPct*(d/startDist);
+    const {min,max}=levelBounds();
+    liveLevel=Math.max(min, Math.min(max, (livePct-MUSHAF_ZOOM_BASE_PCT)/MUSHAF_ZOOM_STEP_PCT));
+    queueLiveApply();
+  }
+  function onTouchEnd(e){
+    if(!pinching || e.touches.length>=2) return; // finalize as soon as a finger lifts
+    pinching=false;
+    const {min,max}=levelBounds();
+    mushafZoomLevel=Math.max(min, Math.min(max, Math.round(liveLevel)));
+    applyMushafZoomToDOM(computeMushafZoomMetrics());
+  }
+  document.addEventListener('DOMContentLoaded', ()=>{
+    const panel=document.getElementById('pageContent');
+    if(!panel) return;
+    panel.addEventListener('touchstart', onTouchStart, {passive:true});
+    panel.addEventListener('touchmove', onTouchMove, {passive:false});
+    panel.addEventListener('touchend', onTouchEnd, {passive:true});
+    panel.addEventListener('touchcancel', onTouchEnd, {passive:true});
+  });
+})();
+
+// ═══════════════════════════════════════════════════════════════════
+// AUTO-SCROLL — hands-free teleprompter-style scrolling
+// ═══════════════════════════════════════════════════════════════════
+// Speed is a relative multiplier (like the zoom level), not an absolute
+// px/sec — recitation pace varies too much per line-density for a literal
+// words-per-minute model to stay accurate anyway.
+const AUTOSCROLL_BASE_PXPS = 24;   // px/sec at speed = 1.0
+const AUTOSCROLL_MIN = 0.3, AUTOSCROLL_MAX = 3.0, AUTOSCROLL_STEP = 0.1;
+const AUTOSCROLL_RESUME_DELAY = 1500; // ms of quiet after manual scroll before resuming
+
+const autoScrollState = {
+  active:false,
+  speed:1.0,
+  rafId:null,
+  lastTs:null,
+  resumeTimer:null,
+  pausedManual:false, // temporary — clears itself after a quiet period
+};
+let _autoScrollAdvancing=false;
+
+function _autoScrollTick(ts){
+  if(!autoScrollState.active){ autoScrollState.rafId=null; return; }
+  const panel=document.getElementById('pageContent');
+  if(panel && autoScrollState.lastTs!=null){
+    const dt=(ts-autoScrollState.lastTs)/1000;
+    if(!autoScrollState.pausedManual){
+      panel.scrollTop += AUTOSCROLL_BASE_PXPS*autoScrollState.speed*dt;
+      _maybeAutoScrollAdvance(panel);
+    }
+  }
+  autoScrollState.lastTs=ts;
+  autoScrollState.rafId=requestAnimationFrame(_autoScrollTick);
+}
+function startAutoScroll(){
+  if(autoScrollState.active) return;
+  if(!appSettings.autoscrollEnabled){ showToast('Auto-scroll is turned off in Settings'); return; }
+  autoScrollState.active=true;
+  autoScrollState.lastTs=null;
+  autoScrollState.pausedManual=false;
+  _updateAutoScrollUI();
+  autoScrollState.rafId=requestAnimationFrame(_autoScrollTick);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// SETTINGS — currently just the auto-scroll on/off toggle
+// ═══════════════════════════════════════════════════════════════════
+let appSettings={autoscrollEnabled:true};
+function loadSettings(){
+  try{ const s=localStorage.getItem('qsv1_settings'); if(s) appSettings={...appSettings,...JSON.parse(s)}; }catch{}
+}
+function saveSettingsToStorage(){
+  try{ localStorage.setItem('qsv1_settings', JSON.stringify(appSettings)); }catch{}
+}
+function openSettings(){
+  const asw=document.getElementById('asEnabledSwitch');
+  const ath=document.getElementById('asEnabledThumb');
+  if(asw) asw.style.background = appSettings.autoscrollEnabled ? 'var(--gold)' : 'var(--parchment3)';
+  if(ath) ath.style.transform  = appSettings.autoscrollEnabled ? 'translateX(18px)' : 'none';
+  document.getElementById('settingsModal').classList.add('open');
+}
+// Fully turns the feature off — not just hiding the button, since the
+// keyboard shortcut ('a') would otherwise still work with no visible control
+// left to explain what just happened.
+function toggleAutoscrollEnabled(){
+  _applyAutoscrollToggle(!appSettings.autoscrollEnabled);
+}
+function _applyAutoscrollToggle(on){
+  appSettings.autoscrollEnabled=on;
+  saveSettingsToStorage();
+  const sw=document.getElementById('asEnabledSwitch');
+  const th=document.getElementById('asEnabledThumb');
+  if(sw) sw.style.background = on ? 'var(--gold)' : 'var(--parchment3)';
+  if(th) th.style.transform  = on ? 'translateX(18px)' : 'none';
+  const toolbar=document.getElementById('autoscrollControls');
+  const fab=document.getElementById('autoscrollFabWrap');
+  if(toolbar) toolbar.style.display = on ? '' : 'none';
+  if(fab) fab.style.display = on ? '' : 'none';
+  if(!on && autoScrollState.active) stopAutoScroll();
+}
+document.addEventListener('DOMContentLoaded', ()=>{
+  loadSettings();
+  _applyAutoscrollToggle(appSettings.autoscrollEnabled !== false);
+});
+function stopAutoScroll(){
+  autoScrollState.active=false;
+  if(autoScrollState.rafId) cancelAnimationFrame(autoScrollState.rafId);
+  autoScrollState.rafId=null;
+  clearTimeout(autoScrollState.resumeTimer);
+  autoScrollState.pausedManual=false;
+  _updateAutoScrollUI();
+}
+function toggleAutoScroll(){
+  if(autoScrollState.active) stopAutoScroll(); else startAutoScroll();
+}
+function changeAutoScrollSpeed(delta){ setAutoScrollSpeed(autoScrollState.speed+delta); }
+function setAutoScrollSpeed(val){
+  autoScrollState.speed=Math.round(Math.max(AUTOSCROLL_MIN,Math.min(AUTOSCROLL_MAX,+val))*10)/10;
+  _updateAutoScrollUI();
+}
+function _updateAutoScrollUI(){
+  const on=autoScrollState.active;
+  [document.getElementById('asToggleBtn'), document.getElementById('autoscrollFabBtn')].forEach(btn=>{
+    if(!btn) return;
+    btn.textContent='⏫';
+    btn.classList.toggle('active-vc', on);
+  });
+  ['asSpeedLabel','asSlower','asSlider','asFaster'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.style.display=on?'':'none';
+  });
+  const fabSpeed=document.getElementById('autoscrollFabSpeed');
+  if(fabSpeed) fabSpeed.style.display=on?'flex':'none';
+  const label=`${autoScrollState.speed.toFixed(1)}x`;
+  const lbl=document.getElementById('asSpeedLabel'); if(lbl) lbl.textContent=label;
+  const fabLbl=document.getElementById('autoscrollFabLabel'); if(fabLbl) fabLbl.textContent=label;
+  const slider=document.getElementById('asSlider'); if(slider) slider.value=autoScrollState.speed;
+  _autoScrollFabTouch();
+}
+
+// ── Boundary auto-advance: continue into the next juz/page/surah instead of
+// just stopping dead at the bottom of whatever's currently loaded. Mushaf
+// mode already has its own infinite-scroll observer appending further juz as
+// the user nears the bottom (doesn't care whether the scroll was driven by
+// us or a finger) — we only need to know whether more content exists ahead.
+async function _autoScrollAdvance(){
+  if(viewMode==='mushaf'){
+    const maxJuz=_activeJuzs.length?Math.max(..._activeJuzs):1;
+    return maxJuz<30;
+  }
+  if(viewMode==='surah'){
+    if((currentSurah||1)>=114) return false;
+    changeSurah(1);
+    return true;
+  }
+  // page/juz view
+  const sel=document.getElementById('juzSel');
+  const cur=sel?+sel.value||currentJuz:currentJuz;
+  if(cur>=30) return false;
+  changePage(1);
+  return true;
+}
+function _maybeAutoScrollAdvance(panel){
+  if(_autoScrollAdvancing) return;
+  const nearBottom=panel.scrollHeight-panel.scrollTop-panel.clientHeight<40;
+  if(!nearBottom) return;
+  _autoScrollAdvancing=true;
+  Promise.resolve(_autoScrollAdvance()).then(more=>{
+    if(!more){
+      stopAutoScroll();
+      showToast('Reached the end — auto-scroll stopped');
+    }
+  }).finally(()=>{
+    setTimeout(()=>{_autoScrollAdvancing=false;}, 1500);
+  });
+}
+
+// ── Manual-scroll interrupt: pause immediately, resume on its own after a
+// short quiet period — easy enough to fully stop via the toggle if that's
+// what's actually wanted, so we don't require an explicit resume here.
+function _onAutoScrollManualInput(){
+  if(!autoScrollState.active) return;
+  autoScrollState.pausedManual=true;
+  clearTimeout(autoScrollState.resumeTimer);
+  autoScrollState.resumeTimer=setTimeout(()=>{ autoScrollState.pausedManual=false; }, AUTOSCROLL_RESUME_DELAY);
+}
+
+// ── Mobile floating button: fades out after a couple of seconds of no
+// interaction while active, so it stays out of the way without disappearing
+// entirely (a tap anywhere on it brings it back to full opacity).
+let _autoScrollFabIdleTimer=null;
+function _autoScrollFabTouch(){
+  const wrap=document.getElementById('autoscrollFabWrap');
+  if(!wrap) return;
+  wrap.classList.remove('idle');
+  clearTimeout(_autoScrollFabIdleTimer);
+  if(autoScrollState.active){
+    _autoScrollFabIdleTimer=setTimeout(()=>wrap.classList.add('idle'), 2500);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', ()=>{
+  const panel=document.getElementById('pageContent');
+  if(panel){
+    panel.addEventListener('wheel', _onAutoScrollManualInput, {passive:true});
+    panel.addEventListener('touchmove', _onAutoScrollManualInput, {passive:true});
+  }
+  const fabWrap=document.getElementById('autoscrollFabWrap');
+  if(fabWrap) fabWrap.addEventListener('click', _autoScrollFabTouch);
+  // Hard-stop on any modal open — these pull attention away for long enough
+  // that silently resuming afterwards risks the page having scrolled away
+  // from what the person's actually looking at. Watches every existing
+  // .modal-bg generically, so new ones need no extra wiring.
+  const modalObserver=new MutationObserver(muts=>{
+    muts.forEach(m=>{
+      if(m.attributeName==='class' && m.target.classList.contains('open') && autoScrollState.active){
+        stopAutoScroll();
+      }
+    });
+  });
+  document.querySelectorAll('.modal-bg').forEach(el=>{
+    modalObserver.observe(el, {attributes:true, attributeFilter:['class']});
+  });
+});
+
 function reapplyMushafZoomOnResize(){
   if(viewMode!=='mushaf')return;
   applyMushafZoomToDOM(computeMushafZoomMetrics());
@@ -1972,9 +2697,11 @@ function renderMushafFromQuranCom(juzNum,pageMap,startPage,endPage,hizbByVerse={
           (m.wordPos===w.position||(m.wordPosEnd&&w.position>=m.wordPos&&w.position<=m.wordPosEnd)));
         const isRep=repeatWordKeys.has(`${w.sNum}:${w.aNum}:${w.position}`);
         let cls='qcf-word';
-        if(mList.length){const pri=['m2','m3','m4','m5','m1','m6'];const bt=pri.find(t=>mList.some(m=>m.type===t))||mList[0].type;cls+=` type-${bt} ${_worstSevClass(mList)}`;if(isRep)cls+=' repeated';}
+        if(mList.length){
+          cls+=` type-tag ${_worstSevClass(mList)}`;if(isRep)cls+=' repeated';
+        }
         const wFont=`qcf-p${w.v2page}-v2`;
-        const fs=w.v2page!==defaultV2page?`font-family:'${wFont}','UthmanicHafs',serif;`:'';
+        const fs=(w.v2page!==defaultV2page?`font-family:'${wFont}','UthmanicHafs',serif;`:'');
         if(mList.length){
           // Pass w.text (text_uthmani) so the tooltip shows readable Arabic, not PUA glyphs
           const enc=encodeURIComponent(JSON.stringify(mList.map(m=>({type:m.type,correction:m.correction,note:m.note||'',sessionStudent:m.sessionStudent||'',sessionRange:m.sessionRange||'',sessionDate:m.sessionDate||'',ref:`${w.sNum}:${w.aNum}`,word:w.text,typeConfig:m.typeConfig||null}))));
@@ -2085,6 +2812,10 @@ function _svRemoveJuzFromDOM(contentEl,juzToRemove,position){
   } else {
     pagesToRemove.forEach(el=>el.remove());
   }
+  // Keep pageVerses in sync with what's actually in the DOM — otherwise
+  // navigateToVerse's "already loaded" check can claim a verse is present
+  // when its page was just evicted, causing the scroll poll to spin forever.
+  pageVerses = pageVerses.filter(v => v.juz_number !== juzToRemove);
 }
 
 function _svUpdateInfiniteScrollTriggers(){
@@ -2251,7 +2982,7 @@ function setTopbarHidden(hide){
 async function navigateToVerse(surah,ayah,wordPos){
   if(_navBusy)return;_navBusy=true;
   // On mobile, close the sessions panel so the Quran is visible
-  if(window.innerWidth<=700&&panelOpen){
+  if(isMobileUI()&&panelOpen){
     panelOpen=false;
     document.getElementById('sessionPanel').classList.remove('panel-open');
     document.getElementById('panelBackdrop').classList.remove('visible');
@@ -2271,8 +3002,7 @@ async function _nav(surah,ayah,wordPos){
   } else {
     // page or mushaf view
     if(!pageVerses.some(v=>v.verse_key===`${surah}:${ayah}`)){
-      let jn=1;
-      try{const r=await fetch(`https://api.quran.com/api/v4/verses/by_key/${surah}:${ayah}?fields=juz_number`);const d=await r.json();if(d.verse?.juz_number)jn=d.verse.juz_number;}catch{}
+      const jn = juzForVerse(surah, ayah);
       const s=document.getElementById('juzSel');if(s)s.value=jn;
       await loadJuz(jn);
     }
@@ -2453,10 +3183,11 @@ function updatePanel(){
   const b=document.getElementById('activeBanner');
   if(has){b.style.display='flex';document.getElementById('activeBannerText').textContent=`${activeSessions.length} session${activeSessions.length>1?'s':''} · ${activeMistakes.length} mistake${activeMistakes.length!==1?'s':''}`;}
   else b.style.display='none';
-  document.getElementById('st0').textContent=activeMistakes.length;
-  document.getElementById('st1').textContent=activeMistakes.filter(m=>m.correction==='c1').length;
-  document.getElementById('st2').textContent=activeMistakes.filter(m=>m.correction==='c2').length;
-  document.getElementById('st3').textContent=activeMistakes.filter(m=>m.correction==='c3').length;
+  const t=corrTally(activeMistakes);
+  document.getElementById('st0').textContent=t.total;
+  document.getElementById('st1').textContent=t.c1;
+  document.getElementById('st2').textContent=t.c2;
+  document.getElementById('st3').textContent=t.c3;
   renderMistakesList();
 }
 
@@ -2471,14 +3202,12 @@ function renderSessionsList(){
   el.innerHTML=sorted.map((s,si)=>{
     const isA=activeSessions.some(a=>a.id===s.id);
     const col=SESSION_COLORS[savedSessions.indexOf(s)%SESSION_COLORS.length];
-    const sf=(s.mistakes||[]).filter(m=>m.correction==='c1').length;
-    const sp=(s.mistakes||[]).filter(m=>m.correction==='c2').length;
-    const st=(s.mistakes||[]).filter(m=>m.correction==='c3').length;
+    const {c1:sf,c2:sp,c3:st}=corrTally(s.mistakes);
     return`<div class="sess-card${isA?' active-sess':''}" onclick="toggleSessionActive(${s.id})" style="${isA?`border-left:3px solid ${col};`:''}">
       <div class="sess-card-head"><div style="flex:1;min-width:0;">
         <div style="display:flex;align-items:center;gap:5px;"><span class="sess-name">${esc(s.student)}</span>${isA?`<span style="font-size:8px;background:${col};color:white;padding:1px 4px;border-radius:999px;font-family:'IBM Plex Mono',monospace;font-weight:700;">ON</span>`:''}</div>
         <div class="sess-range">${esc(s.range||'')}</div>
-        ${s.spotTest?.enabled ? `<div style="font-size:9px;color:#1a4a8a;font-family:'IBM Plex Mono',monospace;margin-top:2px;background:#ddeeff;border-radius:3px;padding:1px 5px;display:inline-block;cursor:pointer;" onclick="event.stopPropagation();openSpotPopup(${s.id})" title="View spot test results">🎲 Spot test · ${s.spotTest.spots?.length||0} spots</div>` : ''}
+        ${s.spotTest?.enabled ? `<div style="font-size:9px;color:var(--spot-blue);font-family:'IBM Plex Mono',monospace;margin-top:2px;background:var(--spot-blue-bg);border-radius:3px;padding:1px 5px;display:inline-block;cursor:pointer;" onclick="event.stopPropagation();openSpotPopup(${s.id})" title="View spot test results">🎲 Spot test · ${s.spotTest.spots?.length||0} spots</div>` : ''}
         <div class="sess-date">${s.date||''} · ${s.duration||''}</div>
         ${s.remarks?`<div style="font-size:9px;color:var(--ink2);font-style:italic;margin-top:3px;padding:3px 5px;background:var(--parchment2);border-radius:3px;border-left:2px solid var(--gold);">${esc(s.remarks)}</div>`:''}
       </div><button class="sess-del" onclick="event.stopPropagation();deleteSession(${s.id})">✕</button></div>
@@ -2495,7 +3224,16 @@ function renderMlistControls(){
   if(!hasMistakes){ el.innerHTML=''; return; }
 
   const groupBtn=(mode,label)=>`<button class="mlist-chip${mistakeGroupMode===mode?' active':''}" onclick="setMistakeGroupMode('${mode}')">${label}</button>`;
-  const typeBtn=(t)=>`<button class="mlist-chip${mistakeFilterTypes.has(t.id)?' active '+t.id:''}" onclick="toggleMistakeTypeFilter('${t.id}')">${t.label}</button>`;
+  // Filter chips reflect whatever types actually appear in the mistakes being
+  // viewed (resolved via each mistake's own embedded config), rather than a
+  // fixed global list — there is no fixed list anymore, types are teacher-
+  // editable and can vary session to session.
+  const uniqueTypeIds=[...new Set(activeMistakes.map(m=>m.type))];
+  const typeEntries=uniqueTypeIds.map(id=>{
+    const m=activeMistakes.find(x=>x.type===id);
+    return resolveType(m?.typeConfig||null,id);
+  });
+  const typeBtn=(t)=>`<button class="mlist-chip type-chip${mistakeFilterTypes.has(t.id)?' active':''}" style="--type-color:${t.color||'var(--ink3)'};" onclick="toggleMistakeTypeFilter('${t.id}')">${esc(t.label)}</button>`;
   const corrBtn=(c)=>`<button class="mlist-chip${mistakeFilterCorr.has(c.id)?' active':''}" onclick="toggleMistakeCorrFilter('${c.id}')">${c.shortLabel}</button>`;
   const activeFilterCount = mistakeFilterTypes.size + mistakeFilterCorr.size + (mistakeFilterRepeatedOnly?1:0);
   const hasActiveFilters = activeFilterCount>0;
@@ -2511,7 +3249,7 @@ function renderMlistControls(){
     ${mistakeFiltersExpanded?`
     <div class="mlist-row">
       <span class="mlist-row-label">Type</span>
-      ${MISTAKE_TYPES.map(typeBtn).join('')}
+      ${typeEntries.map(typeBtn).join('')}
     </div>
     <div class="mlist-row">
       <span class="mlist-row-label">Level</span>
@@ -2593,7 +3331,7 @@ function renderMistakesList(){
     const refLabel=m.wordPosEnd&&m.wordPosEnd!==m.wordPos?`${m.surah}:${m.ayah} (words ${m.wordPos}–${m.wordPosEnd})`:`${m.surah}:${m.ayah}`;
     const sessInfo=`${m.sessionStudent||''}${m.sessionRange?' · '+m.sessionRange:''}${m.sessionDate?' · '+m.sessionDate:''}`;
     return`<div class="mistake-item ${_sevClassForCorr(m.correction)}${isR?' repeated-mistake':''}" onclick="navigateToVerse(${m.surah},${m.ayah},${m.wordPos||0})">
-      <span class="m-badge ${m.type}">${mTypeLabel(m,cfg)}</span>
+      <span class="m-badge" style="${typeBadgeStyle(cfg,m.type)}">${mTypeLabel(m,cfg)}</span>
       <div class="m-body">
         <div class="m-ref">${refLabel} · ${m.time||''}${isR?`<span class="repeat-badge">×${wkm[wk].length}</span>`:''}</div>
         <span class="m-word">${m.word}</span>
@@ -2667,102 +3405,205 @@ function openReview(){
   document.getElementById('reviewContent').innerHTML=buildReviewHTML(s);
   document.getElementById('reviewModal').classList.add('open');
 }
+// ═══════════════════════════════════════════════════════════════════
+// REVIEW — HTML BUILDERS
+// ───────────────────────────────────────────────────────────────────
+// One builder per section, mirroring the teacher app's split. Everything a
+// builder needs arrives as an argument — `sessions` and `repeats` used to be
+// read straight off the activeSessions/repeatWordKeys globals — so the whole
+// report can be rendered outside a browser once the app is split front/back.
+// ═══════════════════════════════════════════════════════════════════
+
 function buildReviewHTML(s){
-  const ml=s.mistakes,total=ml.length;
-  // For multi-session review, cfg comes per-mistake; for single use session cfg
-  const sessionCfg=activeSessions.length===1?(activeSessions[0].typeConfig||null):null;
-  const getCfg=(m)=>m.typeConfig||sessionCfg||null;
-  const self=ml.filter(m=>m.correction==='c1').length,prompted=ml.filter(m=>m.correction==='c2').length,teacher=ml.filter(m=>m.correction==='c3').length,other4=ml.filter(m=>m.correction==='c4').length,noInt=ml.filter(m=>m.correction==='c0'||!m.correction).length;
-  const types=MISTAKE_TYPES.map(t=>t.id);
-  const tc=Object.fromEntries(types.map(t=>[t,ml.filter(m=>m.type===t).length]));
-  const maxT=Math.max(1,...Object.values(tc));
-  const byAyah={};ml.forEach(m=>{const k=`${m.surah}:${m.ayah}`;if(!byAyah[k])byAyah[k]=[];byAyah[k].push(m);});
-  let h=`<div style="margin-bottom:12px;">
-    <h2 style="font-size:16px;font-weight:600;">${esc(s.student)}</h2>
-    <p style="font-size:11px;color:var(--ink3);">${esc(s.range)} · ${s.date}</p>
-    ${activeSessions.length===1&&s.remarks
-      ?`<p style="font-size:11px;color:var(--ink2);font-style:italic;margin-top:5px;padding:5px 8px;background:var(--parchment2);border-radius:5px;border-left:3px solid var(--gold);">${esc(s.remarks)}</p>`
-      :activeSessions.length>1
-        ?`<div style="margin-top:7px;display:flex;flex-direction:column;gap:4px;">${activeSessions.map((sess,i)=>sess.remarks
-          ?`<div style="font-size:10px;padding:4px 8px;background:var(--parchment2);border-radius:4px;border-left:3px solid ${SESSION_COLORS[i%SESSION_COLORS.length]};"><span style="font-weight:600;color:var(--ink2);">${esc(sess.range||sess.student)} (${sess.date}):</span> <span style="font-style:italic;color:var(--ink3);">${esc(sess.remarks)}</span></div>`
-          :'').filter(Boolean).join('')}</div>`
-        :''
-    }
-    <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:6px;">
-      <span class="m-badge" style="background:var(--parchment3);color:var(--ink2);font-size:9px;">${total} mistakes</span>
-      ${noInt?`<span class="m-badge" style="background:var(--green-bg);color:var(--green);font-size:9px;">Lvl 0 · ${noInt}</span>`:''}
-      <span class="m-badge" style="background:var(--lvl1-yellow-bg);color:var(--lvl1-yellow);font-size:9px;">Lvl 1 · ${self}</span>
-      <span class="m-badge" style="background:var(--lvl2-orange-bg);color:var(--lvl2-orange);font-size:9px;">Lvl 2 · ${prompted}</span>
-      <span class="m-badge" style="background:var(--red-bg);color:var(--red);font-size:9px;">Lvl 3 · ${teacher}</span>
-      ${other4?`<span class="m-badge" style="background:var(--parchment3);color:var(--ink2);font-size:9px;">◌ ${other4}</span>`:''}
+  const ml       = s.mistakes;
+  const sessions = activeSessions;
+  const repeats  = repeatWordKeys;
+  const tally    = corrTally(ml);
+  // Single session: one embedded config governs everything. Multi-session:
+  // configs can differ per mistake, so resolve per-mistake instead.
+  const sessionCfg = sessions.length===1 ? (sessions[0].typeConfig||null) : null;
+  const getCfg = m => m.typeConfig || sessionCfg || null;
+  const types  = [...new Set(ml.map(m=>m.type))];
+
+  return _rvHeader(s, tally, sessions)
+       + _rvCharts(ml, sessionCfg, getCfg, types, tally)
+       + _rvRepeatNotice(repeats)
+       + _rvTimeline(ml, sessionCfg, getCfg, types)
+       + _rvSpotTest(s.spotTest, ml)
+       + _rvMultiSpotTests(s.allSpotTests)
+       + _rvVerses(ml, getCfg, repeats, sessions);
+}
+
+// ── Header: who/what/when, remarks, and the level badge strip ──────
+// With several sessions loaded each one's remarks get its own colour-coded
+// line, keyed to the same SESSION_COLORS used everywhere else.
+function _rvHeader(s, t, sessions){
+  const remarks = sessions.length===1 && s.remarks
+    ? `<p class="rv-remarks">${esc(s.remarks)}</p>`
+    : sessions.length>1
+      ? `<div class="rv-remarks-multi">${sessions.map((sess,i)=>sess.remarks
+          ? `<div class="rv-remark-line" style="border-left-color:${SESSION_COLORS[i%SESSION_COLORS.length]};"><span class="rv-remark-who">${esc(sess.range||sess.student)} (${sess.date}):</span> <span class="rv-remark-text">${esc(sess.remarks)}</span></div>`
+          : '').filter(Boolean).join('')}</div>`
+      : '';
+  return `<div class="rv-head">
+    <h2>${esc(s.student)}</h2>
+    <p class="rv-sub">${esc(s.range)} · ${s.date}</p>
+    ${remarks}
+    <div class="rv-badges">
+      <span class="m-badge" style="background:var(--parchment3);color:var(--ink2);">${t.total} mistakes</span>
+      ${t.c0?`<span class="m-badge" style="background:var(--green-bg);color:var(--green);">Lvl 0 · ${t.c0}</span>`:''}
+      <span class="m-badge" style="background:var(--lvl1-yellow-bg);color:var(--lvl1-yellow);">Lvl 1 · ${t.c1}</span>
+      <span class="m-badge" style="background:var(--lvl2-orange-bg);color:var(--lvl2-orange);">Lvl 2 · ${t.c2}</span>
+      <span class="m-badge" style="background:var(--red-bg);color:var(--red);">Lvl 3 · ${t.c3}</span>
+      ${t.c4?`<span class="m-badge" style="background:var(--parchment3);color:var(--ink2);">◌ ${t.c4}</span>`:''}
     </div>
   </div>`;
-  const cD=[{label:'Lvl 0 · None',val:noInt,color:'var(--green)'},{label:'Lvl 1 · Repeat',val:self,color:'var(--lvl1-yellow)'},{label:'Lvl 2 · Hint',val:prompted,color:'var(--lvl2-orange)'},{label:'Lvl 3 · Taught',val:teacher,color:'var(--red)'},{label:'Other',val:other4,color:'var(--ink2)'}];
-  h+=`<div class="charts-row"><div class="chart-box"><h4>Mistake types</h4><div class="bar-chart">${types.map(t=>`<div class="bar-row"><div class="bar-label">${typeLabelFor(sessionCfg,t)}</div><div class="bar-track"><div class="bar-fill" style="width:${total?Math.round(tc[t]/maxT*100):0}%;background:${TYPE_COLORS[t]};"></div></div><div class="bar-count">${tc[t]}</div></div>`).join('')}</div></div><div class="chart-box"><h4>Teacher intervention</h4><div style="font-size:8px;color:var(--ink3);margin-bottom:6px;font-style:italic;">How much help was needed per mistake</div><div class="donut-wrap">${donutSVG(cD,total)}<div class="donut-center"><span class="big">${total}</span><span class="lbl">total</span></div></div><div class="donut-legend">${cD.map(d=>`<div class="dl-row"><div class="dl-dot" style="background:${d.color};"></div><span>${d.label} — ${d.val}</span></div>`).join('')}</div></div></div>`;
-  if(repeatWordKeys.size>0)h+=`<div class="chart-box" style="margin-bottom:10px;background:var(--gold-pale);border-color:var(--gold-light);"><h4 style="color:var(--amber);">⚠ ${repeatWordKeys.size} word${repeatWordKeys.size>1?'s':''} repeated across sessions — focus here</h4></div>`;
-  if(ml.length){const sorted=[...ml].sort((a,b)=>a.surah-b.surah||a.ayah-b.ayah||a.wordPos-b.wordPos);h+=`<div class="chart-box" style="margin-bottom:10px;"><h4>Mistake map</h4><div class="legend-row">${types.map(t=>`<div class="leg-item"><div class="leg-dot" style="background:${TYPE_COLORS[t]};"></div>${typeLabelFor(sessionCfg,t)}</div>`).join('')}</div><div class="timeline">${sorted.map((m,i)=>`<div class="tl-dot ${m.type}" title="${m.surah}:${m.ayah} — ${typeLabelFor(getCfg(m),m.type)}\n${corrLabelFor(getCfg(m),m.correction)}${m.note?'\n'+m.note:''}">${i+1}</div>`).join('')}</div></div>`;}
-  // ── SPOT TEST SECTION ──
-  if(s.spotTest?.enabled && s.spotTest.spots?.length){
-    const spots = s.spotTest.spots;
-    const pass    = spots.filter(x=>x.outcome==='pass').length;
-    const partial = spots.filter(x=>x.outcome==='partial').length;
-    const fail    = spots.filter(x=>x.outcome==='fail').length;
-    const none    = spots.filter(x=>!x.outcome).length;
-    h += `<div style="margin-bottom:14px;padding:10px 12px;background:#ddeeff;border-radius:8px;border-left:3px solid #1a4a8a;">
-      <div style="font-size:10px;font-weight:600;color:#1a4a8a;letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;">🎲 Spot Test Results</div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
-        <span style="background:var(--green-bg);color:var(--green);font-size:10px;padding:2px 7px;border-radius:999px;font-weight:600;">✓ ${pass} passed</span>
-        <span style="background:var(--amber-bg);color:var(--amber);font-size:10px;padding:2px 7px;border-radius:999px;font-weight:600;">~ ${partial} partial</span>
-        <span style="background:var(--red-bg);color:var(--red);font-size:10px;padding:2px 7px;border-radius:999px;font-weight:600;">✗ ${fail} failed</span>
-        ${none?`<span style="background:var(--parchment3);color:var(--ink3);font-size:10px;padding:2px 7px;border-radius:999px;">○ ${none} not assessed</span>`:''}
-      </div>
-      <div style="display:flex;flex-direction:column;gap:4px;">
-        ${spots.map((sp,i)=>{
-          const mc = ml.filter(m=>m.spotId===sp.id).length;
-          const outcomeColor = {pass:'var(--green)',partial:'var(--amber)',fail:'var(--red)'}[sp.outcome] || 'var(--ink3)';
-          const outcomeLabel = {pass:'✓ Pass',partial:'~ Partial',fail:'✗ Fail'}[sp.outcome] || '○ —';
-          return `<div style="display:flex;align-items:center;gap:6px;padding:4px 6px;background:white;border-radius:5px;border:.5px solid var(--border);">
-            <span style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:#1a4a8a;font-weight:700;flex-shrink:0;">#${i+1}</span>
-            <span style="font-size:10px;color:var(--ink);flex:1;">${sp.surahName} <span style="color:var(--ink3);">${sp.surah}:${sp.ayah}</span></span>
-            <span style="font-size:10px;color:${outcomeColor};font-weight:600;flex-shrink:0;">${outcomeLabel}</span>
-            ${mc?`<span style="font-size:9px;color:var(--ink3);font-family:'IBM Plex Mono',monospace;">${mc}✕</span>`:''}
-          </div>`;
-        }).join('')}
-      </div>
-    </div>`;
-  }
+}
 
-  // ── MULTI-SESSION SPOT TESTS ──
-  if(s.allSpotTests?.length > 1){
-    h += `<div style="margin-bottom:14px;padding:10px 12px;background:#ddeeff;border-radius:8px;border-left:3px solid #1a4a8a;">
-      <div style="font-size:10px;font-weight:600;color:#1a4a8a;letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;">🎲 Spot Tests Across Sessions</div>
-      <div style="font-size:9px;color:var(--ink3);margin-bottom:8px;">${s.allSpotTests.length} sessions with spot tests — click to compare</div>
-      <button class="btn-m" style="background:#1a4a8a;color:white;border:none;font-size:11px;padding:5px 12px;" onclick="openSpotPopupMulti()">📊 View Spot Test Performance</button>
-    </div>`;
-  }
+// ── Charts: type frequency bars + intervention donut ──────────────
+// Labels resolve through getCfg on a representative mistake rather than the
+// session config, which is null whenever more than one session is loaded.
+function _rvCharts(ml, sessionCfg, getCfg, types, t){
+  const cfgForType = id => getCfg(ml.find(m=>m.type===id) || {});
+  const tc   = Object.fromEntries(types.map(id=>[id, ml.filter(m=>m.type===id).length]));
+  const maxT = Math.max(1, ...Object.values(tc));
+  const cD = [
+    {label:'Lvl 0 · None',   val:t.c0, color:sev('c0').color},
+    {label:'Lvl 1 · Repeat', val:t.c1, color:sev('c1').color},
+    {label:'Lvl 2 · Hint',   val:t.c2, color:sev('c2').color},
+    {label:'Lvl 3 · Taught', val:t.c3, color:sev('c3').color},
+    {label:'Other',          val:t.c4, color:'var(--ink2)'},
+  ];
+  return `<div class="charts-row">
+    <div class="chart-box"><h4>Mistake types</h4><div class="bar-chart">
+      ${types.map(id=>`<div class="bar-row"><div class="bar-label">${typeLabelFor(cfgForType(id),id)}</div><div class="bar-track"><div class="bar-fill" style="width:${t.total?Math.round(tc[id]/maxT*100):0}%;background:${resolveType(cfgForType(id),id).color||'var(--ink3)'};"></div></div><div class="bar-count">${tc[id]}</div></div>`).join('')}
+    </div></div>
+    <div class="chart-box"><h4>Teacher intervention</h4><div class="chart-note">How much help was needed per mistake</div>
+      <div class="donut-wrap">${donutSVG(cD,t.total)}<div class="donut-center"><span class="big">${t.total}</span><span class="lbl">total</span></div></div>
+      <div class="donut-legend">${cD.map(d=>`<div class="dl-row"><div class="dl-dot" style="background:${d.color};"></div><span>${d.label} — ${d.val}</span></div>`).join('')}</div>
+    </div>
+  </div>`;
+}
 
-  h+=`<div class="review-verses-title">Mistakes by verse</div>`;
-  Object.keys(byAyah).sort((a,b)=>{const[as,aa]=a.split(':').map(Number),[bs,ba]=b.split(':').map(Number);return as-bs||aa-ba;}).forEach(key=>{
-    const[sn,an]=key.split(':').map(Number);const ayahM=[...byAyah[key]].sort((a,b)=>a.wordPos-b.wordPos);
-    let wH='';let lp=0;ayahM.forEach(m=>{if(m.wordPos>lp+1)wH+=`<span style="color:var(--ink3);padding:0 3px;">…</span>`;const isR2=repeatWordKeys.has(`${sn}:${an}:${m.wordPos}`);wH+=`<span class="rw-type-${m.type} ${_sevClassForCorr(m.correction)}" style="font-size:1.1em;font-weight:700;${isR2?'box-shadow:0 0 0 2px var(--gold);border-radius:3px;padding:1px 2px;':''}">${m.word}</span> `;lp=m.wordPos;});
-    h+=`<div class="review-verse"><div class="review-verse-ref">${key} — ${SURAH_NAMES[sn-1]||''}</div><div class="review-verse-arabic">${wH}</div><div>${ayahM.map(m=>{
-      const cfg=getCfg(m);const t=getType(m.type);
-      const sevBg={c0:'var(--green-bg)',c1:'var(--lvl1-yellow-bg)',c2:'var(--lvl2-orange-bg)',c3:'var(--red-bg)',c4:'var(--parchment2)'}[m.correction]||'var(--parchment2)';
-      const bef=(m.context?.before||[]).join(' ');const aft=(m.context?.after||[]).join(' ');
-      const ctx=bef||aft
-        ?`<div style="direction:rtl;text-align:right;font-family:'Scheherazade New','Amiri',serif;font-size:16px;line-height:2.2;margin:4px 0;padding:4px 8px;background:var(--parchment);border-radius:5px;border:.5px solid var(--border);unicode-bidi:isolate;">${bef?`<span style="color:var(--ink3);opacity:.75;">${bef}</span> `:''}<span style="background:${sevBg};color:${t.color};border-bottom:2px solid ${t.borderColor};border-radius:3px;padding:1px 3px;font-weight:700;font-size:17px;">${m.word}</span>${aft?` <span style="color:var(--ink3);opacity:.75;">${aft}</span>`:''}</div>`
-        :`<div style="direction:rtl;text-align:right;font-family:'Scheherazade New','Amiri',serif;font-size:16px;line-height:2.2;margin:4px 0;padding:4px 8px;background:var(--parchment);border-radius:5px;border:.5px solid var(--border);"><span style="background:${sevBg};color:${t.color};border-bottom:2px solid ${t.borderColor};border-radius:3px;padding:1px 3px;font-weight:700;font-size:17px;">${m.word}</span></div>`;
-      const sevColor={c0:'var(--green)',c1:'var(--lvl1-yellow)',c2:'var(--lvl2-orange)',c3:'var(--red)',c4:'var(--ink3)'}[m.correction]||'var(--border2)';
-      return`<div style="flex-direction:column;align-items:stretch;gap:2px;margin-bottom:7px;padding:6px 0 7px 8px;border-bottom:.5px solid var(--border);border-left:3px solid ${sevColor};display:flex;"><div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;"><span class="m-badge ${m.type}">${mTypeLabel(m,cfg)}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--ink3);">${m.surah}:${m.ayah}</span><span class="m-corr ${corrClass2[m.correction]}" style="font-size:9px;margin-left:auto;">${mCorrLabel(m,cfg)}</span>${m.sessionLabel&&activeSessions.length>1?`<span style="font-size:8px;color:var(--ink3);font-family:'IBM Plex Mono',monospace;">${esc(m.sessionLabel)}</span>`:''}</div>${ctx}${m.note?`<div style="padding:0 3px;font-size:9px;color:var(--ink3);font-style:italic;">${esc(m.note)}</div>`:''}</div>`;
-    }).join('')}</div></div>`;
+// ── Words missed in more than one session — the highest-value signal ──
+function _rvRepeatNotice(repeats){
+  if(!repeats.size) return '';
+  return `<div class="chart-box rv-repeat-notice"><h4>⚠ ${repeats.size} word${repeats.size>1?'s':''} repeated across sessions — focus here</h4></div>`;
+}
+
+// ── Timeline: every mistake as a dot, in recitation order ─────────
+function _rvTimeline(ml, sessionCfg, getCfg, types){
+  if(!ml.length) return '';
+  const cfgForType = id => getCfg(ml.find(m=>m.type===id) || {});
+  const sorted=[...ml].sort((a,b)=>a.surah-b.surah||a.ayah-b.ayah||a.wordPos-b.wordPos);
+  return `<div class="chart-box" style="margin-bottom:10px;">
+    <h4>Mistake map</h4>
+    <div class="legend-row">${types.map(id=>`<div class="leg-item"><div class="leg-dot" style="background:${resolveType(cfgForType(id),id).color||'var(--ink3)'};"></div>${typeLabelFor(cfgForType(id),id)}</div>`).join('')}</div>
+    <div class="timeline">${sorted.map((m,i)=>`<div class="tl-dot" style="${typeDotStyle(getCfg(m),m.type)}" title="${m.surah}:${m.ayah} — ${typeLabelFor(getCfg(m),m.type)}\n${corrLabelFor(getCfg(m),m.correction)}${m.note?'\n'+m.note:''}">${i+1}</div>`).join('')}</div>
+  </div>`;
+}
+
+// ── Spot test: outcome tally and a row per spot ───────────────────
+function _rvSpotTest(spotTest, ml){
+  if(!spotTest?.enabled || !spotTest.spots?.length) return '';
+  const spots = spotTest.spots;
+  const {pass,partial,fail,none} = spotTally(spots);
+  return `<div class="spot-card">
+    <div class="spot-card-title">🎲 Spot Test Results</div>
+    <div class="spot-badges">
+      <span class="m-badge" style="background:var(--green-bg);color:var(--green);">✓ ${pass} passed</span>
+      <span class="m-badge" style="background:var(--amber-bg);color:var(--amber);">~ ${partial} partial</span>
+      <span class="m-badge" style="background:var(--red-bg);color:var(--red);">✗ ${fail} failed</span>
+      ${none?`<span class="m-badge" style="background:var(--parchment3);color:var(--ink3);">○ ${none} not assessed</span>`:''}
+    </div>
+    <div class="spot-rows">${spots.map((sp,i)=>{
+      const mc = ml.filter(m=>m.spotId===sp.id).length;
+      const color = {pass:'var(--green)',partial:'var(--amber)',fail:'var(--red)'}[sp.outcome]||'var(--ink3)';
+      const label = {pass:'✓ Pass',partial:'~ Partial',fail:'✗ Fail'}[sp.outcome]||'○ —';
+      return `<div class="spot-row">
+        <span class="spot-row-n">#${i+1}</span>
+        <span class="spot-row-ref">${sp.surahName} <span>${sp.surah}:${sp.ayah}</span></span>
+        <span class="spot-row-outcome" style="color:${color};">${label}</span>
+        ${mc?`<span class="spot-row-count">${mc}✕</span>`:''}
+      </div>`;
+    }).join('')}</div>
+  </div>`;
+}
+
+// ── Several sessions with spot tests — offer the comparison view ──
+function _rvMultiSpotTests(allSpotTests){
+  if(!(allSpotTests?.length > 1)) return '';
+  return `<div class="spot-card">
+    <div class="spot-card-title">🎲 Spot Tests Across Sessions</div>
+    <div class="spot-card-sub">${allSpotTests.length} sessions with spot tests — click to compare</div>
+    <button class="btn-m spot-cta" onclick="openSpotPopupMulti()">📊 View Spot Test Performance</button>
+  </div>`;
+}
+
+// ── Mistakes grouped by verse, each with its RTL context strip ────
+function _rvVerses(ml, getCfg, repeats, sessions){
+  const byAyah={};
+  ml.forEach(m=>{const k=`${m.surah}:${m.ayah}`;(byAyah[k]=byAyah[k]||[]).push(m);});
+  const keys=Object.keys(byAyah).sort((a,b)=>{
+    const[as,aa]=a.split(':').map(Number),[bs,ba]=b.split(':').map(Number);
+    return as-bs||aa-ba;
+  });
+  let h=`<div class="review-verses-title">Mistakes by verse</div>`;
+  keys.forEach(key=>{
+    const[sn,an]=key.split(':').map(Number);
+    const ayahM=[...byAyah[key]].sort((a,b)=>a.wordPos-b.wordPos);
+    // Header line: just the mistaken words, with … standing in for the gaps.
+    // A gold ring marks words also missed in another loaded session.
+    let wH='', lp=0;
+    ayahM.forEach(m=>{
+      if(m.wordPos>lp+1) wH+=`<span class="rv-gap">…</span>`;
+      const isRep=repeats.has(`${sn}:${an}:${m.wordPos}`);
+      wH+=`<span class="rw-type-tag ${sev(m.correction).cls}${isRep?' rw-repeated':''}" style="font-size:1.1em;font-weight:700;${typeWordStyle(getCfg(m),m.type)}">${m.word}</span> `;
+      lp=m.wordPos;
+    });
+    h+=`<div class="review-verse">
+      <div class="review-verse-ref">${key} — ${SURAH_NAMES[sn-1]||''}</div>
+      <div class="review-verse-arabic">${wH}</div>
+      <div>${ayahM.map(m=>_rvMistakeRow(m,getCfg(m),sessions)).join('')}</div>
+    </div>`;
   });
   return h;
+}
+
+// ── One mistake: badges, then the word in context ─────────────────
+// Severity drives the background (via the shared .sev-N classes) and the
+// row's left border; mistake type keeps the text colour and underline as a
+// secondary signal. Unlike the mushaf, there's no clash here — this is
+// serif text on parchment, not a QCF glyph on a coloured wash.
+function _rvMistakeRow(m, cfg, sessions){
+  const mt   = resolveType(cfg, m.type);
+  const tCol = mt.color || 'var(--ink2)';
+  const tBdr = mt.borderColor || mt.color || 'var(--border2)';
+  const bef  = (m.context?.before||[]).join(' ');
+  const aft  = (m.context?.after ||[]).join(' ');
+  const target = `<span class="rv-ctx-target ${sev(m.correction).cls}" style="color:${tCol};border-bottom-color:${tBdr};">${m.word}</span>`;
+  // dir=rtl: `before` is written first but renders rightmost.
+  const ctx = `<div class="rv-ctx">`
+    + (bef?`<span class="rv-ctx-side">${bef}</span> `:'')
+    + target
+    + (aft?` <span class="rv-ctx-side">${aft}</span>`:'')
+    + `</div>`;
+  return `<div class="rv-mistake" style="border-left-color:${sev(m.correction).color};">
+    <div class="rv-mistake-top">
+      <span class="m-badge" style="${typeBadgeStyle(cfg,m.type)}">${mTypeLabel(m,cfg)}</span>
+      <span class="rv-ref">${m.surah}:${m.ayah}</span>
+      <span class="m-corr ${corrClass2[m.correction]}" style="font-size:9px;margin-left:auto;">${mCorrLabel(m,cfg)}</span>
+      ${m.sessionLabel && sessions.length>1?`<span class="rv-session-tag">${esc(m.sessionLabel)}</span>`:''}
+    </div>
+    ${ctx}
+    ${m.note?`<div class="rv-note">${esc(m.note)}</div>`:''}
+  </div>`;
 }
 function donutSVG(sl,total){if(!total)return`<svg viewBox="0 0 88 88"><circle cx="44" cy="44" r="31" fill="none" stroke="var(--parchment3)" stroke-width="14"/></svg>`;const r=31,sw=14,ci=2*Math.PI*r;let off=0;return`<svg viewBox="0 0 88 88">${sl.map(s=>{const d=(s.val/total)*ci;const p=`<circle cx="44" cy="44" r="${r}" fill="none" stroke="${s.color}" stroke-width="${sw}" stroke-dasharray="${d} ${ci-d}" stroke-dashoffset="${-off}" transform="rotate(-90 44 44)" opacity="${s.val?1:0}"/>`;off+=d;return p;}).join('')}</svg>`;}
 
 // ── SHARE
 function buildReport(sessions,mistakes){
-  const sf=mistakes.filter(m=>m.correction==='c1').length,sp=mistakes.filter(m=>m.correction==='c2').length,st=mistakes.filter(m=>m.correction==='c3').length,so=mistakes.filter(m=>m.correction==='c4').length;
+  const {c1:sf,c2:sp,c3:st,c4:so}=corrTally(mistakes);
   let t='📖 *Quran Recitation Session Report*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
   if(sessions.length===1){
     t+=`👤 Student : ${sessions[0].student}\n📜 Passage : ${sessions[0].range}\n📅 Date    : ${sessions[0].date}   ⏱ ${sessions[0].duration}\n`;
@@ -2777,9 +3618,7 @@ function buildReport(sessions,mistakes){
   // Spot test section (single session only)
   if(sessions.length===1 && sessions[0].spotTest?.enabled && sessions[0].spotTest.spots?.length){
     const spots=sessions[0].spotTest.spots;
-    const pass=spots.filter(x=>x.outcome==='pass').length;
-    const partial=spots.filter(x=>x.outcome==='partial').length;
-    const fail=spots.filter(x=>x.outcome==='fail').length;
+    const {pass,partial,fail} = spotTally(spots);
     t+=`🎲 *Spot Test* — ${spots.length} spots\n`;
     t+=`   Score: ✓ ${pass} passed  |  ~ ${partial} partial  |  ✗ ${fail} failed\n\n`;
     spots.forEach((spot,i)=>{
@@ -2863,14 +3702,14 @@ async function _processFiles(files){
   const firstM=[...activeMistakes].sort((a,b)=>a.surah-b.surah||a.ayah-b.ayah)[0];
   if(firstM)await navigateToVerse(firstM.surah,firstM.ayah);
   showToast(`${added} new session${added!==1?'s':''} loaded ✓`);
-  if(window.innerWidth<=700&&!panelOpen)togglePanel();
+  if(isMobileUI()&&!panelOpen)togglePanel();
 }
 
 // ── UTILS
 function toAr(n){return n.toString().replace(/[0-9]/g,d=>'٠١٢٣٤٥٦٧٨٩'[d]);}
 function closeModal(id){document.getElementById(id).classList.remove('open');}
 function switchSvTab(tab){
-  ['types','levels'].forEach(t=>{
+  ['types','levels','keys'].forEach(t=>{
     document.getElementById(`svt-${t}`).classList.toggle('active', t===tab);
     document.getElementById(`svp-${t}`).style.display = t===tab ? '' : 'none';
   });
@@ -2949,9 +3788,7 @@ function buildSpotPopupHTML(sess){
   const st = sess.spotTest;
   const spots = st.spots;
   const ml = sess.mistakes || [];
-  const pass = spots.filter(x=>x.outcome==='pass').length;
-  const partial = spots.filter(x=>x.outcome==='partial').length;
-  const fail = spots.filter(x=>x.outcome==='fail').length;
+  const {pass,partial,fail} = spotTally(spots);
   const none = spots.filter(x=>!x.outcome).length;
   const total = spots.length;
   const pct = total ? Math.round(pass/total*100) : 0;
@@ -3025,9 +3862,7 @@ function buildSpotTrendChart(sessions, activeIdx){
   sessions.forEach((sess, i) => {
     const spots = sess.spotTest.spots;
     const total = spots.length;
-    const pass = spots.filter(x=>x.outcome==='pass').length;
-    const partial = spots.filter(x=>x.outcome==='partial').length;
-    const fail = spots.filter(x=>x.outcome==='fail').length;
+    const {pass,partial,fail} = spotTally(spots);
     const none = total - pass - partial - fail;
     const isActive = i === activeIdx;
     const pct = total ? Math.round(pass/total*100) : 0;
@@ -3047,7 +3882,7 @@ function buildSpotTrendChart(sessions, activeIdx){
         ${parH?`<div class="bar-seg" style="height:${parH}px;background:var(--amber);"></div>`:''}
         ${pH?`<div class="bar-seg" style="height:${pH}px;background:var(--green);"></div>`:''}
       </div>
-      <div class="bar-label" style="${isActive?'color:#1a4a8a;font-weight:700;':''}">${dateLabel.length>8?dateLabel.slice(-8):dateLabel}</div>
+      <div class="bar-label" style="${isActive?'color:var(--spot-blue);font-weight:700;':''}">${dateLabel.length>8?dateLabel.slice(-8):dateLabel}</div>
     </div>`;
   });
 
@@ -3067,5 +3902,16 @@ function buildSpotTrendChart(sessions, activeIdx){
 }
 
 </script>
+
+<!-- Mobile-only floating auto-scroll control — bottom-left, so it never
+     competes with the sessions-panel FAB (bottom-right) -->
+<div class="autoscroll-fab-wrap" id="autoscrollFabWrap">
+  <button class="autoscroll-fab" id="autoscrollFabBtn" onclick="toggleAutoScroll()" title="Auto-scroll (a)">⏫</button>
+  <div class="autoscroll-fab-speed" id="autoscrollFabSpeed" style="display:none;">
+    <button class="autoscroll-fab-mini" onclick="changeAutoScrollSpeed(-0.1)" title="Slower">−</button>
+    <span id="autoscrollFabLabel">1.0x</span>
+    <button class="autoscroll-fab-mini" onclick="changeAutoScrollSpeed(0.1)" title="Faster">+</button>
+  </div>
+</div>
 </body>
 </html>
