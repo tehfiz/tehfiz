@@ -10105,8 +10105,6 @@ let removingId = null;          // roster row showing its remove warning
 let footerClientId = null;      // the session the footer's Send button last acted on
 let managingId = null;          // roster row showing its Manage panel
 let managingAct = null;         // 'pin' | 'code' — which action is awaiting confirmation
-let adminOpen = false;          // owner-only approvals panel
-let adminList = null;           // [{id,email,name,status,...}] once loaded
 
 /* ── API ────────────────────────────────────────────────────────────────── */
 
@@ -10219,68 +10217,13 @@ async function mountGoogleButton() {
 
 function saveRoster() { writeJSON(K.roster, roster); }
 
-/* ── owner administration ────────────────────────────────────────────────
-   Display only. The server re-checks ownership against the verified email on
-   every admin call, so hiding the panel is convenience, never a control. */
-
-function isOwner() { return !!(teacher && teacher.isOwner); }
-
-async function loadAdmin() {
-  try {
-    const data = await api('/api/admin/teachers');
-    adminList = data.teachers || [];
-    render();
-  } catch (err) { showError('Could not load teachers: ' + err.message); }
-}
-
-async function setTeacherStatus(id, status) {
-  try {
-    await api('/api/admin/teachers/' + encodeURIComponent(id) + '/status',
-      { method: 'POST', body: { status } });
-    const t = adminList && adminList.find((x) => x.id === id);
-    if (t) t.status = status;
-    render();
-    toast(status === 'active' ? 'Approved' : status === 'suspended' ? 'Suspended' : 'Set to pending');
-  } catch (err) { showError('Could not change that: ' + err.message); }
-}
-
+/* Owner administration lives in TehfizAdmin — a different job for a different
+   person, and not worth carrying in this module. All that belongs here is the
+   way in. */
 function adminPanel() {
-  if (!isOwner()) return '';
-  const waiting = adminList ? adminList.filter((t) => t.status === 'pending').length : 0;
-  if (!adminOpen) {
-    return '<div class="tsy-admin-bar">' +
-      '<button class="tsy-btn" data-tsy="admin-open">Teacher approvals' +
-        (waiting ? ' <span class="tsy-badge">' + waiting + '</span>' : '') + '</button>' +
-    '</div>';
-  }
-  const rows = !adminList
-    ? '<div class="tsy-lead">Loading…</div>'
-    : !adminList.length
-      ? '<div class="tsy-lead">No teachers yet.</div>'
-      : adminList.map((t) => (
-          '<div class="tsy-admin-row">' +
-            '<div class="tsy-admin-who">' +
-              '<strong>' + esc(t.name || t.email) + '</strong>' +
-              '<span>' + esc(t.email) + '</span>' +
-              '<span>' + (t.student_count || 0) + ' students &middot; ' +
-                (t.session_count || 0) + ' sessions</span>' +
-            '</div>' +
-            '<span class="tsy-status tsy-st-' + esc(t.status) + '">' + esc(t.status) + '</span>' +
-            (t.status === 'pending'
-              ? '<button class="tsy-btn" data-tsy="admin-set" data-id="' + esc(t.id) + '" data-status="active">Approve</button>'
-              : t.status === 'active'
-                ? '<button class="tsy-btn" data-tsy="admin-set" data-id="' + esc(t.id) + '" data-status="suspended">Suspend</button>'
-                : '<button class="tsy-btn" data-tsy="admin-set" data-id="' + esc(t.id) + '" data-status="active">Restore</button>') +
-          '</div>'
-        )).join('');
-  return '<div class="tsy-admin">' +
-    '<div class="tsy-admin-head"><strong>Teacher approvals</strong>' +
-      '<button class="tsy-chip-btn" data-tsy="admin-refresh">Refresh</button>' +
-      '<button class="tsy-chip-btn" data-tsy="admin-close">Close</button></div>' +
-    '<p class="tsy-note" style="margin-top:0;">New teachers can sign in straight away but ' +
-      'cannot send anything until approved. Suspending is reversible and keeps all their records.</p>' +
-    rows +
-  '</div>';
+  if (!(window.TehfizAdmin && TehfizAdmin.available())) return '';
+  return '<div class="tsy-admin-bar">' +
+    '<button class="tsy-btn" data-tad="open">Manage teachers</button></div>';
 }
 
 
@@ -11062,10 +11005,6 @@ document.addEventListener('click', async (e) => {
     return;
   }
   if (act === 'restoreremoved'){ await restoreRemoved(); return; }
-  if (act === 'admin-open')   { adminOpen = true; render(); if (!adminList) await loadAdmin(); return; }
-  if (act === 'admin-close')  { adminOpen = false; render(); return; }
-  if (act === 'admin-refresh'){ await loadAdmin(); return; }
-  if (act === 'admin-set')    { await setTeacherStatus(id, t.dataset.status); return; }
   if (act === 'manage')      { managingId = (managingId === id ? null : id); managingAct = null; removingId = null; render(); return; }
   if (act === 'manage-close'){ managingId = null; managingAct = null; render(); return; }
   if (act === 'manage-back') { managingAct = null; render(); return; }
@@ -11294,23 +11233,6 @@ window.TehfizSync = {
 .tsy-foot-queued{background:var(--lvl1-yellow-bg)!important;color:var(--amber)!important;border-color:var(--lvl1-yellow)!important;}
 .tsy-admin-bar{margin-bottom:9px;}
 .tsy-admin-bar .tsy-btn{width:auto;margin:0;}
-.tsy-badge{background:var(--red);color:#fff;border-radius:999px;padding:0 5px;font-size:9px;
-  font-family:'IBM Plex Mono',monospace;}
-.tsy-admin{border:.5px solid var(--gold);border-radius:7px;padding:9px 10px;margin-bottom:11px;
-  background:var(--gold-pale);}
-.tsy-admin-head{display:flex;align-items:center;gap:8px;font-size:12px;margin-bottom:4px;}
-.tsy-admin-head strong{flex:1;}
-.tsy-admin-row{display:flex;align-items:center;gap:8px;padding:6px 0;
-  border-top:.5px solid var(--border);}
-.tsy-admin-who{flex:1;min-width:0;}
-.tsy-admin-who strong{display:block;font-size:11px;color:var(--ink);}
-.tsy-admin-who span{display:block;font-size:9px;color:var(--ink3);overflow:hidden;
-  text-overflow:ellipsis;white-space:nowrap;}
-.tsy-status{font-size:9px;font-family:'IBM Plex Mono',monospace;border-radius:3px;padding:1px 5px;flex:none;}
-.tsy-st-pending{background:var(--lvl1-yellow-bg);color:var(--amber);}
-.tsy-st-active{background:var(--green-bg);color:var(--green);}
-.tsy-st-suspended{background:var(--red-bg);color:var(--red);}
-.tsy-admin-row .tsy-btn{width:auto;flex:none;margin:0;}
 .tsy-manage{margin-top:8px;border:.5px solid var(--border2);border-radius:6px;
   padding:8px 10px;background:var(--parchment);}
 .tsy-manage-row{display:flex;align-items:center;gap:9px;justify-content:space-between;
@@ -11338,6 +11260,351 @@ window.TehfizSync = {
 .tsy-input{width:100%;border:.5px solid var(--border2);border-radius:5px;background:var(--parchment);
   padding:5px 7px;font-size:11px;font-family:'IBM Plex Mono',monospace;color:var(--ink);}
 @media(max-width:700px){.tsy-panel{max-height:92vh;padding:14px 14px 18px;}}
+</style>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     TEHFIZ ADMIN MODULE  —  v1  (owner-only teacher management)
+     ═══════════════════════════════════════════════════════════════════════════
+
+     Self-contained. Everything this module owns is prefixed:
+       namespace      TehfizAdmin
+       localStorage   (none of its own — reads TehfizSync's auth keys)
+       CSS classes    .tad-*
+       DOM container  #tadRoot
+
+     PUBLIC INTERFACE:
+       TehfizAdmin.available()   is the signed-in teacher an owner?
+       TehfizAdmin.open()        open the modal
+
+     WHY A SEPARATE MODULE
+     This is a different job for a different person. Every other surface in the
+     app is used by teachers; this one is used by whoever runs the service, and
+     only ever by them. Folding it into TehfizSync would grow a 1,350-line
+     module that a future chat has to load in full to change anything about
+     sending sessions.
+
+     It reads `tehfiz_sync_token` and `tehfiz_sync_teacher` rather than keeping
+     its own. Same app, same origin, same sign-in — duplicating the auth flow
+     to avoid touching two keys would be worse, not better. Reading fresh on
+     every call means a sign-out in TehfizSync takes effect here immediately.
+
+     ON `isOwner`
+     It comes from the server on /api/me and decides whether the entry button
+     renders. That is a DISPLAY hint and nothing more: every admin endpoint
+     re-checks ownership server-side against the verified email, and non-owners
+     get 404 rather than 403. Editing localStorage to reveal the button gets
+     you a button that returns 404.
+     ═══════════════════════════════════════════════════════════════════════ -->
+<div id="tadRoot"></div>
+<script>
+(function () {
+'use strict';
+
+const K = { token: 'tehfiz_sync_token', teacher: 'tehfiz_sync_teacher', api: 'tehfiz_sync_api' };
+
+const $ = (id) => document.getElementById(id);
+
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => (
+    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+  ));
+}
+
+function toast(m) { if (typeof window.showToast === 'function') window.showToast(m); }
+
+function readJSON(key, fb) {
+  try { const r = localStorage.getItem(key); return r ? JSON.parse(r) : fb; } catch { return fb; }
+}
+
+function apiBase() {
+  const o = localStorage.getItem(K.api);
+  if (o !== null) return o.replace(/\/+$/, '');
+  return location.protocol === 'file:' ? 'http://localhost:8788' : '';
+}
+
+/* ── state ──────────────────────────────────────────────────────────────── */
+
+let teachers = null;      // null = not loaded yet, [] = loaded and empty
+let query = '';
+let filter = 'pending';   // opens on what needs attention, not on everything
+let loading = false;
+let errorMsg = '';
+let busyId = null;
+
+/* ── API ────────────────────────────────────────────────────────────────── */
+
+async function api(path, opts = {}) {
+  const token = localStorage.getItem(K.token);
+  const headers = {};
+  if (opts.body !== undefined) headers['Content-Type'] = 'application/json';
+  if (token) headers.Authorization = 'Bearer ' + token;
+  const res = await fetch(apiBase() + path, {
+    method: opts.method || 'GET', headers,
+    body: opts.body === undefined ? undefined : JSON.stringify(opts.body),
+  });
+  let data = null;
+  try { data = await res.json(); } catch {}
+  if (!res.ok) {
+    const e = new Error((data && data.error) || ('http ' + res.status));
+    e.status = res.status;
+    throw e;
+  }
+  return data;
+}
+
+/* ── data ───────────────────────────────────────────────────────────────── */
+
+function available() {
+  const t = readJSON(K.teacher, null);
+  return !!(t && t.isOwner);
+}
+
+async function load() {
+  loading = true; errorMsg = ''; renderList();
+  try {
+    const data = await api('/api/admin/teachers');
+    teachers = data.teachers || [];
+  } catch (err) {
+    errorMsg = err.status === 404
+      ? 'This account is not an administrator.'
+      : 'Could not load teachers: ' + err.message;
+  }
+  loading = false;
+  renderCounts();
+  renderList();
+}
+
+async function setStatus(id, status) {
+  busyId = id; renderList();
+  try {
+    await api('/api/admin/teachers/' + encodeURIComponent(id) + '/status',
+      { method: 'POST', body: { status } });
+    const t = teachers.find((x) => x.id === id);
+    if (t) t.status = status;
+    toast(status === 'active' ? 'Approved' : status === 'suspended' ? 'Suspended' : 'Set to pending');
+  } catch (err) {
+    errorMsg = err.message;
+  }
+  busyId = null;
+  renderCounts(); renderList();
+}
+
+/* ── filtering ──────────────────────────────────────────────────────────── */
+
+function counts() {
+  const c = { all: 0, pending: 0, active: 0, suspended: 0 };
+  (teachers || []).forEach((t) => { c.all++; if (c[t.status] !== undefined) c[t.status]++; });
+  return c;
+}
+
+/**
+ * Filter, then sort.
+ *
+ * Pending first regardless of the active filter, because the list exists to
+ * answer "who is waiting for me". Then most recently seen — a teacher who was
+ * here this morning is more likely to be the one you are looking for than one
+ * who signed up a year ago.
+ */
+function visible() {
+  const q = query.trim().toLowerCase();
+  return (teachers || [])
+    .filter((t) => filter === 'all' || t.status === filter)
+    .filter((t) => !q ||
+      String(t.email || '').toLowerCase().includes(q) ||
+      String(t.name || '').toLowerCase().includes(q))
+    .sort((a, b) => {
+      const rank = (s) => (s === 'pending' ? 0 : s === 'active' ? 1 : 2);
+      return rank(a.status) - rank(b.status) ||
+             (b.last_seen_at || b.created_at || 0) - (a.last_seen_at || a.created_at || 0);
+    });
+}
+
+function when(ms) {
+  if (!ms) return 'never';
+  const d = Math.floor((Date.now() - ms) / 86400000);
+  if (d <= 0) return 'today';
+  if (d === 1) return 'yesterday';
+  if (d < 30) return d + 'd ago';
+  try { return new Date(ms).toLocaleDateString(undefined, { month: 'short', year: 'numeric' }); }
+  catch { return ''; }
+}
+
+/* ── rendering ──────────────────────────────────────────────────────────── */
+
+/* The shell is built ONCE per open. Only the list re-renders as you type —
+   replacing the whole panel on every keystroke would blur the search box and
+   lose the caret, which makes typing anything longer than a word impossible. */
+function renderShell() {
+  $('tadBody').innerHTML =
+    '<input class="tad-search" id="tadSearch" placeholder="Search name or email" autocomplete="off">' +
+    '<div class="tad-chips" id="tadChips"></div>' +
+    '<div class="tad-list" id="tadList"></div>';
+  const box = $('tadSearch');
+  box.addEventListener('input', () => { query = box.value; renderList(); });
+  renderCounts();
+  renderList();
+}
+
+function renderCounts() {
+  const host = $('tadChips');
+  if (!host) return;
+  const c = counts();
+  host.innerHTML = ['pending', 'active', 'suspended', 'all'].map((k) => (
+    '<button class="tad-chip' + (filter === k ? ' on' : '') + '" data-tad="filter" data-k="' + k + '">' +
+      k.charAt(0).toUpperCase() + k.slice(1) +
+      '<span class="tad-n">' + c[k] + '</span>' +
+    '</button>'
+  )).join('');
+}
+
+function renderList() {
+  const host = $('tadList');
+  if (!host) return;
+
+  if (errorMsg) { host.innerHTML = '<div class="tad-err">' + esc(errorMsg) + '</div>'; return; }
+  if (loading || teachers === null) { host.innerHTML = '<div class="tad-empty">Loading…</div>'; return; }
+
+  const rows = visible();
+  if (!rows.length) {
+    host.innerHTML = '<div class="tad-empty">' +
+      (query ? 'No teacher matches “' + esc(query) + '”.'
+             : filter === 'pending' ? 'Nobody is waiting for approval.'
+             : 'Nothing here.') + '</div>';
+    return;
+  }
+
+  host.innerHTML = rows.map((t) => {
+    const busy = busyId === t.id;
+    const action = t.status === 'pending'
+      ? { label: 'Approve', to: 'active', cls: ' tad-go' }
+      : t.status === 'active'
+        ? { label: 'Suspend', to: 'suspended', cls: ' tad-stop' }
+        : { label: 'Restore', to: 'active', cls: '' };
+    return '<div class="tad-row">' +
+      '<div class="tad-who">' +
+        '<strong>' + esc(t.name || t.email) + '</strong>' +
+        '<span>' + esc(t.email) + '</span>' +
+        '<span>' + (t.student_count || 0) + ' students &middot; ' +
+          (t.session_count || 0) + ' sessions &middot; seen ' + esc(when(t.last_seen_at)) + '</span>' +
+      '</div>' +
+      '<span class="tad-status tad-st-' + esc(t.status) + '">' + esc(t.status) + '</span>' +
+      '<button class="tad-btn' + action.cls + '"' + (busy ? ' disabled' : '') +
+        ' data-tad="set" data-id="' + esc(t.id) + '" data-to="' + action.to + '">' +
+        (busy ? '…' : action.label) + '</button>' +
+    '</div>';
+  }).join('');
+}
+
+/* ── open / close ───────────────────────────────────────────────────────── */
+
+function open() {
+  $('tadOverlay').classList.add('tad-on');
+  query = ''; filter = 'pending'; errorMsg = '';
+  renderShell();
+  load();
+}
+
+function close() { $('tadOverlay').classList.remove('tad-on'); }
+
+/* ── events ─────────────────────────────────────────────────────────────── */
+
+document.addEventListener('click', async (e) => {
+  const t = e.target.closest('[data-tad]');
+  if (!t) return;
+  const act = t.dataset.tad;
+  if (act === 'open')    return open();
+  if (act === 'close')   return close();
+  if (act === 'refresh') return load();
+  if (act === 'filter')  { filter = t.dataset.k; renderCounts(); renderList(); return; }
+  if (act === 'set')     return setStatus(t.dataset.id, t.dataset.to);
+});
+
+/* ── boot ───────────────────────────────────────────────────────────────── */
+
+let mounted = false;
+
+function mount() {
+  const root = $('tadRoot');
+  if (!root || mounted) return;
+  mounted = true;
+  root.innerHTML =
+    '<div class="tad-overlay" id="tadOverlay">' +
+      '<div class="tad-panel">' +
+        '<div class="tad-head">' +
+          '<span class="tad-title">Teachers</span>' +
+          '<button class="tad-chip-btn" data-tad="refresh">Refresh</button>' +
+          '<button class="tad-x" data-tad="close">✕</button>' +
+        '</div>' +
+        '<p class="tad-note">New teachers can sign in immediately but cannot send ' +
+          'anything until approved. Suspending is reversible and keeps all their records.</p>' +
+        '<div class="tad-body" id="tadBody"></div>' +
+      '</div>' +
+    '</div>';
+  /* No stopPropagation on the panel — every control is bound through the
+     document delegate and stopping the bubble would kill all of them. */
+  $('tadOverlay').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) close();
+  });
+}
+
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mount);
+else mount();
+
+window.TehfizAdmin = { open, available };
+
+})();
+</script>
+
+<style>
+/* ── TehfizAdmin styles — every selector prefixed .tad- ───────────────── */
+.tad-overlay{display:none;position:fixed;inset:0;background:rgba(26,22,18,.5);z-index:700;
+  align-items:flex-end;justify-content:center;}
+.tad-overlay.tad-on{display:flex;}
+.tad-panel{background:var(--parchment);border-radius:12px 12px 0 0;width:100%;max-width:620px;
+  max-height:88vh;display:flex;flex-direction:column;padding:16px 18px 20px;
+  border:1px solid var(--border2);box-shadow:var(--shadow-lg);font-family:'Lora',serif;color:var(--ink);}
+.tad-head{display:flex;align-items:center;gap:9px;margin-bottom:6px;}
+.tad-title{font-size:15px;font-weight:600;flex:1;}
+.tad-x{background:none;border:none;font-size:15px;color:var(--ink3);cursor:pointer;}
+.tad-chip-btn{background:none;border:none;color:var(--gold);font-size:10px;cursor:pointer;
+  font-family:'Lora',serif;text-decoration:underline;padding:0;}
+.tad-note{font-size:10px;color:var(--ink3);line-height:1.6;margin:0 0 10px;}
+
+.tad-body{display:flex;flex-direction:column;min-height:0;flex:1;}
+.tad-search{width:100%;border:.5px solid var(--border2);border-radius:6px;background:var(--parchment2);
+  padding:7px 10px;font-size:12px;font-family:'Lora',serif;color:var(--ink);box-sizing:border-box;}
+.tad-search:focus{outline:none;border-color:var(--gold);}
+.tad-chips{display:flex;gap:5px;flex-wrap:wrap;margin:9px 0;}
+.tad-chip{background:var(--parchment2);border:.5px solid var(--border2);color:var(--ink2);
+  border-radius:999px;padding:3px 10px;font-size:10px;font-family:'Lora',serif;cursor:pointer;
+  display:flex;align-items:center;gap:5px;}
+.tad-chip.on{background:var(--gold-pale);border-color:var(--gold);color:var(--gold);font-weight:600;}
+.tad-n{font-family:'IBM Plex Mono',monospace;font-size:9px;opacity:.75;}
+
+.tad-list{overflow-y:auto;flex:1;min-height:120px;}
+.tad-row{display:flex;align-items:center;gap:9px;padding:8px 0;border-bottom:.5px solid var(--border);}
+.tad-row:last-child{border-bottom:none;}
+.tad-who{flex:1;min-width:0;}
+.tad-who strong{display:block;font-size:12px;color:var(--ink);overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap;}
+.tad-who span{display:block;font-size:9px;color:var(--ink3);overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap;}
+.tad-status{font-size:9px;font-family:'IBM Plex Mono',monospace;border-radius:3px;
+  padding:1px 6px;flex:none;}
+.tad-st-pending{background:var(--lvl1-yellow-bg);color:var(--amber);}
+.tad-st-active{background:var(--green-bg);color:var(--green);}
+.tad-st-suspended{background:var(--red-bg);color:var(--red);}
+.tad-btn{background:var(--parchment);border:.5px solid var(--border2);color:var(--ink2);
+  border-radius:5px;padding:4px 11px;font-size:11px;font-family:'Lora',serif;cursor:pointer;flex:none;}
+.tad-btn:hover{background:var(--parchment3);}
+.tad-go{border-color:var(--green);color:var(--green);}
+.tad-stop{border-color:var(--red);color:var(--red);}
+.tad-btn[disabled]{opacity:.5;cursor:default;}
+.tad-empty{font-size:11px;color:var(--ink3);text-align:center;padding:26px 10px;font-style:italic;}
+.tad-err{font-size:11px;background:var(--red-bg);color:var(--red);border:.5px solid var(--red);
+  border-radius:6px;padding:8px 10px;}
+@media(max-width:700px){.tad-panel{max-height:92vh;padding:13px 13px 17px;}
+  .tad-who span:last-child{white-space:normal;}}
 </style>
 
 </body>
