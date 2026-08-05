@@ -10105,6 +10105,8 @@ let removingId = null;          // roster row showing its remove warning
 let footerClientId = null;      // the session the footer's Send button last acted on
 let managingId = null;          // roster row showing its Manage panel
 let managingAct = null;         // 'pin' | 'code' — which action is awaiting confirmation
+let adminOpen = false;          // owner-only approvals panel
+let adminList = null;           // [{id,email,name,status,...}] once loaded
 
 /* ── API ────────────────────────────────────────────────────────────────── */
 
@@ -10216,6 +10218,71 @@ async function mountGoogleButton() {
 /* ── roster ─────────────────────────────────────────────────────────────── */
 
 function saveRoster() { writeJSON(K.roster, roster); }
+
+/* ── owner administration ────────────────────────────────────────────────
+   Display only. The server re-checks ownership against the verified email on
+   every admin call, so hiding the panel is convenience, never a control. */
+
+function isOwner() { return !!(teacher && teacher.isOwner); }
+
+async function loadAdmin() {
+  try {
+    const data = await api('/api/admin/teachers');
+    adminList = data.teachers || [];
+    render();
+  } catch (err) { showError('Could not load teachers: ' + err.message); }
+}
+
+async function setTeacherStatus(id, status) {
+  try {
+    await api('/api/admin/teachers/' + encodeURIComponent(id) + '/status',
+      { method: 'POST', body: { status } });
+    const t = adminList && adminList.find((x) => x.id === id);
+    if (t) t.status = status;
+    render();
+    toast(status === 'active' ? 'Approved' : status === 'suspended' ? 'Suspended' : 'Set to pending');
+  } catch (err) { showError('Could not change that: ' + err.message); }
+}
+
+function adminPanel() {
+  if (!isOwner()) return '';
+  const waiting = adminList ? adminList.filter((t) => t.status === 'pending').length : 0;
+  if (!adminOpen) {
+    return '<div class="tsy-admin-bar">' +
+      '<button class="tsy-btn" data-tsy="admin-open">Teacher approvals' +
+        (waiting ? ' <span class="tsy-badge">' + waiting + '</span>' : '') + '</button>' +
+    '</div>';
+  }
+  const rows = !adminList
+    ? '<div class="tsy-lead">Loading…</div>'
+    : !adminList.length
+      ? '<div class="tsy-lead">No teachers yet.</div>'
+      : adminList.map((t) => (
+          '<div class="tsy-admin-row">' +
+            '<div class="tsy-admin-who">' +
+              '<strong>' + esc(t.name || t.email) + '</strong>' +
+              '<span>' + esc(t.email) + '</span>' +
+              '<span>' + (t.student_count || 0) + ' students &middot; ' +
+                (t.session_count || 0) + ' sessions</span>' +
+            '</div>' +
+            '<span class="tsy-status tsy-st-' + esc(t.status) + '">' + esc(t.status) + '</span>' +
+            (t.status === 'pending'
+              ? '<button class="tsy-btn" data-tsy="admin-set" data-id="' + esc(t.id) + '" data-status="active">Approve</button>'
+              : t.status === 'active'
+                ? '<button class="tsy-btn" data-tsy="admin-set" data-id="' + esc(t.id) + '" data-status="suspended">Suspend</button>'
+                : '<button class="tsy-btn" data-tsy="admin-set" data-id="' + esc(t.id) + '" data-status="active">Restore</button>') +
+          '</div>'
+        )).join('');
+  return '<div class="tsy-admin">' +
+    '<div class="tsy-admin-head"><strong>Teacher approvals</strong>' +
+      '<button class="tsy-chip-btn" data-tsy="admin-refresh">Refresh</button>' +
+      '<button class="tsy-chip-btn" data-tsy="admin-close">Close</button></div>' +
+    '<p class="tsy-note" style="margin-top:0;">New teachers can sign in straight away but ' +
+      'cannot send anything until approved. Suspending is reversible and keeps all their records.</p>' +
+    rows +
+  '</div>';
+}
+
 
 function studentById(id)   { return roster.find((s) => s.id === id) || null; }
 function studentByName(nm) {
@@ -10861,7 +10928,7 @@ function render() {
     : '<p class="tsy-lead">No students yet. Type a name in the session panel and ' +
       'choose “Create a code”, or add one here.</p>';
 
-  body.innerHTML = err + picking + queuedNote +
+  body.innerHTML = err + picking + queuedNote + adminPanel() +
     '<div class="tsy-who">Signed in as ' + esc(teacher.email) +
       ' <button class="tsy-chip-btn" data-tsy="signout">Sign out</button></div>' +
     '<div class="tsy-warnbox">Names are stored on this device only \u2014 the server ' +
@@ -10995,6 +11062,10 @@ document.addEventListener('click', async (e) => {
     return;
   }
   if (act === 'restoreremoved'){ await restoreRemoved(); return; }
+  if (act === 'admin-open')   { adminOpen = true; render(); if (!adminList) await loadAdmin(); return; }
+  if (act === 'admin-close')  { adminOpen = false; render(); return; }
+  if (act === 'admin-refresh'){ await loadAdmin(); return; }
+  if (act === 'admin-set')    { await setTeacherStatus(id, t.dataset.status); return; }
   if (act === 'manage')      { managingId = (managingId === id ? null : id); managingAct = null; removingId = null; render(); return; }
   if (act === 'manage-close'){ managingId = null; managingAct = null; render(); return; }
   if (act === 'manage-back') { managingAct = null; render(); return; }
@@ -11221,6 +11292,25 @@ window.TehfizSync = {
 
 .tsy-foot-sent{background:var(--green-bg)!important;color:var(--green)!important;border-color:var(--green)!important;}
 .tsy-foot-queued{background:var(--lvl1-yellow-bg)!important;color:var(--amber)!important;border-color:var(--lvl1-yellow)!important;}
+.tsy-admin-bar{margin-bottom:9px;}
+.tsy-admin-bar .tsy-btn{width:auto;margin:0;}
+.tsy-badge{background:var(--red);color:#fff;border-radius:999px;padding:0 5px;font-size:9px;
+  font-family:'IBM Plex Mono',monospace;}
+.tsy-admin{border:.5px solid var(--gold);border-radius:7px;padding:9px 10px;margin-bottom:11px;
+  background:var(--gold-pale);}
+.tsy-admin-head{display:flex;align-items:center;gap:8px;font-size:12px;margin-bottom:4px;}
+.tsy-admin-head strong{flex:1;}
+.tsy-admin-row{display:flex;align-items:center;gap:8px;padding:6px 0;
+  border-top:.5px solid var(--border);}
+.tsy-admin-who{flex:1;min-width:0;}
+.tsy-admin-who strong{display:block;font-size:11px;color:var(--ink);}
+.tsy-admin-who span{display:block;font-size:9px;color:var(--ink3);overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap;}
+.tsy-status{font-size:9px;font-family:'IBM Plex Mono',monospace;border-radius:3px;padding:1px 5px;flex:none;}
+.tsy-st-pending{background:var(--lvl1-yellow-bg);color:var(--amber);}
+.tsy-st-active{background:var(--green-bg);color:var(--green);}
+.tsy-st-suspended{background:var(--red-bg);color:var(--red);}
+.tsy-admin-row .tsy-btn{width:auto;flex:none;margin:0;}
 .tsy-manage{margin-top:8px;border:.5px solid var(--border2);border-radius:6px;
   padding:8px 10px;background:var(--parchment);}
 .tsy-manage-row{display:flex;align-items:center;gap:9px;justify-content:space-between;
