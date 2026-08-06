@@ -10823,11 +10823,22 @@ function render() {
   }
 
   if (!isActive()) {
+    /* Waiting is the one moment we have their attention and nothing to offer,
+       so it is the right place to ask if they want students. */
     body.innerHTML = err +
       '<div class="tsy-pending">' +
         '<strong>Waiting for approval</strong>' +
-        '<p>Signed in as ' + esc(teacher.email) + '. Your account is not active yet, ' +
-        'so sending is disabled. Everything else in the app works as before.</p>' +
+        '<p>Signed in as ' + esc(teacher.email) + '. Accounts are approved by hand, usually ' +
+        'within a day. Sending is disabled until then \u2014 everything else in the app works ' +
+        'exactly as before, including saving and exporting sessions.</p>' +
+      '</div>' +
+      '<div class="tsy-pending tsy-pending-cta">' +
+        '<strong>Looking for students?</strong>' +
+        '<p>Tell us where you teach and in what languages, and we will pass suitable ' +
+        'enquiries from families your way. Nothing you send is published.</p>' +
+        '<a class="tsy-btn" target="_blank" rel="noopener" ' +
+          'href="https://docs.google.com/forms/d/e/1FAIpQLScftHflWSx1kK4n_juVqKwCDWtwFx_eb88XVO9tsdNsJxZ96Q/viewform">' +
+          'Register your details</a>' +
       '</div>' +
       '<button class="tsy-btn" data-tsy="signout">Sign out</button>';
     return;
@@ -11231,6 +11242,9 @@ window.TehfizSync = {
 
 .tsy-foot-sent{background:var(--green-bg)!important;color:var(--green)!important;border-color:var(--green)!important;}
 .tsy-foot-queued{background:var(--lvl1-yellow-bg)!important;color:var(--amber)!important;border-color:var(--lvl1-yellow)!important;}
+.tsy-pending-cta{background:var(--gold-pale);border:.5px solid var(--gold);}
+.tsy-pending-cta strong{color:var(--gold);}
+.tsy-pending-cta .tsy-btn{display:inline-block;width:auto;margin-top:9px;text-decoration:none;}
 .tsy-admin-bar{margin-bottom:9px;}
 .tsy-admin-bar .tsy-btn{width:auto;margin:0;}
 .tsy-manage{margin-top:8px;border:.5px solid var(--border2);border-radius:6px;
