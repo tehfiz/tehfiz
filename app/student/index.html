@@ -6738,7 +6738,8 @@ async function pull(loud) {
 
 /* ── UI ─────────────────────────────────────────────────────────────────── */
 
-function open() { $('tclOverlay').classList.add('tcl-on');
+function open() { if (reviewing()) return;
+                  $('tclOverlay').classList.add('tcl-on');
                   view = paired() ? 'paired' : 'code'; errorMsg = ''; render(); }
 function close() { $('tclOverlay').classList.remove('tcl-on'); errorMsg = ''; }
 
@@ -6904,11 +6905,24 @@ function mount() {
     if (e.target === e.currentTarget) close();
   });
 
+  /* Stand down entirely in teacher review mode.
+     Not just the polling: the CONTROLS go too. A teacher reviewing a student's
+     history must not be able to claim an unclaimed code and set that student's
+     PIN from the same page — which "Log in" would let them do. Hiding the
+     buttons and refusing open()/sync() means the only way to reach the student
+     flow is the clean sign-in link in the review banner. */
+  if (window.TehfizReview && TehfizReview.active()) {
+    /* Log in goes: a teacher must not be able to claim an unclaimed code and
+       set that student's PIN from here. Sync STAYS — the teacher still needs to
+       pull new sessions, and in review mode it pulls with their own teacher
+       token, so no PIN is involved. */
+    const login = $('tclNavBtn');
+    if (login) login.style.display = 'none';
+    const sync = $('tclSyncBtn');
+    if (sync) sync.title = 'Reload this student\u2019s sessions';
+    return;
+  }
   navState();
-  /* Never run in teacher review mode. That page must not read or write the
-     student store at all, and a background pull would call the persisting
-     seam mid-review. */
-  if (window.TehfizReview && TehfizReview.active()) return;
   if (paired()) {
     pull(false);
     setInterval(() => pull(false), POLL_MS);
@@ -6926,8 +6940,15 @@ if (document.readyState === 'loading') {
  * on — "log in first" is advice, "missing token" is not.
  */
 function sync() {
+  /* In review mode this is the teacher's reload, not the student's pull. */
+  if (reviewing()) return TehfizReview.reload();
   if (!paired()) { open(); toast('Log in with your code first'); return; }
   pull(true);
+}
+
+/** The page booted as a teacher review; the student flow is not available. */
+function reviewing() {
+  return !!(window.TehfizReview && TehfizReview.active());
 }
 
 /**
@@ -7001,6 +7022,7 @@ window.TehfizClaim = { open, sync, isSynced };
      PUBLIC INTERFACE:
        TehfizReview.active()       true when the page booted into review mode
        TehfizReview.decorate()     inject teacher controls into the session list
+       TehfizReview.reload()       re-pull this student's sessions (teacher token)
 
      HOW IT IS ENTERED
      The teacher app opens `/app/student?review=<studentId>`. Mode is decided
@@ -7241,6 +7263,9 @@ function render() {
       '<span class="trv-who">' + esc(label) + '</span>' +
       '<span class="trv-state">' + esc(state) + '</span>' +
       '<button class="trv-btn" data-trv="reload">Reload</button>' +
+      /* The student flow is disabled on this page, so give the way to it —
+         a clean URL with no review parameter, opened separately. */
+      '<a class="trv-btn trv-exit" href="/app/student" target="_blank" rel="noopener">Student sign-in \u2197</a>' +
     '</div>';
 }
 
@@ -7263,7 +7288,7 @@ document.addEventListener('click', (e) => {
 
 /* ── boot ───────────────────────────────────────────────────────────────── */
 
-window.TehfizReview = { active: () => true, decorate };
+window.TehfizReview = { active: () => true, decorate, reload: load };
 
 function mount() {
   document.body.classList.add('trv-mode');
@@ -7289,6 +7314,7 @@ body.trv-mode{padding-top:32px;}
 .trv-who{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .trv-state{color:var(--parchment3);font-size:11px;margin-left:auto;flex:none;}
 
+.trv-exit{text-decoration:none;display:inline-block;}
 .trv-bar{display:flex;gap:5px;align-items:center;flex-wrap:wrap;margin-top:5px;
   padding-top:5px;border-top:.5px solid var(--border2);}
 .trv-btn{background:var(--parchment);border:.5px solid var(--border2);color:var(--ink2);
