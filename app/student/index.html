@@ -3183,7 +3183,7 @@ function wsHTML(text,sN,aN,pos){
   // "primary" type when several cover the same word — the tooltip lists them all.
   const sevCls=_worstSevClass(mList);
   const isRep=repeatWordKeys.has(wk);
-  const enc=encodeURIComponent(JSON.stringify(mList.map(m=>({type:m.type,correction:m.correction,note:m.note||'',sessionStudent:m.sessionStudent||'',sessionRange:m.sessionRange||'',sessionDate:m.sessionDate||'',ref:m.wordPosEnd&&m.wordPosEnd!==m.wordPos?`${sN}:${aN} words ${m.wordPos}–${m.wordPosEnd}`:`${sN}:${aN}`,word:m.word||text,typeConfig:m.typeConfig||null}))));
+  const enc=encodeURIComponent(JSON.stringify(mList.map(m=>({type:m.type,correction:m.correction,note:m.note||'',sessionStudent:m.sessionStudent||'',sessionRange:m.sessionRange||'',sessionDate:m.sessionDate||'',ref:m.wordPosEnd&&m.wordPosEnd!==m.wordPos?`${sN}:${aN} words ${m.wordPos}–${m.wordPosEnd}`:`${sN}:${aN}`,word:m.word||text,typeConfig:m.typeConfig||null})))).replace(/'/g,'%27');
   return`<span id="ws-${sN}-${aN}-${pos}" class="word-span type-tag ${sevCls}${isRep?' repeated':''}" data-s="${sN}" data-a="${aN}" onclick="showTT(event,this,'${enc}')">${text}</span>`;
 }
 
@@ -4380,7 +4380,7 @@ function renderMushafFromQuranCom(juzNum,pageMap,startPage,endPage,hizbByVerse={
         const fs=(w.v2page!==defaultV2page?`font-family:'${wFont}','UthmanicHafs',serif;`:'');
         if(mList.length){
           // Pass w.text (text_uthmani) so the tooltip shows readable Arabic, not PUA glyphs
-          const enc=encodeURIComponent(JSON.stringify(mList.map(m=>({type:m.type,correction:m.correction,note:m.note||'',sessionStudent:m.sessionStudent||'',sessionRange:m.sessionRange||'',sessionDate:m.sessionDate||'',ref:`${w.sNum}:${w.aNum}`,word:w.text,typeConfig:m.typeConfig||null}))));
+          const enc=encodeURIComponent(JSON.stringify(mList.map(m=>({type:m.type,correction:m.correction,note:m.note||'',sessionStudent:m.sessionStudent||'',sessionRange:m.sessionRange||'',sessionDate:m.sessionDate||'',ref:`${w.sNum}:${w.aNum}`,word:w.text,typeConfig:m.typeConfig||null})))).replace(/'/g,'%27');
           return`<span class="${cls}" style="${fs}" data-s="${w.sNum}" data-a="${w.aNum}" data-pos="${w.position}" onclick="showTT(event,this,'${enc}')">${w.code}</span>`;
         }
         return`<span class="${cls}" style="${fs}" data-s="${w.sNum}" data-a="${w.aNum}" data-pos="${w.position}">${w.code}</span>`;
@@ -6118,6 +6118,23 @@ async function _processFiles(files){
  * re-render. A session arriving by sync and one arriving as a .qrs file are
  * the same thing once parsed, and should not diverge here.
  */
+// Second half of the sync seam: drop everything that arrived by sync, leaving
+// anything imported by hand from a .qrs file alone. Called on sign-out.
+//
+// Nothing is lost by this. Per the mirror rule the server returns the complete
+// visible list on every pull, so signing back in restores all of it. What it
+// buys is that a shared phone does not keep showing one child's recitation
+// record to whoever picks it up next.
+function removeSyncedSessions(ids){
+  const kill = new Set((ids||[]).map(String));
+  if(!kill.size) return 0;
+  const before = savedSessions.length;
+  savedSessions  = savedSessions.filter(s => !kill.has(String(s.id)));
+  activeSessions = activeSessions.filter(s => !kill.has(String(s.id)));
+  saveSess(); recompute(); updatePanel(); renderSessionsList(); rerender();
+  return before - savedSessions.length;
+}
+
 function applyIncomingSessions(sessions, removedIds){
   let added=0;
   (sessions||[]).forEach(sess=>{
@@ -6128,7 +6145,14 @@ function applyIncomingSessions(sessions, removedIds){
       const ai=activeSessions.findIndex(s=>s.id===sess.id);
       if(ai>=0) activeSessions[ai]=sess;
     } else {
-      savedSessions.unshift(sess); added++;
+      savedSessions.unshift(sess);
+      // Selected as well as stored. A session that arrives but does not appear
+      // on the mushaf has not really arrived — and the whole history being
+      // visible at once is the point of the viewer, not an edge case. Added to
+      // the current selection rather than replacing it, so a student who has
+      // deliberately narrowed to one session does not lose it mid-reading.
+      activeSessions.unshift(sess);
+      added++;
     }
   });
   (removedIds||[]).forEach(id=>{
@@ -6451,12 +6475,13 @@ function buildSpotTrendChart(sessions, activeIdx){
                                    and so is not the student's to delete
 
      It self-boots on DOMContentLoaded and pulls in the background if this
-     device is already paired. The app must provide ONE seam:
+     device is already paired. The app must provide TWO seams:
 
        applyIncomingSessions(sessions, removedIds)  -> number added
+       removeSyncedSessions(ids)                    -> number removed
 
-     which is the single point where synced sessions enter the app's own
-     state. Everything else here is this module's business.
+     which are the only points where synced sessions enter or leave the app's
+     own state. Everything else here is this module's business.
 
      WHY .qrs IMPORT STAYS
      This is an addition, never a replacement. A student with no network, or
@@ -6526,8 +6551,11 @@ let code  = localStorage.getItem(K.code) || null;
 let index = readJSON(K.index, {});      // clientId -> {serverId, updated_at}
 let busy = false;
 let errorMsg = '';
-let view = 'code';   // 'code' | 'setup' | 'pin' | 'paired' | 'changepin'
+let view = 'code';   // 'code' | 'setup' | 'paired' | 'changepin'
 let pendingCode = '';
+/* True when the setup screen was reached by a redirect rather than by the
+   student choosing it, so the screen can say why they are looking at it. */
+let autoSetup = false;
 let lastPull = null;
 
 /**
@@ -6592,15 +6620,55 @@ async function api(path, opts = {}) {
 
 function paired() { return !!token; }
 
+/* Involuntary: the token stopped working. Reached from the 401 handler when a
+   teacher rotates the code or resets the PIN.
+
+   Cached sessions are deliberately KEPT here. Losing access to new sessions
+   must not erase what the student already has — especially as a rotated code
+   means they may not be able to sign back in to get it returned. Deliberate
+   sign-out is a different event: see signOut(). */
 function unpair(silent) {
   token = null;
   localStorage.removeItem(K.token);
-  /* `index` is deliberately kept. It records which cached sessions arrived by
-     sync, and that stays true whether or not this device is still paired —
-     clearing it would make those sessions permanently un-removable later. */
+  /* `index` is kept for the same reason as the sessions it describes: it
+     records which cached sessions arrived by sync, and that stays true whether
+     or not this device is still paired. */
   if (!silent) toast('Unpaired from this device');
   view = 'code';
   render();
+}
+
+/* Deliberate: the student pressed Sign out. This one DOES clear the synced
+   sessions from the device.
+
+   REVISED — sign-out used to keep them, on the grounds that `index` marks
+   which sessions are not the student's to delete and that remains true when
+   unpaired. That held while the sessions stayed; once they are gone the index
+   marks nothing and only leaves dangling entries, so the two are cleared
+   together.
+
+   The reason for the change is the shared device. A family tablet that carries
+   on showing one child's mistake history to whoever opens it next is a
+   disclosure the Sign out button looks like it prevents, and did not.
+
+   Nothing is lost. Under the mirror rule the server returns the complete
+   visible list on every pull, so signing back in restores all of it. Sessions
+   imported by hand from a .qrs file are untouched — only ids this module put
+   into `index` are eligible, which is precisely what `index` is for. */
+function signOut() {
+  const syncedIds = Object.keys(index);
+  index = {};
+  writeJSON(K.index, index);
+
+  let dropped = 0;
+  if (syncedIds.length && typeof window.removeSyncedSessions === 'function') {
+    dropped = window.removeSyncedSessions(syncedIds) || 0;
+  }
+
+  unpair(true);          // silent: the toast below is more specific
+  toast(dropped
+    ? 'Signed out \u00b7 ' + dropped + ' session' + (dropped === 1 ? '' : 's') + ' removed from this device'
+    : 'Signed out');
 }
 
 /**
@@ -6629,7 +6697,13 @@ function normaliseCodeInput(raw) {
  */
 async function submitPin(pin, confirmPin, firstTime) {
   errorMsg = '';
-  if (!/^\d{4}$/.test(pin)) { errorMsg = 'Your PIN must be 4 numbers.'; render(); return; }
+  /* A first-time student reaches the sign-in screen with no PIN to type, so an
+     empty field must still be allowed through — the server answers needsSetup
+     without looking at it. Insist on 4 digits only where a PIN is actually
+     being set, or where one was actually entered. */
+  if (firstTime || pin) {
+    if (!/^\d{4}$/.test(pin)) { errorMsg = 'Your PIN must be 4 numbers.'; render(); return; }
+  }
   if (firstTime && pin !== confirmPin) {
     errorMsg = 'The two PINs are different. Try again.'; render(); return;
   }
@@ -6637,8 +6711,19 @@ async function submitPin(pin, confirmPin, firstTime) {
   try {
     const data = await api('/api/student/claim', {
       method: 'POST', noAuth: true,
-      body: { code: pendingCode, pin, deviceLabel: navigator.platform || '' },
+      body: { code: pendingCode, pin, setupConfirmed: !!firstTime,
+              deviceLabel: navigator.platform || '' },
     });
+
+    /* Unclaimed code. Nothing was written, so this is purely a redirect: the
+       setup screen asks for the PIN twice before anything is set. */
+    if (data && data.needsSetup) {
+      busy = false; errorMsg = ''; autoSetup = true;
+      view = 'setup';
+      render();
+      return;
+    }
+
     token = data.token;
     code = (data.student && data.student.code) || pendingCode;
     localStorage.setItem(K.token, token);
@@ -6646,18 +6731,19 @@ async function submitPin(pin, confirmPin, firstTime) {
     view = 'paired';
     busy = false;
     render();
-    toast(data.student && data.student.firstClaim ? 'PIN set — you are all set' : 'Connected');
+    toast(data.student && data.student.firstClaim
+      ? 'PIN set \u2014 remember it, you will need it on any other device'
+      : 'Connected');
     await pull(true);
   } catch (err) {
     busy = false;
     if (err.status === 0) {
       errorMsg = 'No connection. Check your internet and try again.';
-    } else if (firstTime) {
-      /* Advice, not an assertion — this device cannot tell a wrong code from an
-         already-claimed one, and neither should it be able to. */
-      errorMsg = err.message + '. If you have used this code before, go back and '
-               + 'choose \u201cI already have a PIN\u201d.';
     } else {
+      /* The old first-time branch used to guess that an already-claimed code
+         might be the cause, because the client could not tell. It can now: an
+         unclaimed code redirects to setup before this point is ever reached,
+         so anything failing here is a genuine error worth showing as-is. */
       errorMsg = err.message;
     }
     render();
@@ -6752,21 +6838,46 @@ function render() {
   const err = errorMsg ? '<div class="tcl-err">' + esc(errorMsg) + '</div>' : '';
   const wait = busy ? '<div class="tcl-busy">Working…</div>' : '';
 
+  /* Code and PIN together, because this is the screen almost everyone sees
+     almost every time. It used to ask for the code alone and then offer two
+     buttons, which meant pressing Enter on the code field hit whichever button
+     came first — first-time setup — and sent returning students down the wrong
+     path every time.
+
+     Setting a PIN still lives on its own screen, reached by the link below.
+     That screen asks for the PIN twice, and it needs to: a typo here would set
+     a PIN the student does not know, and only their teacher could undo it.
+     This screen cannot warn them, either — the app deliberately cannot tell an
+     unclaimed code from a claimed one, so the link has to carry that weight. */
   if (view === 'code') {
     body.innerHTML = err + wait +
-      '<p class="tcl-lead">Type the code your teacher gave you. It looks like ' +
-      '<code>HUDHUD-S6PX</code>.</p>' +
-      '<input class="tcl-input tcl-code-input" id="tclCode" placeholder="CODE" ' +
+      '<p class="tcl-lead">Type the code your teacher gave you \u2014 it looks like ' +
+      '<code>HUDHUD-S6PX</code> \u2014 and your PIN.</p>' +
+      '<label class="tcl-lbl">Your code</label>' +
+      '<input class="tcl-input tcl-code-input" id="tclCode" placeholder="HUDHUD-S6PX" ' +
         'autocomplete="off" autocapitalize="characters" spellcheck="false" ' +
         'value="' + esc(pendingCode) + '">' +
-      '<button class="tcl-btn tcl-primary" data-tcl="go-setup">This is my first time</button>' +
-      '<button class="tcl-btn" data-tcl="go-pin">I already have a PIN</button>';
-    setTimeout(() => { const el = $('tclCode'); if (el) el.focus(); }, 30);
+      '<label class="tcl-lbl">Your PIN</label>' +
+      '<input class="tcl-input tcl-pin-input" id="tclPin" inputmode="numeric" ' +
+        'maxlength="4" placeholder="\u2022\u2022\u2022\u2022" autocomplete="off">' +
+      '<button class="tcl-btn tcl-primary" data-tcl="signin-go">Sign in</button>' +
+      '<p class="tcl-note"><button class="tcl-linkbtn" data-tcl="go-setup">' +
+      'First time, or has your teacher reset your PIN?</button></p>';
+    // Land on whichever field is still empty: coming back from the setup screen
+    // the code is already filled in, and re-focusing it just invites retyping.
+    setTimeout(() => {
+      const el = $(pendingCode ? 'tclPin' : 'tclCode');
+      if (el) el.focus();
+    }, 30);
     return;
   }
 
   if (view === 'setup') {
-    body.innerHTML = err + wait +
+    const lead = autoSetup
+      ? '<p class="tcl-lead">This code has not been set up yet, so let\u2019s do ' +
+        'that now.</p>'
+      : '';
+    body.innerHTML = err + wait + lead +
       '<p class="tcl-lead">Code <code>' + esc(pendingCode) + '</code></p>' +
       '<p class="tcl-lead"><strong>Choose a secret PIN for yourself.</strong> ' +
       'Four numbers. You will type it each time you use a new phone or tablet, ' +
@@ -6778,23 +6889,9 @@ function render() {
       '<input class="tcl-input tcl-pin-input" id="tclPin2" inputmode="numeric" ' +
         'maxlength="4" placeholder="\u2022\u2022\u2022\u2022" autocomplete="off">' +
       '<button class="tcl-btn tcl-primary" data-tcl="setup-go">Save my PIN</button>' +
-      '<button class="tcl-btn" data-tcl="back">Back</button>' +
+      '<button class="tcl-btn" data-tcl="back">Back to sign in</button>' +
       '<p class="tcl-note">Keep your PIN to yourself \u2014 not even your friends. ' +
       'Avoid 1234 or 0000; they are too easy to guess.</p>';
-    setTimeout(() => { const el = $('tclPin'); if (el) el.focus(); }, 30);
-    return;
-  }
-
-  if (view === 'pin') {
-    body.innerHTML = err + wait +
-      '<p class="tcl-lead">Code <code>' + esc(pendingCode) + '</code></p>' +
-      '<p class="tcl-lead">Type your PIN \u2014 the 4 numbers you chose when you ' +
-      'first set up this code.</p>' +
-      '<input class="tcl-input tcl-pin-input" id="tclPin" inputmode="numeric" ' +
-        'maxlength="4" placeholder="••••" autocomplete="off">' +
-      '<button class="tcl-btn tcl-primary" data-tcl="pin-go">Continue</button>' +
-      '<button class="tcl-btn" data-tcl="back">Back</button>' +
-      '<p class="tcl-note">Forgotten it? Ask your teacher to reset it for you.</p>';
     setTimeout(() => { const el = $('tclPin'); if (el) el.focus(); }, 30);
     return;
   }
@@ -6828,8 +6925,10 @@ function render() {
       '<button class="tcl-btn" data-tcl="changepin">Change PIN</button>' +
       '<button class="tcl-btn" data-tcl="unpair">Sign out</button>' +
     '</div>' +
-    '<p class="tcl-note">Signing out keeps the sessions already on this device. ' +
-    'You can sign in again with your code and PIN.</p>';
+    '<p class="tcl-note">Signing out removes your teacher\u2019s sessions from ' +
+    'this device \u2014 useful on a shared phone or tablet. Nothing is lost: ' +
+    'they come back when you sign in again with your code and PIN. Files you ' +
+    'opened yourself stay put.</p>';
 }
 
 /* ── events ─────────────────────────────────────────────────────────────── */
@@ -6841,25 +6940,28 @@ document.addEventListener('click', async (e) => {
 
   if (act === 'close')  return close();
   if (act === 'open')   return open();
-  if (act === 'back')   { view = 'code'; errorMsg = ''; return render(); }
+  if (act === 'back')   { view = 'code'; errorMsg = ''; autoSetup = false; return render(); }
   if (act === 'back-paired') { view = 'paired'; errorMsg = ''; return render(); }
   if (act === 'pull')   return pull(true);
   if (act === 'changepin') { view = 'changepin'; errorMsg = ''; return render(); }
-  if (act === 'unpair') return unpair();
+  if (act === 'unpair') return signOut();
 
-  if (act === 'go-setup' || act === 'go-pin') {
+  if (act === 'signin-go') {
     const v = normaliseCodeInput(($('tclCode') || {}).value);
     if (!v) { errorMsg = 'Type your code first.'; return render(); }
     pendingCode = v; errorMsg = '';
-    view = act === 'go-setup' ? 'setup' : 'pin';
+    return submitPin((($('tclPin') || {}).value || '').trim(), null, false);
+  }
+  if (act === 'go-setup') {
+    // Carry whatever is typed across, so the code is not asked for twice.
+    const v = normaliseCodeInput(($('tclCode') || {}).value);
+    if (v) pendingCode = v;
+    errorMsg = ''; autoSetup = false; view = 'setup';
     return render();
   }
   if (act === 'setup-go') {
     return submitPin((($('tclPin') || {}).value || '').trim(),
                      (($('tclPin2') || {}).value || '').trim(), true);
-  }
-  if (act === 'pin-go') {
-    return submitPin((($('tclPin') || {}).value || '').trim(), null, false);
   }
   if (act === 'changepin-go') {
     return changePin((($('tclCur') || {}).value || '').trim(),
@@ -6868,15 +6970,25 @@ document.addEventListener('click', async (e) => {
   }
 });
 
-/* Enter should submit — these are one-field screens and a child on a phone
-   will press the keyboard's go key, not hunt for the button. */
+/* Enter moves to the next field, and submits from the last one — a child on a
+   phone presses the keyboard's go key rather than hunting for the button.
+
+   Enter on the code field used to click whichever button happened to be first
+   in the markup, which was "This is my first time". Every returning student who
+   pressed Enter was therefore sent to set up a PIN they already had. Enter now
+   advances within the form, and only the final field submits. */
 document.addEventListener('keydown', (e) => {
   if (e.key !== 'Enter') return;
   const id = e.target && e.target.id;
-  if (id === 'tclCode') { e.preventDefault(); document.querySelector('[data-tcl="go-setup"]').click(); }
-  if (id === 'tclPin' && view === 'setup') { e.preventDefault(); const n = $('tclPin2'); if (n) n.focus(); }
-  else if (id === 'tclPin') { e.preventDefault(); document.querySelector('[data-tcl="pin-go"]').click(); }
-  if (id === 'tclPin2') { e.preventDefault(); document.querySelector('[data-tcl="setup-go"]').click(); }
+  const click = (sel) => { const b = document.querySelector(sel); if (b) b.click(); };
+
+  if (id === 'tclCode') { e.preventDefault(); const n = $('tclPin'); if (n) n.focus(); }
+  else if (id === 'tclPin') {
+    e.preventDefault();
+    if (view === 'setup') { const n = $('tclPin2'); if (n) n.focus(); }
+    else click('[data-tcl="signin-go"]');
+  }
+  else if (id === 'tclPin2') { e.preventDefault(); click('[data-tcl="setup-go"]'); }
 });
 
 /* ── boot ───────────────────────────────────────────────────────────────── */
@@ -6896,6 +7008,13 @@ function mount() {
           '<button class="tcl-x" data-tcl="close">✕</button>' +
         '</div>' +
         '<div class="tcl-body" id="tclBody"></div>' +
+        '<div class="tcl-foot">' +
+          '<a href="https://docs.google.com/forms/d/e/1FAIpQLSfNCLnyFK47HuW7mGVdMQuWMt1RU0sj_Lm8Xgqvk6sg5eYl5w/viewform" target="_blank" rel="noopener">Looking for a teacher?</a>' +
+          '<span class="tcl-foot-sep">\u00b7</span>' +
+          '<a href="/privacy" target="_blank" rel="noopener">Privacy</a>' +
+          '<span class="tcl-foot-sep">\u00b7</span>' +
+          '<a href="mailto:contact@tehfiz.com">contact@tehfiz.com</a>' +
+        '</div>' +
       '</div>' +
     '</div>';
 
@@ -6976,6 +7095,13 @@ window.TehfizClaim = { open, sync, isSynced };
   max-height:88vh;overflow-y:auto;padding:18px 20px 22px;border:1px solid var(--border2);
   box-shadow:0 12px 40px rgba(0,0,0,.28);font-family:'Lora',serif;color:var(--ink);}
 .tcl-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+/* Present on every view, so a parent who never gets past the code screen can
+   still reach the policy and the deletion address. */
+.tcl-foot{margin-top:16px;padding-top:12px;border-top:1px solid var(--border);
+  text-align:center;font-size:11px;line-height:1.8;color:var(--ink3);}
+.tcl-foot a{color:var(--gold);text-decoration:none;}
+.tcl-foot a:hover{text-decoration:underline;}
+.tcl-foot-sep{opacity:.45;margin:0 6px;}
 .tcl-title{font-size:16px;font-weight:600;}
 .tcl-x{background:none;border:none;font-size:16px;color:var(--ink3);cursor:pointer;}
 .tcl-lead{font-size:13px;line-height:1.65;color:var(--ink2);margin:0 0 12px;}
@@ -6995,6 +7121,11 @@ window.TehfizClaim = { open, sync, isSynced };
   color:var(--ink2);padding:10px;font-size:13px;font-family:'Lora',serif;cursor:pointer;
   margin-bottom:7px;}
 .tcl-btn:hover{background:var(--parchment3);}
+/* A button, not an anchor: no href to navigate to, and it rides the same
+   [data-tcl] click delegation as everything else in this panel. */
+.tcl-linkbtn{background:none;border:none;padding:0;font:inherit;color:var(--gold);
+  text-decoration:underline;cursor:pointer;text-align:left;}
+.tcl-linkbtn:hover{color:var(--ink);}
 .tcl-primary{background:var(--green);border-color:var(--green);color:#fff;font-weight:600;}
 .tcl-primary:hover{filter:brightness(1.08);background:var(--green);}
 .tcl-row{display:flex;gap:7px;}
