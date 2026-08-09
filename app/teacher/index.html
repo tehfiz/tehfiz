@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ═══════════════════════════════════════════════════════════════════
-     Tehfiz teacher app — v4_168
+     Tehfiz teacher app — v4_169
      Deployed from the `tehfiz` repo at public/app/teacher/index.html.
      NOTE: tehfiz-api also contains a public/app/ folder. That one is a local
      staging copy, gitignored, and never served — its routes are /api/* only.
@@ -1981,7 +1981,7 @@ body.compact-ui .quick-form::before{
    console as APP_VERSION, or grep the deployed HTML for it. Bumped on every
    saved build; vcheck.py asserts it matches the filename, so a forgotten bump
    fails the integrity check rather than shipping a lie. */
-const APP_VERSION = 'v4_168';
+const APP_VERSION = 'v4_169';
 window.APP_VERSION = APP_VERSION;
 console.info('Tehfiz teacher app ' + APP_VERSION);
 
@@ -11442,13 +11442,19 @@ function render() {
           '<div class="tsy-row-main">' +
             '<input class="tsy-name" data-tsy="rename" data-id="' + esc(s.id) + '" ' +
               'value="' + esc(s.name || '') + '" placeholder="Name (this device only)">' +
-            '<code class="tsy-code">' + esc(s.code) + '</code>' +
+            /* Its own data-tsy: the row carries `userow`/`pickfor`, and
+               closest() finds the innermost match first, so without this a tap
+               on the code would select the student instead of copying. */
+            '<code class="tsy-code tsy-copyable" data-tsy="copycode" ' +
+              'data-code="' + esc(s.code) + '" title="Tap to copy">' +
+              esc(s.code) + '</code>' +
           '</div>' +
           '<div class="tsy-row-meta">' +
             (s.claimed ? '<span class="tsy-ok-dot">● claimed</span>'
                        : '<span class="tsy-dim-dot">○ not claimed</span>') +
             '<span>' + (s.session_count || 0) + ' sent</span>' +
             '<button class="tsy-chip-btn" data-tsy="manage" data-id="' + esc(s.id) + '">Manage</button>' +
+            '<button class="tsy-chip-btn" data-tsy="ask-hours" data-id="' + esc(s.id) + '">Hours</button>' +
             '<button class="tsy-chip-btn" data-tsy="review" data-id="' + esc(s.id) + '">Open in viewer</button>' +
             '<button class="tsy-chip-btn tsy-rm" data-tsy="askremove" data-id="' + esc(s.id) + '">Remove</button>' +
           '</div>' +
@@ -11483,6 +11489,96 @@ function render() {
       : '');
 }
 
+/* ── Teaching hours ────────────────────────────────────────────────────────
+   Read from the server rather than from local sessions, deliberately.
+
+   The figure is used for invoicing, so it has to survive a cleared browser or
+   a new device — and localStorage does not. The server scopes it on teacher_id
+   alone, so it also survives a student being reassigned: a teacher keeps the
+   record of hours THEY taught even after the teaching relationship ends, which
+   is exactly when they still need to bill for them.
+
+   The trade is that sessions never sent to a student are not counted, which is
+   why the panel says so rather than presenting a total as complete. */
+let hoursData = null, hoursLoading = false, hoursError = '';
+
+async function loadHours(studentId) {
+  hoursLoading = true; hoursError = ''; hoursData = null; render();
+  try {
+    const r = await api('/api/sessions/hours?studentId=' + encodeURIComponent(studentId));
+    hoursData = r.months || [];
+  } catch (err) {
+    hoursError = (err && err.message) || 'Could not load hours';
+  }
+  hoursLoading = false; render();
+}
+
+/* "2 hours 14 mins". Never rounded: this is billed time, and rounding a figure
+   someone is invoicing on is not a presentation choice. */
+function hoursText(sec) {
+  const s = Math.max(0, Math.floor(sec || 0));
+  const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60);
+  if (!h && !m) return s ? 'under a minute' : 'no time recorded';
+  const parts = [];
+  if (h) parts.push(h + (h === 1 ? ' hour' : ' hours'));
+  if (m) parts.push(m + (m === 1 ? ' min' : ' mins'));
+  return parts.join(' ');
+}
+
+const _MONTHS = ['January','February','March','April','May','June','July',
+                 'August','September','October','November','December'];
+function monthLabel(ym) {
+  const m = /^(\d{4})-(\d{2})$/.exec(ym || '');
+  if (!m) return ym || '';
+  return _MONTHS[Number(m[2]) - 1] + ' ' + m[1];
+}
+
+function hoursPanel(s) {
+  let inner;
+  if (hoursLoading) {
+    inner = '<p class="tsy-lead">Loading\u2026</p>';
+  } else if (hoursError) {
+    inner = '<p class="tsy-err">' + esc(hoursError) + '</p>';
+  } else if (!hoursData || !hoursData.length) {
+    inner = '<p class="tsy-lead">No sent sessions with a recorded date yet.</p>';
+  } else {
+    const totalSec = hoursData.reduce((n, r) => n + (r.seconds || 0), 0);
+    const totalN   = hoursData.reduce((n, r) => n + (r.sessions || 0), 0);
+    const totalU   = hoursData.reduce((n, r) => n + (r.untimed || 0), 0);
+    inner =
+      '<table class="tsy-hours">' +
+        hoursData.map((r) =>
+          '<tr><td>' + esc(monthLabel(r.month)) + '</td>' +
+          '<td class="tsy-hours-v">' + esc(hoursText(r.seconds)) + '</td>' +
+          '<td class="tsy-hours-n">' + (r.sessions || 0) + ' session' +
+            ((r.sessions || 0) === 1 ? '' : 's') +
+            /* Surfaced per month, not just in the total. A month whose timer was
+               forgotten twice sums low and would otherwise read as a quiet
+               month rather than an incomplete record. */
+            (r.untimed ? ' \u00b7 <span class="tsy-untimed">' + r.untimed + ' untimed</span>' : '') +
+          '</td></tr>'
+        ).join('') +
+        '<tr class="tsy-hours-total"><td>Total</td>' +
+          '<td class="tsy-hours-v">' + esc(hoursText(totalSec)) + '</td>' +
+          '<td class="tsy-hours-n">' + totalN + ' session' + (totalN === 1 ? '' : 's') +
+          (totalU ? ' \u00b7 <span class="tsy-untimed">' + totalU + ' untimed</span>' : '') +
+          '</td></tr>' +
+      '</table>' +
+      (totalU
+        ? '<p class="tsy-lead tsy-untimed-note">An untimed session had no timer ' +
+          'running, so it counts as zero. Open it and set the duration from the ' +
+          'SESSION header to correct the total.</p>'
+        : '');
+  }
+  return '<div class="tsy-manage">' +
+    '<p class="tsy-lead"><strong>Teaching hours \u2014 ' + esc(s.name || s.code) + '</strong></p>' +
+    inner +
+    '<p class="tsy-lead tsy-hours-caveat">Counts only sessions sent to this ' +
+      'student, and only the time you recorded yourself.</p>' +
+    '<button class="tsy-btn" data-tsy="manage-back" data-id="' + esc(s.id) + '">Back</button>' +
+    '</div>';
+}
+
 /**
  * Manage: the two actions that change a student's credentials.
  *
@@ -11492,6 +11588,7 @@ function render() {
  * click from it.
  */
 function managePanel(s) {
+  if (managingAct === 'hours') return hoursPanel(s);
   const claimed = !!s.claimed_at;
   if (managingAct === 'pin') {
     return '<div class="tsy-manage"><div class="tsy-danger">' +
@@ -11592,8 +11689,32 @@ document.addEventListener('click', async (e) => {
     window.open('/app/student?review=' + encodeURIComponent(id), '_blank');
     return;
   }
+  if (act === 'copycode') {
+    const code = t.dataset.code || '';
+    if (!code) return;
+    try {
+      /* navigator.clipboard is unavailable on http:// origins and in some
+         in-app browsers, so the textarea fallback is not decoration — a
+         teacher reading a code aloud from a phone is the common case. */
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(code);
+      } else {
+        const ta = document.createElement('textarea');
+        ta.value = code;
+        ta.setAttribute('readonly', '');
+        ta.style.cssText = 'position:fixed;top:-1000px;opacity:0;';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      }
+      toast('Copied ' + code);
+    } catch { toast('Could not copy — select it by hand'); }
+    return;
+  }
   if (act === 'restoreremoved'){ await restoreRemoved(); return; }
   if (act === 'manage')      { managingId = (managingId === id ? null : id); managingAct = null; removingId = null; render(); return; }
+  if (act === 'ask-hours')   { managingId = id; managingAct = 'hours'; removingId = null; loadHours(id); return; }
   if (act === 'manage-close'){ managingId = null; managingAct = null; render(); return; }
   if (act === 'manage-back') { managingAct = null; render(); return; }
   if (act === 'ask-pin')     { managingAct = 'pin'; render(); return; }
@@ -11817,6 +11938,15 @@ window.TehfizSync = {
   background:var(--parchment);padding:4px 6px;font-size:12px;font-family:'Lora',serif;color:var(--ink);}
 .tsy-code{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--gold);
   background:var(--gold-pale);border-radius:4px;padding:3px 7px;flex:none;letter-spacing:.5px;}
+.tsy-copyable{cursor:pointer;transition:background .12s,color .12s;}
+.tsy-copyable:hover{background:var(--gold);color:var(--parchment);}
+.tsy-hours{width:100%;border-collapse:collapse;font-size:11px;margin:6px 0 4px;}
+.tsy-hours td{padding:5px 4px;border-bottom:1px solid var(--border);vertical-align:baseline;}
+.tsy-hours-v{font-family:'IBM Plex Mono',monospace;color:var(--ink);white-space:nowrap;}
+.tsy-hours-n{color:var(--ink3);text-align:right;font-size:10px;}
+.tsy-hours-total td{border-bottom:none;border-top:1px solid var(--border2);font-weight:600;}
+.tsy-untimed{color:var(--amber);}
+.tsy-untimed-note,.tsy-hours-caveat{font-size:10px;color:var(--ink3);margin-top:4px;}
 .tsy-row-meta{display:flex;gap:10px;align-items:center;font-size:9px;color:var(--ink3);margin-top:5px;}
 .tsy-ok-dot{color:var(--green);}
 .tsy-dim-dot{color:var(--ink3);}
