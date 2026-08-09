@@ -1,4 +1,11 @@
 <!DOCTYPE html>
+<!-- ═══════════════════════════════════════════════════════════════════
+     Tehfiz student viewer — v1_94
+     Deployed from the `tehfiz` repo at public/app/student/index.html.
+     NOTE: tehfiz-api also contains a public/app/ folder. That one is a local
+     staging copy, gitignored, and never served — its routes are /api/* only.
+     Editing it and deploying the Worker uploads the file but changes nothing.
+     ═══════════════════════════════════════════════════════════════════ -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -1372,6 +1379,14 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
 </div>
 
 <script>
+/* Single source of truth for "what is actually running". Read it in the
+   console as APP_VERSION, or grep the deployed HTML for it. Bumped on every
+   saved build; vcheck.py asserts it matches the filename, so a forgotten bump
+   fails the integrity check rather than shipping a lie. */
+const APP_VERSION = 'v1_94';
+window.APP_VERSION = APP_VERSION;
+console.info('Tehfiz student viewer ' + APP_VERSION);
+
 // ── TOAST
 function showToast(msg){let t=document.getElementById('_t');if(!t){t=document.createElement('div');t.id='_t';t.style.cssText='position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--gold-light);padding:7px 18px;border-radius:999px;font-size:12px;font-family:Lora,serif;z-index:9999;pointer-events:none;opacity:0;transition:opacity .2s;white-space:nowrap;max-width:80vw;text-align:center;';document.body.appendChild(t);}t.textContent=msg;t.style.opacity='1';clearTimeout(t._x);t._x=setTimeout(()=>t.style.opacity='0',2400);}
 
