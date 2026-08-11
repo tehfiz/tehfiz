@@ -62,7 +62,7 @@ footer{margin-top:52px;padding-top:22px;border-top:1px solid var(--border);
   <h1>Privacy &amp; Terms</h1>
   <p class="sub">Tehfīz is used by children. This page explains what that means for the
   information we hold — and, more importantly, what we have deliberately arranged not to hold.</p>
-  <p class="updated">Last updated: 10 August 2026</p>
+  <p class="updated">Last updated: 11 August 2026</p>
 </header>
 
 <div class="toc">
@@ -74,6 +74,7 @@ footer{margin-top:52px;padding-top:22px;border-top:1px solid var(--border);
     <li><a href="#retention">How long we keep things</a></li>
     <li><a href="#deletion">Deleting your data</a></li>
     <li><a href="#enquiries">Enquiry forms</a></li>
+    <li><a href="#aggregate">Anonymous statistics</a></li>
     <li><a href="#who">Who else can see it</a></li>
     <li><a href="#terms">Terms of use</a></li>
     <li><a href="#contact">Contact</a></li>
@@ -166,10 +167,13 @@ observations — "watch the madd", "rushed the ending" — not for identificatio
 <p>A teacher can permanently delete any session from within the app. When they do, the
 recitation record is erased from our storage immediately.</p>
 
-<p>A small marker is kept — an identifier and a timestamp, with no recitation content —
-so that a student's device learns the session is gone and removes its own copy. Without
-that marker, a deleted session would keep living on the student's phone, and the deletion
-would be a lie. The marker contains nothing about what was recited.</p>
+<p>What is erased: the recitation itself, the notes, the record of which passage
+was covered, when, how many mistakes there were and how much help was given, and
+the index described under <a href="#aggregate">Statistics</a>.</p>
+
+<p>A small marker is kept — an identifier and a timestamp, with no recitation content.
+It is what stops the same session being re-created by a device that had not yet
+synced, and it holds nothing about what was recited.</p>
 
 <p>To delete an entire account, or a specific student's records, email
 <a href="mailto:contact@tehfiz.com">contact@tehfiz.com</a>. Quote the student's
@@ -198,6 +202,25 @@ recitation sessions, and it is never published anywhere.</p>
 <p><strong>We do not verify anyone's qualifications and we do not vouch for teachers or
 families.</strong> An introduction is not a recommendation. Please make your own checks
 before arranging lessons.</p>
+
+<h2 id="aggregate">Statistics</h2>
+
+<p>Alongside each session we keep a short index of it: which pages of the
+mushaf were covered, and how many mistakes fell on each, by type and by how
+much help was given. It is derived from the session itself and tells us nothing
+the session did not already contain — it exists so we can see which passages
+are hardest across everyone using Tehfīz, which is what lets the tools improve.</p>
+
+<ul>
+  <li>It records page numbers and categories of mistake. It contains
+    <strong>no note text and no words of the recitation</strong>, and, like
+    everything else here, no name.</li>
+  <li>A teacher's own custom mistake labels are not stored in it; anything
+    outside our standard list is recorded simply as “other”.</li>
+  <li><strong>It is deleted with the session.</strong> When a session is
+    deleted, its index goes at the same moment — there is no summary left
+    behind that outlives the record it came from.</li>
+</ul>
 
 <h2 id="who">Who else can see it</h2>
 
