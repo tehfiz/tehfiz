@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ═══════════════════════════════════════════════════════════════════
-     Tehfiz teacher app — v4_169
+     Tehfiz teacher app — v4_170
      Deployed from the `tehfiz` repo at public/app/teacher/index.html.
      NOTE: tehfiz-api also contains a public/app/ folder. That one is a local
      staging copy, gitignored, and never served — its routes are /api/* only.
@@ -948,6 +948,19 @@ body.seg-arming .word-btn:hover,body.seg-arming .qcf-word:hover{outline:2px soli
 .calib-stage span{color:var(--ink3);}
 .calib-note{font-size:9px;color:var(--ink3);font-style:italic;margin-top:6px;line-height:1.5;}
 .calib-empty{font-size:10px;color:var(--ink3);font-style:italic;line-height:1.5;padding:4px 0;}
+.calib-num{width:56px;flex:none;font-family:'IBM Plex Mono',monospace;font-size:10px;padding:2px 4px;
+  border-radius:4px;border:.5px solid var(--border2);background:var(--parchment);color:var(--ink);}
+.calib-sub{font-size:9px;text-transform:uppercase;letter-spacing:.6px;color:var(--ink3);margin:10px 0 2px;}
+.calib-w input[disabled]{opacity:.45;cursor:default;}
+.calib-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px;}
+.calib-save{background:var(--gold-pale);border:.5px solid var(--gold);color:var(--gold);
+  border-radius:5px;padding:4px 12px;font-size:11px;font-family:'Lora',serif;cursor:pointer;font-weight:600;}
+.calib-plain{background:var(--parchment);border:.5px solid var(--border2);color:var(--ink2);
+  border-radius:5px;padding:4px 11px;font-size:11px;font-family:'Lora',serif;cursor:pointer;}
+.calib-plain:hover{background:var(--parchment3);}
+.calib-save[disabled],.calib-plain[disabled]{opacity:.45;cursor:default;}
+.calib-dirty{font-size:9px;color:var(--ink3);font-style:italic;margin-top:7px;line-height:1.5;}
+.calib-was{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--ink3);opacity:.8;}
 
 .seg-stats{display:flex;flex-direction:column;gap:5px;margin-bottom:12px;}
 .seg-stat{cursor:pointer;transition:border-color .12s,background .12s;}
@@ -1981,7 +1994,7 @@ body.compact-ui .quick-form::before{
    console as APP_VERSION, or grep the deployed HTML for it. Bumped on every
    saved build; vcheck.py asserts it matches the filename, so a forgotten bump
    fails the integrity check rather than shipping a lie. */
-const APP_VERSION = 'v4_169';
+const APP_VERSION = 'v4_170';
 window.APP_VERSION = APP_VERSION;
 console.info('Tehfiz teacher app ' + APP_VERSION);
 
@@ -8365,7 +8378,7 @@ function _pct(sorted, p){
 function renderStrengthCalibration(){
   const el=document.getElementById('calibBody');
   if(!el) return;
-  const M=STRENGTH_MODEL;
+  const M=CALIB_DRAFT || STRENGTH_MODEL;
   const samples=collectStrengthSamples();
   const scored=samples.map(s=>({...s, score:strengthFromInputs(s.inputs, M)})).filter(s=>s.score!=null);
 
@@ -8376,6 +8389,18 @@ function renderStrengthCalibration(){
 
   const scores=scored.map(s=>s.score).sort((a,b)=>a-b);
   const mean=Math.round(scores.reduce((a,b)=>a+b,0)/scores.length);
+
+  /* The same samples under the committed model. A distribution on its own
+     says nothing about whether a drag helped: "mean 72" is only meaningful
+     next to what it was. Scored separately rather than diffed from a cached
+     figure, because minPages changes which samples score AT ALL, so the two
+     runs can legitimately have different sample counts. */
+  let base=null;
+  if(CALIB_BASE && calibDirty()){
+    const bs=samples.map(s=>strengthFromInputs(s.inputs, CALIB_BASE)).filter(v=>v!=null);
+    if(bs.length) base={n:bs.length, mean:Math.round(bs.reduce((a,b)=>a+b,0)/bs.length)};
+  }
+  const delta=(now, was)=>was==null||was===now?'':` <span class="calib-was">was ${was}</span>`;
   // Distribution across the model's own bands — the thing being calibrated.
   const buckets=M.bands.map(b=>({...b, n:0}));
   scored.forEach(s=>{ const b=buckets.find(x=>s.score>=x.min); if(b) b.n++; });
@@ -8388,8 +8413,8 @@ function renderStrengthCalibration(){
 
   el.innerHTML=`
     <div class="calib-summary">
-      <span><strong>${scored.length}</strong> segments</span>
-      <span>mean <strong>${mean}</strong></span>
+      <span><strong>${scored.length}</strong> segments${delta(scored.length, base && base.n)}</span>
+      <span>mean <strong>${mean}</strong>${delta(mean, base && base.mean)}</span>
       <span>median <strong>${_pct(scores,50)}</strong></span>
       <span>p10 <strong>${_pct(scores,10)}</strong></span>
       <span>p90 <strong>${_pct(scores,90)}</strong></span>
@@ -8414,39 +8439,166 @@ function renderStrengthCalibration(){
     </div>`;
 }
 
-function setCalibK(v){
-  // Upper bound raised for v2: k is now ~3.44 rather than ~0.33, because the
-  // denominator changed from verses to pages. A clamp of 2 would have quietly
-  // rewritten the model to a much harsher one on first touch.
-  const k=Math.max(0.05, Math.min(12, parseFloat(v)||STRENGTH_MODEL_DEFAULT.k));
-  saveStrengthModel({...STRENGTH_MODEL, k});
-  const lbl=document.getElementById('calibKVal'); if(lbl) lbl.textContent=k.toFixed(2);
+// ── DRAFT / PREVIEW ───────────────────────────────────────────────────────
+// Editing calibration is not like editing a setting. Every strength figure in
+// both apps is recomputed from stored inputs under the CURRENT model, so
+// moving a slider does not change "future sessions" — it restates the entire
+// history at once, on screen, immediately.
+//
+// That is exactly why it must be previewable. applyCalibration(obj, false)
+// was built for this and until now had no caller: it updates the live model
+// WITHOUT writing localStorage, so the whole app re-reads under the candidate
+// while the committed model sits untouched on disk. Save writes it; Revert
+// restores the baseline; closing the panel reverts, because leaving an
+// unsaved preview live in memory while storage says otherwise would produce
+// figures that change again for no visible reason at the next reload.
+let CALIB_BASE  = null;   // the committed model, as of when the panel opened
+let CALIB_DRAFT = null;   // what the controls are editing
+
+function calibClone(m){ return JSON.parse(JSON.stringify(m)); }
+
+function calibDirty(){
+  if(!CALIB_BASE || !CALIB_DRAFT) return false;
+  return JSON.stringify(CALIB_BASE) !== JSON.stringify(CALIB_DRAFT);
+}
+
+// Snapshot the COMMITTED model, not the live one. If a previous session left
+// a preview in memory these would differ, and baselining against the preview
+// would make Revert restore something that was never saved.
+function calibBegin(){
+  const committed = loadCalibration().strength || STRENGTH_MODEL_DEFAULT;
+  CALIB_BASE  = calibClone({...STRENGTH_MODEL_DEFAULT, ...committed});
+  CALIB_DRAFT = calibClone(CALIB_BASE);
+  applyCalibration({strength: calibClone(CALIB_DRAFT)}, false);
+  calibRender();
+}
+
+function calibPatch(patch){
+  if(!CALIB_DRAFT) return;
+  CALIB_DRAFT = {...CALIB_DRAFT, ...patch};
+  applyCalibration({strength: calibClone(CALIB_DRAFT)}, false);
+  calibRender();
+}
+
+function calibSave(){
+  if(!CALIB_DRAFT) return;
+  applyCalibration({strength: calibClone(CALIB_DRAFT)});
+  CALIB_BASE = calibClone(CALIB_DRAFT);
+  calibRender();
+  showToast('Calibration saved');
+  if(typeof render === 'function') render();
+}
+
+function calibRevert(){
+  if(!CALIB_BASE) return;
+  CALIB_DRAFT = calibClone(CALIB_BASE);
+  applyCalibration({strength: calibClone(CALIB_DRAFT)}, false);
+  calibRender();
+}
+
+// Loads defaults into the DRAFT rather than writing them. Reset is as
+// destructive as any other change here and gets the same preview-then-commit
+// treatment; the old resetCalib() wrote immediately.
+function calibLoadDefaults(){
+  CALIB_DRAFT = calibClone(STRENGTH_MODEL_DEFAULT);
+  applyCalibration({strength: calibClone(CALIB_DRAFT)}, false);
+  calibRender();
+}
+
+// Called when the panel closes. Silently dropping an unsaved change would be
+// worse than it sounds — the numbers would stay changed until a reload put
+// them back — so it reverts and says so.
+function calibEnd(){
+  const wasDirty = calibDirty();
+  if(CALIB_BASE) applyCalibration({strength: calibClone(CALIB_BASE)}, false);
+  CALIB_BASE = CALIB_DRAFT = null;
+  if(wasDirty) showToast('Unsaved calibration discarded');
+}
+
+function calibRender(){
+  renderCalibrationControls();
   renderStrengthCalibration();
+}
+
+// ── CONTROL SETTERS ───────────────────────────────────────────────────────
+function setCalibK(v){
+  // Bounds match setCalibK's clamp AND the v2 default of 3.44. The slider
+  // used to be max=1.5 while k defaulted to 3.44: a range input clamps its
+  // value into [min,max], so the control rendered pinned at its maximum with
+  // the label beside it reading 3.44, and the first drag in either direction
+  // set k to at most 1.5 — a far harsher model applied to every session at
+  // once. The clamp below was corrected when v2 landed; the slider that fed
+  // it was not, and nothing had ever rendered it to notice.
+  const k=Math.max(0.5, Math.min(12, parseFloat(v)||STRENGTH_MODEL_DEFAULT.k));
+  calibPatch({k:+k.toFixed(2)});
 }
 function setCalibWeight(level, v){
-  const w={...STRENGTH_MODEL.weights, [level]: Math.max(0, Math.min(10, parseFloat(v)||0))};
-  saveStrengthModel({...STRENGTH_MODEL, weights:w});
-  renderStrengthCalibration();
+  calibPatch({weights:{...CALIB_DRAFT.weights, [level]: Math.max(0, Math.min(10, parseFloat(v)||0))}});
 }
-function resetCalib(){
-  resetStrengthModel();
-  showToast('Strength model reset to defaults');
+function setCalibMinPages(v){
+  // Below this a segment scores null rather than badly. One slip over a
+  // quarter page reads as a catastrophe, so the honest answer is no score.
+  calibPatch({minPages: Math.max(0.05, Math.min(5, parseFloat(v)||0.5))});
 }
+
+/* Band thresholds must stay strictly descending, and the last one must stay 0
+   or scores below it fall through strengthBand's find() into the fallback.
+   Rather than let an invalid set be typed and then refuse to save, each edit
+   is clamped into the gap its neighbours leave — the control cannot express a
+   broken model. The floor band is not editable at all. */
+function setCalibBand(i, v){
+  if(!CALIB_DRAFT) return;
+  const bands = calibClone(CALIB_DRAFT.bands);
+  if(i < 0 || i >= bands.length - 1) return;          // floor band is fixed at 0
+  const upper = i === 0 ? 100 : bands[i-1].min - 1;
+  const lower = bands[i+1].min + 1;
+  let n = Math.round(parseFloat(v));
+  if(!isFinite(n)) n = bands[i].min;
+  bands[i].min = Math.max(lower, Math.min(upper, n));
+  calibPatch({bands});
+}
+
 function renderCalibrationControls(){
   const el=document.getElementById('calibControls');
-  if(!el) return;
-  const M=STRENGTH_MODEL;
+  if(!el || !CALIB_DRAFT) return;
+  const M=CALIB_DRAFT;
+  const dirty=calibDirty();
   el.innerHTML=`
     <div class="calib-ctrl">
       <label>Decay <span id="calibKVal">${M.k.toFixed(2)}</span></label>
-      <input type="range" min="0.05" max="1.5" step="0.01" value="${M.k}" oninput="setCalibK(this.value)">
+      <input type="range" min="0.5" max="12" step="0.01" value="${M.k}" oninput="setCalibK(this.value)">
+      <input class="calib-num" type="number" min="0.5" max="12" step="0.05" value="${M.k}" onchange="setCalibK(this.value)">
     </div>
+    <div class="calib-ctrl">
+      <label>Min pages <span>${(M.minPages ?? 0.5).toFixed(2)}</span></label>
+      <input type="range" min="0.05" max="5" step="0.05" value="${M.minPages ?? 0.5}" oninput="setCalibMinPages(this.value)">
+      <input class="calib-num" type="number" min="0.05" max="5" step="0.05" value="${M.minPages ?? 0.5}" onchange="setCalibMinPages(this.value)">
+    </div>
+    <div class="calib-sub">Mistake weight by help given</div>
     <div class="calib-weights">
       ${['c0','c1','c2','c3','c4'].map(c=>`<label class="calib-w">
-        <span>${getCorr(c).shortLabel}</span>
+        <span>${esc(getCorr(c).shortLabel)}</span>
         <input type="number" step="0.25" min="0" max="10" value="${M.weights[c]}" onchange="setCalibWeight('${c}',this.value)">
       </label>`).join('')}
-    </div>`;
+    </div>
+    <div class="calib-sub">Band thresholds</div>
+    <div class="calib-weights">
+      ${M.bands.map((b,i)=>`<label class="calib-w">
+        <span style="color:${b.color};">${esc(b.label)}</span>
+        ${i === M.bands.length - 1
+          ? `<input type="number" value="0" disabled title="The floor band must stay at 0">`
+          : `<input type="number" step="1" min="0" max="100" value="${b.min}" onchange="setCalibBand(${i},this.value)">`}
+      </label>`).join('')}
+    </div>
+    <div class="calib-actions">
+      <button class="calib-save" onclick="calibSave()"${dirty?'':' disabled'}>Save calibration</button>
+      <button class="calib-plain" onclick="calibRevert()"${dirty?'':' disabled'}>Revert</button>
+      <button class="calib-plain" onclick="calibLoadDefaults()">Load defaults</button>
+      <button class="calib-plain" onclick="exportCalibrationData()">Export samples</button>
+    </div>
+    <div class="calib-dirty">${dirty
+      ? 'Previewing — every strength figure in the app is already showing these numbers, but nothing is saved yet.'
+      : 'Saved. This calibration applies on this device only until the backend serves one.'}</div>`;
 }
 
 // Export every sample as JSON — the handoff format for fitting a new model
@@ -12049,6 +12201,7 @@ function apiBase() {
 
 /* ── state ──────────────────────────────────────────────────────────────── */
 
+let tab = 'teachers';
 let teachers = null;      // null = not loaded yet, [] = loaded and empty
 let query = '';
 let filter = 'pending';   // opens on what needs attention, not on everything
@@ -12085,6 +12238,7 @@ function available() {
 }
 
 async function load() {
+  if (tab !== 'teachers') return;
   loading = true; errorMsg = ''; renderList();
   try {
     const data = await api('/api/admin/teachers');
@@ -12160,6 +12314,8 @@ function when(ms) {
    replacing the whole panel on every keystroke would blur the search box and
    lose the caret, which makes typing anything longer than a word impossible. */
 function renderShell() {
+  renderShellChrome();
+  if (tab === 'calib') return renderCalib();
   $('tadBody').innerHTML =
     '<input class="tad-search" id="tadSearch" placeholder="Search name or email" autocomplete="off">' +
     '<div class="tad-chips" id="tadChips"></div>' +
@@ -12222,14 +12378,64 @@ function renderList() {
 
 /* ── open / close ───────────────────────────────────────────────────────── */
 
+/* Calibration is not a second list — it is a different tool that happens to
+   belong to the same person, so it gets a tab rather than more rows.
+
+   The engine, the maths and the CSS for it already live in the main script;
+   this only mounts the two containers it renders into and hands control over.
+   Deliberately not reimplemented here: strengthFromInputs is the reference
+   implementation and a second copy would drift from it. */
+function renderCalib() {
+  const host = $('tadBody');
+  if (!host) return;
+
+  if (typeof window.calibBegin !== 'function') {
+    host.innerHTML = '<div class="tad-err">Calibration is unavailable in this build.</div>';
+    return;
+  }
+  host.innerHTML =
+    '<div class="tad-scroll">' +
+      '<div id="calibControls"></div>' +
+      '<div id="calibBody"></div>' +
+    '</div>';
+  window.calibBegin();
+}
+
+function setTab(t) {
+  if (t === tab) return;
+  /* Leaving the calibration tab is a close as far as the draft is concerned.
+     An unsaved preview left live while the teacher list is on screen would
+     keep restating every strength figure in the app behind their back. */
+  if (tab === 'calib' && typeof window.calibEnd === 'function') window.calibEnd();
+  tab = t;
+  renderShell();
+}
+
+function renderShellChrome() {
+  const isTeachers = tab === 'teachers';
+  $('tadTitle').textContent = isTeachers ? 'Teachers' : 'Strength calibration';
+  $('tadRefresh').style.display = isTeachers ? '' : 'none';
+  $('tadNote').innerHTML = isTeachers
+    ? 'New teachers can sign in immediately but cannot send anything until approved. ' +
+      'Suspending is reversible and keeps all their records.'
+    : 'Scored against the sessions saved on this device. Changing these numbers ' +
+      're-reads every session already recorded — it does not only affect new ones.';
+  Array.prototype.forEach.call(document.querySelectorAll('.tad-tab'), (b) => {
+    b.classList.toggle('on', b.dataset.t === tab);
+  });
+}
+
 function open() {
   $('tadOverlay').classList.add('tad-on');
-  query = ''; filter = 'pending'; errorMsg = '';
+  query = ''; filter = 'pending'; errorMsg = ''; tab = 'teachers';
   renderShell();
   load();
 }
 
-function close() { $('tadOverlay').classList.remove('tad-on'); }
+function close() {
+  if (tab === 'calib' && typeof window.calibEnd === 'function') window.calibEnd();
+  $('tadOverlay').classList.remove('tad-on');
+}
 
 /* ── events ─────────────────────────────────────────────────────────────── */
 
@@ -12240,6 +12446,7 @@ document.addEventListener('click', async (e) => {
   if (act === 'open')    return open();
   if (act === 'close')   return close();
   if (act === 'refresh') return load();
+  if (act === 'tab')     return setTab(t.dataset.t);
   if (act === 'filter')  { filter = t.dataset.k; renderCounts(); renderList(); return; }
   if (act === 'set')     return setStatus(t.dataset.id, t.dataset.to);
 });
@@ -12256,12 +12463,15 @@ function mount() {
     '<div class="tad-overlay" id="tadOverlay">' +
       '<div class="tad-panel">' +
         '<div class="tad-head">' +
-          '<span class="tad-title">Teachers</span>' +
-          '<button class="tad-chip-btn" data-tad="refresh">Refresh</button>' +
+          '<span class="tad-title" id="tadTitle">Teachers</span>' +
+          '<button class="tad-chip-btn" data-tad="refresh" id="tadRefresh">Refresh</button>' +
           '<button class="tad-x" data-tad="close">✕</button>' +
         '</div>' +
-        '<p class="tad-note">New teachers can sign in immediately but cannot send ' +
-          'anything until approved. Suspending is reversible and keeps all their records.</p>' +
+        '<div class="tad-tabs">' +
+          '<button class="tad-tab on" data-tad="tab" data-t="teachers">Teachers</button>' +
+          '<button class="tad-tab" data-tad="tab" data-t="calib">Calibration</button>' +
+        '</div>' +
+        '<p class="tad-note" id="tadNote"></p>' +
         '<div class="tad-body" id="tadBody"></div>' +
       '</div>' +
     '</div>';
@@ -12294,6 +12504,11 @@ window.TehfizAdmin = { open, available };
 .tad-chip-btn{background:none;border:none;color:var(--gold);font-size:10px;cursor:pointer;
   font-family:'Lora',serif;text-decoration:underline;padding:0;}
 .tad-note{font-size:10px;color:var(--ink3);line-height:1.6;margin:0 0 10px;}
+.tad-tabs{display:flex;gap:4px;margin:2px 0 8px;border-bottom:.5px solid var(--border);}
+.tad-tab{background:none;border:none;border-bottom:2px solid transparent;color:var(--ink3);
+  font-family:'Lora',serif;font-size:12px;padding:5px 10px;cursor:pointer;margin-bottom:-.5px;}
+.tad-tab.on{color:var(--gold);border-bottom-color:var(--gold);font-weight:600;}
+.tad-scroll{overflow-y:auto;flex:1;min-height:120px;}
 
 .tad-body{display:flex;flex-direction:column;min-height:0;flex:1;}
 .tad-search{width:100%;border:.5px solid var(--border2);border-radius:6px;background:var(--parchment2);
