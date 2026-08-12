@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ═══════════════════════════════════════════════════════════════════
-     Tehfiz teacher app — v4_179
+     Tehfiz teacher app — v4_183
      Deployed from the `tehfiz` repo at public/app/teacher/index.html.
      NOTE: tehfiz-api also contains a public/app/ folder. That one is a local
      staging copy, gitignored, and never served — its routes are /api/* only.
@@ -41,6 +41,31 @@ body{font-family:'Lora',Georgia,serif;background:var(--parchment);color:var(--in
 .topbar-line1{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;}
 .topbar-home{color:var(--gold);font-size:16px;line-height:1;text-decoration:none;justify-self:start;}
 .topbar-line1-right{display:flex;align-items:center;gap:5px;justify-self:end;}
+/* §16 technique (b), NOT (a): the hit area grows, the box does not.
+
+   A 44px min-height here made the whole header taller, because .topbar-line1
+   is a grid row that sizes to its tallest child and everything else in it is
+   ~16px. Trading permanent vertical space on every screen for a bigger target
+   on a secondary control is the wrong way round — the Students button on line
+   2 is the primary route to this panel, and the badge is mainly a label that
+   happens to be clickable.
+
+   max-width so a long display name truncates instead of pushing the centred
+   brand off its axis. */
+.topbar-who{display:inline-flex;align-items:center;gap:6px;position:relative;
+  padding:2px 8px;background:none;border:none;border-radius:6px;cursor:pointer;
+  font-family:'Lora',serif;font-size:11px;color:var(--ink2);max-width:190px;
+  line-height:1.3;}
+/* Reaches into the padding around the header rather than pushing it open.
+   Kept modest vertically: the toolbar row sits directly below, and a target
+   that overlaps it would steal taps from the buttons there. */
+.topbar-who::after{content:'';position:absolute;inset:-6px -4px;}
+.topbar-who:hover{background:rgba(0,0,0,.05);}
+.topbar-who-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.topbar-who-dot{width:6px;height:6px;border-radius:50%;background:var(--green);flex:none;}
+.topbar-who.pending .topbar-who-dot{background:var(--gold);}
+.topbar-who.pending{color:var(--amber);}
+@media(max-width:600px){.topbar-who{max-width:104px;padding:0 6px;}}
 .topbar-line2{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;padding-top:4px;border-top:.5px solid rgba(255,255,255,.09);}
 @media(max-width:700px){
   .topbar-line1{grid-template-columns:auto 1fr auto;}
@@ -1274,7 +1299,9 @@ body.compact-ui .quick-form::before{
   <div class="topbar-line1">
     <a class="topbar-home" href="https://tehfiz.com" title="Tehf&#299;z home" aria-label="Home">&#127968;</a>
     <div class="topbar-brand">Tehf&#299;z <span>Feedback Logger</span></div>
-    <div class="topbar-line1-right"></div>
+    <!-- Filled by TehfizSync.renderWho(). Empty until signed in, so a teacher
+         who has not connected an account sees the header they always did. -->
+    <div class="topbar-line1-right" id="topbarWho"></div>
   </div>
   <!-- Line 2: everything you operate — position nav left, tools right.
        Room freed by removing the Juz / Surah / Spots view tabs. -->
@@ -1994,7 +2021,7 @@ body.compact-ui .quick-form::before{
    console as APP_VERSION, or grep the deployed HTML for it. Bumped on every
    saved build; vcheck.py asserts it matches the filename, so a forgotten bump
    fails the integrity check rather than shipping a lie. */
-const APP_VERSION = 'v4_179';
+const APP_VERSION = 'v4_183';
 window.APP_VERSION = APP_VERSION;
 console.info('Tehfiz teacher app ' + APP_VERSION);
 
@@ -11534,10 +11561,43 @@ function open()  { $('tsyOverlay').classList.add('tsy-on'); render();
 function close() { $('tsyOverlay').classList.remove('tsy-on');
                    pendingSendSession = null; errorMsg = ''; }
 
+/* Who is signed in, in the header.
+   
+   Hooked into render() rather than called from the sign-in path, because
+   render() already runs on every auth change — sign-in, sign-out, approval,
+   and a 401 that clears the token. A separate call site would be one more
+   place to forget.
+
+   Shows the NAME, falling back to the email. The name is what a teacher
+   recognises; the email is what distinguishes two accounts, which is why the
+   title carries it either way. This matters more since pre-approval shipped:
+   an owner may legitimately hold two accounts and sign into the wrong one. */
+function renderWho() {
+  const el = $('topbarWho');
+  if (!el) return;
+
+  if (!signedIn()) { el.innerHTML = ''; return; }
+
+  const label = teacher.name || teacher.email || 'Signed in';
+  /* Pending is worth stating here rather than only inside the panel: a teacher
+     awaiting approval can log sessions perfectly well and only discovers that
+     sending does not work when they try it. */
+  const pending = teacher.status !== 'active';
+
+  el.innerHTML =
+    '<button class="topbar-who' + (pending ? ' pending' : '') + '" ' +
+      'data-tsy="open" title="' + esc(teacher.email || '') +
+      (pending ? ' — waiting for approval' : '') + '">' +
+      '<span class="topbar-who-dot"></span>' +
+      '<span class="topbar-who-name">' + esc(label) + '</span>' +
+    '</button>';
+}
+
 function render() {
   const body = $('tsyBody');
   if (!body) return;
   renderChip();
+  renderWho();
   if (!$('tsyOverlay').classList.contains('tsy-on')) return;
 
   const err = errorMsg
@@ -12502,8 +12562,9 @@ function teacherManagePanel(id, email) {
         items: (teachers || []).filter((t) => t.id !== id).map((t) => ({
           value: t.id, label: t.name || t.email, sub: t.name ? t.email : '',
         })),
-        value: '', allowAny: false, placeholder: 'Merge into…',
-        onPick: () => renderList(),
+        // Same reasoning as the assign picker: renderList() would rebuild the
+        // teacher rows and take this panel with them.
+        allowAny: false, placeholder: 'Merge into…',
       }) +
       '<input class="tad-sel" id="tmc-' + esc(id) + '" autocomplete="off" ' +
         'placeholder="Type ' + esc(email) + ' to confirm">' +
@@ -12799,8 +12860,11 @@ async function showAssign(id) {
               items: options.map((t) => ({
                 value: t.id, label: t.name || t.email, sub: t.name ? t.email : '',
               })),
-              value: '', allowAny: false, placeholder: 'Search name or email',
-              onPick: () => renderStudents(cache.students),
+              /* No onPick. comboPaint has already updated the control, and
+                 re-rendering the students list here would rewrite tadBody and
+                 destroy the assign panel this picker sits in — which is what
+                 made picking a teacher close the panel without assigning. */
+              allowAny: false, placeholder: 'Search name or email',
             }) +
             '<button class="tad-mini" data-tad="sdolink" data-id="' + id + '">Assign</button>' +
           '</div>'
@@ -13024,8 +13088,46 @@ function renderCombo(key) {
 }
 
 function defineCombo(key, cfg) {
-  combos[key] = Object.assign({ query: '', value: '', items: [] }, combos[key], cfg);
+  /* cfg must NOT clobber a value the user has already picked.
+  
+     Object.assign put cfg last, so a config declaring `value: ''` — which the
+     assign and merge pickers do, since they have no external source of truth —
+     reset the selection on every repaint. The pick was made, then silently
+     erased, and Assign then reported "choose a teacher first" about a teacher
+     visibly shown as chosen.
+  
+     Filter pickers are unaffected either way: they pass `value:
+     sessionTeacherId`, which IS the source of truth, so honouring it is
+     correct. So the rule is: an explicit non-empty value wins, an empty one
+     does not overwrite what is already selected. */
+  const prev = combos[key];
+  const next = Object.assign({ query: '', value: '', items: [] }, prev, cfg);
+  if (prev && !cfg.value && prev.value) next.value = prev.value;
+  combos[key] = next;
   return renderCombo(key);
+}
+
+/* Update one combobox in place: close the list, show the chosen label.
+   
+   Exists so picking does not have to re-render its surroundings. The assign
+   picker lives inside a sub-panel that a parent re-render destroys, so a pick
+   that repainted the list closed the panel it was in. */
+function comboPaint(key) {
+  const c = combos[key];
+  const host = document.querySelector('.tad-combo[data-combo="' + key + '"]');
+  if (!c || !host) return;
+  const sel = c.items.find((i) => i.value === c.value);
+  const box = host.querySelector('.tad-combo-input');
+  if (box) box.value = sel ? (sel.label + (sel.sub ? ' · ' + sel.sub : '')) : '';
+  const list = host.querySelector('.tad-combo-list');
+  if (list) list.remove();
+  // The clear button appears and disappears with the value.
+  const x = host.querySelector('.tad-combo-x');
+  if (c.value && !x) {
+    host.insertAdjacentHTML('beforeend',
+      '<button class="tad-combo-x" data-tad="comboclear" data-k="' + esc2(key) +
+      '" tabindex="-1" title="Clear">✕</button>');
+  } else if (!c.value && x) x.remove();
 }
 
 function comboSetQuery(key, q) {
@@ -13062,6 +13164,10 @@ function comboPick(key, value) {
   if (!c) return;
   c.value = value; c.query = '';
   comboOpen = null;
+  // Paint first: a combobox whose onPick re-renders its container would
+  // otherwise never see this, and one whose onPick does nothing would show a
+  // stale label.
+  comboPaint(key);
   if (c.onPick) c.onPick(value);
 }
 
@@ -13393,7 +13499,10 @@ document.addEventListener('click', async (e) => {
   if (act === 'combopick')  return comboPick(t.dataset.k, t.dataset.v);
   if (act === 'comboclear') {
     const c = combos[t.dataset.k];
-    if (c) { c.value = ''; c.query = ''; if (c.onPick) c.onPick(''); }
+    if (!c) return;
+    c.value = ''; c.query = '';
+    comboPaint(t.dataset.k);
+    if (c.onPick) c.onPick('');
     return;
   }
   if (act === 'steachers') return showStudentTeachers(t.dataset.id);
@@ -13687,6 +13796,107 @@ window.TehfizAdmin = { open, available };
   border-radius:6px;padding:8px 10px;}
 @media(max-width:700px){.tad-panel{max-height:92vh;padding:13px 13px 17px;}
   .tad-who span:last-child{white-space:normal;}}
+
+/* ══ TOUCH TARGETS — TIER 1 ══════════════════════════════════════════════
+   HANDOFF §16. Every clickable control in this app was under the 44px both
+   Apple and Android recommend; 74 rules, the worst at ~12px. This block
+   covers the list and panel controls — the ones sitting in flex rows with
+   room to grow. The reading interface (.corr-btn, .type-btn, .seg-*,
+   .spot-*, .rp-*) is tier 3 and is NOT touched here: those sit in a panel
+   that opens over the mushaf mid-recitation, where added height is a density
+   decision that has to be seen on a phone, not reasoned about in CSS.
+
+   APPENDED RATHER THAN EDITED IN PLACE. Twenty-five scattered edits to
+   existing rules would each be a chance to change something unintended in a
+   706 KB file; one block at the end wins on cascade order at equal
+   specificity, modifies nothing, and can be deleted whole if it looks wrong.
+
+   TWO TECHNIQUES, and which one applies is a layout question:
+
+   (a) min-height + inline-flex, for controls in flex rows. The row grows,
+       the control centres in it. Checked first: .tsy-row-meta, .tsy-tools,
+       .tsy-who, .calib-actions, .tad-row-acts and .rv-filterbar are all
+       display:flex with align-items:center, so a taller child is safe.
+
+   (b) A transparent ::after inset, for controls embedded in text where
+       growing the box would push the text apart. The hit area grows, the ink
+       does not move at all.
+
+   PADDING IS NOT USED for either. Raising padding changes the visual weight
+   of every control at once and would make the panel look like a different
+   application — the point is a bigger target, not a bigger button. */
+
+/* ── (a) controls in flex rows ─────────────────────────────────────────── */
+.tsy-chip-btn,
+.tad-chip-btn,
+.tsy-btn,
+.tad-btn,
+.tad-chip,
+.calib-save,
+.calib-plain,
+.btn-tiny,
+.rv-filterbar button,
+.tsy-ac-item,
+.tsy-code {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* The four buttons on every student card — Manage · Hours · Open in viewer ·
+   Remove — were ~12px tall and adjacent. This is the case that prompted the
+   audit. Horizontal padding as well as height, because four underlined words
+   touching each other are four ways to tap the wrong one. */
+.tsy-chip-btn {
+  padding: 0 10px;
+  border-radius: 6px;
+  text-decoration: none;
+  border: .5px solid var(--border);
+  background: var(--parchment);
+}
+.tsy-chip-btn:hover { background: var(--parchment3); }
+
+/* The row holding them needs to wrap now that its children are 44px, or four
+   buttons plus two status spans overflow on a narrow screen. */
+.tsy-row-meta { flex-wrap: wrap; row-gap: 5px; }
+
+/* Autocomplete rows are a list you tap down, so they get the same floor and
+   keep their left alignment — centring a name would look like a button. */
+.tsy-ac-item { justify-content: space-between; }
+
+/* Tap-to-copy. Stays visually a code chip; only the box grows. */
+.tsy-code { padding: 0 8px; }
+
+/* ── (b) hit area only, ink unmoved ────────────────────────────────────── */
+.tsy-x,
+.tad-x,
+.sb-clear,
+.rv-filter-tag button,
+.seg-del {
+  position: relative;
+}
+.tsy-x::after,
+.tad-x::after,
+.sb-clear::after,
+.rv-filter-tag button::after,
+.seg-del::after {
+  content: '';
+  position: absolute;
+  /* Half of (44 - the control's own ~20px), so the target reaches 44 without
+     the glyph moving a pixel. Overlapping neighbours are not a risk here:
+     each of these is the only control in its corner. */
+  inset: -12px;
+}
+
+/* Modal closers are in the corner of a panel; a 44px box there is free. */
+.tsy-x, .tad-x {
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
 </style>
 
 </body>
