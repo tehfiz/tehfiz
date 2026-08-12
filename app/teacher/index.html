@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ═══════════════════════════════════════════════════════════════════
-     Tehfiz teacher app — v4_170
+     Tehfiz teacher app — v4_178
      Deployed from the `tehfiz` repo at public/app/teacher/index.html.
      NOTE: tehfiz-api also contains a public/app/ folder. That one is a local
      staging copy, gitignored, and never served — its routes are /api/* only.
@@ -1994,7 +1994,7 @@ body.compact-ui .quick-form::before{
    console as APP_VERSION, or grep the deployed HTML for it. Bumped on every
    saved build; vcheck.py asserts it matches the filename, so a forgotten bump
    fails the integrity check rather than shipping a lie. */
-const APP_VERSION = 'v4_170';
+const APP_VERSION = 'v4_178';
 window.APP_VERSION = APP_VERSION;
 console.info('Tehfiz teacher app ' + APP_VERSION);
 
@@ -10952,7 +10952,7 @@ function saveRoster() { writeJSON(K.roster, roster); }
 function adminPanel() {
   if (!(window.TehfizAdmin && TehfizAdmin.available())) return '';
   return '<div class="tsy-admin-bar">' +
-    '<button class="tsy-btn" data-tad="open">Manage teachers</button></div>';
+    '<button class="tsy-btn" data-tad="open">Admin</button></div>';
 }
 
 
@@ -11080,7 +11080,15 @@ function rebind() {
   if (!el) return;
   /* An explicit pick wins over text matching, but only while the text still
      agrees with it — if the teacher edits the name afterwards the binding is
-     stale and must not survive. */
+     stale and must not survive.
+
+     An UNNAMED student is the exception. Both sides normalise to '' so the
+     comparison passes on the first pass and then fails the moment anything is
+     typed, silently unbinding a student the teacher deliberately chose. There
+     is nothing to keep in step, because there is no name to disagree with: the
+     binding holds until it is replaced or cleared. Typing a name for such a
+     student is handled by the rename field, not by this comparison. */
+  if (binding && !binding.name) { renderChip(); return; }
   if (binding && normName(binding.name) === normName(el.value)) {
     const fresh = studentById(binding.id);
     if (fresh) { binding = { id: fresh.id, code: fresh.code, name: fresh.name }; }
@@ -11899,17 +11907,19 @@ document.addEventListener('click', async (e) => {
     if (removingId || managingId) return;   // the row is asking a question; don't also act on it
     const s = studentById(id);
     if (!s) return;
-    if (!s.name) {
-      /* An unnamed code would put an empty string in the field and bind to
-         nothing useful. Send them to the name box instead of failing quietly. */
-      const box = document.querySelector('.tsy-name[data-id="' + CSS.escape(id) + '"]');
-      if (box) box.focus();
-      toast('Give this student a name first');
-      return;
-    }
+    /* A missing name used to block this outright. It should not: the binding
+       is by id (see pick), so an unnamed student binds exactly as well as a
+       named one, and the code is what the server stores either way. The blank
+       text box was a cosmetic problem being solved by refusing the action —
+       and `pickfor`, the same card completing an actual send, never had the
+       check at all.
+
+       It also punished the case it was most likely to hit: after a cleared
+       browser or on a second device the whole roster is unnamed, which is
+       precisely when a teacher needs to get on with the lesson. */
     pick(s);
     close();
-    toast(s.name + ' · ' + s.code);
+    toast((s.name || s.code) + (s.name ? ' · ' + s.code : ''));
   }
   if (act === 'pickfor' && pendingSendSession) {
     const clientId = pendingSendSession;
@@ -12202,6 +12212,19 @@ function apiBase() {
 /* ── state ──────────────────────────────────────────────────────────────── */
 
 let tab = 'teachers';
+let studentFilter = 'all';
+let sessionFilter = 'live';
+/* Session list scope. null = every student.
+
+   Held in state rather than baked into one fetch URL because the Live/Deleted
+   chips rebuild that URL: without this the scope survived exactly until the
+   first chip click and then silently widened to every student, with nothing
+   on screen having changed to say so. */
+let sessionScopeId = null;
+let sessionScopeLabel = '';
+let sessionTeacherId = '';     // '' = every teacher
+let sessionStudentQuery = '';  // narrows the student picker, not the results
+let pickerStudents = null;     // students available under the current teacher
 let teachers = null;      // null = not loaded yet, [] = loaded and empty
 let query = '';
 let filter = 'pending';   // opens on what needs attention, not on everything
@@ -12315,8 +12338,35 @@ function when(ms) {
    lose the caret, which makes typing anything longer than a word impossible. */
 function renderShell() {
   renderShellChrome();
-  if (tab === 'calib') return renderCalib();
+  if (tab === 'calib')     return renderCalib();
+  if (tab === 'students')  return loadView('students', '/api/admin/students', renderStudents);
+  if (tab === 'sessions') {
+    // Teachers populate the first picker; without them it renders empty on a
+    // cold open straight into Sessions.
+    if (!teachers) load();
+    if (!pickerStudents) {
+      return loadPickerStudents().then(() =>
+        loadView('sessions', sessionsUrl(), renderSessions));
+    }
+    return loadView('sessions', sessionsUrl(), renderSessions);
+  }
+  if (tab === 'overview')  return loadView('overview', '/api/admin/stats', renderOverview);
+  if (tab === 'integrity') return loadView('integrity', '/api/admin/integrity', renderIntegrity);
   $('tadBody').innerHTML =
+    '<div class="tad-filters">' +
+      '<div class="tad-frow">' +
+        '<label class="tad-flab">Add</label>' +
+        '<input class="tad-sel" id="tadPreEmail" type="email" autocomplete="off" ' +
+          'placeholder="teacher@example.com">' +
+        '<select class="tad-sel" id="tadPreStatus" style="max-width:140px;">' +
+          '<option value="active">Pre-approved</option>' +
+          '<option value="pending">Needs approval</option>' +
+        '</select>' +
+        '<button class="tad-mini" data-tad="pre">Add</button>' +
+      '</div>' +
+      '<div class="tad-dim">They still sign in with Google — this only decides ' +
+        'whether they wait for approval when they do.</div>' +
+    '</div>' +
     '<input class="tad-search" id="tadSearch" placeholder="Search name or email" autocomplete="off">' +
     '<div class="tad-chips" id="tadChips"></div>' +
     '<div class="tad-list" id="tadList"></div>';
@@ -12356,6 +12406,11 @@ function renderList() {
 
   host.innerHTML = rows.map((t) => {
     const busy = busyId === t.id;
+    /* Never signed in. A genuine signup writes last_seen_at in the same INSERT
+       as created_at, so the two are only ever both set or both absent — which
+       makes this a reliable "invited, not yet arrived" marker with no extra
+       column. */
+    const invited = !t.last_seen_at;
     const action = t.status === 'pending'
       ? { label: 'Approve', to: 'active', cls: ' tad-go' }
       : t.status === 'active'
@@ -12365,15 +12420,232 @@ function renderList() {
       '<div class="tad-who">' +
         '<strong>' + esc(t.name || t.email) + '</strong>' +
         '<span>' + esc(t.email) + '</span>' +
-        '<span>' + (t.student_count || 0) + ' students &middot; ' +
-          (t.session_count || 0) + ' sessions &middot; seen ' + esc(when(t.last_seen_at)) + '</span>' +
+        '<span>' + (invited
+          /* Counts are all zero and "seen never" reads like a fault. Say what
+             is actually true instead. */
+          ? 'Invited ' + esc(when(t.created_at)) + ' · has not signed in yet'
+          : (t.student_count || 0) + ' students &middot; ' +
+            (t.session_count || 0) + ' sessions &middot; seen ' + esc(when(t.last_seen_at))) +
+        '</span>' +
       '</div>' +
       '<span class="tad-status tad-st-' + esc(t.status) + '">' + esc(t.status) + '</span>' +
+      /* Withdraw is offered only for a row nobody has used. The server refuses
+         it for anyone who has signed in regardless — this just does not dangle
+         a button that cannot work. */
+      (invited
+        ? '<button class="tad-btn"' + (busy ? ' disabled' : '') +
+            ' data-tad="unpre" data-id="' + esc(t.id) + '" data-email="' + esc(t.email) + '">' +
+            (busy ? '…' : 'Withdraw') + '</button>'
+        /* Deletion for anyone who has actually signed in. Suspension is
+           reversible and covers almost every case, so this sits after it. */
+        : '<button class="tad-btn" data-tad="tedit" data-id="' + esc(t.id) +
+            '" data-email="' + esc(t.email) + '">Manage</button>') +
       '<button class="tad-btn' + action.cls + '"' + (busy ? ' disabled' : '') +
         ' data-tad="set" data-id="' + esc(t.id) + '" data-to="' + action.to + '">' +
         (busy ? '…' : action.label) + '</button>' +
     '</div>';
   }).join('');
+}
+
+/* ── pre-approval ─────────────────────────────────────────────────────────
+   Adding an address before its owner has ever signed in. The row is a normal
+   teachers row; when they sign in with Google, the signup path finds it and
+   they arrive already approved instead of waiting in a queue. */
+/* Deleting a teacher was blocked in §14.2b, not for lack of mechanism but
+   because its consequences are invisible from the teacher row: their sessions
+   may be the ones a SECOND teacher of a shared student is actively using, and
+   that the child can currently read. The preview is what makes it safe — it
+   names the students who would be orphaned and the ones who would lose
+   history they did not author. */
+/* Three operations, and they are genuinely different acts:
+
+     Change email  — a rename. Nothing moves; the row keeps its id, so
+                     sessions, links and hours survive untouched. This is the
+                     answer to "they changed their email".
+     Merge         — two rows, one person. Sessions and links move onto the
+                     surviving account and the empty row goes. SESSIONS ARE
+                     KEPT. origin_id is never touched.
+     Delete        — destroys their sessions and recitations. Last resort.
+
+   Presented together because picking the wrong one is the actual risk: delete
+   is what someone reaches for when they wanted a rename. */
+function teacherManagePanel(id, email) {
+  return '<div id="tman-' + esc(id) + '" class="tad-manage">' +
+    '<div class="tad-sub-h">Change email address</div>' +
+    '<p class="tad-note">A rename. Every session, student and hours figure stays ' +
+      'exactly where it is — they simply sign in with the new Google account. ' +
+      '<strong>Whoever controls the new address gets this teacher\\u2019s students.</strong></p>' +
+    '<div class="tad-frow">' +
+      '<input class="tad-sel" id="tem-' + esc(id) + '" autocomplete="off" placeholder="New address">' +
+      '<input class="tad-sel" id="tec-' + esc(id) + '" autocomplete="off" ' +
+        'placeholder="Type ' + esc(email) + ' to confirm">' +
+      '<button class="tad-mini" data-tad="tdoemail" data-id="' + esc(id) + '">Change</button>' +
+    '</div>' +
+
+    '<div class="tad-sub-h">Merge into another account</div>' +
+    '<p class="tad-note">Use when the same person already signed in with a second ' +
+      'address, so two accounts exist. Their sessions and students move across and ' +
+      '<strong>are kept</strong>; this account is then removed.</p>' +
+    '<div class="tad-frow">' +
+      defineCombo('merge-' + id, {
+        items: (teachers || []).filter((t) => t.id !== id).map((t) => ({
+          value: t.id, label: t.name || t.email, sub: t.name ? t.email : '',
+        })),
+        value: '', allowAny: false, placeholder: 'Merge into…',
+        onPick: () => renderList(),
+      }) +
+      '<input class="tad-sel" id="tmc-' + esc(id) + '" autocomplete="off" ' +
+        'placeholder="Type ' + esc(email) + ' to confirm">' +
+      '<button class="tad-mini" data-tad="tdomerge" data-id="' + esc(id) + '">Merge</button>' +
+    '</div>' +
+
+    '<div class="tad-sub-h">Delete</div>' +
+    '<p class="tad-note">Destroys everything they recorded. If they simply changed ' +
+      'address, use one of the options above instead.</p>' +
+    '<button class="tad-mini tad-danger" data-tad="tpurge" data-id="' + esc(id) +
+      '" data-email="' + esc(email) + '">Show what deleting would destroy</button>' +
+    '<div id="tpurge-' + esc(id) + '"></div>' +
+  '</div>';
+}
+
+function toggleTeacherManage(id, email) {
+  const existing = document.getElementById('tman-' + id);
+  if (existing) { existing.remove(); return; }
+  const btn = document.querySelector('[data-tad="tedit"][data-id="' + CSS.escape(id) + '"]');
+  const row = btn && btn.closest('.tad-row');
+  if (row) row.insertAdjacentHTML('beforeend', teacherManagePanel(id, email));
+}
+
+async function doTeacherEmail(id) {
+  const box = document.getElementById('tem-' + id);
+  const conf = document.getElementById('tec-' + id);
+  if (!box || !box.value.trim()) { showToast('Enter the new address'); return; }
+  try {
+    const r = await api('/api/admin/teachers/' + encodeURIComponent(id) + '/email',
+      { method: 'POST', body: { email: box.value.trim(), confirm: conf ? conf.value : '' } });
+    showToast('Changed to ' + r.to);
+    Object.keys(cache).forEach((k) => delete cache[k]);
+    await load();
+  } catch (err) {
+    // The 409 for an existing address is the useful case: it means merge.
+    showToast(err.message || 'Could not change');
+  }
+}
+
+async function doTeacherMerge(id) {
+  const c = combos['merge-' + id];
+  const conf = document.getElementById('tmc-' + id);
+  if (!c || !c.value) { showToast('Choose the account to merge into'); return; }
+  try {
+    const r = await api('/api/admin/teachers/' + encodeURIComponent(id) + '/merge',
+      { method: 'POST', body: { intoId: c.value, confirm: conf ? conf.value : '' } });
+    showToast('Merged into ' + r.into + ' — ' + r.sessionsMoved + ' sessions kept' +
+      (r.duplicatesDropped ? ', ' + r.duplicatesDropped + ' duplicate dropped' : ''));
+    Object.keys(cache).forEach((k) => delete cache[k]);
+    await load();
+  } catch (err) { showToast(err.message || 'Could not merge'); }
+}
+
+async function showTeacherPurge(id, email) {
+  const host = $('tadList');
+  if (!host) return;
+  let box = document.getElementById('tpurge-' + id);
+  if (box && box.innerHTML) { box.innerHTML = ''; return; }
+
+  box = document.getElementById('tpurge-' + id);
+  if (!box) return;
+  box.innerHTML = '<div class="tad-empty">Loading…</div>';
+
+  try {
+    const p = await api('/api/admin/teachers/' + encodeURIComponent(id) + '/purge-preview');
+    const c = p.counts || {};
+    box.innerHTML =
+      '<div class="tad-danger-box">' +
+        '<strong>Permanently delete ' + esc(email) + '</strong>' +
+        '<div class="tad-row-sub">This erases ' + (c.sessions || 0) + ' session' +
+          ((c.sessions || 0) === 1 ? '' : 's') + ' they recorded, and every recitation ' +
+          'stored with them. Students are not deleted. ' +
+          '<strong>Nothing here can be recovered.</strong></div>' +
+        (p.orphaning && p.orphaning.length
+          ? '<div class="tad-warn-note">' + p.orphaning.length + ' student' +
+              (p.orphaning.length === 1 ? '' : 's') + ' will be left with no teacher: ' +
+              p.orphaning.map(esc).join(', ') + '. Their codes keep working and they ' +
+              'can still sign in — assign someone from the Students tab.</div>'
+          : '') +
+        (p.sharing && p.sharing.length
+          /* The consequence that makes teacher deletion different in kind:
+             another teacher loses history they are relying on. */
+          ? '<div class="tad-warn-note">Another teacher is still teaching ' +
+              p.sharing.map((s) => esc(s.code) + ' (loses ' + s.losing + ')').join(', ') +
+              '. Those sessions disappear for them and for the student too.</div>'
+          : '') +
+        '<div class="tad-frow" style="margin-top:8px;">' +
+          '<input class="tad-sel" id="tpc-' + esc(id) + '" autocomplete="off" ' +
+            'placeholder="Type the email to confirm">' +
+          '<button class="tad-mini tad-danger" data-tad="tdopurge" data-id="' + esc(id) +
+            '" data-email="' + esc(email) + '">Delete permanently</button>' +
+          '<button class="tad-mini" data-tad="tcancel" data-id="' + esc(id) + '">Cancel</button>' +
+        '</div>' +
+      '</div>';
+  } catch (err) {
+    box.innerHTML = '<div class="tad-err">' + esc(err.message) + '</div>';
+  }
+}
+
+async function doTeacherPurge(id, email) {
+  const box = document.getElementById('tpc-' + id);
+  const typed = box ? box.value.trim() : '';
+  if (!typed) { showToast('Type the email to confirm'); return; }
+  try {
+    const r = await api('/api/admin/teachers/' + encodeURIComponent(id) + '/purge',
+      { method: 'POST', body: { email: typed } });
+    showToast('Deleted ' + r.email + ' — ' + r.sessions + ' sessions erased');
+    Object.keys(cache).forEach((k) => delete cache[k]);
+    await load();
+  } catch (err) { showToast(err.message || 'Could not delete'); }
+}
+
+async function addPreapproval() {
+  const box = $('tadPreEmail');
+  const sel = $('tadPreStatus');
+  if (!box) return;
+  const email = box.value.trim();
+  if (!email) return;
+
+  errorMsg = '';
+  try {
+    /* Object, not a string: api() runs JSON.stringify itself, so pre-encoding
+       here would send a quoted JSON string and the server would read
+       body.email as undefined. */
+    const r = await api('/api/admin/teachers', {
+      method: 'POST',
+      body: { email, status: sel ? sel.value : 'active' },
+    });
+    box.value = '';
+    // Distinguish the two outcomes: silently succeeding on an address that was
+    // already there reads as if a new invitation went out.
+    showToast(r.created
+      ? 'Pre-approved ' + email
+      : email + ' is already registered (' + (r.teacher && r.teacher.status) + ')');
+    await load();
+  } catch (err) {
+    errorMsg = err.message || 'Could not add';
+    renderList();
+  }
+}
+
+async function withdrawPreapproval(id, email) {
+  busyId = id; renderList();
+  try {
+    await api('/api/admin/teachers/' + encodeURIComponent(id), { method: 'DELETE' });
+    showToast('Withdrew ' + email);
+    busyId = null;
+    await load();
+  } catch (err) {
+    busyId = null;
+    errorMsg = err.message || 'Could not withdraw';
+    renderList();
+  }
 }
 
 /* ── open / close ───────────────────────────────────────────────────────── */
@@ -12401,8 +12673,563 @@ function renderCalib() {
   window.calibBegin();
 }
 
+/* ── data views ───────────────────────────────────────────────────────────
+   Each fetches on demand and caches until Refresh. Loading everything on open
+   would fire five requests for the one tab being looked at, and these are
+   whole-table scans on the server. */
+const cache = {};
+
+function fmtDate(ms) {
+  if (!ms) return '—';
+  const d = new Date(ms);
+  return isNaN(d) ? '—' : d.toLocaleDateString(undefined,
+    { year: 'numeric', month: 'short', day: 'numeric' });
+}
+function esc2(s) {
+  return String(s == null ? '' : s).replace(/[&<>"]/g,
+    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+}
+function shortId(s) { return String(s || '').slice(0, 8); }
+
+async function fetchAdmin(path) {
+  const r = await api(path);
+  return r;
+}
+
+/* Generic loader: paints a placeholder, fetches, repaints. Without the
+   placeholder a slow query looks like a dead tab. */
+async function loadView(key, path, render) {
+  const host = $('tadBody');
+  if (!host) return;
+  if (cache[key]) return render(cache[key]);
+  host.innerHTML = '<div class="tad-empty">Loading…</div>';
+  try {
+    cache[key] = await fetchAdmin(path);
+    if (tab === key) render(cache[key]);
+  } catch (err) {
+    host.innerHTML = '<div class="tad-err">' + esc2(err.message || 'Could not load') + '</div>';
+  }
+}
+
+function renderStudents(data) {
+  const rows = (data.students || []).filter((s) => {
+    if (studentFilter === 'orphans') return s.orphan;
+    if (studentFilter === 'unclaimed') return !s.claimed;
+    return true;
+  }).filter((s) => !query || s.code.toLowerCase().includes(query.toLowerCase()));
+
+  $('tadBody').innerHTML =
+    '<input class="tad-search" id="tadSearch" placeholder="Search code" autocomplete="off" value="' + esc2(query) + '">' +
+    '<div class="tad-chips">' +
+      ['all', 'orphans', 'unclaimed'].map((k) =>
+        '<button class="tad-chip' + (studentFilter === k ? ' on' : '') + '" data-tad="sfilter" data-k="' + k + '">' +
+        k[0].toUpperCase() + k.slice(1) + '</button>').join('') +
+    '</div>' +
+    '<div class="tad-scroll">' + (rows.length ? rows.map((s) =>
+      '<div class="tad-row">' +
+        '<div class="tad-row-main">' +
+          '<span class="tad-code">' + esc2(s.code) + '</span>' +
+          (s.orphan ? '<span class="tad-tag warn">' +
+             /* The two orphan kinds need different remedies: one lost a
+                teacher, the other never had one. */
+             (s.ever_linked ? 'orphaned' : 'never linked') + '</span>' : '') +
+          (s.revoked ? '<span class="tad-tag warn">revoked</span>' : '') +
+          (!s.claimed ? '<span class="tad-tag">unclaimed</span>' : '') +
+        '</div>' +
+        '<div class="tad-row-sub">' +
+          s.session_count + ' session' + (s.session_count === 1 ? '' : 's') +
+          ' · ' + s.teacher_count + ' teacher' + (s.teacher_count === 1 ? '' : 's') +
+          ' · last ' + fmtDate(s.last_session_at) +
+          ' · created ' + fmtDate(s.created_at) +
+        '</div>' +
+        '<div class="tad-row-acts">' +
+          '<button class="tad-mini" data-tad="steachers" data-id="' + s.id + '">Teachers</button>' +
+          '<button class="tad-mini" data-tad="ssessions" data-id="' + s.id +
+            '" data-code="' + esc2(s.code) + '">Sessions</button>' +
+          '<button class="tad-mini" data-tad="slink" data-id="' + s.id + '">Assign</button>' +
+          '<button class="tad-mini tad-danger" data-tad="spurge" data-id="' + s.id +
+            '" data-code="' + esc2(s.code) + '">Delete</button>' +
+        '</div>' +
+        '<div class="tad-sub" id="sub-' + s.id + '"></div>' +
+      '</div>').join('') : '<div class="tad-empty">Nothing matches.</div>') +
+    '</div>';
+  const box = $('tadSearch');
+  if (box) box.addEventListener('input', () => { query = box.value; renderStudents(data); });
+}
+
+/* Assigning and unassigning. Two operations, not one "move": a student
+   legitimately has several teachers, so a move that unlinks the previous one
+   by definition would be wrong for every shared-student case. */
+async function showAssign(id) {
+  const host = document.getElementById('sub-' + id);
+  if (!host) return;
+  if (host.dataset.mode === 'assign') { host.innerHTML = ''; host.dataset.mode = ''; return; }
+  host.dataset.mode = 'assign';
+  host.innerHTML = '<div class="tad-empty">Loading…</div>';
+
+  try {
+    const [cur, all] = await Promise.all([
+      fetchAdmin('/api/admin/students/' + encodeURIComponent(id) + '/teachers'),
+      teachers ? Promise.resolve({ teachers }) : fetchAdmin('/api/admin/teachers'),
+    ]);
+    const linked = new Set((cur.teachers || []).filter((t) => t.active).map((t) => t.id));
+    const options = (all.teachers || []).filter((t) => !linked.has(t.id) && t.status !== 'suspended');
+
+    host.innerHTML =
+      (cur.teachers || []).filter((t) => t.active).map((t) =>
+        '<div class="tad-subrow">' + esc2(t.email) +
+          '<span class="tad-dim">' + t.session_count + ' sessions</span>' +
+          '<button class="tad-mini" data-tad="sunlink" data-id="' + id +
+            '" data-tid="' + esc2(t.id) + '" data-email="' + esc2(t.email) + '">Unassign</button>' +
+        '</div>').join('') +
+      (options.length
+        ? '<div class="tad-subrow">' +
+            defineCombo('assign-' + id, {
+              items: options.map((t) => ({
+                value: t.id, label: t.name || t.email, sub: t.name ? t.email : '',
+              })),
+              value: '', allowAny: false, placeholder: 'Search name or email',
+              onPick: () => renderStudents(cache.students),
+            }) +
+            '<button class="tad-mini" data-tad="sdolink" data-id="' + id + '">Assign</button>' +
+          '</div>'
+        : '<div class="tad-empty">No other teacher available to assign.</div>') +
+      /* Said plainly because it is the consequence people do not expect:
+         visibility is derived from the link, so assigning hands over the
+         child's entire history, including sessions another teacher wrote. */
+      '<div class="tad-warn-note">Assigning a teacher gives them every session ' +
+        'for this student, including ones another teacher recorded.</div>';
+  } catch (err) {
+    host.innerHTML = '<div class="tad-err">' + esc2(err.message) + '</div>';
+  }
+}
+
+async function doLink(id) {
+  const c = combos['assign-' + id];
+  if (!c || !c.value) { showToast('Choose a teacher first'); return; }
+  try {
+    const r = await api('/api/admin/students/' + encodeURIComponent(id) + '/link',
+      { method: 'POST', body: { teacherId: c.value } });
+    showToast('Assigned to ' + r.email);
+    delete cache.students;
+    const host = document.getElementById('sub-' + id);
+    if (host) host.dataset.mode = '';
+    renderShell();
+  } catch (err) { showToast(err.message || 'Could not assign'); }
+}
+
+async function doUnlink(id, tid, email) {
+  try {
+    const r = await api('/api/admin/students/' + encodeURIComponent(id) + '/unlink',
+      { method: 'POST', body: { teacherId: tid } });
+    /* The orphan warning is the point of allowing this at all: the student
+       keeps a working code and can still sign in, but no teacher can see them
+       until someone assigns one here. */
+    showToast(r.nowOrphaned
+      ? 'Unassigned ' + email + ' — ' + r.code + ' now has no teacher'
+      : 'Unassigned ' + email);
+    delete cache.students;
+    const host = document.getElementById('sub-' + id);
+    if (host) host.dataset.mode = '';
+    renderShell();
+  } catch (err) { showToast(err.message || 'Could not unassign'); }
+}
+
+/* Delete is preview-then-confirm, and the confirmation is built from the
+   server's own count rather than from anything the list happened to cache. */
+async function showPurge(id, code) {
+  const host = document.getElementById('sub-' + id);
+  if (!host) return;
+  if (host.dataset.mode === 'purge') { host.innerHTML = ''; host.dataset.mode = ''; return; }
+  host.dataset.mode = 'purge';
+  host.innerHTML = '<div class="tad-empty">Loading…</div>';
+
+  try {
+    const p = await fetchAdmin('/api/admin/students/' + encodeURIComponent(id) + '/purge-preview');
+    const c = p.counts || {};
+    host.innerHTML =
+      '<div class="tad-danger-box">' +
+        '<strong>Permanently delete ' + esc2(code) + '</strong>' +
+        '<div class="tad-row-sub">This erases ' + (c.sessions || 0) + ' session' +
+          ((c.sessions || 0) === 1 ? '' : 's') + ', every recitation stored for them, ' +
+          (c.devices || 0) + ' signed-in device' + ((c.devices || 0) === 1 ? '' : 's') +
+          ', and their teacher links. Their code stops working. ' +
+          '<strong>Nothing here can be recovered.</strong></div>' +
+        (p.teachers && p.teachers.length
+          ? '<div class="tad-row-sub">Teachers: ' +
+              p.teachers.map((t) => esc2(t.email) + (t.active ? '' : ' (former)')).join(', ') +
+            '</div>'
+          : '') +
+        '<div class="tad-frow" style="margin-top:8px;">' +
+          /* Typed back rather than a checkbox. A student has no name to
+             double-check against, so the code is the only way to demonstrate
+             this is the intended row and not the one above it. */
+          '<input class="tad-sel" id="purge-' + id + '" autocomplete="off" ' +
+            'placeholder="Type ' + esc2(code) + ' to confirm">' +
+          '<button class="tad-mini tad-danger" data-tad="sdopurge" data-id="' + id +
+            '" data-code="' + esc2(code) + '">Delete permanently</button>' +
+          '<button class="tad-mini" data-tad="scancel" data-id="' + id + '">Cancel</button>' +
+        '</div>' +
+      '</div>';
+  } catch (err) {
+    host.innerHTML = '<div class="tad-err">' + esc2(err.message) + '</div>';
+  }
+}
+
+async function doPurge(id, code) {
+  const box = document.getElementById('purge-' + id);
+  const typed = box ? box.value.trim() : '';
+  if (!typed) { showToast('Type ' + code + ' to confirm'); return; }
+  try {
+    const r = await api('/api/admin/students/' + encodeURIComponent(id) + '/purge',
+      { method: 'POST', body: { code: typed } });
+    showToast('Deleted ' + r.code + ' — ' + r.sessions + ' sessions, ' +
+      r.payloads + ' recitations erased' +
+      (r.payloadsFailed ? ' (' + r.payloadsFailed + ' failed)' : ''));
+    delete cache.students; delete cache.integrity; delete cache.overview;
+    renderShell();
+  } catch (err) { showToast(err.message || 'Could not delete'); }
+}
+
+async function showStudentTeachers(id) {
+  const host = document.getElementById('sub-' + id);
+  if (!host) return;
+  // Shares one container with the assign and purge panels, so the mode marker
+  // decides whether this is a toggle or a switch between them.
+  if (host.dataset.mode === 'teachers') { host.innerHTML = ''; host.dataset.mode = ''; return; }
+  host.dataset.mode = 'teachers';
+  host.innerHTML = '<div class="tad-empty">Loading…</div>';
+  try {
+    const d = await fetchAdmin('/api/admin/students/' + encodeURIComponent(id) + '/teachers');
+    host.innerHTML = (d.teachers || []).length
+      ? d.teachers.map((t) =>
+          '<div class="tad-subrow">' +
+            esc2(t.email) +
+            '<span class="tad-tag' + (t.active ? '' : ' warn') + '">' +
+              (t.active ? 'active' : 'unlinked ' + fmtDate(t.unlinked_at)) + '</span>' +
+            '<span class="tad-dim">' + t.session_count + ' sessions · since ' +
+              fmtDate(t.linked_at) + '</span>' +
+          '</div>').join('')
+      : '<div class="tad-empty">No teacher has ever been linked.</div>';
+  } catch (err) {
+    host.innerHTML = '<div class="tad-err">' + esc2(err.message) + '</div>';
+  }
+}
+
+/* Every fetch of the session list goes through here, so scope and filter can
+   never disagree with each other or with what the header claims. */
+function sessionsUrl() {
+  let u = '/api/admin/sessions?limit=200';
+  if (sessionFilter === 'deleted') u += '&deleted=1';
+  if (sessionScopeId) u += '&studentId=' + encodeURIComponent(sessionScopeId);
+  if (sessionTeacherId) u += '&teacherId=' + encodeURIComponent(sessionTeacherId);
+  return u;
+}
+
+/* The student picker's options, narrowed to the chosen teacher.
+   Fetched rather than filtered client-side: which students "belong" to a
+   teacher includes former students and students whose only connection is an
+   authored session, and only the server can answer that (see adminData.js). */
+async function loadPickerStudents() {
+  const url = '/api/admin/students?limit=500' +
+    (sessionTeacherId ? '&teacherId=' + encodeURIComponent(sessionTeacherId) : '');
+  try {
+    const d = await api(url);
+    pickerStudents = d.students || [];
+  } catch { pickerStudents = []; }
+}
+
+/* Teacher options come from the Teachers tab's own load, reused rather than
+   refetched — same data, and it is already cached by the time anyone reaches
+   a filter bar. */
+/* ── searchable combobox ──────────────────────────────────────────────────
+   A native <select> cannot be typed into. With one teacher that is fine; with
+   forty it is a scroll hunt, and the student list is codes like HUDHUD-S6PX
+   which nobody scans visually.
+
+   One implementation, driven by a descriptor, rather than a bespoke picker per
+   field: three pickers written separately would drift in their keyboard
+   handling and their idea of what "cleared" means.
+
+   Each entry: { key, value, label, sub, placeholder, items[], onPick(value) }
+   `items` are { value, label, sub } — `sub` is searched as well as shown, which
+   is what lets a teacher be found by either name or email. */
+const combos = {};
+let comboOpen = null;
+
+function comboFilter(items, q) {
+  const n = String(q || '').trim().toLowerCase();
+  if (!n) return items;
+  return items.filter((i) =>
+    String(i.label || '').toLowerCase().includes(n) ||
+    String(i.sub || '').toLowerCase().includes(n));
+}
+
+function renderCombo(key) {
+  const c = combos[key];
+  if (!c) return '';
+  const sel = c.items.find((i) => i.value === c.value);
+  /* A chosen value that the current query would hide still has to be shown,
+     or the control would claim nothing is selected while the filter it drives
+     stays applied. */
+  const shown = sel ? (sel.label + (sel.sub ? ' · ' + sel.sub : '')) : '';
+  const open = comboOpen === key;
+  const list = open ? comboFilter(c.items, c.query) : [];
+
+  /* Focus opens the list with EVERYTHING in it and blanks the field, exactly
+     like the surah picker (_posNavSurahFocus). That is what makes this a
+     dropdown you can also type into, rather than a search box that hides its
+     options until you guess a query — with three teachers there is nothing to
+     search for and browsing is the only sensible interaction.
+
+     The caret is the affordance that says so, and clicking it focuses the box,
+     so the whole control behaves like a <select> that happens to accept text. */
+  return '<div class="tad-combo" data-combo="' + esc2(key) + '">' +
+    '<input class="tad-combo-input" data-tad="comboq" data-k="' + esc2(key) + '" ' +
+      'autocomplete="off" placeholder="' + esc2(c.placeholder || 'Search') + '" ' +
+      'value="' + esc2(open ? c.query : shown) + '">' +
+    '<button class="tad-combo-caret" data-tad="comboq" data-k="' + esc2(key) + '" ' +
+      'tabindex="-1">▾</button>' +
+    (c.value
+      ? '<button class="tad-combo-x" data-tad="comboclear" data-k="' + esc2(key) + '" ' +
+          'tabindex="-1" title="Clear">✕</button>'
+      : '') +
+    (open
+      ? '<div class="tad-combo-list">' +
+          (c.allowAny !== false
+            ? '<div class="tad-combo-item" data-tad="combopick" data-k="' + esc2(key) +
+              '" data-v="">' + esc2(c.anyLabel || 'Any') + '</div>' : '') +
+          (list.length
+            ? list.slice(0, 60).map((i) =>
+                '<div class="tad-combo-item' + (i.value === c.value ? ' on' : '') +
+                  '" data-tad="combopick" data-k="' + esc2(key) + '" data-v="' + esc2(i.value) + '">' +
+                  '<span>' + esc2(i.label) + '</span>' +
+                  (i.sub ? '<span class="tad-dim">' + esc2(i.sub) + '</span>' : '') +
+                '</div>').join('')
+            : '<div class="tad-combo-empty">No match</div>') +
+        '</div>'
+      : '') +
+  '</div>';
+}
+
+function defineCombo(key, cfg) {
+  combos[key] = Object.assign({ query: '', value: '', items: [] }, combos[key], cfg);
+  return renderCombo(key);
+}
+
+function comboSetQuery(key, q) {
+  const c = combos[key];
+  if (!c) return;
+  c.query = q;
+  comboOpen = key;
+  // Repaints the list only. Re-rendering the tab would steal focus from the
+  // box being typed into after every keystroke.
+  const host = document.querySelector('.tad-combo[data-combo="' + key + '"]');
+  if (host) {
+    const old = host.querySelector('.tad-combo-list');
+    const items = comboFilter(c.items, q);
+    const html =
+      (c.allowAny !== false
+        ? '<div class="tad-combo-item" data-tad="combopick" data-k="' + key + '" data-v="">' +
+          esc2(c.anyLabel || 'Any') + '</div>' : '') +
+      (items.length
+        ? items.slice(0, 60).map((i, n) =>
+            '<div class="tad-combo-item' + (i.value === c.value ? ' on' : '') +
+              (n === 0 && c.query ? ' hi' : '') +
+              '" data-tad="combopick" data-k="' + key + '" data-v="' + esc2(i.value) + '">' +
+              '<span>' + esc2(i.label) + '</span>' +
+              (i.sub ? '<span class="tad-dim">' + esc2(i.sub) + '</span>' : '') +
+            '</div>').join('')
+        : '<div class="tad-combo-empty">No match</div>');
+    if (old) old.innerHTML = html;
+    else host.insertAdjacentHTML('beforeend', '<div class="tad-combo-list">' + html + '</div>');
+  }
+}
+
+function comboPick(key, value) {
+  const c = combos[key];
+  if (!c) return;
+  c.value = value; c.query = '';
+  comboOpen = null;
+  if (c.onPick) c.onPick(value);
+}
+
+function teacherItems() {
+  return (teachers || []).map((t) => ({
+    value: t.id,
+    label: t.name || t.email,
+    // Both name and email are searched, so either finds the teacher.
+    sub: t.name ? t.email : (t.status !== 'active' ? t.status : ''),
+  }));
+}
+
+function studentItems() {
+  return (pickerStudents || []).map((s) => ({
+    value: s.id,
+    label: s.code,
+    sub: s.orphan ? 'orphaned' : (s.session_count + ' sessions'),
+  }));
+}
+
+function renderSessions(data) {
+  const rows = data.sessions || [];
+  const active = !!(sessionTeacherId || sessionScopeId || sessionFilter === 'deleted');
+
+  $('tadBody').innerHTML =
+    /* The bar states what is applied, always. A filtered list that looks
+       identical to an unfiltered one is a trap: the count is smaller and
+       nothing distinguishes "this teacher is quiet" from "you are looking at
+       a subset". */
+    '<div class="tad-filters">' +
+      '<div class="tad-frow">' +
+        '<label class="tad-flab">Teacher</label>' +
+        defineCombo('fTeacher', {
+          items: teacherItems(), value: sessionTeacherId,
+          anyLabel: 'All teachers', placeholder: 'Search name or email',
+          onPick: (v) => {
+            sessionTeacherId = v;
+            /* Changing teacher invalidates the student choice: a student
+               picked under the previous teacher may not exist under this one,
+               and leaving it applied returns nothing with both pickers looking
+               perfectly reasonable. */
+            sessionScopeId = null; sessionScopeLabel = '';
+            pickerStudents = null;
+            if (combos.fStudent) { combos.fStudent.value = ''; combos.fStudent.query = ''; }
+            delete cache.sessions;
+            loadPickerStudents().then(renderShell);
+          },
+        }) +
+      '</div>' +
+      '<div class="tad-frow">' +
+        '<label class="tad-flab">Student</label>' +
+        defineCombo('fStudent', {
+          items: studentItems(), value: sessionScopeId || '',
+          anyLabel: 'All students', placeholder: 'Search code',
+          onPick: (v) => {
+            sessionScopeId = v || null;
+            const hit = (pickerStudents || []).find((s) => s.id === v);
+            sessionScopeLabel = hit ? hit.code : '';
+            delete cache.sessions;
+            renderShell();
+          },
+        }) +
+      '</div>' +
+      '<div class="tad-frow">' +
+        '<div class="tad-chips" style="margin:0;">' +
+          '<button class="tad-chip' + (sessionFilter === 'live' ? ' on' : '') + '" data-tad="qfilter" data-k="live">Live</button>' +
+          '<button class="tad-chip' + (sessionFilter === 'deleted' ? ' on' : '') + '" data-tad="qfilter" data-k="deleted">Deleted</button>' +
+        '</div>' +
+        (active ? '<button class="tad-mini" data-tad="fclear">Clear filters</button>' : '') +
+        '<span class="tad-dim" style="margin-left:auto;">' + rows.length +
+          (rows.length === 200 ? '+' : '') + ' shown</span>' +
+      '</div>' +
+    '</div>' +
+    '<div class="tad-scroll">' + (rows.length ? rows.map((s) =>
+      '<div class="tad-row">' +
+        '<div class="tad-row-main">' +
+          '<span class="tad-code">' + esc2(s.session_name || '(no name)') + '</span>' +
+          (s.hidden_at ? '<span class="tad-tag">hidden</span>' : '') +
+          (s.deleted_at ? '<span class="tad-tag warn">deleted ' + fmtDate(s.deleted_at) + '</span>' : '') +
+        '</div>' +
+        '<div class="tad-row-sub">' +
+          esc2(s.student_code || shortId(s.student_id)) + ' · ' +
+          esc2(s.teacher_email || shortId(s.teacher_id)) + ' · ' +
+          fmtDate(s.started_at || s.created_at) +
+          (s.mistake_count != null ? ' · ' + s.mistake_count + ' mistakes' : '') +
+          (s.strength_score != null
+            /* Never shown bare: a v1 66 and a v2 80 are on different scales
+               and must never be read side by side as comparable. */
+            ? ' · strength ' + s.strength_score + ' (' + esc2(s.strength_model || '?') + ')' : '') +
+          (s.page_rows ? ' · ' + s.page_rows + ' pages indexed' : '') +
+        '</div>' +
+      '</div>').join('')
+      : '<div class="tad-empty">' + (active
+          ? 'No ' + (sessionFilter === 'deleted' ? 'deleted ' : '') +
+            'sessions match these filters.'
+          : 'Nothing here.') + '</div>') +
+    '</div>';
+
+}
+
+function renderOverview(data) {
+  const t = data.totals || {};
+  const pages = (data.pages || []).slice().sort((a, b) => (b.rate || 0) - (a.rate || 0));
+  const hardest = pages.slice(0, 15);
+  $('tadBody').innerHTML =
+    '<div class="tad-stats">' +
+      '<div class="tad-stat"><b>' + (t.sessions || 0) + '</b><span>sessions</span></div>' +
+      '<div class="tad-stat"><b>' + (t.students || 0) + '</b><span>students</span></div>' +
+      '<div class="tad-stat"><b>' + (t.teachers || 0) + '</b><span>teachers</span></div>' +
+      '<div class="tad-stat"><b>' + (data.pages || []).length + '</b><span>pages seen</span></div>' +
+    '</div>' +
+    '<div class="tad-scroll">' +
+      '<div class="tad-sub-h">Hardest pages — mistakes per recitation</div>' +
+      (hardest.length ? hardest.map((p) =>
+        '<div class="tad-subrow"><span class="tad-code">p' + p.page + '</span>' +
+          '<span class="tad-dim">' + p.recitations + ' recitations · ' +
+          p.mistakes + ' mistakes</span>' +
+          '<b>' + (p.rate == null ? '—' : p.rate.toFixed(2)) + '</b>' +
+        '</div>').join('')
+        : '<div class="tad-empty">No page data yet. Sessions index as they are sent.</div>') +
+      '<div class="tad-sub-h">Mistakes by help given</div>' +
+      ((data.mistakes || []).length ? data.mistakes.map((m) =>
+        '<div class="tad-subrow">' + esc2(m.level) + ' / ' + esc2(m.type) +
+          '<b>' + m.n + '</b></div>').join('')
+        : '<div class="tad-empty">None recorded.</div>') +
+    '</div>';
+}
+
+function renderIntegrity(data) {
+  const c = data.counts || {};
+  const orphans = data.orphanPayloads || [];
+  const tombs = data.tombstones || [];
+  $('tadBody').innerHTML =
+    '<div class="tad-stats">' +
+      '<div class="tad-stat"><b>' + (c.orphan_payloads || 0) + '</b><span>orphan payloads</span></div>' +
+      '<div class="tad-stat"><b>' + (c.orphan_students || 0) + '</b><span>orphan students</span></div>' +
+      '<div class="tad-stat"><b>' + (c.tombstones || 0) + '</b><span>tombstones</span></div>' +
+      '<div class="tad-stat"><b>' + (c.stranded_page_rows || 0) + '</b><span>stranded rows</span></div>' +
+    '</div>' +
+    '<div class="tad-scroll">' +
+      '<div class="tad-sub-h">Orphaned payloads' +
+        (c.orphan_bytes ? ' — ' + Math.round(c.orphan_bytes / 1024) + ' KB' : '') + '</div>' +
+      '<p class="tad-note">Recitation data with no session row. It appears in no other ' +
+        'list in either app, because there is no row to list. Anything written in the ' +
+        'last day is left alone — it may belong to a push still in flight.</p>' +
+      (orphans.some((o) => o.purgeable)
+        ? '<button class="tad-mini tad-danger" data-tad="sweeporphans">Purge ' +
+            orphans.filter((o) => o.purgeable).length + ' orphaned payload' +
+            (orphans.filter((o) => o.purgeable).length === 1 ? '' : 's') + '</button>'
+        : '') +
+      (orphans.length ? orphans.map((o) =>
+        '<div class="tad-subrow"><span class="tad-code">' + esc2(shortId(o.student_id)) + '</span>' +
+          '<span class="tad-dim">' + esc2(o.key) + ' · ' + o.bytes + ' b · ' +
+          fmtDate(o.created_at) + '</span>' +
+          (o.purgeable ? '' : '<span class="tad-tag">too recent</span>') +
+        '</div>').join('') : '<div class="tad-empty">None. Storage is clean.</div>') +
+      '<div class="tad-sub-h">Tombstones</div>' +
+      '<p class="tad-note">Deleted sessions. The row survives so a re-push cannot ' +
+        'recreate it; its recitation content is erased.</p>' +
+      (tombs.length ? tombs.map((t) =>
+        '<div class="tad-subrow"><span class="tad-code">' + esc2(t.student_code || shortId(t.student_id)) + '</span>' +
+          '<span class="tad-dim">deleted ' + fmtDate(t.deleted_at) + '</span>' +
+          (t.still_has_content
+            /* Predates the deletion fix: a row the teacher believes is gone
+               that still describes what was recited. */
+            ? '<span class="tad-tag warn">still has content</span>' : '') +
+        '</div>').join('') : '<div class="tad-empty">None.</div>') +
+    '</div>';
+}
+
 function setTab(t) {
-  if (t === tab) return;
+  /* Scope is deliberately NOT cleared here. Both callers reach this function:
+     the tab-bar handler, which clears it first because a tab click means "all
+     students", and a student row's Sessions button, which SETS it first.
+     Clearing here would wipe what the second caller just established. */
+  const same = t === tab;
+  /* Not an early return for sessions: arriving from a student row must
+     re-render even though the tab itself has not changed. */
+  if (same && t !== 'sessions') return;
   /* Leaving the calibration tab is a close as far as the draft is concerned.
      An unsaved preview left live while the teacher list is on screen would
      keep restating every strength figure in the app behind their back. */
@@ -12411,15 +13238,33 @@ function setTab(t) {
   renderShell();
 }
 
+const TAB_META = {
+  teachers: ['Teachers',
+    'New teachers can sign in immediately but cannot send anything until approved. ' +
+    'Suspending is reversible and keeps all their records.'],
+  students: ['Students',
+    'Every student, including ones no teacher can see. A student with no active ' +
+    'teacher still has a working code and can still sign in.'],
+  sessions: ['Sessions',
+    'Every session across every teacher. Deleted ones are kept as markers with ' +
+    'their content erased, and are the only place tombstones are visible.'],
+  overview: ['Overview',
+    'Aggregated from sessions as they were sent. Strength scores are not averaged ' +
+    'here — a v1 and a v2 score are on different scales.'],
+  integrity: ['Integrity',
+    'The things no list can show: recitation data with no session row, and ' +
+    'deleted sessions. Both are invisible everywhere else in both apps.'],
+  calib: ['Strength calibration',
+    'Scored against the sessions saved on this device. Changing these numbers ' +
+    're-reads every session already recorded — it does not only affect new ones.'],
+};
+
 function renderShellChrome() {
-  const isTeachers = tab === 'teachers';
-  $('tadTitle').textContent = isTeachers ? 'Teachers' : 'Strength calibration';
-  $('tadRefresh').style.display = isTeachers ? '' : 'none';
-  $('tadNote').innerHTML = isTeachers
-    ? 'New teachers can sign in immediately but cannot send anything until approved. ' +
-      'Suspending is reversible and keeps all their records.'
-    : 'Scored against the sessions saved on this device. Changing these numbers ' +
-      're-reads every session already recorded — it does not only affect new ones.';
+  const meta = TAB_META[tab] || TAB_META.teachers;
+  $('tadTitle').textContent = meta[0];
+  // Calibration has no server data to refresh; the rest do.
+  $('tadRefresh').style.display = tab === 'calib' ? 'none' : '';
+  $('tadNote').innerHTML = meta[1];
   Array.prototype.forEach.call(document.querySelectorAll('.tad-tab'), (b) => {
     b.classList.toggle('on', b.dataset.t === tab);
   });
@@ -12428,6 +13273,11 @@ function renderShellChrome() {
 function open() {
   $('tadOverlay').classList.add('tad-on');
   query = ''; filter = 'pending'; errorMsg = ''; tab = 'teachers';
+  studentFilter = 'all'; sessionFilter = 'live';
+  // Caches are per-open. Leaving them would show a database state from
+  // whenever the panel was last used, which for an admin tool is worse than
+  // a moment's wait.
+  Object.keys(cache).forEach((k) => delete cache[k]);
   renderShell();
   load();
 }
@@ -12445,10 +13295,99 @@ document.addEventListener('click', async (e) => {
   const act = t.dataset.tad;
   if (act === 'open')    return open();
   if (act === 'close')   return close();
-  if (act === 'refresh') return load();
-  if (act === 'tab')     return setTab(t.dataset.t);
+  if (act === 'refresh') {
+    // Only the visible tab: refetching all five would issue four whole-table
+    // scans nobody is looking at.
+    delete cache[tab];
+    return tab === 'teachers' ? load() : renderShell();
+  }
+  if (act === 'tab') {
+    // A tab-bar click always widens: the scope, if any, was set by a student
+    // row and should not survive navigating away and back.
+    if (t.dataset.t === 'sessions') {
+      sessionScopeId = null; sessionScopeLabel = '';
+      sessionTeacherId = ''; sessionStudentQuery = ''; pickerStudents = null;
+    }
+    delete cache.sessions;
+    return setTab(t.dataset.t);
+  }
   if (act === 'filter')  { filter = t.dataset.k; renderCounts(); renderList(); return; }
   if (act === 'set')     return setStatus(t.dataset.id, t.dataset.to);
+  if (act === 'pre')      return addPreapproval();
+  if (act === 'tedit')    return toggleTeacherManage(t.dataset.id, t.dataset.email);
+  if (act === 'tdoemail') return doTeacherEmail(t.dataset.id);
+  if (act === 'tdomerge') return doTeacherMerge(t.dataset.id);
+  if (act === 'tpurge')   return showTeacherPurge(t.dataset.id, t.dataset.email);
+  if (act === 'tdopurge') return doTeacherPurge(t.dataset.id, t.dataset.email);
+  if (act === 'tcancel')  {
+    const b = document.getElementById('tpurge-' + t.dataset.id);
+    if (b) b.innerHTML = '';
+    return;
+  }
+  if (act === 'unpre')   return withdrawPreapproval(t.dataset.id, t.dataset.email);
+  if (act === 'sfilter') { studentFilter = t.dataset.k; query = ''; return renderStudents(cache.students); }
+  if (act === 'qfilter') {
+    // Live and deleted are different queries, not a client-side filter — the
+    // server excludes tombstones by default. Scope is untouched.
+    sessionFilter = t.dataset.k; delete cache.sessions; return renderShell();
+  }
+  if (act === 'fclear') {
+    sessionScopeId = null; sessionScopeLabel = '';
+    sessionTeacherId = ''; sessionStudentQuery = ''; pickerStudents = null;
+    sessionFilter = 'live';
+    delete cache.sessions;
+    return loadPickerStudents().then(renderShell);
+  }
+  if (act === 'comboq') {
+    /* Open with the full list, not a filtered one: comboSetQuery('') is what
+       the surah picker's focus handler does, and it is the difference between
+       a dropdown and a search box. The field is blanked so the first keystroke
+       filters instead of appending to the label already in it — the label
+       comes back on close if nothing is picked. */
+    const key = t.dataset.k;
+    comboOpen = key;
+    if (combos[key]) combos[key].query = '';
+    const box = document.querySelector('.tad-combo[data-combo="' + key + '"] .tad-combo-input');
+    if (box) { box.value = ''; box.focus(); }
+    comboSetQuery(key, '');
+    return;
+  }
+  if (act === 'combopick')  return comboPick(t.dataset.k, t.dataset.v);
+  if (act === 'comboclear') {
+    const c = combos[t.dataset.k];
+    if (c) { c.value = ''; c.query = ''; if (c.onPick) c.onPick(''); }
+    return;
+  }
+  if (act === 'steachers') return showStudentTeachers(t.dataset.id);
+  if (act === 'slink')     return showAssign(t.dataset.id);
+  if (act === 'sdolink')   return doLink(t.dataset.id);
+  if (act === 'sunlink')   return doUnlink(t.dataset.id, t.dataset.tid, t.dataset.email);
+  if (act === 'spurge')    return showPurge(t.dataset.id, t.dataset.code);
+  if (act === 'sdopurge')  return doPurge(t.dataset.id, t.dataset.code);
+  if (act === 'scancel')   {
+    const h = document.getElementById('sub-' + t.dataset.id);
+    if (h) { h.innerHTML = ''; h.dataset.mode = ''; }
+    return;
+  }
+  if (act === 'sweeporphans') {
+    return api('/api/admin/integrity/purge-orphans', { method: 'POST' })
+      .then((r) => {
+        showToast('Purged ' + r.deleted + ' orphaned payload' + (r.deleted === 1 ? '' : 's'));
+        delete cache.integrity;
+        renderShell();
+      })
+      .catch((err) => showToast(err.message || 'Could not purge'));
+  }
+  if (act === 'ssessions') {
+    sessionScopeId = t.dataset.id;
+    sessionScopeLabel = t.dataset.code || '';
+    sessionFilter = 'live';
+    /* No teacher filter: this student's sessions may have been authored by
+       several teachers, and pre-selecting one would hide the rest. */
+    sessionTeacherId = ''; sessionStudentQuery = ''; pickerStudents = null;
+    delete cache.sessions;
+    return setTab('sessions');
+  }
 });
 
 /* ── boot ───────────────────────────────────────────────────────────────── */
@@ -12460,15 +13399,26 @@ function mount() {
   if (!root || mounted) return;
   mounted = true;
   root.innerHTML =
+    /* Full screen, not a sheet. The modal was sized for one list of teachers;
+       this holds five views of the whole database and a session list that is
+       ten columns wide. A sheet at 88vh would spend its height on chrome. */
     '<div class="tad-overlay" id="tadOverlay">' +
       '<div class="tad-panel">' +
         '<div class="tad-head">' +
-          '<span class="tad-title" id="tadTitle">Teachers</span>' +
+          '<span class="tad-title" id="tadTitle">Admin</span>' +
           '<button class="tad-chip-btn" data-tad="refresh" id="tadRefresh">Refresh</button>' +
           '<button class="tad-x" data-tad="close">✕</button>' +
         '</div>' +
+        /* Peer tabs, deliberately not a drill-down. Students and Sessions are
+           siblings because an orphaned student has no teacher to nest under,
+           and a shared student would appear once per teacher with nothing
+           saying it is the same child. */
         '<div class="tad-tabs">' +
           '<button class="tad-tab on" data-tad="tab" data-t="teachers">Teachers</button>' +
+          '<button class="tad-tab" data-tad="tab" data-t="students">Students</button>' +
+          '<button class="tad-tab" data-tad="tab" data-t="sessions">Sessions</button>' +
+          '<button class="tad-tab" data-tad="tab" data-t="overview">Overview</button>' +
+          '<button class="tad-tab" data-tad="tab" data-t="integrity">Integrity</button>' +
           '<button class="tad-tab" data-tad="tab" data-t="calib">Calibration</button>' +
         '</div>' +
         '<p class="tad-note" id="tadNote"></p>' +
@@ -12477,6 +13427,83 @@ function mount() {
     '</div>';
   /* No stopPropagation on the panel — every control is bound through the
      document delegate and stopping the bubble would kill all of them. */
+  /* Typing needs a real listener — the document click delegate never sees
+     `input`. Delegated on the overlay so it survives every repaint, since the
+     comboboxes are rebuilt by innerHTML on each render. */
+  $('tadOverlay').addEventListener('input', (e) => {
+    const box = e.target.closest && e.target.closest('.tad-combo-input');
+    if (box) comboSetQuery(box.dataset.k, box.value);
+  });
+
+  /* Focus opens it, not just a click. Tabbing to the field and finding nothing
+     happen would make it a text box with a decorative caret. Capture phase
+     because `focus` does not bubble. */
+  $('tadOverlay').addEventListener('focus', (e) => {
+    const box = e.target.closest && e.target.closest('.tad-combo-input');
+    if (!box || comboOpen === box.dataset.k) return;
+    comboOpen = box.dataset.k;
+    if (combos[box.dataset.k]) combos[box.dataset.k].query = '';
+    box.value = '';
+    comboSetQuery(box.dataset.k, '');
+  }, true);
+
+  /* Arrow keys, Enter and Escape — the same set the surah picker handles,
+     because a list you can only reach with a mouse is not a dropdown. */
+  $('tadOverlay').addEventListener('keydown', (e) => {
+    const box = e.target.closest && e.target.closest('.tad-combo-input');
+    if (!box) return;
+    const key = box.dataset.k;
+    const host = document.querySelector('.tad-combo[data-combo="' + key + '"]');
+    const opts = host ? [...host.querySelectorAll('.tad-combo-item')] : [];
+
+    if (e.key === 'Escape') {
+      comboOpen = null;
+      const list = host && host.querySelector('.tad-combo-list');
+      if (list) list.remove();
+      box.blur();
+      return;
+    }
+    if (!opts.length) return;
+
+    let hi = opts.findIndex((o) => o.classList.contains('hi'));
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      hi = e.key === 'ArrowDown'
+        ? (hi < 0 ? 0 : Math.min(hi + 1, opts.length - 1))
+        : Math.max(hi - 1, 0);
+      opts.forEach((o, i) => o.classList.toggle('hi', i === hi));
+      opts[hi].scrollIntoView({ block: 'nearest' });
+      return;
+    }
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      // No arrow pressed yet: Enter takes the first match, which is what
+      // typing three letters and hitting Enter should obviously do.
+      const target = opts[hi < 0 ? 0 : hi];
+      if (target) { comboPick(key, target.dataset.v); box.blur(); }
+    }
+  });
+
+  /* A list left open over the rows below it looks like part of the page.
+     Closing on any click that is not inside a combobox is the cheapest
+     correct rule. */
+  $('tadOverlay').addEventListener('click', (e) => {
+    if (comboOpen && !(e.target.closest && e.target.closest('.tad-combo'))) {
+      comboOpen = null;
+      const list = document.querySelector('.tad-combo-list');
+      if (list) list.remove();
+      const open = document.querySelector('.tad-combo-input');
+      if (open) {
+        // Restore the label the box was showing before it became a search box.
+        const c = combos[open.dataset.k];
+        if (c) {
+          const sel = c.items.find((i) => i.value === c.value);
+          open.value = sel ? (sel.label + (sel.sub ? ' · ' + sel.sub : '')) : '';
+        }
+      }
+    }
+  });
+
   $('tadOverlay').addEventListener('click', (e) => {
     if (e.target === e.currentTarget) close();
   });
@@ -12493,11 +13520,88 @@ window.TehfizAdmin = { open, available };
 <style>
 /* ── TehfizAdmin styles — every selector prefixed .tad- ───────────────── */
 .tad-overlay{display:none;position:fixed;inset:0;background:rgba(26,22,18,.5);z-index:700;
-  align-items:flex-end;justify-content:center;}
+  align-items:stretch;justify-content:center;}
 .tad-overlay.tad-on{display:flex;}
-.tad-panel{background:var(--parchment);border-radius:12px 12px 0 0;width:100%;max-width:620px;
-  max-height:88vh;display:flex;flex-direction:column;padding:16px 18px 20px;
-  border:1px solid var(--border2);box-shadow:var(--shadow-lg);font-family:'Lora',serif;color:var(--ink);}
+.tad-panel{background:var(--parchment);width:100%;max-width:1100px;
+  height:100%;display:flex;flex-direction:column;padding:14px 18px 16px;
+  border-left:1px solid var(--border2);border-right:1px solid var(--border2);
+  box-shadow:var(--shadow-lg);font-family:'Lora',serif;color:var(--ink);}
+@media(max-width:640px){.tad-panel{padding:12px 12px 14px;}}
+.tad-row{padding:9px 0;border-bottom:.5px solid var(--border);}
+.tad-row-main{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.tad-row-sub{font-size:11px;color:var(--ink3);margin-top:2px;line-height:1.5;}
+.tad-row-acts{display:flex;gap:6px;margin-top:5px;}
+.tad-code{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink);font-weight:500;}
+.tad-tag{font-size:9px;text-transform:uppercase;letter-spacing:.5px;padding:1px 6px;
+  border-radius:99px;background:var(--parchment3);color:var(--ink3);}
+.tad-tag.warn{background:var(--lvl1-yellow-bg);color:var(--amber);}
+/* 44px minimum via min-height, not padding: padding would change the visual
+   weight of every control at once. See HANDOFF §16.3 — the rest of the app
+   gets this treatment in the deferred touch pass; anything built after that
+   audit starts here. */
+.tad-mini{background:var(--parchment);border:.5px solid var(--border2);color:var(--ink2);
+  border-radius:5px;padding:2px 12px;font-size:11px;font-family:'Lora',serif;cursor:pointer;
+  min-height:44px;display:inline-flex;align-items:center;}
+.tad-mini:hover{background:var(--parchment3);}
+.tad-danger{border-color:var(--red,#a4343a);color:var(--red,#a4343a);}
+.tad-danger:hover{background:#fbeaea;}
+.tad-danger-box{background:#fbeaea;border:1px solid var(--red,#a4343a);border-radius:8px;
+  padding:11px 13px;margin-top:8px;}
+.tad-danger-box strong{color:var(--red,#a4343a);}
+.tad-warn-note{font-size:10px;color:var(--amber);background:var(--lvl1-yellow-bg);
+  border-radius:6px;padding:7px 9px;margin-top:7px;line-height:1.5;}
+.tad-manage{background:var(--parchment2);border-radius:8px;padding:10px 13px 13px;
+  margin-top:9px;width:100%;}
+.tad-manage .tad-sub-h{margin-top:14px;}
+.tad-manage .tad-sub-h:first-child{margin-top:0;}
+.tad-manage .tad-note{margin:0 0 7px;}
+.tad-sub{margin-top:6px;}
+.tad-subrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:5px 0 5px 10px;
+  border-left:2px solid var(--border);font-size:11px;color:var(--ink2);}
+.tad-subrow b{margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;}
+.tad-sub-h{font-size:9px;text-transform:uppercase;letter-spacing:.7px;color:var(--ink3);
+  margin:16px 0 4px;}
+.tad-dim{color:var(--ink3);font-size:10px;}
+.tad-scope{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:var(--gold-pale);
+  border:.5px solid var(--gold);border-radius:7px;padding:6px 10px;margin-bottom:8px;
+  font-size:11px;color:var(--amber);}
+.tad-filters{background:var(--parchment2);border-radius:8px;padding:9px 11px;margin-bottom:8px;
+  display:flex;flex-direction:column;gap:7px;}
+.tad-frow{display:flex;align-items:center;gap:7px;flex-wrap:wrap;}
+.tad-flab{font-size:9px;text-transform:uppercase;letter-spacing:.6px;color:var(--ink3);
+  min-width:52px;}
+.tad-sel{font-family:'Lora',serif;font-size:11px;padding:3px 6px;border-radius:5px;
+  border:.5px solid var(--border2);background:var(--parchment);color:var(--ink);
+  max-width:230px;flex:1;min-width:120px;}
+.tad-fsearch{font-family:'IBM Plex Mono',monospace;font-size:10px;padding:3px 7px;
+  border-radius:5px;border:.5px solid var(--border2);background:var(--parchment);
+  color:var(--ink);width:110px;}
+.tad-combo{position:relative;flex:1;min-width:170px;max-width:300px;display:flex;align-items:center;}
+.tad-combo-input{width:100%;font-family:'Lora',serif;font-size:12px;padding:0 26px 0 9px;
+  min-height:44px;border-radius:6px;border:.5px solid var(--border2);
+  background:var(--parchment);color:var(--ink);}
+.tad-combo-input{padding-right:44px;}
+.tad-combo-x{position:absolute;right:26px;background:none;border:none;color:var(--ink3);
+  cursor:pointer;font-size:12px;line-height:1;padding:6px;}
+/* The affordance that says "this is a dropdown". Clicking it focuses the box,
+   so the caret and the field are one control. */
+.tad-combo-caret{position:absolute;right:8px;background:none;border:none;color:var(--ink3);
+  cursor:pointer;font-size:11px;line-height:1;padding:6px 2px;}
+.tad-combo-item.hi{background:var(--parchment3);}
+.tad-combo-list{position:absolute;top:calc(100% + 2px);left:0;right:0;z-index:20;
+  background:var(--parchment);border:.5px solid var(--border2);border-radius:8px;
+  box-shadow:var(--shadow-lg);max-height:320px;overflow-y:auto;}
+.tad-combo-item{display:flex;justify-content:space-between;align-items:center;gap:8px;
+  padding:0 11px;min-height:44px;font-size:12px;cursor:pointer;
+  border-bottom:.5px solid var(--border);}
+.tad-combo-item:last-child{border-bottom:none;}
+.tad-combo-item:hover{background:var(--parchment2);}
+.tad-combo-item.on{background:var(--gold-pale);color:var(--gold);}
+.tad-combo-empty{padding:12px;font-size:11px;color:var(--ink3);font-style:italic;}
+.tad-stats{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px;}
+.tad-stat{background:var(--parchment2);border-radius:8px;padding:8px 14px;min-width:88px;}
+.tad-stat b{display:block;font-size:19px;font-family:'IBM Plex Mono',monospace;}
+.tad-stat span{font-size:9px;text-transform:uppercase;letter-spacing:.6px;color:var(--ink3);}
 .tad-head{display:flex;align-items:center;gap:9px;margin-bottom:6px;}
 .tad-title{font-size:15px;font-weight:600;flex:1;}
 .tad-x{background:none;border:none;font-size:15px;color:var(--ink3);cursor:pointer;}
