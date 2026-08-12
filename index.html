@@ -101,6 +101,38 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:cen
 /* SECTIONS */
 section{padding:80px 24px;}
 .container{max-width:980px;margin:0 auto;}
+/* Section headers were max-width:680px with no auto margin, so they sat hard
+   against the left edge of a 980px container while the .steps grid beneath
+   them filled the full width — the text and the cards below it did not share
+   an axis. This centres the block and its italic sub-line, which has its own
+   max-width and would otherwise stay left inside a centred parent. */
+.sec-head{max-width:700px;margin:0 auto;text-align:center;}
+.sec-head .section-sub{margin-left:auto;margin-right:auto;}
+.sec-head .levels-grid{text-align:left;}
+.sec-head .section-title,.sec-head .section-label{text-align:center;}
+/* .steps is repeat(3,1fr). With two cards they fill columns one and two and
+   leave the third empty, which reads as a missing card rather than a pair.
+   A two-column variant, narrowed and centred so the pair sits under the
+   heading rather than hugging the left edge. */
+/* Two columns at the FULL container width, not narrowed.
+   
+   Narrowing the pair to 720px centred it, but the callout directly beneath is
+   980px — so the two blocks had different left and right edges and the pair
+   read as floating rather than aligned. Sharing the container's edges is what
+   actually makes a section look composed; centring a narrower block inside a
+   wider one does the opposite. */
+/* .steps.steps-2, not .steps-2 — DOUBLE class on purpose.
+   
+   `.steps` sets repeat(3,1fr) and is declared further down this stylesheet.
+   At equal specificity the later rule wins, so a single-class .steps-2 up here
+   was silently ignored and the pair kept rendering as three columns with an
+   empty third. Two classes raise specificity to (0,2,0) and the rule holds
+   wherever either one sits in the file. */
+.steps.steps-2{grid-template-columns:repeat(2,1fr);}
+/* CTAs that follow a centred section have to be centred too — left-aligned in
+   a 980px container they end up nowhere near the text that motivated them. */
+.cta-row{text-align:center;margin-top:28px;}
+@media(max-width:760px){.steps.steps-2{grid-template-columns:1fr;}}
 .section-label{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);margin-bottom:12px;display:block;}
 .section-title{font-size:clamp(22px,3vw,32px);font-weight:700;color:var(--ink);margin-bottom:14px;line-height:1.3;}
 .section-sub{font-size:15px;color:var(--ink2);max-width:560px;line-height:1.8;font-style:italic;}
@@ -177,6 +209,7 @@ footer{background:var(--ink);border-top:1px solid rgba(184,132,26,.2);padding:48
   <div class="nav-brand">Tehfīz <em>·</em> تحفيظ</div>
   <div class="nav-links">
     <a href="#how" class="nav-link">How it works</a>
+    <a href="#progress" class="nav-link">Progress</a>
     <a href="#detail" class="nav-link">Features</a>
     <a href="#privacy" class="nav-link">Privacy</a>
     <a href="#connect" class="nav-link">Find a teacher</a>
@@ -192,8 +225,8 @@ footer{background:var(--ink);border-top:1px solid rgba(184,132,26,.2);padding:48
   <div class="hero-title">Hifz Feedback Tools</div>
   <h1 class="hero-tagline">Mark a hifz lesson on the mushaf itself</h1>
   <p class="hero-sub">Tap the word your student stumbled on. Record how much help you gave.
-  Separate sabaq from sabqi from manzil in the same sitting. Your student opens their viewer
-  and sees exactly what you saw.</p>
+  Separate sabaq from sabqi from manzil in the same sitting — then watch, over a term,
+  which passages are holding and which are quietly slipping.</p>
   <div class="hero-btns">
     <a href="/app/teacher" class="btn-hero-primary">Sign in as a teacher</a>
     <a href="/app/student" class="btn-hero-secondary">📖 Student? Open your viewer</a>
@@ -206,7 +239,7 @@ footer{background:var(--ink);border-top:1px solid rgba(184,132,26,.2);padding:48
 <section id="how">
   <div class="container">
     <div class="ornament-divider"><span>✦</span></div>
-    <div style="max-width:680px;margin:0 auto;text-align:center;" class="fade-in">
+    <div class="sec-head fade-in">
       <span class="section-label">The lesson</span>
       <h2 class="section-title">Built around how hifz is actually taught</h2>
       <p class="section-sub" style="margin:0 auto;">One sitting is rarely one thing. A student
@@ -240,10 +273,76 @@ footer{background:var(--ink);border-top:1px solid rgba(184,132,26,.2);padding:48
   </div>
 </section>
 
+<!-- PROGRESS -->
+<section class="how-section" id="progress">
+  <div class="container">
+    <div class="sec-head fade-in">
+      <span class="section-label">Why it is worth logging</span>
+      <h2 class="section-title">One lesson tells you little. Thirty tell you everything.</h2>
+      <p class="section-sub">A written note says what happened on Tuesday. A term of
+      sessions says whether the sabaq is being retained, which passages are quietly
+      slipping, and which words a student has been missing since March.</p>
+    </div>
+
+    <div class="steps" style="margin-top:44px;">
+      <div class="step fade-in">
+        <span class="step-icon" aria-hidden="true">📈</span>
+        <div class="step-title">Condition over time</div>
+        <p class="step-desc">A separate line for sabaq, sabqi and manzil — because they
+        answer different questions. New memorisation improving while manzil declines is
+        the single most useful thing a hifz teacher can see, and it is invisible in any
+        notebook.</p>
+      </div>
+      <div class="step fade-in">
+        <span class="step-icon" aria-hidden="true">🔁</span>
+        <div class="step-title">What keeps coming back</div>
+        <p class="step-desc">The words missed in three separate sessions, months apart —
+        not three in a row. That is the list actually worth drilling. Alongside it: what
+        used to recur and has now stopped, so effort that worked is visible as
+        <em>resolved</em> rather than just absent.</p>
+      </div>
+      <div class="step fade-in">
+        <span class="step-icon" aria-hidden="true">⏳</span>
+        <div class="step-title">Pace and retention</div>
+        <p class="step-desc">Verses or pages added per week, and what happens when a
+        passage comes back weeks later — learned at one score, returned at another. The
+        gap between those two numbers is retention, measured rather than guessed.</p>
+      </div>
+      <div class="step fade-in">
+        <span class="step-icon" aria-hidden="true">🎯</span>
+        <div class="step-title">Spot-test pass rate</div>
+        <p class="step-desc">Tracked over time, so a run of confident lessons that does
+        not survive random testing shows up as a diverging line rather than a surprise
+        at the next exam.</p>
+      </div>
+      <div class="step fade-in">
+        <span class="step-icon" aria-hidden="true">📉</span>
+        <div class="step-title">Climbing or declining</div>
+        <p class="step-desc">Each revised passage carries its own recent sequence of
+        scores, marked as climbing, steady or declining — so you can see which portions
+        need attention before the student notices they are gone.</p>
+      </div>
+      <div class="step fade-in">
+        <span class="step-icon" aria-hidden="true">📄</span>
+        <div class="step-title">A report you can send</div>
+        <p class="step-desc">Any session becomes a shareable summary for a parent, and
+        teaching hours total by month per student. Everything exports as a file you
+        keep.</p>
+      </div>
+    </div>
+
+    <div class="callout" style="max-width:700px;margin:36px auto 0;text-align:left;">
+      This is the reason to log a lesson properly rather than remember it. Tag the
+      segments and mark the intervention level, and the picture builds itself — and your
+      student sees the same picture from their own side.
+    </div>
+  </div>
+</section>
+
 <!-- INTERVENTION -->
 <section style="background:var(--parchment);padding:0 24px 80px;" id="levels">
   <div class="container">
-    <div class="fade-in" style="max-width:680px;">
+    <div class="sec-head fade-in">
       <span class="section-label">The part that matters</span>
       <h2 class="section-title">How much help did you give?</h2>
       <p style="color:var(--ink2);margin-top:14px;">A mistake on its own says little. A student
@@ -275,7 +374,7 @@ footer{background:var(--ink);border-top:1px solid rgba(184,132,26,.2);padding:48
 <!-- PRIVACY -->
 <section class="how-section" id="privacy" style="background:var(--parchment2);">
   <div class="container">
-    <div class="fade-in" style="max-width:680px;">
+    <div class="sec-head fade-in">
       <span class="section-label">Your students are children</span>
       <h2 class="section-title">We do not know their names</h2>
       <p style="color:var(--ink2);margin-top:14px;">There is no name field in our database. Not
@@ -292,9 +391,9 @@ footer{background:var(--ink);border-top:1px solid rgba(184,132,26,.2);padding:48
         Your students sign in with a code and a PIN they choose themselves — and you can sign a
         lost device out without touching the others.
       </div>
-      <p style="margin-top:20px;">
+      <div class="cta-row">
         <a href="/privacy" class="btn-light">Read the full privacy page →</a>
-      </p>
+      </div>
     </div>
   </div>
 </section>
@@ -302,7 +401,7 @@ footer{background:var(--ink);border-top:1px solid rgba(184,132,26,.2);padding:48
 <!-- DETAIL -->
 <section class="how-section" id="detail">
   <div class="container">
-    <div class="fade-in" style="max-width:680px;">
+    <div class="sec-head fade-in">
       <span class="section-label">In the app</span>
       <h2 class="section-title">Everything else it does</h2>
     </div>
@@ -351,7 +450,7 @@ footer{background:var(--ink);border-top:1px solid rgba(184,132,26,.2);padding:48
 <!-- STUDENT SIDE -->
 <section style="background:var(--parchment);padding:0 24px 80px;" id="apps">
   <div class="container">
-    <div class="fade-in" style="max-width:680px;">
+    <div class="sec-head fade-in">
       <span class="section-label">What your student sees</span>
       <h2 class="section-title">The same page, from the other side</h2>
       <p style="color:var(--ink2);margin-top:14px;">Your student opens the viewer with the code you
@@ -375,9 +474,9 @@ footer{background:var(--ink);border-top:1px solid rgba(184,132,26,.2);padding:48
         on a child's behalf. A code and a PIN.</p>
       </div>
     </div>
-    <p style="margin-top:26px;">
+    <div class="cta-row">
       <a href="/app/student" class="btn-light">Open the Viewer →</a>
-    </p>
+    </div>
   </div>
 </section>
 
@@ -404,7 +503,7 @@ footer{background:var(--ink);border-top:1px solid rgba(184,132,26,.2);padding:48
 <!-- CONNECT -->
 <section class="how-section" id="connect" style="background:var(--parchment2);">
   <div class="container">
-    <div class="fade-in" style="max-width:620px;">
+    <div class="sec-head fade-in">
       <span class="section-label">Finding each other</span>
       <h2 class="section-title">Looking for a teacher, or for students?</h2>
       <p style="color:var(--ink2);margin-top:14px;">Tehfīz is a tool, not an academy — but teachers
@@ -412,7 +511,7 @@ footer{background:var(--ink);border-top:1px solid rgba(184,132,26,.2);padding:48
       looking for and we will introduce you when there is a good match.</p>
     </div>
 
-    <div class="steps" style="margin-top:30px;">
+    <div class="steps steps-2" style="margin-top:30px;">
       <div class="step fade-in">
         <span class="step-icon" aria-hidden="true">🔎</span>
         <div class="step-title">I'm looking for a teacher</div>
@@ -435,7 +534,7 @@ footer{background:var(--ink);border-top:1px solid rgba(184,132,26,.2);padding:48
       </div>
     </div>
 
-    <div class="fade-in" style="max-width:620px;margin-top:26px;padding:14px 18px;
+    <div class="fade-in" style="margin-top:32px;padding:14px 18px;
          background:var(--lvl1-yellow-bg);border-left:3px solid var(--amber);border-radius:0 8px 8px 0;">
       <p style="color:var(--amber);font-size:14px;margin:0;line-height:1.65;">
         <strong>Please read.</strong> Nothing you send is published anywhere — these go to us
@@ -452,15 +551,15 @@ footer{background:var(--ink);border-top:1px solid rgba(184,132,26,.2);padding:48
 <!-- SUPPORT -->
 <section class="how-section" id="support">
   <div class="container">
-    <div class="fade-in" style="max-width:620px;">
+    <div class="sec-head fade-in">
       <span class="section-label">Support Tehfīz</span>
       <h2 class="section-title">Free, and staying that way</h2>
       <p style="color:var(--ink2);margin-top:14px;">Tehfīz is free for every teacher and every
       student, with no adverts and no data sold to anyone. Running and improving it does cost
       something — if you would like to help carry that, we would be grateful.</p>
-      <p style="margin-top:18px;">
+      <div class="cta-row" style="margin-top:18px;">
         <a href="#" id="patreonLink" class="btn-light">♥ Support Tehfīz</a>
-      </p>
+      </div>
       <div id="patreonNote" style="display:none;margin-top:16px;padding:14px 18px;
            background:var(--green-bg);border-left:3px solid var(--green);border-radius:0 8px 8px 0;">
         <p style="margin:0;color:var(--ink);font-size:14px;line-height:1.65;">
