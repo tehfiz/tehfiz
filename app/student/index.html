@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ═══════════════════════════════════════════════════════════════════
-     Tehfiz student viewer — v1_94
+     Tehfiz student viewer — v1_96
      Deployed from the `tehfiz` repo at public/app/student/index.html.
      NOTE: tehfiz-api also contains a public/app/ folder. That one is a local
      staging copy, gitignored, and never served — its routes are /api/* only.
@@ -1383,7 +1383,7 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
    console as APP_VERSION, or grep the deployed HTML for it. Bumped on every
    saved build; vcheck.py asserts it matches the filename, so a forgotten bump
    fails the integrity check rather than shipping a lie. */
-const APP_VERSION = 'v1_94';
+const APP_VERSION = 'v1_96';
 window.APP_VERSION = APP_VERSION;
 console.info('Tehfiz student viewer ' + APP_VERSION);
 
@@ -6716,7 +6716,10 @@ let code  = localStorage.getItem(K.code) || null;
 let index = readJSON(K.index, {});      // clientId -> {serverId, updated_at}
 let busy = false;
 let errorMsg = '';
-let view = 'code';   // 'code' | 'setup' | 'paired' | 'changepin'
+let view = 'code';   // 'code' | 'setup' | 'paired' | 'changepin' | 'teachers'
+/* null = not fetched yet, [] = fetched and empty. Cleared on sign-out so a
+   shared device never shows the previous student's teachers. */
+let teacherList = null;
 let pendingCode = '';
 /* True when the setup screen was reached by a redirect rather than by the
    student choosing it, so the screen can say why they are looking at it. */
@@ -6795,6 +6798,11 @@ function paired() { return !!token; }
 function unpair(silent) {
   token = null;
   localStorage.removeItem(K.token);
+  /* Cleared here rather than in signOut(), because unpair() is the one path
+     BOTH routes pass through — the button and the 401 that fires when a
+     teacher revokes the device. On a shared phone the next student to sign in
+     must not see the previous one's teachers sitting in the panel. */
+  teacherList = null;
   /* `index` is kept for the same reason as the sessions it describes: it
      records which cached sessions arrived by sync, and that stays true whether
      or not this device is still paired. */
@@ -7042,8 +7050,21 @@ function render() {
       ? '<p class="tcl-lead">This code has not been set up yet, so let\u2019s do ' +
         'that now.</p>'
       : '';
+    /* The code is an INPUT here, not the static line it used to be.
+    
+       Arriving from "First time?" without having typed anything showed the
+       word "Code" followed by nothing, with no way to supply one — the student
+       had to work out for themselves that Back was the answer. Worse when they
+       had typed a code with a typo in it: the screen showed the wrong code as
+       a fact about their account rather than something they could correct.
+    
+       Prefilled from pendingCode when there is one, so nobody who did type it
+       first is asked twice. */
     body.innerHTML = err + wait + lead +
-      '<p class="tcl-lead">Code <code>' + esc(pendingCode) + '</code></p>' +
+      '<label class="tcl-lbl">Your code</label>' +
+      '<input class="tcl-input tcl-code-input" id="tclSetupCode" ' +
+        'placeholder="HUDHUD-S6PX" autocomplete="off" autocapitalize="characters" ' +
+        'spellcheck="false" value="' + esc(pendingCode) + '">' +
       '<p class="tcl-lead"><strong>Choose a secret PIN for yourself.</strong> ' +
       'Four numbers. You will type it each time you use a new phone or tablet, ' +
       'so pick something you will remember.</p>' +
@@ -7057,7 +7078,13 @@ function render() {
       '<button class="tcl-btn" data-tcl="back">Back to sign in</button>' +
       '<p class="tcl-note">Keep your PIN to yourself \u2014 not even your friends. ' +
       'Avoid 1234 or 0000; they are too easy to guess.</p>';
-    setTimeout(() => { const el = $('tclPin'); if (el) el.focus(); }, 30);
+    // Land on the code box when it is empty, the PIN box when it is not —
+    // the same rule the sign-in screen uses, so neither screen ever asks a
+    // student to retype something already on screen.
+    setTimeout(() => {
+      const el = $(pendingCode ? 'tclPin' : 'tclSetupCode');
+      if (el) el.focus();
+    }, 30);
     return;
   }
 
@@ -7076,6 +7103,52 @@ function render() {
     return;
   }
 
+  /* Who has taught this student, current and past.
+  
+     Past teachers are shown, not hidden. A student who changes teacher keeps
+     every session the previous one recorded — and without this they are
+     attributed to a name that appears nowhere in the account, which reads like
+     a fault rather than a history.
+  
+     No email addresses: the endpoint does not return them (see listTeachers in
+     student.js). A student needs to know who taught them, not how to contact
+     a teacher they no longer have. */
+  if (view === 'teachers') {
+    const rows = teacherList === null
+      ? '<div class="tcl-busy">Loading\u2026</div>'
+      : (teacherList.length
+        ? teacherList.map((t) => {
+            const since = t.since ? new Date(t.since).toLocaleDateString(undefined,
+              { year: 'numeric', month: 'long' }) : '';
+            const until = t.until ? new Date(t.until).toLocaleDateString(undefined,
+              { year: 'numeric', month: 'long' }) : '';
+            return '<div class="tcl-teacher' + (t.current ? '' : ' past') + '">' +
+              '<div class="tcl-teacher-name">' + esc(t.name) +
+                (t.current ? '' : '<span class="tcl-teacher-tag">before</span>') + '</div>' +
+              '<div class="tcl-teacher-sub">' +
+                (t.current
+                  ? (since ? 'Teaching you since ' + esc(since) : 'Teaching you now')
+                  : (since && until ? esc(since) + ' \u2013 ' + esc(until)
+                                    : 'No longer your teacher')) +
+                ' \u00b7 ' + t.session_count + ' session' +
+                (t.session_count === 1 ? '' : 's') +
+              '</div>' +
+            '</div>';
+          }).join('')
+        : '<p class="tcl-lead">No teacher is linked to your code yet.</p>');
+
+    body.innerHTML = err +
+      '<p class="tcl-lead">These are the teachers who have taught you.</p>' +
+      rows +
+      /* The only route a child has if something is wrong is through an adult
+         who can act. Stated plainly and pointed at a parent, deliberately —
+         the same reasoning the privacy page uses for deletion requests. */
+      '<p class="tcl-note">If something here looks wrong, ask a parent to email ' +
+      '<a href="mailto:contact@tehfiz.com">contact@tehfiz.com</a> with your code.</p>' +
+      '<button class="tcl-btn" data-tcl="back-paired">Back</button>';
+    return;
+  }
+
   const when = lastPull
     ? 'Last checked ' + new Date(lastPull).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
     : 'Not checked yet';
@@ -7087,7 +7160,10 @@ function render() {
     '</div>' +
     '<button class="tcl-btn tcl-primary" data-tcl="pull">Check for new sessions</button>' +
     '<div class="tcl-row">' +
+      '<button class="tcl-btn" data-tcl="teachers">Your teachers</button>' +
       '<button class="tcl-btn" data-tcl="changepin">Change PIN</button>' +
+    '</div>' +
+    '<div class="tcl-row">' +
       '<button class="tcl-btn" data-tcl="unpair">Sign out</button>' +
     '</div>' +
     '<p class="tcl-note">Signing out removes your teacher\u2019s sessions from ' +
@@ -7105,10 +7181,31 @@ document.addEventListener('click', async (e) => {
 
   if (act === 'close')  return close();
   if (act === 'open')   return open();
-  if (act === 'back')   { view = 'code'; errorMsg = ''; autoSetup = false; return render(); }
+  if (act === 'back')   {
+    /* Carry whatever is in the setup screen's code box back to sign-in. The
+       two screens now each have a field, and a student who corrects a typo
+       here and then presses Back should not find the old value waiting for
+       them. */
+    const v = normaliseCodeInput(($('tclSetupCode') || {}).value);
+    if (v) pendingCode = v;
+    view = 'code'; errorMsg = ''; autoSetup = false; return render();
+  }
   if (act === 'back-paired') { view = 'paired'; errorMsg = ''; return render(); }
   if (act === 'pull')   return pull(true);
   if (act === 'changepin') { view = 'changepin'; errorMsg = ''; return render(); }
+  if (act === 'teachers') {
+    view = 'teachers'; errorMsg = ''; teacherList = null; render();
+    try {
+      const r = await api('/api/student/teachers');
+      teacherList = r.teachers || [];
+    } catch (err) {
+      // An empty list reads as "no teachers", which would be a lie if the
+      // request simply failed. Say so instead.
+      teacherList = [];
+      errorMsg = 'Could not load your teachers. Try again in a moment.';
+    }
+    return render();
+  }
   if (act === 'unpair') return signOut();
 
   if (act === 'signin-go') {
@@ -7125,6 +7222,12 @@ document.addEventListener('click', async (e) => {
     return render();
   }
   if (act === 'setup-go') {
+    /* Read the code from THIS screen, not from whatever was typed on the
+       previous one. They are now two independent fields and the one in front
+       of the student is the one that counts. */
+    const v = normaliseCodeInput(($('tclSetupCode') || {}).value);
+    if (!v) { errorMsg = 'Type your code first.'; return render(); }
+    pendingCode = v; errorMsg = '';
     return submitPin((($('tclPin') || {}).value || '').trim(),
                      (($('tclPin2') || {}).value || '').trim(), true);
   }
@@ -7148,6 +7251,7 @@ document.addEventListener('keydown', (e) => {
   const click = (sel) => { const b = document.querySelector(sel); if (b) b.click(); };
 
   if (id === 'tclCode') { e.preventDefault(); const n = $('tclPin'); if (n) n.focus(); }
+  if (id === 'tclSetupCode') { e.preventDefault(); const n = $('tclPin'); if (n) n.focus(); }
   else if (id === 'tclPin') {
     e.preventDefault();
     if (view === 'setup') { const n = $('tclPin2'); if (n) n.focus(); }
@@ -7300,6 +7404,14 @@ window.TehfizClaim = { open, sync, isSynced };
   border-radius:8px;padding:9px 11px;margin-bottom:11px;line-height:1.5;}
 .tcl-busy{font-size:12px;color:var(--ink3);text-align:center;margin-bottom:10px;}
 .tcl-paired{text-align:center;margin-bottom:16px;}
+/* 44px minimum per HANDOFF §16 — new markup starts at the floor. */
+.tcl-teacher{padding:11px 12px;border-radius:8px;background:var(--parchment2,#f2ede4);
+  margin-bottom:7px;min-height:44px;}
+.tcl-teacher.past{opacity:.72;}
+.tcl-teacher-name{font-size:14px;font-weight:600;display:flex;align-items:center;gap:7px;}
+.tcl-teacher-tag{font-size:9px;text-transform:uppercase;letter-spacing:.6px;
+  padding:1px 6px;border-radius:99px;background:rgba(0,0,0,.07);font-weight:400;}
+.tcl-teacher-sub{font-size:11px;opacity:.7;margin-top:2px;}
 .tcl-code-big{font-family:'IBM Plex Mono',monospace;font-size:19px;letter-spacing:2px;
   color:var(--gold);background:var(--gold-pale);border-radius:8px;padding:10px;}
 .tcl-when{font-size:11px;color:var(--ink3);margin-top:7px;}
