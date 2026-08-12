@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ═══════════════════════════════════════════════════════════════════
-     Tehfiz teacher app — v4_178
+     Tehfiz teacher app — v4_179
      Deployed from the `tehfiz` repo at public/app/teacher/index.html.
      NOTE: tehfiz-api also contains a public/app/ folder. That one is a local
      staging copy, gitignored, and never served — its routes are /api/* only.
@@ -1994,7 +1994,7 @@ body.compact-ui .quick-form::before{
    console as APP_VERSION, or grep the deployed HTML for it. Bumped on every
    saved build; vcheck.py asserts it matches the filename, so a forgotten bump
    fails the integrity check rather than shipping a lie. */
-const APP_VERSION = 'v4_178';
+const APP_VERSION = 'v4_179';
 window.APP_VERSION = APP_VERSION;
 console.info('Tehfiz teacher app ' + APP_VERSION);
 
@@ -12187,7 +12187,12 @@ window.TehfizSync = {
 (function () {
 'use strict';
 
-const K = { token: 'tehfiz_sync_token', teacher: 'tehfiz_sync_teacher', api: 'tehfiz_sync_api' };
+const K = { token: 'tehfiz_sync_token', teacher: 'tehfiz_sync_teacher', api: 'tehfiz_sync_api',
+  /* Which teacher the Overview leaves out. Persisted rather than held in
+     memory: a test account distorts every figure on that tab, and an exclusion
+     that resets each time the panel opens would silently stop applying at the
+     exact moment nobody is thinking about it. */
+  excl: 'tehfiz_admin_exclude' };
 
 const $ = (id) => document.getElementById(id);
 
@@ -12350,7 +12355,13 @@ function renderShell() {
     }
     return loadView('sessions', sessionsUrl(), renderSessions);
   }
-  if (tab === 'overview')  return loadView('overview', '/api/admin/stats', renderOverview);
+  if (tab === 'overview') {
+    if (!teachers) load();
+    const ex = localStorage.getItem(K.excl) || '';
+    return loadView('overview',
+      '/api/admin/stats' + (ex ? '?excludeTeacher=' + encodeURIComponent(ex) : ''),
+      renderOverview);
+  }
   if (tab === 'integrity') return loadView('integrity', '/api/admin/integrity', renderIntegrity);
   $('tadBody').innerHTML =
     '<div class="tad-filters">' +
@@ -13155,7 +13166,34 @@ function renderOverview(data) {
   const t = data.totals || {};
   const pages = (data.pages || []).slice().sort((a, b) => (b.rate || 0) - (a.rate || 0));
   const hardest = pages.slice(0, 15);
+  const excluded = localStorage.getItem(K.excl) || '';
+  const exName = excluded
+    ? ((teachers || []).find((x) => x.id === excluded) || {}).email || excluded
+    : '';
+
   $('tadBody').innerHTML =
+    '<div class="tad-filters">' +
+      '<div class="tad-frow">' +
+        '<label class="tad-flab">Exclude</label>' +
+        defineCombo('exclTeacher', {
+          items: teacherItems(), value: excluded,
+          anyLabel: 'Nobody — count everyone', placeholder: 'Search name or email',
+          onPick: (v) => {
+            if (v) localStorage.setItem(K.excl, v); else localStorage.removeItem(K.excl);
+            delete cache.overview;
+            renderShell();
+          },
+        }) +
+      '</div>' +
+      /* Named plainly rather than shown as a quiet filter chip: a figure that
+         silently omits an account is worse than one that includes it, because
+         nothing about the number says it is partial. */
+      '<div class="tad-dim">' + (excluded
+        ? 'Leaving out ' + esc2(exName) + '. Their sessions are still stored — this only ' +
+          'affects the totals below.'
+        : 'Counting every teacher. Exclude a test account here to keep it out of the trends.') +
+      '</div>' +
+    '</div>' +
     '<div class="tad-stats">' +
       '<div class="tad-stat"><b>' + (t.sessions || 0) + '</b><span>sessions</span></div>' +
       '<div class="tad-stat"><b>' + (t.students || 0) + '</b><span>students</span></div>' +
