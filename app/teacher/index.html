@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ═══════════════════════════════════════════════════════════════════
-     Tehfiz teacher app — v4_183
+     Tehfiz teacher app — v4_207
      Deployed from the `tehfiz` repo at public/app/teacher/index.html.
      NOTE: tehfiz-api also contains a public/app/ folder. That one is a local
      staging copy, gitignored, and never served — its routes are /api/* only.
@@ -2054,7 +2054,12 @@ body.compact-ui .quick-form::before{
     </div><!-- end vtabs-wrap -->
 
     <!-- sticky footer -->
-    <div style="padding:10px 20px;border-top:1px solid var(--border);flex-shrink:0;display:flex;justify-content:flex-end;background:var(--parchment);">
+    <div style="padding:10px 20px;border-top:1px solid var(--border);flex-shrink:0;display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--parchment);">
+      <!-- Left of the action, small and quiet. Someone reading Help is not
+           mid-lesson, which is why this is one of only two places it appears. -->
+      <span style="font-size:11px;color:var(--ink3);line-height:1.5;">
+        Tehfīz is free. <a href="https://patreon.com/tehfiz" target="_blank" rel="noopener" style="color:var(--amber);">Support it on Patreon</a>
+      </span>
       <button class="btn-m pri" onclick="closeShortcuts()">Got it</button>
     </div>
 
@@ -2066,7 +2071,7 @@ body.compact-ui .quick-form::before{
    console as APP_VERSION, or grep the deployed HTML for it. Bumped on every
    saved build; vcheck.py asserts it matches the filename, so a forgotten bump
    fails the integrity check rather than shipping a lie. */
-const APP_VERSION = 'v4_204';
+const APP_VERSION = 'v4_207';
 window.APP_VERSION = APP_VERSION;
 console.info('Tehfiz teacher app ' + APP_VERSION);
 
@@ -11936,6 +11941,16 @@ function render() {
       '<p class="tsy-lead">Sign in with the Google account you teach under. ' +
       'Sessions you send become visible to the student in their viewer.</p>' +
       '<div id="tsyGBtn" class="tsy-gbtn"></div>' +
+      /* Under the button, not above it: someone who came here to sign in should
+         reach the button first. Plain text links rather than buttons, so
+         neither competes with the thing this screen is for.
+         The form is for teachers who want students referred to them — it is not
+         the sign-up, which is the Google button above. */
+      '<p class="tsy-aside">' +
+        '<a href="https://docs.google.com/forms/d/e/1FAIpQLScftHflWSx1kK4n_juVqKwCDWtwFx_eb88XVO9tsdNsJxZ96Q/viewform" target="_blank" rel="noopener">Looking for students?</a>' +
+        ' \u00b7 ' +
+        '<a href="https://patreon.com/tehfiz" target="_blank" rel="noopener">Support Tehf\u012bz</a>' +
+      '</p>' +
       '<details class="tsy-adv"><summary>Advanced</summary>' +
         '<label class="tsy-lbl">API address</label>' +
         '<input class="tsy-input" id="tsyApi" value="' + esc(apiBase()) + '" placeholder="(same origin)">' +
@@ -12038,7 +12053,17 @@ function render() {
         (removed.length === 1 ? '' : 's') + ' removed from this device. ' +
         'Their codes and sessions are still on the server. ' +
         '<button class="tsy-chip-btn" data-tsy="restoreremoved">Restore</button></div>'
-      : '');
+      : '') +
+    /* Last thing in the panel, below the roster and the removed note. An
+       approved teacher never sees the waiting-for-approval card again, so
+       without this the referral form becomes unreachable once they are in —
+       and a teacher with room for students is exactly who should find it.
+       Plain text, at the foot, so it is passed rather than presented. */
+    '<p class="tsy-aside">' +
+      '<a href="https://docs.google.com/forms/d/e/1FAIpQLScftHflWSx1kK4n_juVqKwCDWtwFx_eb88XVO9tsdNsJxZ96Q/viewform" target="_blank" rel="noopener">Looking for students?</a>' +
+      ' \u00b7 ' +
+      '<a href="https://patreon.com/tehfiz" target="_blank" rel="noopener">Support Tehf\u012bz</a>' +
+    '</p>';
 
   /* This function replaces the whole body, so anything TehfizTour injected is
      gone. Same hook shape as decorateSessionList(). */
@@ -12467,6 +12492,10 @@ window.TehfizSync = {
 .tsy-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
 .tsy-title{font-size:15px;font-weight:600;}
 .tsy-x{background:none;border:none;font-size:15px;color:var(--ink3);cursor:pointer;}
+/* Deliberately smaller and lighter than .tsy-lead — these are asides, not
+   instructions, and must not read as another step in signing in. */
+.tsy-aside{font-size:11px;color:var(--ink3);text-align:center;margin-top:10px;line-height:1.6;}
+.tsy-aside a{color:var(--amber);text-decoration:underline;}
 .tsy-lead{font-size:12px;color:var(--ink2);line-height:1.6;margin-bottom:12px;}
 .tsy-gbtn{display:flex;justify-content:center;margin:14px 0;}
 .tsy-note{font-size:11px;color:var(--ink3);font-style:italic;}
