@@ -7275,5 +7275,72 @@ function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace
     <button class="autoscroll-fab-mini" onclick="changeAutoScrollSpeed(0.1)" title="Faster">+</button>
   </div>
 </div>
+  <!-- ═══════════════════════════════════════════════════════════════════════════
+     MIGRATION INTERSTITIAL — paste immediately before </body> in the OLD app.
+     ═══════════════════════════════════════════════════════════════════════════
+
+     Self-contained on purpose: no CSS variables, no classes, no dependency on
+     anything else in that file. The old app is not being maintained, so this
+     must not break if its stylesheet drifts.
+
+     Blocking, with an escape hatch. A dismissable banner gets dismissed and you
+     maintain two apps forever; a bare redirect strands whoever is mid-lesson
+     with unsaved work and looks like a crash.
+
+     THE ONE LINE THAT MATTERS is about sessions. Same origin means localStorage
+     is shared, so old sessions DO appear in the new app — but they predate
+     segments, and segmentScorable() rejects a session with no ranges, so
+     nothing can be sent to a student until the ranges are set by hand. A
+     teacher told only "your sessions are already there" will assume it is
+     automatic and send nothing for a month.
+
+     WIRE UP: check that /app/teacher/ is correct relative to wherever the old
+     app is served from.
+     ═══════════════════════════════════════════════════════════════════════ -->
+<div id="tzMoved" style="
+  position:fixed; inset:0; z-index:2147483647;
+  background:rgba(26,22,18,.82);
+  display:flex; align-items:center; justify-content:center; padding:20px;
+  font-family:'Lora',Georgia,serif;">
+  <div style="
+    max-width:440px; width:100%; background:#faf6ee;
+    border:1px solid #b8945f; border-radius:12px;
+    box-shadow:0 10px 40px rgba(26,22,18,.45); padding:22px 22px 18px;">
+
+    <div style="font-size:17px; font-weight:700; color:#2b2419; margin-bottom:10px;">
+      Tehf&#x12B;z has moved
+    </div>
+
+    <p style="font-size:13px; line-height:1.65; color:#4a4234; margin:0 0 12px;">
+      This version is no longer updated. The new app adds student codes, so
+      feedback reaches students on their own device instead of you sending files
+      by hand.
+    </p>
+
+    <!-- The single line about sessions. -->
+    <p style="font-size:13px; line-height:1.65; color:#4a4234; margin:0 0 14px;">
+      Your saved sessions are on this device and will open in the new app, but
+      each one needs its segment ranges set before it can be sent to a student
+      &mdash; so bring them across one at a time, as you need them.
+    </p>
+
+    <a href="/app/teacher/" style="
+      display:block; text-align:center; min-height:44px; line-height:44px;
+      background:#b8945f; color:#fff; font-weight:600; font-size:14px;
+      border-radius:8px; text-decoration:none; margin-bottom:10px;">
+      Open the new app
+    </a>
+
+    <!-- Deliberately small and plain. It exists so nobody is trapped mid-lesson,
+         not as an equal option. -->
+    <div style="text-align:center;">
+      <button onclick="document.getElementById('tzMoved').remove()" style="
+        background:none; border:none; color:#8a8072; font-size:11px;
+        font-family:'Lora',Georgia,serif; cursor:pointer; text-decoration:underline;">
+        Continue here for now
+      </button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
