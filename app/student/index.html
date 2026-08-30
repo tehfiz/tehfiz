@@ -162,6 +162,14 @@ body.compact-ui .autoscroll-fab-wrap{display:flex;}
 
 /* HINT BAR */
 .hint-bar{text-align:center;padding:4px 14px;background:var(--gold-pale);border-bottom:.5px solid var(--gold-light);font-size:11px;color:var(--amber);flex-shrink:0;font-style:italic;}
+/* Not italic and not amber: it is a control sitting in a line of prose, and it
+   has to read as one. 44px per the touch-target rule for anything new. */
+.hint-tour-btn{display:none;min-height:44px;margin-left:8px;padding:0 12px;
+  background:var(--gold);border:.5px solid var(--gold);border-radius:7px;color:#fff;
+  font-family:'Lora',serif;font-style:normal;font-size:11px;font-weight:600;
+  cursor:pointer;vertical-align:middle;}
+.hint-tour-btn:hover{filter:brightness(1.06);}
+body.hint-welcome .hint-tour-btn{display:inline-block;}
 
 /* MAIN */
 .main{display:flex;flex:1;overflow:hidden;position:relative;}
@@ -728,6 +736,33 @@ body.compact-ui .panel-footer{flex-shrink:0;}
 .seg-stat-run strong{color:var(--ink2);}
 .seg-run-bar{flex:1;height:5px;background:var(--parchment3);border-radius:3px;overflow:hidden;max-width:130px;}
 .seg-run-bar span{display:block;height:100%;background:var(--teal);border-radius:3px;}
+/* ── per-page load chart ──────────────────────────────────────────────── */
+.plc{margin-top:7px;padding-top:6px;border-top:.5px solid var(--border);}
+.plc-head{display:flex;justify-content:space-between;align-items:baseline;
+  font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:.07em;
+  color:var(--ink3);margin-bottom:4px;}
+.plc-cap{font-family:'Lora',serif;letter-spacing:0;font-style:italic;}
+/* Bars run right to left, matching the mushaf; the axis is therefore the
+   right-hand edge, which is where the reading starts. */
+.plc-plot{display:flex;flex-direction:row-reverse;align-items:stretch;gap:5px;}
+.plc-axis{display:flex;flex-direction:column;justify-content:space-between;
+  font-family:'IBM Plex Mono',monospace;font-size:7px;color:var(--ink3);
+  padding-bottom:11px;border-right:.5px solid var(--border);padding-right:3px;}
+.plc-cols{flex:1;display:flex;flex-direction:row-reverse;align-items:flex-end;
+  gap:2px;overflow-x:auto;padding-bottom:1px;}
+.plc-col{flex:1 1 auto;min-width:9px;max-width:34px;background:none;border:none;
+  padding:0;cursor:pointer;display:flex;flex-direction:column;align-items:stretch;gap:2px;}
+.plc-bar-wrap{height:38px;display:flex;align-items:flex-end;}
+.plc-bar{width:100%;border-radius:2px 2px 0 0;transition:opacity .12s;}
+/* A clean page must not look like a page that was never in range: it keeps a
+   visible floor of its own. */
+.plc-clean{width:100%;height:2px;background:var(--border2);border-radius:1px;
+  align-self:flex-end;}
+.plc-num{font-family:'IBM Plex Mono',monospace;font-size:7px;color:var(--ink3);
+  text-align:center;line-height:1;}
+.plc-col:hover .plc-bar{opacity:.75;}
+.plc-col.sel .plc-num{color:var(--ink);font-weight:700;}
+.plc-col.sel .plc-bar{outline:1px solid var(--ink);outline-offset:1px;}
 .seg-stats{display:flex;flex-direction:column;gap:5px;margin-bottom:12px;}
 .seg-stat{cursor:pointer;transition:border-color .12s,background .12s;}
 .seg-stat.sel{border-color:var(--gold);background:var(--gold-pale);}
@@ -1058,8 +1093,16 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
 <!-- Mobile: thin strip to hide the topbar for more Quran space -->
 <button class="topbar-restore-btn" onclick="setTopbarHidden(false)">▼ show bar</button>
 
+<!-- Two messages, chosen by syncHintBar() on whether the device is signed in.
+     "Sign in, or set up your PIN" is the wrong thing to tell a student who is
+     already signed in and reading their feedback, so the original mistake hint
+     is kept for that case. -->
 <div class="hint-bar" id="hintBar">
-  Highlighted words are mistakes your teacher recorded — tap any word or mistake card for details
+  <!-- Filled by syncHintBar() on boot. Left empty so the old hint can never
+       flash before the first sync runs. -->
+  <span id="hintBarText"></span>
+  <button class="hint-tour-btn" id="hintTourBtn"
+          onclick="if(window.TehfizTour)TehfizTour.start();">Show me around</button>
   <button onclick="document.getElementById('hintBar').style.display='none'" style="background:none;border:none;cursor:pointer;color:var(--amber);font-size:13px;padding:0 0 0 6px;line-height:1;vertical-align:middle;opacity:.7;">✕</button>
 </div>
 
@@ -1170,6 +1213,9 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
     <div style="padding:14px 18px 0;flex-shrink:0;">
       <div class="modal-title">Help &amp; Guide</div>
       <div class="modal-sub" style="margin-bottom:8px;">Understanding your session feedback</div>
+      <!-- The tour fires once, on the login that sets a student's PIN. This is
+           the only way back to it. -->
+      <button class="ttr-replay" onclick="closeModal('interventionModal');if(window.TehfizTour)TehfizTour.start();">&#128161; Show me around</button>
       <div style="display:flex;gap:0;border-bottom:1px solid var(--border2);margin:0 -18px;padding:0 18px;overflow-x:auto;">
         <button class="sv-tab active" id="svt-types"  onclick="switchSvTab('types')">📝 Mistake Types</button>
         <button class="sv-tab"        id="svt-levels" onclick="switchSvTab('levels')">🎯 Intervention Levels</button>
@@ -1383,7 +1429,7 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
    console as APP_VERSION, or grep the deployed HTML for it. Bumped on every
    saved build; vcheck.py asserts it matches the filename, so a forgotten bump
    fails the integrity check rather than shipping a lie. */
-const APP_VERSION = 'v1_96';
+const APP_VERSION = 'v1_108';
 window.APP_VERSION = APP_VERSION;
 console.info('Tehfiz student viewer ' + APP_VERSION);
 
@@ -1750,6 +1796,104 @@ function describeRange(startKey, endKey){
 // Score = severity (how much help it needed) x repetition (how many separate
 // times it broke down). Within a single session repetition is capped low, so
 // this leans on severity; across sessions in the viewer it does the heavy work.
+/* PER-PAGE LOAD — the arithmetic behind the score, page by page.
+   strength-v2 divides weighted mistakes by PAGES, so a page is the unit the
+   score is already denominated in; showing the numerator per page is what makes
+   a bare "53" explicable. Bar height is weighted load (mistakeWeight, the same
+   c0..c4 weights the score uses), never a raw count: one Lvl 3 must not read as
+   smaller than three Lvl 0 self-corrections.
+
+   `covered` is the fraction of that page the segment actually spans, from the
+   same pageExtent() arithmetic. It is reported rather than divided by: raw load
+   answers "where did it go wrong", which is what a teacher planning the next
+   lesson needs. Dividing would answer "how weak is that page" and is a
+   different question — the fraction is in the tooltip so a two-verse sliver at
+   the edge of a range is never mistaken for a whole page. */
+function segPageLoads(segs, seg, mistakes){
+  const s = segOrdered(seg || {});
+  if(!keyValid(s.startKey) || !keyValid(s.endKey)) return null;
+  const a = keyAbs(s.startKey), b = keyAbs(s.endKey);
+  if(!a || !b) return null;
+  const lo = Math.min(a,b), hi = Math.max(a,b);
+  const p1 = pageForAbs(lo), p2 = pageForAbs(hi);
+  if(!p1 || !p2 || p2 < p1) return null;
+
+  const pages = [];
+  for(let p = p1; p <= p2; p++){
+    const bd = pageBoundsAbs(p);
+    const covered = bd
+      ? Math.max(0, Math.min(hi, bd.last) - Math.max(lo, bd.first) + 1) /
+        (bd.last - bd.first + 1)
+      : 1;
+    pages.push({page:p, load:0, count:0, worst:null, covered:+covered.toFixed(3)});
+  }
+  const byPage = new Map(pages.map(p=>[p.page, p]));
+
+  // Severity rank, so `worst` means what a teacher means by it: needing to be
+  // taught outranks any number of self-corrections.
+  const RANK = {c0:0, c4:1, c1:2, c2:3, c3:4};
+  mistakesInSegment(segs, seg, mistakes).forEach(m=>{
+    const rec = byPage.get(pageForVerse(m.surah, m.ayah));
+    if(!rec) return;                       // outside the span; nothing to draw
+    rec.count++;
+    rec.load += mistakeWeight(m);
+    const c = (m && m.correction) || 'c0';
+    if(rec.worst === null || (RANK[c]||0) > (RANK[rec.worst]||0)) rec.worst = c;
+  });
+  pages.forEach(p=>{ p.load = +p.load.toFixed(3); });
+  return pages;
+}
+
+/* Colour of a bar: worst intervention on that page, matching the levels used
+   everywhere else so the chart needs no legend of its own. */
+function _pageLoadColor(worst){
+  if(worst === 'c3') return 'var(--red)';
+  if(worst === 'c2') return 'var(--lvl2-orange)';
+  if(worst === 'c1') return 'var(--lvl1-yellow)';
+  if(worst) return 'var(--ink3)';          // c0 / c4 — recorded, but no help given
+  return null;
+}
+
+function pageLoadChartHTML(segs, seg, mistakes){
+  const pages = segPageLoads(segs, seg, mistakes);
+  if(!pages || pages.length < 1) return '';
+  const max = Math.max(...pages.map(p=>p.load), 1);
+
+  /* Right-to-left, like the mushaf: page numbers advance the way the pages
+     turn, so a hafiz reads the chart in the same direction as the text. The
+     axis sits on the right for the same reason — it is the origin edge. */
+  const bars = pages.map(p=>{
+    const pct = p.load > 0 ? Math.max(6, Math.round(p.load / max * 100)) : 0;
+    const col = _pageLoadColor(p.worst) || 'var(--border2)';
+    const part = p.covered < 0.999 ? ` · ${Math.round(p.covered*100)}% of page in range` : '';
+    const tip = p.count
+      ? `Page ${p.page} — ${p.count} mistake${p.count===1?'':'s'}, weight ${p.load}${part}`
+      : `Page ${p.page} — clean${part}`;
+    return `<button class="plc-col${_rvPageFilter===p.page?' sel':''}" title="${esc(tip)}"
+              onclick="event.stopPropagation();rvFilterPage(${p.page})">
+        <span class="plc-bar-wrap">
+          ${p.load>0
+            ? `<span class="plc-bar" style="height:${pct}%;background:${col};"></span>`
+            : `<span class="plc-clean"></span>`}
+        </span>
+        <span class="plc-num">${p.page}</span>
+      </button>`;
+  }).join('');
+
+  const worstPage = pages.reduce((a,p)=>(p.load>(a?a.load:0)?p:a), null);
+  const caption = worstPage && worstPage.load > 0
+    ? `heaviest on page ${worstPage.page}`
+    : 'no mistakes recorded';
+
+  return `<div class="plc" title="Weighted mistakes per page. Bar height uses the same level weights as the strength score; colour is the worst intervention on that page. Pages run right to left, as the mushaf does.">
+    <div class="plc-head"><span>MISTAKES PER PAGE</span><span class="plc-cap">${esc(caption)}</span></div>
+    <div class="plc-plot">
+      <div class="plc-cols">${bars}</div>
+      <div class="plc-axis"><span>${max}</span><span>0</span></div>
+    </div>
+  </div>`;
+}
+
 function focusAyahs(mistakes, limit){
   const by={};
   (mistakes||[]).forEach(m=>{
@@ -2814,6 +2958,21 @@ function syncCompactUI(){
   const compact = isCompactViewport();
   document.body.classList.toggle('compact-ui', compact);
   document.body.classList.toggle('compact-ui-landscape', compact && window.innerWidth > window.innerHeight);
+  syncPanelOpenFlag();
+}
+
+/* panelOpen is a flag; the panel's classes are the truth. They drift, because
+   crossing the 700px boundary swaps which class means "closed" — .panel-open on
+   mobile, .panel-collapsed on desktop — without anything updating the flag. A
+   window dragged from desktop width down to phone width therefore leaves
+   panelOpen true while the panel sits at translateY(100%), so togglePanel()
+   would CLOSE an already-shut panel and revealSessions() would skip it
+   entirely. Re-read the flag from the DOM whenever the breakpoint is applied. */
+function syncPanelOpenFlag(){
+  const panel = document.getElementById('sessionPanel');
+  if(!panel) return;
+  panelOpen = isMobileUI() ? panel.classList.contains('panel-open')
+                           : !panel.classList.contains('panel-collapsed');
 }
 syncCompactUI(); // run immediately — body already exists at this point in the document
 let _compactUiResizeTimer=null;
@@ -2960,6 +3119,7 @@ window.addEventListener('DOMContentLoaded',()=>{
   }
   // Panel state: open on desktop, hidden on mobile (portrait or landscape)
   panelOpen=!isCompactViewport();
+  syncHintBar();
   const panel=document.getElementById('sessionPanel');
   const btn=document.getElementById('panelToggleBtn');
   const fab=document.getElementById('panelFab');
@@ -5060,7 +5220,7 @@ function openSingleReview(id){
   // typeConfig lists; migrate on read or every type bar counts zero.
   const sess={...raw, mistakes:(raw.mistakes||[]).map(m=>({...m, type:migrateId(m.type)}))};
   reviewingSession=sess;
-  _rvSegFilter=null; _rvListOpen=false;
+  _rvSegFilter=null; _rvListOpen=false; _rvPageFilter=null;
   document.getElementById('singleReviewContent').innerHTML = buildReviewHTML(sess);
   document.getElementById('singleReviewModal').classList.add('open');
 }
@@ -5071,7 +5231,17 @@ function renderSessionsList(){
   // Update the toggle button label based on current selection state
   const selectBtn=document.getElementById('selectAllBtn');
   if(selectBtn) selectBtn.innerHTML=activeSessions.length>0?'◎ Deselect all':'◉ Select all';
-  if(!savedSessions.length){el.innerHTML=`<div class="empty-hint">No sessions yet.<br>Import a .qrs file from your teacher.</div>`;return;}
+  /* "Import a .qrs file" is wrong advice for a student who has just logged in
+     and is waiting on their teacher — they have nothing to import and no way
+     to get one. Ask the module which case this is. */
+  if(!savedSessions.length){
+    const C = window.TehfizClaim;
+    const linked = !!(C && typeof C.isPaired === 'function' && C.isPaired());
+    el.innerHTML = linked
+      ? `<div class="empty-hint">No sessions yet.<br>Your teacher hasn't sent any.</div>`
+      : `<div class="empty-hint">No sessions yet.<br>Log in with your teacher's code, or import a .qrs file.</div>`;
+    return;
+  }
   const sorted=[...savedSessions].sort((a,b)=>(b.id||0)-(a.id||0));
   el.innerHTML=sorted.map((s,si)=>{
     const isA=activeSessions.some(a=>a.id===s.id);
@@ -5092,6 +5262,11 @@ function renderSessionsList(){
     </div>`;
   }).join('');
   if(window.TehfizReview) TehfizReview.decorate();
+  /* Same reason TehfizReview has this hook: renderSessionsList() replaces the
+     whole innerHTML, so anything a module injected is gone. The background
+     poll fires every 5 minutes and would otherwise wipe the tour's example
+     card mid-tour. */
+  if(window.TehfizTour) TehfizTour.decorate();
 }
 
 // ── MISTAKE LIST: GROUPING, FILTERS, RENDERING ────────────────────
@@ -5902,8 +6077,29 @@ let _rvSegFilter = null;
 let _rvListOpen = false;
 function rvSetListOpen(v){ _rvListOpen = !!v; }
 
+function _rvApplyPageFilter(segs, ml){
+  if(!_rvPageFilter) return ml;
+  const out = ml.filter(m=>pageForVerse(m.surah, m.ayah) === _rvPageFilter);
+  /* A page with no mistakes is a legitimate thing to tap — the bar is a visible
+     floor, not an absence. Returning an empty list would read as a bug, so the
+     filter declines rather than emptying the section. */
+  return out.length ? out : ml;
+}
+
+let _rvPageFilter = null;
+function rvFilterPage(pg){
+  _rvPageFilter = (_rvPageFilter===pg) ? null : pg;
+  /* singleReviewContent, for the same reason rvFilterSegment() uses it: the
+     viewer has two review surfaces and the teacher app has one. Copying that
+     function's body without this line would repaint the closed multi-session
+     modal, and the tap would appear to do nothing. */
+  const el = document.getElementById('singleReviewContent');
+  if(reviewingSession && el) el.innerHTML = buildReviewHTML(reviewingSession);
+}
+
 function rvFilterSegment(segId){
   _rvSegFilter = (_rvSegFilter===segId) ? null : segId;   // tapping again clears
+  _rvPageFilter = null;                                   // a new segment discards a page pick
   /* singleReviewContent, NOT reviewContent. The viewer has two review surfaces
      — one session, and the multi-session view — where the teacher app has only
      one. This line was carried across unchanged, so it repainted the closed
@@ -5941,7 +6137,11 @@ function buildReviewHTML(s){
        + _rvCharts(ml, cfg, types, tally)
        + _rvFocus(ml, cfg)
        + _rvSpotTest(s.spotTest, ml)
-       + _rvVerses(ml, cfg);
+       /* Narrowed HERE and nowhere else. Passing a page-filtered list into
+          _rvStrength would rebuild every chart from one page's mistakes — the
+          bars would all collapse to the bar just tapped, and the strength score
+          beside them would silently change. */
+       + _rvVerses(_rvApplyPageFilter(segs, ml), cfg);
 }
 
 // ── Header: who/what/when, remarks, and the level badge strip ──────
@@ -5996,10 +6196,10 @@ function _rvStrength(s, ml){
         <span class="seg-stat-band" style="color:${b.color};">${b.label}</span>
         ${clean?`<span class="seg-stat-clean">${clean.clean}/${clean.total} clean (${clean.pct}%)</span>`:''}
       </div>
-      ${run?`<div class="seg-stat-run" title="Longest unbroken run of mistake-free verses (${run} of ${clean?clean.total:'?'}). The bar is that run as a share of the whole segment — full width would mean the entire passage was clean.">
-        <span class="seg-run-bar"><span style="width:${clean?Math.round(run/clean.total*100):0}%;"></span></span>
+      ${run?`<div class="seg-stat-run" title="Longest unbroken run of mistake-free verses.">
         longest clean run <strong>${run}</strong> of ${clean?clean.total:'?'}
       </div>`:''}
+      ${pageLoadChartHTML(segs, sg, ml)}
     </div>`;
   }).join('');
 
@@ -6330,6 +6530,62 @@ function applyIncomingSessions(sessions, removedIds){
   }
   return added;
 }
+
+/* ── Seams for TehfizClaim ────────────────────────────────────────────────
+   The claim module owns pairing; the panel belongs to the app. These are the
+   only two things the module is allowed to ask of it, in the same shape as
+   applyIncomingSessions() / removeSyncedSessions() above.
+
+   revealSessions() is "ensure open", NOT togglePanel(). togglePanel() flips
+   panelOpen, which starts TRUE on desktop (panelOpen = !isCompactViewport()),
+   so calling it from the module would close the panel on a laptop while
+   opening it on a phone. */
+/* Two independent effects, guarded independently and ordered deliberately.
+   switchPanelTab() calls renderSessionsList(); if that throws, an unguarded
+   version leaves the panel shut and the caller none the wiser. Opening first
+   and catching separately means the worst case is the right panel on the wrong
+   tab, instead of no panel at all. */
+/* Called on boot and after any pairing change. */
+function syncHintBar(){
+  const txt = document.getElementById('hintBarText');
+  if(!txt) return;
+  const C = window.TehfizClaim;
+  const linked = !!(C && typeof C.isPaired === 'function' && C.isPaired());
+  const bar = document.getElementById('hintBar');
+
+  /* Once signed in the bar disappears entirely. "Highlighted words are
+     mistakes your teacher recorded" was the old hint bar, and the tour now
+     covers it properly, with the word actually spotlighted.
+
+     The signed-out bar survives because it is not a hint: it is the welcome
+     line plus Show me around, which is the only always-visible way into the
+     tour. Losing it would leave the tour reachable only from inside Help,
+     which a first-time student has no reason to open. */
+  document.body.classList.toggle('hint-welcome', !linked);
+  if (bar) bar.style.display = linked ? 'none' : '';
+  if (!linked) {
+    txt.textContent = 'Welcome to the Student viewer. Sign in, or set up your PIN ' +
+                      'using the code your teacher has sent you.';
+  }
+}
+
+function revealSessions(){
+  /* Before deciding whether to open it, make sure the flag still describes
+     reality — see syncPanelOpenFlag(). Skipping this is what left the panel
+     shut on a resized window while the tour reported it open. */
+  syncPanelOpenFlag();
+  const opened = !panelOpen;
+  try{ if(!panelOpen) togglePanel(); }
+  catch(e){ console.error('revealSessions: togglePanel failed', e); }
+  try{ switchPanelTab('sessions'); }
+  catch(e){ console.error('revealSessions: switchPanelTab failed', e); }
+  return opened;
+}
+
+/* Used to decide whether a first-time student should be shown the login panel
+   on boot. A student who has imported a .qrs by hand is not a first-time
+   student, even though they have never paired. */
+function localSessionCount(){ return savedSessions.length; }
 
 /** A session the teacher sent is the teacher's record, not the student's copy
  *  to discard — and deleting it would achieve nothing, since the next sync
@@ -6716,6 +6972,13 @@ let code  = localStorage.getItem(K.code) || null;
 let index = readJSON(K.index, {});      // clientId -> {serverId, updated_at}
 let busy = false;
 let errorMsg = '';
+/* Suppresses the code field's autofocus for exactly one render — see open(). */
+let noFocusOnce = false;
+/* Set when the server reports this login SET the PIN, i.e. a student who has
+   never used Tehfiz before. Consumed by close(), not here: the tour cannot
+   render under this overlay, which sits at z-index 900 and deliberately stays
+   open after sign-in. */
+let tourPending = false;
 let view = 'code';   // 'code' | 'setup' | 'paired' | 'changepin' | 'teachers'
 /* null = not fetched yet, [] = fetched and empty. Cleared on sign-out so a
    shared device never shows the previous student's teachers. */
@@ -6904,10 +7167,20 @@ async function submitPin(pin, confirmPin, firstTime) {
     view = 'paired';
     busy = false;
     render();
+    if (data.student && data.student.firstClaim) tourPending = true;
     toast(data.student && data.student.firstClaim
       ? 'PIN set \u2014 remember it, you will need it on any other device'
       : 'Connected');
     await pull(true);
+    /* A student who has just set a PIN has never seen this app before, so the
+       paired screen — code, Change PIN, Your teachers — is the least useful
+       thing to leave them looking at. Close and hand straight over.
+
+       AFTER the pull, not before: closing when the request was fired shows an
+       empty app while payloads download, and a pull failure renders into
+       errorMsg inside this overlay and nowhere else. close() is what actually
+       starts the tour, so a student who signs in normally is unaffected. */
+    if (tourPending) close();
   } catch (err) {
     busy = false;
     if (err.status === 0) {
@@ -6945,7 +7218,7 @@ async function changePin(currentPin, newPin, confirmPin) {
  * updated_at has moved. A teacher re-sending a corrected session bumps that,
  * so corrections arrive without re-downloading the whole term every time.
  */
-async function pull(loud) {
+async function pull(loud, reveal) {
   if (!paired() || busy) return;
   busy = true; errorMsg = ''; render();
   try {
@@ -6987,6 +7260,15 @@ async function pull(loud) {
       if (removedIds.length) bits.push(removedIds.length + ' removed');
       toast(bits.length ? bits.join(', ') : 'Up to date');
     }
+
+    /* Only on success, and only after the payloads have landed. Closing when
+       the request was fired would show the student an empty app while it
+       downloaded; closing on failure would hide errorMsg, which renders inside
+       this overlay and nowhere else, turning a dead connection into silence. */
+    if (reveal) {
+      close();
+      if (typeof window.revealSessions === 'function') window.revealSessions();
+    }
   } catch (err) {
     busy = false;
     errorMsg = err.status === 0 ? 'No connection.' : err.message;
@@ -6997,10 +7279,38 @@ async function pull(loud) {
 
 /* ── UI ─────────────────────────────────────────────────────────────────── */
 
-function open() { if (reviewing()) return;
+/* `focus` defaults to true. It is passed false ONLY by the boot-time prompt:
+   focusing the code field there throws the phone keyboard up over the panel
+   before the student has read the one sentence explaining what a code is,
+   which is the entire reason the prompt exists. A student who taps the Log in
+   button has already decided, so that path still focuses. */
+function open(focus) { if (reviewing()) return;
+                  noFocusOnce = (focus === false);
                   $('tclOverlay').classList.add('tcl-on');
                   view = paired() ? 'paired' : 'code'; errorMsg = ''; render(); }
-function close() { $('tclOverlay').classList.remove('tcl-on'); errorMsg = ''; }
+function close() {
+  $('tclOverlay').classList.remove('tcl-on'); errorMsg = '';
+  // Signing in or out flips which hint the bar should be showing.
+  if (typeof window.syncHintBar === 'function') window.syncHintBar();
+  /* Whichever way they left — the button, the ✕, the backdrop — this is the
+     first moment the app is visible to a brand-new student. Delayed so the
+     mobile panel's slide transition has finished before the tour measures
+     anything. */
+  if (tourPending) {
+    tourPending = false;
+    /* Forced, not startIfUnseen. firstClaim is already a once-per-claim signal
+       from the server, so a second local gate bought nothing and cost the
+       thing it was guarding: tapping "Show me around" once sets
+       tehfiz_tour_seen, which then permanently suppressed the automatic tour
+       for that device — including on the very PIN setup it exists for.
+
+       The cost is that rotating a code clears claimed_at, so a student whose
+       code is rotated sees the tour again. That is a mild annoyance on a rare
+       action, and much cheaper than a first-time student silently getting no
+       tour at all. */
+    setTimeout(() => { if (window.TehfizTour) TehfizTour.start(); }, 320);
+  }
+}
 
 function render() {
   navState();                     // state changes all funnel through here
@@ -7038,7 +7348,9 @@ function render() {
       'First time, or has your teacher reset your PIN?</button></p>';
     // Land on whichever field is still empty: coming back from the setup screen
     // the code is already filled in, and re-focusing it just invites retyping.
-    setTimeout(() => {
+    // Cleared after one render, so a subsequent error re-render still focuses.
+    if (noFocusOnce) { noFocusOnce = false; }
+    else setTimeout(() => {
       const el = $(pendingCode ? 'tclPin' : 'tclCode');
       if (el) el.focus();
     }, 30);
@@ -7191,7 +7503,11 @@ document.addEventListener('click', async (e) => {
     view = 'code'; errorMsg = ''; autoSetup = false; return render();
   }
   if (act === 'back-paired') { view = 'paired'; errorMsg = ''; return render(); }
-  if (act === 'pull')   return pull(true);
+  /* This button is the student's way OUT of the panel, not just a refresh: the
+     sessions it fetches land behind the overlay they are still looking at.
+     Sign-in deliberately does NOT do this — it leaves them on the paired
+     screen, where the code and Change PIN are. */
+  if (act === 'pull')   return pull(true, true);
   if (act === 'changepin') { view = 'changepin'; errorMsg = ''; return render(); }
   if (act === 'teachers') {
     view = 'teachers'; errorMsg = ''; teacherList = null; render();
@@ -7315,7 +7631,28 @@ function mount() {
     pull(false);
     setInterval(() => pull(false), POLL_MS);
     window.addEventListener('online', () => pull(false));
+    return;
   }
+
+  /* Nothing in the topbar says what to do first. On a narrow screen .btn-t-label
+     is hidden, so Log in and Sync are a bare 👤 and ↻ — which is the whole
+     problem this solves.
+
+     Shown only when there is also nothing on the device. A student whose
+     teacher has not signed up still imports .qrs files by hand (see THE .qrs
+     IMPORT STAYS above); once they have done so even once they are not a
+     first-time student, and meeting a login panel on every launch would be a
+     wall in front of the one route they actually have. Sign-out drops the
+     synced sessions with it, so a shared tablet does prompt the next child.
+
+     Dismissible, and that must stay true: ✕ and the backdrop both close it.
+     This runs AFTER the review-mode return above, so a teacher opening a
+     student's history is never prompted (open() refuses in review mode too). */
+  let hasLocal = true;   // assume yes, so a missing seam degrades to silence
+  try {
+    if (typeof window.localSessionCount === 'function') hasLocal = window.localSessionCount() > 0;
+  } catch { hasLocal = true; }
+  if (!hasLocal) open(false);
 }
 
 if (document.readyState === 'loading') {
@@ -7350,7 +7687,7 @@ function isSynced(id) {
   return Object.prototype.hasOwnProperty.call(index, String(id));
 }
 
-window.TehfizClaim = { open, sync, isSynced };
+window.TehfizClaim = { open, sync, isSynced, isPaired: paired };
 
 })();
 </script>
@@ -7735,6 +8072,489 @@ body.trv-mode{padding-top:32px;}
 .trv-confirm{flex-basis:100%;margin-top:5px;font-size:10px;line-height:1.55;color:var(--red);
   background:var(--red-bg);border:.5px solid var(--red);border-radius:5px;padding:6px 8px;}
 .trv-confirm-btns{display:flex;gap:5px;margin-top:6px;}
+</style>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     TEHFIZ TOUR MODULE  —  v1  (student viewer)
+     ═══════════════════════════════════════════════════════════════════════════
+
+     Self-contained. Everything this module owns is prefixed:
+       namespace      TehfizTour
+       localStorage   tehfiz_tour_*
+       CSS classes    .ttr-*
+       DOM container  #ttrRoot
+
+     PUBLIC INTERFACE:
+       TehfizTour.start()      run it. Help's "Show me around", and TehfizClaim
+                               on the login that sets a student's PIN.
+       TehfizTour.active()     true while running.
+       TehfizTour.decorate()   re-inject the example card. Called by
+                               renderSessionsList(), same hook TehfizReview uses.
+
+     WHEN IT FIRES
+     Once, on the claim that returns firstClaim — the login where the student
+     sets their PIN, which is the only moment they are genuinely new. NOT on a
+     second device and NOT after a cleared browser, since both of those already
+     know the app. `tehfiz_tour_seen` only ever SUPPRESSES: rotating a code
+     clears claimed_at (§3.3), so firstClaim can legitimately come back a second
+     time for the same student, and they should not sit through this again.
+
+     THE EXAMPLE CARD, AND THE RULE IT OBEYS
+     A brand-new student has no sessions — their teacher has only just made the
+     code — so steps 4 and 5 have nothing real to point at. The card they see is
+     built HERE and injected into #sessListInner as this module's own DOM.
+
+     It must NEVER reach savedSessions. If it did, saveSess() would persist it
+     into qsv_sessions, recompute() would push invented mistakes into
+     activeMistakes and highlight invented words on the mushaf, and the mirror
+     rule would not remove it — only ids TehfizClaim put in `index` are eligible.
+     The child would be left with a fabricated lesson in their history, forever,
+     that looks like something their teacher sent.
+
+     So: nothing here calls saveSess(), recompute() or applyIncomingSessions.
+     The card is inert (pointer-events:none), carries a visible "Example" pill,
+     and is removed on end. If the student HAS real sessions it is never built.
+
+     NARRATED, NOT INTERACTIVE
+     Steps advance on this module's own Next button, never on the student
+     performing the real action. Waiting for a real tap means choreographing
+     every step against app state, and step 2's action opens an overlay at
+     z-index 900 that would cover the tour outright.
+     ═══════════════════════════════════════════════════════════════════════ -->
+<div id="ttrRoot"></div>
+<script>
+(function () {
+'use strict';
+
+const K_SEEN = 'tehfiz_tour_seen';
+const VERSION = 1;          // bump to re-run for everyone, deliberately
+
+const $ = (id) => document.getElementById(id);
+
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => (
+    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+  ));
+}
+
+/* offsetParent is null for position:fixed elements, so .panel-fab would read
+   as hidden. Measure the rect instead: display:none gives 0x0, which is also
+   how body.topbar-hidden hides the topbar. */
+function vis(sel) {
+  const el = document.querySelector(sel);
+  if (!el) return null;
+  const r = el.getBoundingClientRect();
+  return (r.width > 0 && r.height > 0) ? el : null;
+}
+
+/* #panelToggleBtn and .panel-fab are mutually exclusive by CSS — the first is
+   display:none under body.compact-ui, the second when NOT compact. A step that
+   named either one would spotlight nothing on half of all devices. */
+function pick(sels) {
+  for (const s of sels) { const el = vis(s); if (el) return el; }
+  return null;
+}
+
+function realCount() {
+  try {
+    return typeof window.localSessionCount === 'function' ? window.localSessionCount() : 0;
+  } catch { return 0; }
+}
+
+/* Returns true when the panel actually had to open, meaning its slide is now
+   running and nothing may be measured until it finishes. */
+function reveal() {
+  return (typeof window.revealSessions === 'function') ? !!window.revealSessions() : false;
+}
+
+/* Read from computed style rather than hardcoded, so this tracks the CSS
+   instead of drifting from it the next time the transition is retuned. */
+/* Waits for the target to STOP MOVING, then reports it.
+
+   The previous version timed a delay off the panel's CSS transition and
+   trusted revealSessions() to say whether it had started one. Both assumptions
+   are avoidable: this watches the rect itself, so it is correct whatever moves
+   the element, however long it takes, and whether or not before() succeeded at
+   all. If the panel never opens because something threw, the rect simply never
+   becomes valid and the 700ms ceiling ends the wait. */
+function whenStable(find, cb, alive) {
+  const t0 = Date.now();
+  let last = null, same = 0;
+  const tick = () => {
+    if (!running || (alive && !alive())) return;
+    const el = find ? find() : null;
+    const r  = el ? el.getBoundingClientRect() : null;
+    const key = r ? [Math.round(r.left), Math.round(r.top),
+                     Math.round(r.width), Math.round(r.height)].join(',') : 'none';
+    if (key === last) same++; else { same = 0; last = key; }
+    /* An element that is off-screen and momentarily motionless is NOT settled —
+       a card inside a shut panel holds one constant rect a full viewport below
+       the fold, which satisfies a naive stability test instantly and paints the
+       spotlight where nobody can see it. Only an on-screen rect can end the
+       wait early; anything else runs to the deadline and is then handled as an
+       off-screen target by the caller. */
+    if (r && !onScreen(r)) same = 0;
+    if (same >= 2 || Date.now() - t0 > 700) {
+      if (alive && !alive()) return;
+      return cb(el, r);
+    }
+    requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
+
+/* A rect can be perfectly valid and still be nowhere the student can see it —
+   a card inside a panel that never opened sits a full viewport below the fold,
+   which is exactly what a spotlight aimed at it looks like: no spotlight at
+   all, and a caption pinned to the bottom edge. Off-screen is treated as no
+   target, which downgrades the step to a centred card instead of a broken one. */
+function onScreen(r) {
+  return !!r && r.width > 0 && r.height > 0 &&
+         r.bottom > 0 && r.top < window.innerHeight &&
+         r.right > 0 && r.left < window.innerWidth;
+}
+
+function reviewing() {
+  return !!(window.TehfizReview && TehfizReview.active());
+}
+
+/* ── the example card ───────────────────────────────────────────────────── */
+
+const DEMO_HTML =
+  '<div class="sess-card ttr-demo">' +
+    '<span class="ttr-demo-pill">Example</span>' +
+    '<div class="sess-card-head"><div style="flex:1;min-width:0;">' +
+      '<div style="display:flex;align-items:center;gap:5px;">' +
+        '<span class="sess-name">Your name</span></div>' +
+      '<div class="sess-range">Al-Baqarah 1\u201320</div>' +
+      '<div class="sess-date">Today \u00b7 25 min</div>' +
+    '</div><div class="sess-card-actions">' +
+      '<button class="sess-review">\u{1F4CA} Review</button>' +
+    '</div></div>' +
+    '<div class="sess-counts"><span>4 mistakes</span>' +
+      '<span style="color:var(--lvl1-yellow)">Lvl 1 &nbsp;2</span>' +
+      '<span style="color:var(--lvl2-orange)">Lvl 2 &nbsp;1</span>' +
+      '<span style="color:var(--red)">Lvl 3 &nbsp;1</span></div>' +
+  '</div>';
+
+function ensureDemo() {
+  if (realCount() > 0) return;              // they have real lessons; use those
+  const host = $('sessListInner');
+  if (!host || host.querySelector('.ttr-demo')) return;
+  const hint = host.querySelector('.empty-hint');
+  if (hint) hint.remove();
+  host.insertAdjacentHTML('afterbegin', DEMO_HTML);
+}
+
+function clearDemo() {
+  document.querySelectorAll('.ttr-demo').forEach((n) => n.remove());
+  // Puts the real empty-hint back rather than leaving a gap where the card was.
+  if (typeof window.renderSessionsList === 'function') window.renderSessionsList();
+}
+
+/* ── steps ──────────────────────────────────────────────────────────────── */
+
+const STEPS = [
+  { title: 'Welcome to Tehf\u012bz',
+    body: 'This is where you read the feedback your teacher sends after each ' +
+          'lesson. It takes about a minute to show you around.' },
+
+  { title: 'New lessons arrive here',
+    find: () => pick(['#tclSyncBtn']),
+    body: 'Your teacher sends a lesson from their side. Tap this to check for ' +
+          'anything new.' },
+
+  { title: 'Your lessons live here',
+    find: () => pick(['#panelToggleBtn', '#panelFab']),
+    body: 'This opens and closes the panel with all your lessons in it.' },
+
+  { title: 'Every lesson is a card',
+    before: () => { const o = reveal(); ensureDemo(); return o; },
+    find: () => pick(['#sessListInner .sess-card']),
+    body: 'One card for each lesson. It shows what you recited, how long for, ' +
+          'and how many mistakes were marked. Tap a card to see those mistakes ' +
+          'on the page.' },
+
+  { title: 'Review shows the full report',
+    before: () => { const o = reveal(); ensureDemo(); return o; },
+    find: () => pick(['#sessListInner .sess-card .sess-review']),
+    body: 'Tap Review on any card for the whole lesson written out \u2014 every ' +
+          'mistake, where it was, and how you are doing over time.' },
+
+  { title: 'Every mistake, listed',
+    before: () => reveal(),
+    find: () => pick(['#ptab-mistakes']),
+    body: 'This tab lists the mistakes from the lessons you have selected. Tap ' +
+          'one to jump straight to that word in the mushaf.' },
+
+  { title: 'That is everything',
+    find: () => pick(['.topbar-right .btn-t[title="Intervention guide"]', '#ptab-sessions']),
+    body: 'Help explains what the mistake types and levels mean \u2014 and you can ' +
+          'run this tour again from there whenever you like.' },
+];
+
+/* ── state ──────────────────────────────────────────────────────────────── */
+
+let running = false;
+let i = 0;
+
+function seen() {
+  try { return Number(localStorage.getItem(K_SEEN) || 0) >= VERSION; }
+  catch { return false; }
+}
+function markSeen() {
+  try { localStorage.setItem(K_SEEN, String(VERSION)); } catch {}
+}
+
+/* ── running ────────────────────────────────────────────────────────────── */
+
+function start(force) {
+  /* A teacher reading a student's history must not be handed the student's
+     tutorial — the same guard TehfizClaim applies. */
+  if (reviewing() || running) return;
+  if (!force && seen()) return;
+  // The topbar is display:none while body.topbar-hidden, and four of seven
+  // steps point at it.
+  if (typeof window.setTopbarHidden === 'function') window.setTopbarHidden(false);
+  running = true; i = 0;
+  $('ttrRoot').classList.add('ttr-on');
+  show();
+}
+
+function end() {
+  running = false;
+  $('ttrRoot').classList.remove('ttr-on');
+  clearDemo();
+  markSeen();
+}
+
+/* Direction of travel, so a skipped step skips the way the student was going.
+   Stepping BACK into a missing step and then skipping forward would return
+   them to the step they just left — which reads as a dead Back button.
+
+   This is not hypothetical: `.panel-fab.open` is display:none, so once step 4
+   has opened the panel, step 3's target no longer exists on mobile. */
+let dir = 1;
+
+function go(d) {
+  const n = i + d;
+  if (n < 0) return;
+  if (n >= STEPS.length) return end();
+  dir = d < 0 ? -1 : 1;
+  i = n; show();
+}
+
+/* Every show() supersedes the one before it. Without this, pressing Next while
+   a wait is still polling leaves the OLD callback armed: it fires against the
+   new step and calls go() a second time, so a single tap advances two or more
+   steps. Off-screen waits run to a 700ms deadline, which is easily long enough
+   for a student to tap again. */
+let gen = 0;
+
+function show() {
+  const step = STEPS[i];
+  const myGen = ++gen;
+  const alive = () => myGen === gen;
+
+  /* Logged rather than swallowed. A silent catch here is what let a throw
+     inside revealSessions() present as "the spotlight is in the wrong place"
+     instead of as an error with a stack. */
+  if (step.before) {
+    try { step.before(); } catch (e) { console.error('TehfizTour: before() threw', e); }
+  }
+
+  whenStable(step.find, (el, r) => {
+    if (!running || !alive()) return;
+
+    // A step whose target genuinely is not there is skipped rather than shown
+    // pointing at the corner of an empty screen. Skips follow the direction of
+    // travel, so Back never bounces forward.
+    if (step.find && !el) return go(dir);
+
+    if (el && !onScreen(r) && el.scrollIntoView) {
+      // Off-screen: try scrolling to it, wait again, and if it is STILL not
+      // visible, fall through as an untargeted step rather than pointing at
+      // nothing.
+      try { el.scrollIntoView({ block: 'center', behavior: 'auto' }); } catch {}
+      return whenStable(step.find, (el2, r2) => {
+        if (!alive()) return;
+        paint(step, onScreen(r2) ? el2 : null, onScreen(r2) ? r2 : null, alive);
+      }, alive);
+    }
+    paint(step, el, r, alive);
+  }, alive);
+}
+
+function paint(step, el, rect, alive) {
+  requestAnimationFrame(() => {
+    if (!running || (alive && !alive())) return;
+    const hole = $('ttrHole');
+    const card = $('ttrCard');
+
+    if (rect) {
+      const p = 6;
+      hole.style.display = 'block';
+      hole.style.left   = (rect.left - p) + 'px';
+      hole.style.top    = (rect.top - p) + 'px';
+      hole.style.width  = (rect.width + p * 2) + 'px';
+      hole.style.height = (rect.height + p * 2) + 'px';
+      $('ttrRoot').classList.remove('ttr-centred');
+    } else {
+      hole.style.display = 'none';
+      $('ttrRoot').classList.add('ttr-centred');
+    }
+
+    $('ttrTitle').textContent = step.title;
+    $('ttrBody').textContent  = step.body;
+    $('ttrCount').textContent = (i + 1) + ' of ' + STEPS.length;
+    $('ttrBack').style.visibility = i === 0 ? 'hidden' : 'visible';
+    $('ttrNext').textContent = (i === STEPS.length - 1) ? 'Done' : 'Next';
+
+    place(card, rect);
+  });
+}
+
+/* Below the target when it fits, above when it does not, centred when there is
+   room for neither. Clamped to the viewport: anchoring to a topbar button's
+   left edge on a 360px screen puts half the card off-screen. */
+function place(card, rect) {
+  card.style.visibility = 'hidden';
+  card.style.left = '0px';
+  card.style.top  = '0px';
+  requestAnimationFrame(() => {
+    const cw = card.offsetWidth, ch = card.offsetHeight;
+    const vw = window.innerWidth, vh = window.innerHeight, M = 12;
+    let top;
+    if (rect && rect.bottom + ch + 16 <= vh - M)      top = rect.bottom + 12;
+    else if (rect && rect.top - ch - 16 >= M)         top = rect.top - ch - 12;
+    else                                             top = Math.max(M, (vh - ch) / 2);
+    let left = rect ? (rect.left + rect.width / 2 - cw / 2) : (vw - cw) / 2;
+    left = Math.max(M, Math.min(left, vw - cw - M));
+    card.style.left = left + 'px';
+    card.style.top  = top + 'px';
+    card.style.visibility = 'visible';
+  });
+}
+
+/* ── mount ──────────────────────────────────────────────────────────────── */
+
+let mounted = false;
+
+function mount() {
+  if (mounted) return;                    // a second run would stack listeners
+  mounted = true;
+  const root = $('ttrRoot');
+  if (!root) return;
+  root.innerHTML =
+    '<div class="ttr-veil"></div>' +
+    '<div class="ttr-hole" id="ttrHole"></div>' +
+    '<div class="ttr-card" id="ttrCard">' +
+      '<div class="ttr-title" id="ttrTitle"></div>' +
+      '<div class="ttr-body" id="ttrBody"></div>' +
+      '<div class="ttr-foot">' +
+        '<span class="ttr-count" id="ttrCount"></span>' +
+        '<span class="ttr-spacer"></span>' +
+        '<button class="ttr-btn" data-ttr="skip">Skip</button>' +
+        '<button class="ttr-btn" data-ttr="back" id="ttrBack">Back</button>' +
+        '<button class="ttr-btn ttr-primary" data-ttr="next" id="ttrNext">Next</button>' +
+      '</div>' +
+    '</div>';
+
+  /* Document-level delegate, and so no stopPropagation anywhere in the panel —
+     the same trap TehfizSync and TehfizClaim document. */
+  document.addEventListener('click', (e) => {
+    const t = e.target.closest('[data-ttr]');
+    if (!t || !running) return;
+    const a = t.dataset.ttr;
+    if (a === 'skip') return end();
+    if (a === 'back') return go(-1);
+    if (a === 'next') return go(1);
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (!running) return;
+    if (e.key === 'Escape')     { e.preventDefault(); end(); }
+    if (e.key === 'ArrowRight') { e.preventDefault(); go(1); }
+    if (e.key === 'ArrowLeft')  { e.preventDefault(); go(-1); }
+  });
+
+  let rt = null;
+  window.addEventListener('resize', () => {
+    if (!running) return;
+    clearTimeout(rt);
+    rt = setTimeout(show, 120);           // rects are stale after a rotation
+  });
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', mount);
+} else { mount(); }
+
+/** Called by renderSessionsList(), which replaces the list's innerHTML. */
+function decorate() { if (running) ensureDemo(); }
+
+function active() { return running; }
+
+window.TehfizTour = { start: () => start(true), active, decorate,
+                      startIfUnseen: () => start(false) };
+
+})();
+</script>
+
+<style>
+/* ── TehfizTour styles — every selector prefixed .ttr- ────────────────── */
+#ttrRoot{display:none;}
+#ttrRoot.ttr-on{display:block;}
+
+/* Transparent and click-eating: a narrated tour must not let a stray tap fire
+   an app control that the student cannot see the result of. */
+.ttr-veil{position:fixed;inset:0;z-index:849;background:transparent;}
+#ttrRoot.ttr-centred .ttr-veil{background:rgba(26,22,18,.72);}
+
+/* The dimming IS this element's shadow, spread far enough to cover any
+   viewport. The element itself stays transparent, so the target shows through
+   with rounded corners for free — no four-rect layout maths. 850 sits above the
+   panel backdrop (99) and the topbar, below the login overlay (900) and toasts. */
+.ttr-hole{position:fixed;z-index:850;border-radius:8px;pointer-events:none;
+  box-shadow:0 0 0 9999px rgba(26,22,18,.72);
+  outline:2px solid var(--gold);outline-offset:0;
+  transition:left .18s ease,top .18s ease,width .18s ease,height .18s ease;}
+
+.ttr-card{position:fixed;z-index:851;width:min(320px,calc(100vw - 24px));
+  background:var(--parchment);border:.5px solid var(--gold);border-radius:10px;
+  box-shadow:0 8px 30px rgba(26,22,18,.4);padding:13px 14px 10px;
+  font-family:'Lora',serif;}
+.ttr-title{font-size:13px;font-weight:700;color:var(--ink);margin-bottom:5px;}
+.ttr-body{font-size:11.5px;line-height:1.6;color:var(--ink2);}
+.ttr-foot{display:flex;align-items:center;gap:6px;margin-top:11px;}
+.ttr-spacer{flex:1;}
+.ttr-count{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--ink3);}
+
+/* 44px from the start, per the rule for anything built after the touch-target
+   audit. The ink stays small; only the target grows. */
+.ttr-btn{min-height:44px;padding:0 13px;background:var(--parchment2);
+  border:.5px solid var(--border2);border-radius:7px;color:var(--ink2);
+  font-family:'Lora',serif;font-size:12px;cursor:pointer;}
+.ttr-btn:hover{border-color:var(--gold);background:var(--gold-pale);color:var(--ink);}
+.ttr-primary{background:var(--gold);border-color:var(--gold);color:#fff;font-weight:600;}
+.ttr-primary:hover{background:var(--gold);color:#fff;}
+
+/* Inert by construction. Nothing inside this card is a real control, and
+   tapping Review on it would call openSingleReview(undefined). */
+.ttr-demo{position:relative;pointer-events:none;opacity:.95;
+  border:1px dashed var(--gold)!important;}
+/* Bottom-right, not top-right: the top-right corner belongs to the Review
+   button, and the badge sat on top of the very control step 5 spotlights. The
+   counts row along the bottom runs left-aligned and stops well short, so this
+   corner is free. */
+.ttr-demo-pill{position:absolute;bottom:6px;right:8px;z-index:2;
+  font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:.04em;
+  background:var(--gold);color:#fff;border-radius:999px;padding:1px 6px;}
+
+.ttr-replay{min-height:44px;width:100%;margin-bottom:8px;
+  background:var(--parchment2);border:.5px solid var(--border2);border-radius:7px;
+  color:var(--ink2);font-family:'Lora',serif;font-size:12px;cursor:pointer;}
+.ttr-replay:hover{border-color:var(--gold);background:var(--gold-pale);color:var(--ink);}
 </style>
 
 </body>
