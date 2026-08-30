@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ═══════════════════════════════════════════════════════════════════
-     Tehfiz student viewer — v1_96
+     Tehfiz student viewer — v1_110
      Deployed from the `tehfiz` repo at public/app/student/index.html.
      NOTE: tehfiz-api also contains a public/app/ folder. That one is a local
      staging copy, gitignored, and never served — its routes are /api/* only.
@@ -1371,7 +1371,10 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
     </div><!-- end scrollable -->
 
     <!-- sticky footer -->
-    <div style="padding:10px 18px;border-top:1px solid var(--border);flex-shrink:0;display:flex;justify-content:flex-end;background:var(--parchment);">
+    <div style="padding:10px 18px;border-top:1px solid var(--border);flex-shrink:0;display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--parchment);">
+      <span style="font-size:11px;color:var(--ink3);line-height:1.5;">
+        Tehfīz is free. <a href="https://patreon.com/tehfiz" target="_blank" rel="noopener" style="color:var(--amber);">Support it</a>
+      </span>
       <button class="btn-m pri" onclick="closeModal('interventionModal')">Got it</button>
     </div>
 
@@ -1429,7 +1432,7 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
    console as APP_VERSION, or grep the deployed HTML for it. Bumped on every
    saved build; vcheck.py asserts it matches the filename, so a forgotten bump
    fails the integrity check rather than shipping a lie. */
-const APP_VERSION = 'v1_108';
+const APP_VERSION = 'v1_110';
 window.APP_VERSION = APP_VERSION;
 console.info('Tehfiz student viewer ' + APP_VERSION);
 
@@ -7345,7 +7348,12 @@ function render() {
         'maxlength="4" placeholder="\u2022\u2022\u2022\u2022" autocomplete="off">' +
       '<button class="tcl-btn tcl-primary" data-tcl="signin-go">Sign in</button>' +
       '<p class="tcl-note"><button class="tcl-linkbtn" data-tcl="go-setup">' +
-      'First time, or has your teacher reset your PIN?</button></p>';
+      'First time, or has your teacher reset your PIN?</button></p>' +
+      /* Last, below the first-time link, and only on the CODE screen — never on
+         the PIN setup screen. A child choosing their first PIN should not meet
+         a payment link in the middle of it. */
+      '<p class="tcl-aside">Tehf\u012bz is free. ' +
+        '<a href="https://patreon.com/tehfiz" target="_blank" rel="noopener">Support it</a></p>';
     // Land on whichever field is still empty: coming back from the setup screen
     // the code is already filled in, and re-focusing it just invites retyping.
     // Cleared after one render, so a subsequent error re-render still focuses.
@@ -7713,6 +7721,10 @@ window.TehfizClaim = { open, sync, isSynced, isPaired: paired };
 .tcl-lead{font-size:13px;line-height:1.65;color:var(--ink2);margin:0 0 12px;}
 .tcl-lead code,.tcl-paired code{font-family:'IBM Plex Mono',monospace;font-size:12px;
   background:var(--gold-pale);color:var(--gold);border-radius:4px;padding:2px 6px;}
+/* Quieter than .tcl-note, which is a real control. This is an aside and must
+   not compete with signing in. */
+.tcl-aside{font-size:10px;color:var(--ink3);text-align:center;margin-top:12px;line-height:1.6;}
+.tcl-aside a{color:var(--amber);text-decoration:underline;}
 .tcl-note{font-size:11px;color:var(--ink3);font-style:italic;margin:12px 0 0;line-height:1.6;}
 .tcl-lbl{display:block;font-size:11px;color:var(--ink3);margin:10px 0 4px;}
 
