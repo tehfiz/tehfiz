@@ -183,13 +183,11 @@ body.compact-ui .btn-t{padding:4px 7px;}
 /* When topbar is hidden, the restore strip shows */
 body.topbar-hidden .topbar,
 body.topbar-hidden .view-tabs,
-body.topbar-hidden .hint-bar,
 body.topbar-hidden .page-nav,
 body.topbar-hidden .topbar-hide-btn{display:none!important;}
 body.topbar-hidden .topbar-restore-btn{display:block!important;}
 
-/* HINT BAR */
-.hint-bar{text-align:center;padding:4px 16px;background:var(--gold-pale);border-bottom:.5px solid var(--gold-light);font-size:11px;color:var(--amber);flex-shrink:0;font-style:italic;}
+
 
 /* MAIN */
 .main{display:flex;flex:1;overflow:hidden;}
@@ -582,6 +580,18 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
 /* Underline tabs, not filled boxes — deliberately distinct from .type-btn
    below, since a boxed/bordered switcher next to the actual type buttons
    read as "more mistake-type buttons" rather than a category switch. */
+/* Peeked buttons are visibly borrowed, not a new home. */
+.type-btn-peek{border-style:dashed!important;}
+.type-cat-tab.peeking{outline:1px dashed var(--gold);outline-offset:-1px;}
+/* Active, but on loan — it will hand back after this mistake. */
+.type-cat-tab.borrowed{border-style:dashed;}
+/* Shown only where the gesture exists. On a pointer device the counterpart is
+   reached with Shift, which the shortcuts table documents, so a permanent
+   sub-label there would be noise. */
+.type-btn-alt{display:none;}
+body.compact-ui .type-btn-alt{display:block;font-size:8px;line-height:1.2;
+  opacity:.45;font-weight:400;margin-top:1px;white-space:nowrap;overflow:hidden;
+  text-overflow:ellipsis;}
 .type-cat-switcher{display:flex;gap:16px;margin-bottom:6px;border-bottom:1px solid var(--border2);}
 .type-cat-tab{background:none;border:none;padding:2px 1px 5px;font-family:'Lora',serif;font-size:10.5px;font-weight:600;color:var(--ink3);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:color .12s,border-color .12s;}
 .type-cat-tab.active{color:var(--gold);border-bottom-color:var(--gold);}
@@ -1027,6 +1037,34 @@ body.seg-arming .word-btn:hover,body.seg-arming .qcf-word:hover{outline:2px soli
 .rv-details[open] .rv-chev{transform:rotate(180deg);}
 .rv-details[open] .rv-summary{border-bottom:.5px solid var(--border);border-radius:8px 8px 0 0;}
 .rv-details-body{padding:4px 12px 10px;}
+/* ── per-page load chart ──────────────────────────────────────────────── */
+.plc{margin-top:7px;padding-top:6px;border-top:.5px solid var(--border);}
+.plc-head{display:flex;justify-content:space-between;align-items:baseline;
+  font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:.07em;
+  color:var(--ink3);margin-bottom:4px;}
+.plc-cap{font-family:'Lora',serif;letter-spacing:0;font-style:italic;}
+/* Bars run right to left, matching the mushaf; the axis is therefore the
+   right-hand edge, which is where the reading starts. */
+.plc-plot{display:flex;flex-direction:row-reverse;align-items:stretch;gap:5px;}
+.plc-axis{display:flex;flex-direction:column;justify-content:space-between;
+  font-family:'IBM Plex Mono',monospace;font-size:7px;color:var(--ink3);
+  padding-bottom:11px;border-right:.5px solid var(--border);padding-right:3px;}
+.plc-cols{flex:1;display:flex;flex-direction:row-reverse;align-items:flex-end;
+  gap:2px;overflow-x:auto;padding-bottom:1px;}
+.plc-col{flex:1 1 auto;min-width:9px;max-width:34px;background:none;border:none;
+  padding:0;cursor:pointer;display:flex;flex-direction:column;align-items:stretch;gap:2px;}
+.plc-bar-wrap{height:38px;display:flex;align-items:flex-end;}
+.plc-bar{width:100%;border-radius:2px 2px 0 0;transition:opacity .12s;}
+/* A clean page must not look like a page that was never in range: it keeps a
+   visible floor of its own. */
+.plc-clean{width:100%;height:2px;background:var(--border2);border-radius:1px;
+  align-self:flex-end;}
+.plc-num{font-family:'IBM Plex Mono',monospace;font-size:7px;color:var(--ink3);
+  text-align:center;line-height:1;}
+.plc-col:hover .plc-bar{opacity:.75;}
+.plc-col.sel .plc-num{color:var(--ink);font-weight:700;}
+.plc-col.sel .plc-bar{outline:1px solid var(--ink);outline-offset:1px;}
+
 .seg-stat-run{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--ink3);margin-top:5px;}
 .seg-stat-run strong{color:var(--ink2);}
 .seg-run-bar{flex:1;height:5px;background:var(--parchment3);border-radius:3px;overflow:hidden;max-width:130px;}
@@ -1375,10 +1413,9 @@ body.compact-ui .quick-form::before{
     <button class="btn-t" onclick="resetTimer()" title="Reset timer">&#8634;</button>
   </div>
 </div>
-<div class="hint-bar" id="hintBar">
-  Tap any Arabic word to mark a mistake — location captured automatically
-  <button onclick="document.getElementById('hintBar').style.display='none'" style="background:none;border:none;cursor:pointer;color:var(--amber);font-size:14px;padding:0 0 0 8px;line-height:1;vertical-align:middle;opacity:.7;" title="Dismiss">✕</button>
-</div>
+<!-- The hint bar is gone: TehfizTour covers "tap any Arabic word to mark a
+     mistake" properly, with the word actually spotlighted. Its five-minute
+     auto-hide timer went with it — see the boot sequence. -->
 
 <div class="main">
 
@@ -1501,6 +1538,7 @@ body.compact-ui .quick-form::before{
         </span>
       </div>
       <div class="type-cat-switcher" id="typeCatSwitcher"></div>
+
       <div id="qfSelectedElsewhere" style="display:none;font-size:9px;color:var(--ink3);margin:-1px 0 3px;font-style:italic;"></div>
       <div class="type-btns">
         <div id="qfCatButtons" style="display:contents;"></div>
@@ -1623,6 +1661,11 @@ body.compact-ui .quick-form::before{
     <div style="padding:16px 20px 0;flex-shrink:0;">
       <div class="modal-title">Help &amp; Guide</div>
       <div class="modal-sub" style="margin-bottom:10px;">Press <strong>?</strong> anytime to open this panel</div>
+      <!-- The only way back into the tour once it has run. Closes this modal
+           first: at z-index 500 it sits under the tour's veil, so leaving it
+           open would dim the very panel the last step points at. -->
+      <button class="ttr-replay"
+              onclick="document.getElementById('shortcutsModal').classList.remove('open');if(window.TehfizTour)TehfizTour.start();">&#128161; Show me around</button>
       <!-- tabs -->
     </div>
 
@@ -1659,6 +1702,8 @@ body.compact-ui .quick-form::before{
             <tr style="border-bottom:.5px solid var(--border);"><td style="padding:6px 8px;font-family:'IBM Plex Mono',monospace;background:var(--parchment2);border-radius:3px;color:var(--ink2);">Esc</td><td style="padding:6px 8px;color:var(--ink2);">Cancel / close form</td></tr>
             <tr style="border-bottom:.5px solid var(--border);"><td style="padding:6px 8px;font-family:'IBM Plex Mono',monospace;background:var(--parchment2);border-radius:3px;color:var(--ink2);">Enter</td><td style="padding:6px 8px;color:var(--ink2);">Confirm &amp; add mistake</td></tr>
             <tr style="border-bottom:.5px solid var(--border);"><td style="padding:6px 8px;font-family:'IBM Plex Mono',monospace;background:var(--parchment2);border-radius:3px;color:var(--ink2);">1 – 5</td><td style="padding:6px 8px;color:var(--ink2);">Select mistake type by position in the current category tab (Tehfiz/Tajweed)</td></tr>
+            <tr style="border-bottom:.5px solid var(--border);"><td style="padding:6px 8px;font-family:'IBM Plex Mono',monospace;background:var(--parchment2);border-radius:3px;color:var(--ink2);">Shift</td><td style="padding:6px 8px;color:var(--ink2);">Hold to show the <em>other</em> category's types without leaving your tab. On a phone, each button shows its counterpart in small grey text \u2014 press and hold to pick that instead.</td></tr>
+            <tr style="border-bottom:.5px solid var(--border);"><td style="padding:6px 8px;font-family:'IBM Plex Mono',monospace;background:var(--parchment2);border-radius:3px;color:var(--ink2);">Shift + 1 – 5</td><td style="padding:6px 8px;color:var(--ink2);">Pick from that other category directly. The tab switches to it for that one mistake and hands back once you Add or Cancel \u2014 unless you tapped the tab yourself, which sticks.</td></tr>
             <tr style="border-bottom:.5px solid var(--border);"><td style="padding:6px 8px;font-family:'IBM Plex Mono',monospace;background:var(--parchment2);border-radius:3px;color:var(--ink2);">6</td><td style="padding:6px 8px;color:var(--ink2);">Focus the "Other" mistake type field</td></tr>
             <tr style="border-bottom:.5px solid var(--border);"><td style="padding:6px 8px;font-family:'IBM Plex Mono',monospace;background:var(--parchment2);border-radius:3px;color:var(--ink2);">q</td><td style="padding:6px 8px;color:var(--ink2);"><span style="color:var(--lvl1-yellow);font-weight:600;">Lvl 1 · Repeat</span></td></tr>
             <tr style="border-bottom:.5px solid var(--border);"><td style="padding:6px 8px;font-family:'IBM Plex Mono',monospace;background:var(--parchment2);border-radius:3px;color:var(--ink2);">w</td><td style="padding:6px 8px;color:var(--ink2);"><span style="color:var(--lvl2-orange);font-weight:600;">Lvl 2 · Hint</span></td></tr>
@@ -2021,7 +2066,7 @@ body.compact-ui .quick-form::before{
    console as APP_VERSION, or grep the deployed HTML for it. Bumped on every
    saved build; vcheck.py asserts it matches the filename, so a forgotten bump
    fails the integrity check rather than shipping a lie. */
-const APP_VERSION = 'v4_183';
+const APP_VERSION = 'v4_204';
 window.APP_VERSION = APP_VERSION;
 console.info('Tehfiz teacher app ' + APP_VERSION);
 
@@ -3040,23 +3085,6 @@ window.addEventListener('DOMContentLoaded', () => {
   setupModalBackdropClose();
   setupGutterRedrawHooks();
   setupSwipeToClose();
-  // Auto-hide hint bar after 5 minutes — uses a real wall-clock timestamp rather
-  // than trusting a single setTimeout to fire exactly on schedule (a busy main
-  // thread, or the tab being backgrounded, can throttle/delay a lone timer).
-  // Re-checking on an interval and on visibility change catches up reliably.
-  (function(){
-    const HINT_BAR_LIFETIME_MS = 5*60*1000;
-    const shownAt = Date.now();
-    function checkHintBar(){
-      const h=document.getElementById('hintBar');
-      if(!h) return true; // already removed/dismissed — nothing left to do
-      if(h.style.display==='none') return true; // already hidden
-      if(Date.now()-shownAt >= HINT_BAR_LIFETIME_MS){ h.style.display='none'; return true; }
-      return false;
-    }
-    const iv=setInterval(()=>{ if(checkHintBar()) clearInterval(iv); }, 10000);
-    document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) checkHintBar(); });
-  })();
 });
 
 function setupSwipeToClose(){
@@ -3306,6 +3334,31 @@ function setupKeyboardShortcuts(){
     // arrive from the browser capitalised ('Enter', 'Escape', 'ArrowLeft'), and
     // every case label below is lowercase — leaving multi-char names untouched
     // silently killed Enter/Escape/←/→. isLetterKey stays as the Shift guard only.
+    /* Digits by PHYSICAL key. e.key for the top-row keys depends on layout —
+       on AZERTY the unshifted values are & é " ' ( — so the case '1'..'5'
+       labels below never matched and those teachers had no type shortcuts at
+       all. e.code names the key regardless of layout or modifier, which is also
+       what makes Shift+digit safe: e.key there is ! @ # $ % on US and
+       something else everywhere else. */
+    const digitPos = (() => {
+      const m = /^(?:Digit|Numpad)([1-5])$/.exec(e.code || '');
+      return m ? +m[1] : 0;
+    })();
+    if(digitPos && !inInput && !modalOpen){
+      const qf = document.getElementById('quickForm');
+      if(qf && !qf.classList.contains('hidden')){
+        e.preventDefault();
+        if(e.shiftKey){
+          // Reach into the other category for exactly one pick.
+          setTypePeek(true);
+          selTypeKeyByPosition(digitPos);   // selType() snaps the peek back
+        } else {
+          selTypeKeyByPosition(digitPos);
+        }
+        return;
+      }
+    }
+
     const isLetterKey=e.key.length===1 && /[a-zA-Z]/.test(e.key);
     if(!(isLetterKey && e.shiftKey)){
       const k=e.key.toLowerCase();
@@ -3376,9 +3429,12 @@ function setupKeyboardShortcuts(){
     // Compared case-insensitively too — with Caps Lock ON, physically holding
     // Shift actually *inverts* letter casing, so e.key comes through lowercase
     // even though Shift is held; a plain e.key==='S' check would miss that.
+    if(e.key === 'Shift' && !inInput && !modalOpen) setTypePeek(true);
+
     if(e.shiftKey && !inInput && !modalOpen){
       const sk=e.key.toLowerCase();
       if(sk==='p' && spotState.enabled){ e.preventDefault(); toggleSpotPanel(); }
+      if(sk==='p'||sk==='a') setTypePeek(false);   // those re-render elsewhere
       if(sk==='a'){
         e.preventDefault();
         if(appSettings.autoscrollEnabled){ _applyAutoscrollToggle(false); }
@@ -3386,11 +3442,34 @@ function setupKeyboardShortcuts(){
       }
     }
   });
+
+  document.addEventListener('keyup', e=>{ if(e.key==='Shift') setTypePeek(false); });
+  /* Alt-tabbing away with Shift held never delivers a keyup, so without this
+     the teacher returns to a grid showing the wrong category with no way to
+     understand why. Same for a click that moves focus out of the document. */
+  window.addEventListener('blur', ()=>setTypePeek(false));
 }
 
 // Maps 1-5 to the type button currently in that visual position within
 // whichever category tab is showing — dynamic, since types are now a
 // variable, teacher-editable, categorized list rather than a fixed m1-m5.
+/* The counterpart button is not rendered — it belongs to the other category —
+   so this sets the selection directly and leans on the "selected elsewhere"
+   indicator to show the choice is live. That indicator exists for exactly this
+   case: a chosen type whose button is not in the visible grid. */
+function selTypeById(id){
+  const t = mistakeTypesActive.find(x=>x.id===id);
+  // Borrow first, so the button exists to be selected and highlighted rather
+  // than the choice living only in the "selected elsewhere" note.
+  if(t) borrowCategory(t.category);
+  const el = document.querySelector(`#qfCatButtons .type-btn[data-t="${CSS.escape(id)}"]`);
+  if(el) return selType(el);
+  document.querySelectorAll('.type-btn').forEach(b=>b.classList.remove('sel'));
+  document.getElementById('qfTypeOther')?.classList.remove('sel-other');
+  selectedType = id;
+  _updateSelectedElsewhereIndicator();
+}
+
 function selTypeKeyByPosition(pos){
   const el=document.getElementById('qfCatButtons');
   if(!el) return;
@@ -6699,21 +6778,98 @@ function renderTypeCatSwitcher(){
   const el = document.getElementById('typeCatSwitcher');
   if(!el) return;
   el.innerHTML = cats.map(c=>
-    `<button class="type-cat-tab${c===qfActiveCategory?' active':''}" data-cat="${c}" onclick="switchTypeCategory('${c}')">${TYPE_CATEGORY_LABELS[c]}</button>`
+    `<button class="type-cat-tab${c===qfActiveCategory?' active':''}${(qfPeek&&c===qfOtherCategory())?' peeking':''}${(qfBorrowed&&c===qfActiveCategory)?' borrowed':''}" data-cat="${c}" onclick="switchTypeCategory('${c}')">${TYPE_CATEGORY_LABELS[c]}</button>`
   ).join('');
 }
 function switchTypeCategory(cat){
+  qfPeek = false;
+  /* Explicit: this becomes the tab the next mistake opens on, and cancels any
+     borrow so restoreCategory() cannot drag them back out of it. */
+  qfBorrowed = false;
+  qfHomeCategory = null;
   qfActiveCategory = cat;
   renderTypeCatSwitcher();
   renderTypeButtons();
 }
+/* PEEK — reach the other category without leaving your own tab.
+   A student weak in both hifz and tajweed produces mistakes that alternate, and
+   tab-switching for each one is the cost. Peeking is temporary by design:
+   selecting from it commits that type and snaps straight back, so the tab a
+   teacher chose for the lesson never drifts underneath them.
+   Desktop holds Shift; a touch device long-presses the grid. */
+let qfPeek = false;
+
+/* BORROWED vs CHOSEN tab.
+   Reaching across for one mistake and deciding to work in the other category
+   are different intentions, and the tab has to tell them apart. Picking a
+   counterpart — by long-press or Shift+digit — BORROWS that tab: it switches so
+   the chosen type is visible and highlighted rather than hidden behind a
+   "selected elsewhere" note, then reverts once the mistake is committed or
+   cancelled. Tapping a tab header CHOOSES it, and that sticks.
+   qfHomeCategory is the chosen tab, remembered only while one is borrowed. */
+let qfHomeCategory = null;
+let qfBorrowed = false;
+
+function borrowCategory(cat){
+  if(!cat || cat === qfActiveCategory) return;
+  // Only the FIRST borrow records home; borrowing twice before committing must
+  // not overwrite it with the previously borrowed tab.
+  if(!qfBorrowed) qfHomeCategory = qfActiveCategory;
+  qfBorrowed = true;
+  qfActiveCategory = cat;
+  renderTypeCatSwitcher();
+  renderTypeButtons();
+}
+
+/* Called from the one place commitMistake() and cancelForm() share. */
+function restoreCategory(){
+  if(!qfBorrowed) return;
+  qfBorrowed = false;
+  if(qfHomeCategory) qfActiveCategory = qfHomeCategory;
+  qfHomeCategory = null;
+  renderTypeCatSwitcher();
+  renderTypeButtons();
+}
+
+function qfOtherCategory(){
+  const cats = _typeCategoriesPresent();
+  return cats.find(c => c !== qfActiveCategory) || qfActiveCategory;
+}
+function qfShownCategory(){ return qfPeek ? qfOtherCategory() : qfActiveCategory; }
+
+function qfTypesIn(cat){
+  return mistakeTypesActive.filter(t=>t.category===cat && (_isCustomType(t.id)?t.active!==false:true));
+}
+
+function setTypePeek(on){
+  const next = !!on;
+  if(next === qfPeek) return;
+  // Never peek while the form is shut, or the first Shift-press of an unrelated
+  // shortcut would silently rearrange a grid nobody is looking at.
+  if(next && document.getElementById('quickForm')?.classList.contains('hidden')) return;
+  qfPeek = next;
+  renderTypeButtons();
+  renderTypeCatSwitcher();
+}
+
 function renderTypeButtons(){
   const el = document.getElementById('qfCatButtons');
   if(!el) return;
-  const list = mistakeTypesActive.filter(t=>t.category===qfActiveCategory && (_isCustomType(t.id)?t.active!==false:true));
-  el.innerHTML = list.map((t,i)=>
-    `<button class="type-btn" data-t="${t.id}" style="--type-color:${t.color};--type-bg:${t.bgColor};" onclick="selType(this)">${i+1}. ${t.label}</button>`
-  ).join('');
+  const list = qfTypesIn(qfShownCategory());
+  /* Position i in this category pairs with position i in the other, the same
+     mapping Shift+digit uses. The counterpart rides on the button as a dim
+     sub-label and is committed by long-press — no mode, no banner, no second
+     tap, the way a phone keyboard surfaces its alternate characters. */
+  const others = qfPeek ? [] : qfTypesIn(qfOtherCategory());
+  el.innerHTML = list.map((t,i)=>{
+    const alt = others[i];
+    return `<button class="type-btn${qfPeek?' type-btn-peek':''}" data-t="${t.id}"` +
+      (alt ? ` data-alt="${alt.id}"` : '') +
+      ` style="--type-color:${t.color};--type-bg:${t.bgColor};" onclick="selType(this)">` +
+      `${i+1}. ${t.label}` +
+      (alt ? `<span class="type-btn-alt">${alt.label}</span>` : '') +
+      `</button>`;
+  }).join('');
   if(selectedType){
     const b = el.querySelector(`[data-t="${CSS.escape(selectedType)}"]`);
     if(b) b.classList.add('sel');
@@ -6738,6 +6894,14 @@ function selType(el){
   document.getElementById('qfTypeOther').classList.remove('sel-other');
   el.classList.add('sel');
   selectedType=el.dataset.t;
+  /* A pick made while peeking borrows that tab for this one mistake, so what
+     is on screen matches what was chosen. restoreCategory() puts the teacher's
+     own tab back the moment the mistake is committed or cancelled. */
+  if(qfPeek){
+    const peeked = qfOtherCategory();
+    setTypePeek(false);
+    borrowCategory(peeked);
+  }
   _updateSelectedElsewhereIndicator();
 }
 function selTypeOther(el){
@@ -6773,6 +6937,7 @@ function cancelForm(){
   const tp=document.getElementById('trackerPanel');
   if(tp && qf.parentElement===document.body) tp.insertBefore(qf, document.getElementById('mistakesList'));
   clearActiveSelect();
+  restoreCategory();
   pendingWord=null;selectedType=null;selectedCorr=null;
   document.getElementById('qfTypeOther').value='';
   document.getElementById('qfTypeOther').classList.remove('sel-other');
@@ -6832,6 +6997,7 @@ function commitMistake(){
   applyMistakeToDOM(m);
   autoScrollState.pausedQuickForm=false;
   const qf2=document.getElementById('quickForm');
+  restoreCategory();
   qf2.classList.add('hidden');
   const tp2=document.getElementById('trackerPanel');
   if(tp2 && qf2.parentElement===document.body) tp2.insertBefore(qf2, document.getElementById('mistakesList'));
@@ -7708,7 +7874,7 @@ function reviewSession(id){
   // that reads a session does this — the review was the one path that didn't.
   const s={...raw, mistakes:migrateMistakes(raw.mistakes||[])};
   reviewingSession=s;
-  _rvSegFilter=null; _rvListOpen=false;
+  _rvSegFilter=null; _rvListOpen=false; _rvPageFilter=null;
   document.getElementById('reviewContent').innerHTML=buildReviewHTML(s);
   document.getElementById('reviewModal').classList.add('open');
   document.getElementById('sessionsOverlay').classList.remove('open');
@@ -7734,6 +7900,27 @@ function rvSetListOpen(v){ _rvListOpen = !!v; }
 
 function rvFilterSegment(segId){
   _rvSegFilter = (_rvSegFilter===segId) ? null : segId;   // tapping again clears
+  _rvPageFilter = null;                                   // a new segment discards a page pick
+  if(reviewingSession) document.getElementById('reviewContent').innerHTML = buildReviewHTML(reviewingSession);
+}
+
+/* The chart is navigation, not decoration: a bar narrows the list below to that
+   page. stopPropagation is not needed — the bars sit inside .seg-stat, whose
+   own onclick would otherwise also toggle the segment filter, so the handler
+   below is bound on the button and the card's handler is suppressed in CSS via
+   pointer-events on .plc. */
+function _rvApplyPageFilter(segs, ml){
+  if(!_rvPageFilter) return ml;
+  const out = ml.filter(m=>pageForVerse(m.surah, m.ayah) === _rvPageFilter);
+  /* A page with no mistakes is a legitimate thing to tap — the bar is a visible
+     floor, not an absence. Returning an empty list would read as a bug, so the
+     filter declines rather than emptying the section. */
+  return out.length ? out : ml;
+}
+
+let _rvPageFilter = null;
+function rvFilterPage(pg){
+  _rvPageFilter = (_rvPageFilter===pg) ? null : pg;
   if(reviewingSession) document.getElementById('reviewContent').innerHTML = buildReviewHTML(reviewingSession);
 }
 
@@ -7741,6 +7928,7 @@ function buildReviewHTML(s){
   const cfg   = s.typeConfig || null;
   const segs  = s.segments || [];
   const all   = s.mistakes;
+  // A page pick narrows further still, on top of any segment filter.
   // One filter, applied once, feeding every section below. The segment cards
   // are the control, so they always show their own full figures — everything
   // else (badges, charts, focus, list) narrows to the selected segment.
@@ -7764,7 +7952,12 @@ function buildReviewHTML(s){
        + _rvCharts(ml, cfg, types, tally)
        + _rvFocus(ml, cfg)
        + _rvSpotTest(s.spotTest, ml)
-       + _rvVerses(ml, cfg);
+       /* Narrowed HERE and nowhere else. Passing a page-filtered list into
+          _rvStrength would rebuild every chart from one page's mistakes — the
+          bars would all collapse to the bar just tapped, and the strength score
+          beside them would silently change. The chart is a control; controls
+          must keep showing the whole picture they are selecting within. */
+       + _rvVerses(_rvApplyPageFilter(segs, ml), cfg);
 }
 
 // ── Header: who/what/when, remarks, and the level badge strip ──────
@@ -7811,6 +8004,10 @@ function _rvStrength(s, ml){
     const b = strengthBand(v);
     const clean = cleanVerseStats(segs, sg, ml);
     const run   = longestCleanRun(segs, sg, ml);
+    /* The chart lives inside this card, whose onclick toggles the segment
+       filter. Without stopPropagation on the bars, tapping a page would also
+       toggle the segment — and rvFilterSegment() clears _rvPageFilter, so the
+       pick would undo itself in the same gesture. */
     return `<div class="seg-stat${_rvSegFilter===sg.id?' sel':''}" onclick="rvFilterSegment('${sg.id}')"
                  title="Show only this segment's mistakes below">
       <div class="seg-stat-head"><span class="seg-stat-name">${esc(name)}</span><span class="seg-stat-stage">${esc(stage)}</span></div>
@@ -7819,10 +8016,10 @@ function _rvStrength(s, ml){
         <span class="seg-stat-band" style="color:${b.color};">${b.label}</span>
         ${clean?`<span class="seg-stat-clean">${clean.clean}/${clean.total} clean (${clean.pct}%)</span>`:''}
       </div>
-      ${run?`<div class="seg-stat-run" title="Longest unbroken run of mistake-free verses (${run} of ${clean?clean.total:'?'}). The bar is that run as a share of the whole segment — full width would mean the entire passage was clean.">
-        <span class="seg-run-bar"><span style="width:${clean?Math.round(run/clean.total*100):0}%;"></span></span>
+      ${run?`<div class="seg-stat-run" title="Longest unbroken run of mistake-free verses.">
         longest clean run <strong>${run}</strong> of ${clean?clean.total:'?'}
       </div>`:''}
+      ${pageLoadChartHTML(segs, sg, ml)}
     </div>`;
   }).join('');
 
@@ -8134,7 +8331,7 @@ function openShare(){
 function reviewFromShare(){
   if(!shareSessionObj) return;
   reviewingSession = shareSessionObj;
-  _rvSegFilter = null; _rvListOpen = false;
+  _rvSegFilter = null; _rvListOpen = false; _rvPageFilter = null;
   document.getElementById('reviewContent').innerHTML = buildReviewHTML(shareSessionObj);
   closeModal('shareModal');
   document.getElementById('reviewModal').classList.add('open');
@@ -9678,6 +9875,104 @@ function segPageExtent(sg){
   return pageExtent(keyAbs(s.startKey), keyAbs(s.endKey));
 }
 
+/* PER-PAGE LOAD — the arithmetic behind the score, page by page.
+   strength-v2 divides weighted mistakes by PAGES, so a page is the unit the
+   score is already denominated in; showing the numerator per page is what makes
+   a bare "53" explicable. Bar height is weighted load (mistakeWeight, the same
+   c0..c4 weights the score uses), never a raw count: one Lvl 3 must not read as
+   smaller than three Lvl 0 self-corrections.
+
+   `covered` is the fraction of that page the segment actually spans, from the
+   same pageExtent() arithmetic. It is reported rather than divided by: raw load
+   answers "where did it go wrong", which is what a teacher planning the next
+   lesson needs. Dividing would answer "how weak is that page" and is a
+   different question — the fraction is in the tooltip so a two-verse sliver at
+   the edge of a range is never mistaken for a whole page. */
+function segPageLoads(segs, seg, mistakes){
+  const s = segOrdered(seg || {});
+  if(!keyValid(s.startKey) || !keyValid(s.endKey)) return null;
+  const a = keyAbs(s.startKey), b = keyAbs(s.endKey);
+  if(!a || !b) return null;
+  const lo = Math.min(a,b), hi = Math.max(a,b);
+  const p1 = pageForAbs(lo), p2 = pageForAbs(hi);
+  if(!p1 || !p2 || p2 < p1) return null;
+
+  const pages = [];
+  for(let p = p1; p <= p2; p++){
+    const bd = pageBoundsAbs(p);
+    const covered = bd
+      ? Math.max(0, Math.min(hi, bd.last) - Math.max(lo, bd.first) + 1) /
+        (bd.last - bd.first + 1)
+      : 1;
+    pages.push({page:p, load:0, count:0, worst:null, covered:+covered.toFixed(3)});
+  }
+  const byPage = new Map(pages.map(p=>[p.page, p]));
+
+  // Severity rank, so `worst` means what a teacher means by it: needing to be
+  // taught outranks any number of self-corrections.
+  const RANK = {c0:0, c4:1, c1:2, c2:3, c3:4};
+  mistakesInSegment(segs, seg, mistakes).forEach(m=>{
+    const rec = byPage.get(pageForVerse(m.surah, m.ayah));
+    if(!rec) return;                       // outside the span; nothing to draw
+    rec.count++;
+    rec.load += mistakeWeight(m);
+    const c = (m && m.correction) || 'c0';
+    if(rec.worst === null || (RANK[c]||0) > (RANK[rec.worst]||0)) rec.worst = c;
+  });
+  pages.forEach(p=>{ p.load = +p.load.toFixed(3); });
+  return pages;
+}
+
+/* Colour of a bar: worst intervention on that page, matching the levels used
+   everywhere else so the chart needs no legend of its own. */
+function _pageLoadColor(worst){
+  if(worst === 'c3') return 'var(--red)';
+  if(worst === 'c2') return 'var(--lvl2-orange)';
+  if(worst === 'c1') return 'var(--lvl1-yellow)';
+  if(worst) return 'var(--ink3)';          // c0 / c4 — recorded, but no help given
+  return null;
+}
+
+function pageLoadChartHTML(segs, seg, mistakes){
+  const pages = segPageLoads(segs, seg, mistakes);
+  if(!pages || pages.length < 1) return '';
+  const max = Math.max(...pages.map(p=>p.load), 1);
+
+  /* Right-to-left, like the mushaf: page numbers advance the way the pages
+     turn, so a hafiz reads the chart in the same direction as the text. The
+     axis sits on the right for the same reason — it is the origin edge. */
+  const bars = pages.map(p=>{
+    const pct = p.load > 0 ? Math.max(6, Math.round(p.load / max * 100)) : 0;
+    const col = _pageLoadColor(p.worst) || 'var(--border2)';
+    const part = p.covered < 0.999 ? ` · ${Math.round(p.covered*100)}% of page in range` : '';
+    const tip = p.count
+      ? `Page ${p.page} — ${p.count} mistake${p.count===1?'':'s'}, weight ${p.load}${part}`
+      : `Page ${p.page} — clean${part}`;
+    return `<button class="plc-col${_rvPageFilter===p.page?' sel':''}" title="${esc(tip)}"
+              onclick="event.stopPropagation();rvFilterPage(${p.page})">
+        <span class="plc-bar-wrap">
+          ${p.load>0
+            ? `<span class="plc-bar" style="height:${pct}%;background:${col};"></span>`
+            : `<span class="plc-clean"></span>`}
+        </span>
+        <span class="plc-num">${p.page}</span>
+      </button>`;
+  }).join('');
+
+  const worstPage = pages.reduce((a,p)=>(p.load>(a?a.load:0)?p:a), null);
+  const caption = worstPage && worstPage.load > 0
+    ? `heaviest on page ${worstPage.page}`
+    : 'no mistakes recorded';
+
+  return `<div class="plc" title="Weighted mistakes per page. Bar height uses the same level weights as the strength score; colour is the worst intervention on that page. Pages run right to left, as the mushaf does.">
+    <div class="plc-head"><span>MISTAKES PER PAGE</span><span class="plc-cap">${esc(caption)}</span></div>
+    <div class="plc-plot">
+      <div class="plc-cols">${bars}</div>
+      <div class="plc-axis"><span>${max}</span><span>0</span></div>
+    </div>
+  </div>`;
+}
+
 function drawSpotGutter(s, idx){
   document.querySelectorAll('.spot-gutter-wrap').forEach(el=>el.remove());
 
@@ -10035,6 +10330,39 @@ function activeSpotIndex(){
   if(!spotState.enabled || spotState.currentIndex < 0) return -1;
   return spotState.currentIndex;
 }
+
+/* Matches the mushaf's range-select gesture so the two feel the same. */
+const TYPE_PEEK_LONG_PRESS_MS = 420;
+(function(){
+  let timer = null, swallowClick = false;
+
+  document.addEventListener('touchstart', e=>{
+    const btn = e.target.closest && e.target.closest('#qfCatButtons .type-btn');
+    if(!btn || !btn.dataset.alt) return;
+    clearTimeout(timer);
+    timer = setTimeout(()=>{
+      timer = null;
+      swallowClick = true;               // the tap that follows must not undo this
+      selTypeById(btn.dataset.alt);
+      if(navigator.vibrate) { try { navigator.vibrate(12); } catch {} }
+    }, TYPE_PEEK_LONG_PRESS_MS);
+  }, {passive:true});
+
+  // A press that becomes a scroll, or lifts early, is an ordinary tap.
+  ['touchend','touchmove','touchcancel'].forEach(ev=>
+    document.addEventListener(ev, ()=>{ clearTimeout(timer); timer = null; }, {passive:true}));
+
+  /* touchend still emits a synthetic click, which would run selType(this) and
+     replace the counterpart with the button's own type — silently undoing the
+     long-press. Capture phase, so it is stopped before the inline onclick. */
+  document.addEventListener('click', e=>{
+    if(!swallowClick) return;
+    if(!(e.target.closest && e.target.closest('#qfCatButtons .type-btn'))) { swallowClick = false; return; }
+    swallowClick = false;
+    e.preventDefault();
+    e.stopPropagation();
+  }, true);
+})();
 
 (function(){
   const LONG_PRESS_MS = 420;
@@ -11628,6 +11956,10 @@ function render() {
         '<p>Signed in as ' + esc(teacher.email) + '. Accounts are approved by hand, usually ' +
         'within a day. Sending is disabled until then \u2014 everything else in the app works ' +
         'exactly as before, including saving and exporting sessions.</p>' +
+        /* Waiting is exactly when a new teacher has time and nothing to do.
+           Closes this panel first: at z-index 600 it sits under the tour's
+           veil, and the first steps point at the topbar behind it. */
+        '<button class="ttr-replay" data-tsy="tour">\u{1F4A1} Show me around</button>' +
       '</div>' +
       '<div class="tsy-pending tsy-pending-cta">' +
         '<strong>Looking for students?</strong>' +
@@ -11707,6 +12039,10 @@ function render() {
         'Their codes and sessions are still on the server. ' +
         '<button class="tsy-chip-btn" data-tsy="restoreremoved">Restore</button></div>'
       : '');
+
+  /* This function replaces the whole body, so anything TehfizTour injected is
+     gone. Same hook shape as decorateSessionList(). */
+  if (window.TehfizTour) window.TehfizTour.decorate();
 }
 
 /* ── Teaching hours ────────────────────────────────────────────────────────
@@ -11894,6 +12230,7 @@ document.addEventListener('click', async (e) => {
   if (act === 'newfromname') { e.preventDefault(); await newFromName(); }
   if (act === 'send')        { await sendFromCard(t.dataset.client); }
   if (act === 'retry')       { flushQueue(); }
+  if (act === 'tour'){ close(); if (window.TehfizTour) window.TehfizTour.start(); return; }
   if (act === 'exportroster'){ exportRoster(); }
   if (act === 'refresh')     {
     try { await refreshRoster(); toast('Roster refreshed'); }
@@ -13897,6 +14234,1152 @@ window.TehfizAdmin = { open, available };
   align-items: center;
   justify-content: center;
 }
+</style>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     TEHFIZ TOUR MODULE  —  v1 (teacher app), STAGE 1
+     ═══════════════════════════════════════════════════════════════════════════
+       namespace TehfizTour | storage tehfiz_tour_* | CSS .ttr-* | DOM #ttrRoot
+
+     PUBLIC INTERFACE
+       TehfizTour.start()       run it (Help's "Show me around")
+       TehfizTour.startIfUnseen() run it only if this device has not had it
+       TehfizTour.active()      true while running
+       TehfizTour.decorate()    re-inject examples; called by TehfizSync.render()
+
+     PORTED FROM THE STUDENT VIEWER, NOT SHARED WITH IT. The two apps are
+     separate codebases. The engine below is the same, but every seam differs:
+     there is no revealSessions() or localSessionCount() here, the roster lives
+     behind TehfizSync.open(), and the panel logic is closeMobilePanel(). Each
+     call site was checked against THIS file.
+
+     STAGE 1 covers students, codes and managing them, ending on Help and the
+     keyboard shortcuts. The in-session chapter (segments, spot mode, marking
+     and committing mistakes) is stage 2 and is deliberately not here yet.
+
+     EXAMPLES ARE DOM, NEVER STATE. The example student row is built here and
+     injected into #tsyBody. Nothing in this module calls saveRoster(), touches
+     `roster`, or mints a session. A fabricated student that reached the roster
+     store would persist, export with the roster, and could be picked for a
+     real session; the row below cannot, because it never exists outside this
+     module's own markup. It is pointer-events:none and carries a visible
+     "Example" badge.
+     ═══════════════════════════════════════════════════════════════════════ -->
+<div id="ttrRoot"></div>
+<script>
+(function () {
+'use strict';
+
+const K_SEEN = 'tehfiz_tour_seen';
+const VERSION = 1;
+const $ = (id) => document.getElementById(id);
+
+/* The app's esc() is not in scope inside this IIFE, and stage labels are
+   teacher-editable text going into innerHTML. */
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => (
+    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+  ));
+}
+
+/* Rect-based, not offsetParent: that is null for position:fixed elements, and
+   0x0 is also how display:none and body.topbar-hidden present. */
+function vis(sel) {
+  const el = document.querySelector(sel);
+  if (!el) return null;
+  const r = el.getBoundingClientRect();
+  return (r.width > 0 && r.height > 0) ? el : null;
+}
+function pick(sels) {
+  for (const s of sels) { const el = vis(s); if (el) return el; }
+  return null;
+}
+
+/* Every visible match, for a step that describes several controls at once.
+   Returns null rather than an empty array so the "target missing" path is
+   unchanged. */
+function pickAll(sel) {
+  const out = [];
+  document.querySelectorAll(sel).forEach((el) => {
+    const r = el.getBoundingClientRect();
+    if (r.width > 0 && r.height > 0) out.push(el);
+  });
+  return out.length ? out : null;
+}
+
+/* One hole spanning them all, NOT one hole each: the dimming is a 9999px
+   box-shadow, so two holes would each cast their shadow over the other and the
+   second would black out the first. A union works because the controls a step
+   describes together are laid out together. */
+function rectOf(target) {
+  if (!target) return null;
+  if (!Array.isArray(target)) return target.getBoundingClientRect();
+  let l = Infinity, t = Infinity, r = -Infinity, b = -Infinity;
+  target.forEach((el) => {
+    const q = el.getBoundingClientRect();
+    // A 0x0 node reports left/top of 0, which would stretch the union all the
+    // way to the top-left corner of the viewport.
+    if (q.width <= 0 || q.height <= 0) return;
+    l = Math.min(l, q.left); t = Math.min(t, q.top);
+    r = Math.max(r, q.right); b = Math.max(b, q.bottom);
+  });
+  if (!isFinite(l)) return null;
+  return { left: l, top: t, right: r, bottom: b, width: r - l, height: b - t };
+}
+function firstOf(target) {
+  return Array.isArray(target) ? target[0] : target;
+}
+function onScreen(r) {
+  return !!r && r.width > 0 && r.height > 0 &&
+         r.bottom > 0 && r.top < window.innerHeight &&
+         r.right > 0 && r.left < window.innerWidth;
+}
+
+/* Waits for the target to STOP MOVING and be VISIBLE. An element that is
+   off-screen and momentarily motionless is not settled — a row inside a panel
+   that has not opened holds one constant rect off the viewport, which
+   satisfies a naive stability test instantly and paints the spotlight where
+   nobody can see it. */
+/* Longer than the .28s panel transitions, so any animation started by before()
+   has finished. Read from a panel's computed style where possible so it tracks
+   the CSS instead of drifting from it. */
+const MIN_SETTLE = (() => {
+  try {
+    const p = document.querySelector('.spot-panel, .tracker-panel');
+    if (p) {
+      const d = parseFloat(String(getComputedStyle(p).transitionDuration).split(',')[0]) || 0;
+      if (d > 0) return Math.min(800, Math.round(d * 1000) + 60);
+    }
+  } catch {}
+  return 340;
+})();
+
+function whenStable(find, cb, alive) {
+  const t0 = Date.now();
+  let last = null, same = 0;
+  const tick = () => {
+    if (!running || (alive && !alive())) return;
+    const el = find ? find() : null;
+    const r  = rectOf(el);
+    /* The COUNT belongs in the key, not just the geometry. find() re-runs every
+       frame, and while a panel is still animating its width the controls inside
+       it are squeezed — a button can measure zero-width and drop out of
+       pickAll() entirely. Two such frames in a row satisfied a geometry-only
+       stability test, and the spotlight was painted around the one element that
+       happened to survive: a hole covering the first nav button and nothing
+       else. Counting makes "one element" and "two elements" different states,
+       so the wait continues until the group has finished appearing. */
+    const count = Array.isArray(el) ? el.length : (el ? 1 : 0);
+    const key = r ? [count, Math.round(r.left), Math.round(r.top),
+                     Math.round(r.width), Math.round(r.height)].join(',') : 'none';
+    if (key === last) same++; else { same = 0; last = key; }
+    if (r && !onScreen(r)) same = 0;
+    /* Stability alone is not enough. The panels animate for .28s, and a
+       squeezed layout holds ONE steady reading for that entire time — a
+       zero-width button dropping out of pickAll, or a half-width strip. Two
+       matching frames 32ms apart is a perfectly stable measurement of a shape
+       that is still moving, which is how the spotlight ended up covering one
+       nav button instead of the strip.
+       So: never accept before MIN_SETTLE, which outlasts the transition. */
+    const waited = Date.now() - t0;
+    if ((same >= 2 && waited >= MIN_SETTLE) || waited > 700) {
+      if (alive && !alive()) return;
+      return cb(el, r);
+    }
+    requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
+
+/* ── opening the roster ─────────────────────────────────────────────────── */
+
+function rosterOpen() {
+  const o = $('tsyOverlay');
+  return !!o && o.classList.contains('tsy-on');
+}
+/* Idempotent. TehfizSync.open() adds a class and re-renders, so calling it
+   when already open is safe — but checking first avoids a pointless rebuild
+   that would drop any Manage panel the teacher had expanded. */
+function openRoster() {
+  if (rosterOpen()) return false;
+  try { if (window.TehfizSync) window.TehfizSync.open(); } catch (e) {
+    console.error('TehfizTour: TehfizSync.open() failed', e);
+  }
+  return true;
+}
+
+/* ── the example student row ────────────────────────────────────────────── */
+/* Mirrors the real .tsy-row markup so it inherits every style, minus the
+   data-tsy attributes: without those the document-level delegate cannot match
+   it, so even if a click got through it would do nothing. */
+const DEMO_ROW =
+  '<div class="tsy-row ttr-demo">' +
+    '<span class="ttr-demo-pill">Example</span>' +
+    '<div class="tsy-row-main">' +
+      '<input class="tsy-name" value="Yusuf" readonly>' +
+      '<code class="tsy-code tsy-copyable" title="Tap to copy">K4M-7QP</code>' +
+    '</div>' +
+    '<div class="tsy-row-meta">' +
+      '<span class="tsy-ok-dot">\u25cf claimed</span>' +
+      '<span>12 sent</span>' +
+      '<button class="tsy-chip-btn">Manage</button>' +
+      '<button class="tsy-chip-btn">Hours</button>' +
+      '<button class="tsy-chip-btn">Open in viewer</button>' +
+      '<button class="tsy-chip-btn tsy-rm">Remove</button>' +
+    '</div>' +
+  '</div>';
+
+function realRosterRows() {
+  const b = $('tsyBody');
+  return b ? b.querySelectorAll('.tsy-row:not(.ttr-demo)').length : 0;
+}
+function ensureDemo() {
+  if (realRosterRows() > 0) return;          // real students: point at those
+  const rows = document.querySelector('#tsyBody .tsy-rows');
+  const body = $('tsyBody');
+  const host = rows || body;
+  if (!host || host.querySelector('.ttr-demo')) return;
+  const lead = host.querySelector('.tsy-lead');   // "No students yet…"
+  if (lead) lead.remove();
+  host.insertAdjacentHTML('beforeend', DEMO_ROW);
+}
+/* ── stage 2 examples ───────────────────────────────────────────────────────
+   The segment editor and the mark form are empty or display:none until a
+   teacher is actually mid-lesson, so the steps that describe them have nothing
+   to point at during onboarding.
+
+   These are built HERE and injected as this module's own DOM. Critically the
+   mark form is a SEPARATE element placed after the real #quickForm, not the
+   real one forced visible: forcing the real one open would show whatever
+   half-finished mistake the teacher had pending, and writing example text into
+   #qfWord would destroy it. Nothing here calls commitMistake(), touches the
+   segment store, or mints a session. */
+
+/* Two rows, each mirroring the real expanded layout from renderSegPanel() so
+   they inherit every style. The recite one carries a dashed "auto" chip,
+   because that is the thing worth pointing at: a blank range fills itself in. */
+/* Stage names are a READER preference, not a constant: sessionTypesActive()
+   returns whatever preset the teacher has chosen in settings, and a teacher
+   using plain English labels must not be shown "Sabaq" in the example or told
+   about it in the caption. Ids are fixed; only labels vary. */
+function stageLabel(id, fallback) {
+  try {
+    if (typeof window.sessionTypeLabel === 'function') return window.sessionTypeLabel(id);
+  } catch {}
+  return fallback;
+}
+/* Ids are 'new' | 'recent' | 'old' — NOT 'sabaq' | 'manzil'. Those are LABELS
+   under the traditional preset. Looking up by label id silently fell through to
+   list[0], which is 'Unassigned'.
+   'unassigned' is the empty state, not a stage, so it is left out of the list
+   the caption reads aloud. */
+function stageLabels() {
+  try {
+    if (typeof window.sessionTypesActive === 'function') {
+      const l = window.sessionTypesActive();
+      if (l && l.length) {
+        return l.filter((t) => t.id !== 'unassigned').map((t) => t.label);
+      }
+    }
+  } catch {}
+  return ['New', 'Recent', 'Old'];
+}
+
+/* The other preset's names, so the caption can say what you can switch to. */
+function otherStageNames() {
+  try {
+    /* Bare identifier, NOT window.SESSION_TYPE_PRESETS. A top-level `const` in
+       a classic script creates a binding in the global LEXICAL environment,
+       which is not a property of window — so the window form is always
+       undefined, and the caption would have quietly dropped the alternative
+       names forever. A bare reference resolves up the scope chain and works;
+       the try/catch covers the ReferenceError if it is ever renamed. */
+    const P = SESSION_TYPE_PRESETS;
+    if (!P) return '';
+    const cur = stageLabels().join('|');
+    for (const k of Object.keys(P)) {
+      const names = P[k].filter((t) => t.id !== 'unassigned').map((t) => t.label);
+      if (names.join('|') !== cur) return names.join(', ');
+    }
+  } catch {}
+  return '';
+}
+/* "a, b or c" in whatever terminology is currently in force. */
+function stageList() {
+  const l = stageLabels();
+  if (l.length === 1) return l[0];
+  return l.slice(0, -1).join(', ') + ' or ' + l[l.length - 1];
+}
+
+const DEMO_SEG_RECITE = () =>
+  '<div class="seg-row ttr-demo ttr-demo-seg ttr-demo-recite" id="ttrDemoRecite">' +
+    '<span class="ttr-demo-pill">Example</span>' +
+    '<div class="seg-row-line">' +
+      '<span class="seg-mode recite">\u{1F4D6} Recite</span>' +
+      '<label class="seg-lbl">Stage</label>' +
+      '<span class="ttr-fake-sel">' + esc(stageLabel('new', 'New')) + '</span>' +
+      '<span class="seg-del">\u2715</span>' +
+    '</div>' +
+    '<div class="seg-row-line">' +
+      '<label class="seg-lbl">Range</label>' +
+      '<span class="seg-chip">2:1</span>' +
+      '<span class="seg-arrow">\u2192</span>' +
+      '<span class="seg-chip auto">2:20</span>' +
+      '<span class="seg-count">20 verses</span>' +
+      '<span class="seg-mini tiny">\u2026</span>' +
+    '</div>' +
+  '</div>';
+
+const DEMO_SEG_SPOT = () =>
+  '<div class="seg-row spot ttr-demo ttr-demo-seg ttr-demo-spot" id="ttrDemoSpot">' +
+    '<span class="ttr-demo-pill">Example</span>' +
+    '<div class="seg-row-line">' +
+      '<span class="seg-mode spot">\u{1F3B2} Spot</span>' +
+      '<label class="seg-lbl">Stage</label>' +
+      '<span class="ttr-fake-sel">' + esc(stageLabel('old', 'Old')) + '</span>' +
+      '<span class="seg-del">\u2715</span>' +
+    '</div>' +
+    '<div class="seg-row-line">' +
+      '<label class="seg-lbl">Range</label>' +
+      '<span class="seg-chip">Juz 30</span>' +
+      '<span class="seg-count">564 verses</span>' +
+    '</div>' +
+    '<div class="seg-row-line">' +
+      '<label class="seg-lbl">Spots</label>' +
+      '<span class="seg-in narrow ttr-fake-sel">8</span>' +
+      '<span class="seg-start ttr-fake-btn">\u25b6 Populate spots</span>' +
+      '<span class="seg-hint">across 564 verses</span>' +
+    '</div>' +
+  '</div>';
+
+/* Mirrors the REAL #quickForm: the same section headers, the same "Other…"
+   fields, the note box, and only Lvl 1-3 on the intervention row. The earlier
+   version invented a Lvl 0 button that does not exist — the real form records
+   "no intervention" by leaving the row alone — and dropped the headers that
+   make the two halves legible. */
+const DEMO_LABEL_CSS = 'font-size:9px;font-weight:600;letter-spacing:.07em;' +
+  'text-transform:uppercase;color:var(--ink3);margin-bottom:4px;';
+
+const DEMO_FORM =
+  '<div class="quick-form ttr-demo ttr-demo-form" id="ttrDemoForm">' +
+    '<span class="ttr-demo-pill">Example</span>' +
+    '<div class="qf-title">Mark mistake <span class="qf-ref">2:5 \u00b7 word 3</span></div>' +
+    '<div class="word-display">\u0627\u0644\u0645\u064f\u0633\u0652\u062a\u064e\u0642\u0650\u064a\u0645\u064e</div>' +
+    '<div id="ttrDemoTypes">' +
+      '<div style="' + DEMO_LABEL_CSS + '">Mistake type</div>' +
+      '<div class="ttr-demo-btns">' +
+        '<span class="ttr-fake-btn">Hesitation</span>' +
+        '<span class="ttr-fake-btn">Wrong word</span>' +
+        '<span class="ttr-fake-btn">Skipped</span>' +
+        '<span class="ttr-fake-btn">Makhraj</span>' +
+        '<span class="ttr-fake-btn">Tajweed</span>' +
+        '<span class="ttr-fake-btn ttr-fake-in">Other\u2026</span>' +
+      '</div>' +
+    '</div>' +
+    '<div style="border-top:.5px solid rgba(90,82,72,.2);margin:6px 0 5px;"></div>' +
+    '<div id="ttrDemoLevels">' +
+      '<div style="' + DEMO_LABEL_CSS + '">Was there an intervention?</div>' +
+      '<div class="ttr-demo-btns">' +
+        '<span class="ttr-fake-btn"><strong>Lvl 1</strong> \u00b7 Repeat</span>' +
+        '<span class="ttr-fake-btn"><strong>Lvl 2</strong> \u00b7 Hint</span>' +
+        '<span class="ttr-fake-btn"><strong>Lvl 3</strong> \u00b7 Taught</span>' +
+        '<span class="ttr-fake-btn ttr-fake-in">Other\u2026</span>' +
+      '</div>' +
+    '</div>' +
+    '<div class="ttr-fake-note">Optional note\u2026</div>' +
+    '<div class="ttr-demo-btns" id="ttrDemoCommit">' +
+      '<span class="ttr-fake-btn ttr-fake-add">+ Add</span>' +
+      '<span class="ttr-fake-btn">Cancel</span>' +
+    '</div>' +
+  '</div>';
+
+/* The mistakes list renders its own empty hint, so step "Everything you have
+   marked" had nothing to show. Mirrors the real .mistake-item. */
+const DEMO_MISTAKE =
+  '<div class="mistake-item sev-2 ttr-demo ttr-demo-mistake" id="ttrDemoMistake">' +
+    '<span class="ttr-demo-pill">Example</span>' +
+    '<span class="m-badge" style="background:var(--purple-bg);color:var(--purple);">Makhraj</span>' +
+    '<div class="m-body">' +
+      '<div class="m-ref"><span class="m-ref-verse">2:5</span>' +
+        '<span class="m-ref-time">10:42</span></div>' +
+      '<div class="m-ctx"><span class="m-ctx-side">\u0635\u0650\u0631\u064e\u0627\u0637\u064e</span> ' +
+        '<span class="m-ctx-word">\u0627\u0644\u0645\u064f\u0633\u0652\u062a\u064e\u0642\u0650\u064a\u0645\u064e</span></div>' +
+      '<div class="m-corr">Lvl 2 \u00b7 Hint</div>' +
+    '</div>' +
+    '<div class="m-actions">' +
+      '<span class="m-edit">\u270e</span><span class="m-del">\u2715</span>' +
+    '</div>' +
+  '</div>';
+
+/* #spotNav only exists inside the spot panel, which is not open unless a test
+   is running. Mirrors the real strip plus the three verdict buttons. */
+/* A POPULATED test, not the scope picker. #spotConfigure is the state before
+   spots exist — pointing at it taught the setup form rather than the thing
+   these steps describe. The real populated state is a list of .spot-card in
+   #spotList with a .spot-nav strip under it, so that is what this mirrors. */
+function demoSpotCard(n, surah, ref, active, outcome) {
+  return '<div class="spot-card' + (active ? ' active-spot' : '') +
+         (outcome ? ' outcome-' + outcome : '') + '">' +
+    '<div class="spot-card-head">' +
+      '<span class="spot-num">#' + n + '</span>' +
+      '<span class="spot-name">' + esc(surah) + '</span></div>' +
+    '<div class="spot-ref">' + esc(ref) + '</div>' +
+    '<div class="spot-outcome-row">' +
+      '<span class="spot-outcome-btn' + (outcome === 'pass' ? ' sel-pass' : '') + '">\u2713 Pass</span>' +
+      '<span class="spot-outcome-btn' + (outcome === 'partial' ? ' sel-partial' : '') + '">~ Partial</span>' +
+      '<span class="spot-outcome-btn' + (outcome === 'fail' ? ' sel-fail' : '') + '">\u2717 Fail</span>' +
+    '</div></div>';
+}
+
+const DEMO_SPOTLIST = () =>
+  '<div class="ttr-demo ttr-demo-spotnav" id="ttrDemoSpotNav">' +
+    '<span class="ttr-demo-pill">Example</span>' +
+    '<div class="spot-list" id="ttrDemoSpotCards">' +
+      demoSpotCard(1, 'Al-Baqarah', '2:142', false, 'pass') +
+      demoSpotCard(2, 'An-Nisa', '4:36', false, 'partial') +
+      demoSpotCard(3, 'Al-Maidah', '5:8', true, '') +
+    '</div>' +
+    '<div class="spot-nav" id="ttrDemoSpotNavStrip" style="background:transparent;">' +
+      '<span class="spot-nav-btn">[ \u2190 Spot</span>' +
+      '<span class="spot-nav-info">Spot 3 of 8<br>5:8</span>' +
+      '<span class="spot-nav-btn">Spot \u2192 ]</span>' +
+    '</div>' +
+  '</div>';
+
+/* The real spot list and its nav strip live in #spotPanel on the LEFT, not in
+   the tracker panel on the right — putting the example beside the segment rows
+   taught the wrong place to look. #spotPanel starts .collapsed, so the example
+   goes inside it and the panel is un-collapsed for the two steps that need it,
+   then put back exactly as it was. */
+let spotPanelWasCollapsed = null;
+let spotActiveDisplay = null;
+let spotConfigureDisplay = null;
+const hiddenReal = {};
+
+/* A REAL test means populated spot cards, not merely a visible #spotNav.
+   Forcing #spotActive open reveals the app's own empty nav strip, and treating
+   that as "a test is running" both skipped the example and let the steps
+   spotlight an empty strip parked at the top of the panel. */
+function realSpotTest() {
+  return !!vis('#spotList .spot-card');
+}
+
+function ensureDemoSpotNav() {
+  if (realSpotTest()) return;
+  const panel = $('spotPanel');
+  if (!panel) return;
+  if (spotPanelWasCollapsed === null) {
+    spotPanelWasCollapsed = panel.classList.contains('collapsed');
+  }
+  panel.classList.remove('collapsed');
+  /* On a narrow screen the panel is position:fixed at translateX(-100%) and
+     only .panel-open brings it on screen — removing .collapsed alone leaves it
+     parked off the left edge, which is why it appeared not to open at all. */
+  panel.classList.add('panel-open');
+  /* The configure form and the active list are alternative states of the same
+     panel. Leaving the form up would show both at once, which is a screen the
+     app never produces. */
+  const cfg = $('spotConfigure');
+  if (cfg && spotConfigureDisplay === null) {
+    spotConfigureDisplay = cfg.style.display;
+    cfg.style.display = 'none';
+  }
+  /* #spotList and #spotNav are the real, empty versions of exactly what the
+     example is standing in for. Left visible they render an empty list and a
+     dead nav strip ABOVE the example, so the panel shows two of everything and
+     the example looks stranded at the bottom. They are the app's own nodes, so
+     only their inline display is touched, and it is put back on teardown. */
+  ['spotList', 'spotNav'].forEach((id) => {
+    const el = $(id);
+    if (el && !(id in hiddenReal)) { hiddenReal[id] = el.style.display; el.style.display = 'none'; }
+  });
+  const host = $('spotActive') || panel;
+  /* #spotActive carries an inline display:none, which a stylesheet rule can
+     only beat with !important and a :has() selector this does not need to
+     depend on. Set it directly and remember what it was. */
+  if (host !== panel && spotActiveDisplay === null) {
+    spotActiveDisplay = host.style.display;
+    host.style.display = 'flex';
+  }
+  if ($('ttrDemoSpotNav')) return;
+  host.insertAdjacentHTML('beforeend', DEMO_SPOTLIST());
+}
+
+/* Restores the panel rather than leaving a spot panel open on a teacher who
+   never started a spot test. */
+function clearDemoSpotNav() {
+  const n = $('ttrDemoSpotNav');
+  if (n) n.remove();
+  const host = $('spotActive');
+  if (host && spotActiveDisplay !== null) host.style.display = spotActiveDisplay;
+  spotActiveDisplay = null;
+  const cfg = $('spotConfigure');
+  if (cfg && spotConfigureDisplay !== null) cfg.style.display = spotConfigureDisplay;
+  spotConfigureDisplay = null;
+  Object.keys(hiddenReal).forEach((id) => {
+    const el = $(id);
+    if (el) el.style.display = hiddenReal[id];
+    delete hiddenReal[id];
+  });
+  const panel = $('spotPanel');
+  if (panel && spotPanelWasCollapsed === true) {
+    panel.classList.add('collapsed');
+    // Without this the panel stays slid in on mobile no matter what
+    // .collapsed says, since .panel-open wins the transform.
+    panel.classList.remove('panel-open');
+  }
+  spotPanelWasCollapsed = null;
+}
+
+function ensureDemoMistake() {
+  const list = $('mistakesList');
+  if (!list || $('ttrDemoMistake')) return;
+  if (list.querySelector('.mistake-item:not(.ttr-demo)')) return;   // real ones win
+  const hint = list.querySelector('.empty-hint');
+  if (hint) hint.remove();
+  list.insertAdjacentHTML('afterbegin', DEMO_MISTAKE);
+}
+
+/* Injected separately so the recite chapter is not cluttered by a spot row it
+   has not introduced yet, and vice versa. Each is removed when its chapter
+   ends. Only ever shown when the teacher has no segments of their own. */
+function segHost() {
+  const p = $('segPanel');
+  if (!p) return null;
+  if (p.querySelector('.seg-row:not(.ttr-demo)')) return null;   // real ones win
+  return p.querySelector('.seg-scroll') || p;
+}
+function ensureDemoSeg(kind) {
+  const host = segHost();
+  if (!host) return;
+  const empty = host.querySelector('.seg-empty');
+  if (empty) empty.remove();
+  // Built at injection time, not at parse time: the teacher can change the
+  // terminology preset while the app is open.
+  if (kind !== 'spot' && !$('ttrDemoRecite')) {
+    host.insertAdjacentHTML('beforeend', DEMO_SEG_RECITE());
+  }
+  if (kind === 'spot' && !$('ttrDemoSpot')) {
+    host.insertAdjacentHTML('beforeend', DEMO_SEG_SPOT());
+  }
+  // Leaving the other kind on screen makes every caption ambiguous.
+  const drop = $(kind === 'spot' ? 'ttrDemoRecite' : 'ttrDemoSpot');
+  if (drop) drop.remove();
+}
+function ensureDemoForm() {
+  if ($('ttrDemoForm')) return;
+  const real = $('quickForm');
+  if (!real || !real.parentNode) return;
+  /* If the real form is open the teacher is mid-mistake — point at the real
+     thing and inject nothing. */
+  if (!real.classList.contains('hidden')) return;
+  real.insertAdjacentHTML('afterend', DEMO_FORM);
+}
+function demoFormOrReal(sel) {
+  const real = $('quickForm');
+  if (real && !real.classList.contains('hidden')) return pick(['#quickForm ' + sel]);
+  return null;
+}
+
+function clearDemo() {
+  document.querySelectorAll('.ttr-demo').forEach((n) => n.remove());
+}
+
+/* ── steps ──────────────────────────────────────────────────────────────── */
+
+const STEPS = [
+  { title: 'Welcome to Tehf\u012bz Feedback Logger',
+    body: 'This walks through setting a student up, sending them their code, ' +
+          'and where everything lives. About a minute.' },
+
+  { title: 'Students live here',
+    find: () => pick(['.topbar-right .btn-t[title="Students, codes and sending"]']),
+    body: 'Everything about your students \u2014 adding them, their codes, and ' +
+          'sending a finished lesson \u2014 is behind this button.' },
+
+  { title: 'Adding a student',
+    before: () => openRoster(),
+    find: () => pick(['#tsyBody [data-tsy="newstudent"]']),
+    body: 'Each student gets a code generated on the server. You never enter ' +
+          'their email or anything else about them.' },
+
+  { title: 'One row per student',
+    roster: true,
+    before: () => { openRoster(); ensureDemo(); },
+    find: () => pick(['#tsyBody .tsy-row']),
+    body: 'The name is yours alone \u2014 it is stored on this device and never ' +
+          'sent to the server. The dot tells you whether they have signed in ' +
+          'with their code yet.' },
+
+  { title: 'Tap the code to copy it',
+    roster: true,
+    before: () => { openRoster(); ensureDemo(); },
+    find: () => pick(['#tsyBody .tsy-row .tsy-code']),
+    body: 'Tapping the code copies it straight to your clipboard \u2014 paste it ' +
+          'into WhatsApp, or wherever you already message the family. That ' +
+          'code and a PIN they choose is all the student ever needs.' },
+
+  { title: 'Manage a student',
+    roster: true,
+    before: () => { openRoster(); ensureDemo(); },
+    find: () => pick(['#tsyBody .tsy-row [data-tsy="manage"]',
+                      '#tsyBody .tsy-row .tsy-chip-btn']),
+    body: 'Manage is where you issue a new code if one leaks, or clear a PIN a ' +
+          'student has forgotten. A new code always clears the PIN with it, ' +
+          'and signs out every device they were using.' },
+
+  { title: 'Hours, viewer and removing',
+    roster: true,
+    before: () => { openRoster(); ensureDemo(); },
+    /* All three at once — the text names three buttons, and spotlighting only
+       Remove was actively misleading. They sit side by side, so the union is a
+       tight strip. Manage is excluded because it is leftmost and step 6 has
+       just covered it on its own. */
+    find: () => pickAll('#tsyBody .tsy-row .tsy-row-meta .tsy-chip-btn:not([data-tsy="manage"])')
+             || pick(['#tsyBody .tsy-row .tsy-row-meta']),
+    body: 'Hours totals what you have taught them. Open in viewer shows exactly ' +
+          'what they see. Remove takes them off this device only \u2014 their ' +
+          'code and their lessons stay on the server.' },
+
+  { title: 'Export your roster',
+    before: () => openRoster(),
+    find: () => pick(['#tsyBody [data-tsy="exportroster"]']),
+    body: 'Because names live only here, clearing site data or changing device ' +
+          'leaves you holding codes and no names. Export it now and keep the ' +
+          'file somewhere safe.' },
+
+  { title: 'Naming the session',
+    before: () => { closeRoster(); openTracker(); },
+    find: () => pickAll('#setupBody .tinput') || pick(['#setupBody']),
+    body: 'Pick the student and, if you want, name the session. Leave the name ' +
+          'blank and Tehf\u012bz names it from the ranges recited, so you can skip it ' +
+          'entirely. Tehf\u012bz does not place the call \u2014 set that up however you ' +
+          'normally do, on WhatsApp or wherever, then log the lesson here.' },
+
+  { title: 'Two kinds of segment',
+    before: () => openTracker(),
+    find: () => pickAll('#segPanel .seg-head-actions .seg-mini')
+             || pick(['#segPanel .seg-head-actions', '#segPanel']),
+    body: 'A lesson is built from segments. + Recite is a passage read straight ' +
+          'through. + Spot test checks recall by sampling random points across a ' +
+          'wider scope. One lesson can hold as many of either as you need.' },
+
+  /* ── recite chapter ─────────────────────────────────────────────── */
+  { title: 'A recite segment',
+    seg: 'recite',
+    before: () => { openTracker(); ensureDemoSeg('recite'); },
+    find: () => pick(['#ttrDemoRecite', '#segPanel .seg-row:not(.spot)', '#segPanel .seg-row']),
+    body: 'This is what one looks like once added. Everything about the passage ' +
+          'lives on this row, and tapping the row makes it the one new mistakes ' +
+          'are logged against.' },
+
+  { title: () => 'Stage: ' + stageList(),
+    seg: 'recite',
+    before: () => { openTracker(); ensureDemoSeg('recite'); },
+    find: () => pick(['#ttrDemoRecite .ttr-fake-sel', '#segPanel .seg-row .seg-type']),
+    body: () => {
+      const other = otherStageNames();
+      return 'New memorisation, recent revision, or old ground. ' +
+        (other ? 'Settings can switch these to ' + other + ' if you prefer. ' : '') +
+        'This is what lets the reports tell a fresh page apart from a juz being ' +
+        'maintained; they are not the same achievement and are not scored the ' +
+        'same way.';
+    } },
+
+  { title: 'The range fills itself in',
+    seg: 'recite',
+    before: () => { openTracker(); ensureDemoSeg('recite'); },
+    find: () => pickAll('#ttrDemoRecite .seg-chip')
+             || pick(['#ttrDemoRecite', '#segPanel .seg-row .seg-chip']),
+    body: 'Tap a chip to arm it, then tap a word in the mushaf. Leave it blank ' +
+          'and the range is worked out from where you actually logged mistakes \u2014 ' +
+          'a dashed chip means it was filled in for you. Tap it to correct it.' },
+
+  { title: 'Or set the whole range at once',
+    seg: 'recite',
+    before: () => { openTracker(); ensureDemoSeg('recite'); },
+    find: () => pick(['#ttrDemoRecite .seg-mini.tiny', '#segPanel .seg-row .seg-mini.tiny']),
+    body: 'The \u2026 button picks a whole juz, page or surah in one go, which is ' +
+          'faster than two taps in the mushaf when the passage is a neat unit.' },
+
+  /* ── spot chapter ───────────────────────────────────────────────── */
+  { title: 'A spot test segment',
+    seg: 'spot',
+    before: () => { openTracker(); ensureDemoSeg('spot'); },
+    find: () => pick(['#ttrDemoSpot', '#segPanel .seg-row.spot', '#segPanel .seg-row']),
+    body: 'A spot test does not ask for a continuous passage. You give it a wide ' +
+          'scope \u2014 a juz, several juz \u2014 and it samples points inside it, which is ' +
+          'how you check maintenance without hearing the whole thing.' },
+
+  { title: 'Scope, not from-and-to',
+    seg: 'spot',
+    before: () => { openTracker(); ensureDemoSeg('spot'); },
+    find: () => pick(['#ttrDemoSpot .seg-chip', '#segPanel .seg-row.spot .seg-chip']),
+    body: 'One range covering everything being tested, set the same way as a ' +
+          'recite range. The wider it is, the more honestly the sample reflects ' +
+          'whether the whole portion is holding.' },
+
+  { title: 'How many spots',
+    seg: 'spot',
+    before: () => { openTracker(); ensureDemoSeg('spot'); },
+    find: () => pick(['#ttrDemoSpot .seg-in', '#segPanel .seg-row.spot .seg-in']),
+    body: 'How many points to sample. They are distributed across the scope for ' +
+          'you rather than clustering, so eight spots across a juz means eight ' +
+          'genuinely different places.' },
+
+  { title: 'Populate, then work through them',
+    seg: 'spot',
+    before: () => { openTracker(); ensureDemoSeg('spot'); },
+    find: () => pick(['#ttrDemoSpot .seg-start', '#segPanel .seg-row.spot .seg-start']),
+    body: 'Populate spots picks them and starts the test. You can regenerate a ' +
+          'fresh set later \u2014 though that discards any mistakes logged against ' +
+          'the old ones, and it will warn you first.' },
+
+  { title: 'Moving between spots',
+    spot: true,
+    before: () => { closeRoster(); closeTracker(); },
+    /* The container, not a union of its children. The strip IS the navigation —
+       both buttons and the "Spot 3 of 8" readout between them — so one element
+       describes it exactly, and there is no group to settle. */
+    find: () => (realSpotTest() ? pick(['#spotNav']) : null)
+             || pick(['#ttrDemoSpotNavStrip', '#ttrDemoSpotNav', '#spotNav']),
+    body: 'Once spots are populated they are listed here, one card each. These ' +
+          'step through them in turn and the mushaf jumps to each one. The ' +
+          'brackets [ and ] do the same from the keyboard, so you never have to ' +
+          'look away from the student.' },
+
+  { title: 'Pass, partial or fail',
+    spot: true,
+    before: () => { closeRoster(); closeTracker(); },
+    find: () => pick(['#ttrDemoSpotCards .spot-card.active-spot .spot-outcome-row',
+                      '#spotList .spot-card.active-spot .spot-outcome-row',
+                      '#spotList .spot-card .spot-outcome-row',
+                      '#ttrDemoSpotNav']),
+    body: 'Each spot gets one of three verdicts. Partial counts as half a pass ' +
+          'in the spot rate, so a student who needed a nudge is not scored the ' +
+          'same as one who had it cold, nor the same as one who had nothing.' },
+
+  { title: 'Mistakes belong to a segment',
+    before: () => openTracker(),
+    find: () => pick(['#segPanel .seg-head', '#segPanel']),
+    body: 'You can log mistakes during either kind of segment \u2014 a spot test is ' +
+          'not just pass and fail. But the word has to fall inside that ' +
+          'segment\u2019s range. Tap outside it and the mistake has nowhere to live, ' +
+          'so the app warns you and offers to add a segment that covers it.' },
+
+  { title: 'Tap a word to mark a mistake',
+    /* Its target is a word in the mushaf, which on a narrow screen sits behind
+       the tracker panel. Opening the panel here hid the very thing the step
+       points at. */
+    before: () => { closeRoster(); closeTracker(); },
+    find: () => pick(['#pageContent .qcf-word', '.qcf-word', '#quranPanel']),
+    /* Wording taken from the Help modal's own section on selecting a run, so
+       the two cannot drift apart. An earlier draft said "tap the first and then
+       the last", which is neither gesture and omits the same-verse rule. */
+    body: 'Every word is tappable. Surah, ayah and word position are captured ' +
+          'for you \u2014 you never type a reference. For a run of words that broke ' +
+          'down together, shift-click the first then click the last; on a phone, ' +
+          'long-press the first until it pulses and Multi-word mode appears, ' +
+          'then tap the last. Both words must be in the same verse, and the run ' +
+          'is recorded as one mistake rather than several. For a whole verse, ' +
+          'tap the gold circle at its end. Escape cancels.' },
+
+  { title: 'What went wrong',
+    form: true,
+    before: () => { openTracker(); ensureDemoForm(); },
+    find: () => demoFormOrReal('.type-btns')
+             || pick(['#ttrDemoTypes', '#ttrDemoForm']),
+    body: 'Hesitation, wrong word, skipped, makhraj or tajweed \u2014 and Other for ' +
+          'anything that does not fit. You can edit this list, and the ? beside ' +
+          'it explains what each one means.' },
+
+  { title: 'How much help it took',
+    form: true,
+    before: () => { openTracker(); ensureDemoForm(); },
+    find: () => demoFormOrReal('.corr-btns')
+             || pick(['#ttrDemoLevels', '#ttrDemoForm']),
+    body: 'Lvl 1 a repeat, Lvl 2 a hint, Lvl 3 you had to teach it. Leave it ' +
+          'alone if they caught it themselves. This is the field that drives the ' +
+          'strength score, so it matters more than the type does.' },
+
+  { title: 'Add commits it',
+    form: true,
+    before: () => { openTracker(); ensureDemoForm(); },
+    find: () => demoFormOrReal('.add-row')
+             || pick(['#ttrDemoCommit', '#ttrDemoForm']),
+    body: 'Add writes the mistake into the lesson and clears the form for the ' +
+          'next one. Cancel throws it away. Nothing is recorded until you press ' +
+          'Add, so a mistap costs you nothing.' },
+
+  { title: 'Everything you have marked',
+    mistake: true,
+    before: () => { openTracker(); ensureDemoMistake(); },
+    find: () => pick(['#ttrDemoMistake', '#mistakesList .mistake-item', '#mistakesList']),
+    body: 'Each mistake lands here as you go \u2014 type, reference, the word in ' +
+          'context and the level. Tap it to jump back to that word, \u270e to fix a ' +
+          'level you picked wrong in the moment, \u2715 to remove it.' },
+
+  { title: 'Finishing a lesson',
+    before: () => openTracker(),
+    find: () => pickAll('.tracker-footer .btn-foot') || pick(['.tracker-footer']),
+    body: 'Save keeps it on this device. Send to student pushes it to their ' +
+          'viewer. Report gives you text to paste to a parent. Save & Export ' +
+          'writes a .qrs file. Clear ends the lesson without deleting what you ' +
+          'saved.' },
+
+  { title: 'Help, and the shortcuts',
+    before: () => { if (rosterOpen() && window.TehfizSync) closeRoster(); },
+    find: () => pick(['.topbar-right .btn-t[title="Help & guide"]',
+                      '.topbar-right .btn-t[title="Help &amp; guide"]']),
+    body: 'Help explains mistake types, intervention levels and the strength ' +
+          'score \u2014 and lists every keyboard shortcut. Press ? at any time to ' +
+          'open it. You can run this tour again from there.' },
+];
+
+function closeRoster() {
+  const o = $('tsyOverlay');
+  if (o) o.classList.remove('tsy-on');
+}
+
+/* On a narrow screen the tracker panel slides off unless toggled. The flag the
+   app keeps and the panel's own class can disagree after a resize across the
+   breakpoint, so read the DOM rather than trusting a flag. */
+/* On a narrow screen #spotPanel covers the whole viewport, so any step
+   targeting the mushaf or the topbar renders behind it. clearDemoSpotNav()
+   restores whatever the tour changed, but a panel the TEACHER left open is
+   theirs — so it is only forced shut when the tour was the one that opened it. */
+function closeSpotPanelIfOurs() {
+  if (spotPanelWasCollapsed === null) return;   // we never touched it
+  clearDemoSpotNav();
+}
+
+/* On a narrow screen the tracker panel and the spot panel are both fixed
+   overlays, and the tracker sits on top. A spot step that leaves it open shows
+   the spot panel sliding in behind the session form. Desktop puts them side by
+   side, so this is compact-only. */
+function closeTracker() {
+  if (!document.body.classList.contains('compact-ui')) return;
+  const panel = document.querySelector('.tracker-panel');
+  if (!panel || !panel.classList.contains('panel-open')) return;
+  try { if (typeof window.toggleMobilePanel === 'function') window.toggleMobilePanel(); }
+  catch (e) { console.error('TehfizTour: toggleMobilePanel failed', e); }
+}
+
+function openTracker() {
+  closeRoster();
+  closeSpotPanelIfOurs();
+  const panel = document.querySelector('.tracker-panel');
+  if (!panel) return false;
+  const compact = document.body.classList.contains('compact-ui');
+  if (!compact) return false;
+  if (panel.classList.contains('panel-open')) return false;
+  try { if (typeof window.toggleMobilePanel === 'function') window.toggleMobilePanel(); }
+  catch (e) { console.error('TehfizTour: toggleMobilePanel failed', e); }
+  return true;
+}
+
+/* Derived rather than hand-maintained: a step whose before() opens the tracker
+   panel is one whose target lives inside it. Marking them by hand would mean
+   remembering to do so for every future step, and forgetting shows up as a
+   panel covering the thing being pointed at — the bug this fixes. There is no
+   build step or minifier on this file, so the function source is stable. */
+STEPS.forEach((s) => {
+  if (s.before && String(s.before).indexOf('openTracker') >= 0) s.tracker = true;
+});
+
+/* ── state ──────────────────────────────────────────────────────────────── */
+
+let running = false, i = 0, dir = 1, gen = 0, mounted = false;
+
+function seen() {
+  try { return Number(localStorage.getItem(K_SEEN) || 0) >= VERSION; } catch { return false; }
+}
+function markSeen() {
+  try { localStorage.setItem(K_SEEN, String(VERSION)); } catch {}
+}
+
+function start(force) {
+  if (running) return;
+  if (!force && seen()) return;
+  // Four of nine steps point at the topbar, which is display:none while
+  // body.topbar-hidden.
+  try { if (typeof window.setTopbarHidden === 'function') window.setTopbarHidden(false); } catch {}
+  running = true; i = 0; dir = 1;
+  $('ttrRoot').classList.add('ttr-on');
+  show();
+}
+
+function end() {
+  running = false;
+  $('ttrRoot').classList.remove('ttr-on');
+  clearDemoSpotNav();
+  clearDemo();
+  // Put the roster back the way the tour found it rather than leaving an
+  // overlay the teacher never opened.
+  closeRoster();
+  markSeen();
+}
+
+function go(d) {
+  const n = i + d;
+  if (n < 0) return;
+  if (n >= STEPS.length) return end();
+  dir = d < 0 ? -1 : 1;
+  i = n; show();
+}
+
+function show() {
+  const step = STEPS[i];
+  const myGen = ++gen;
+  const alive = () => myGen === gen;
+
+  if (step.before) {
+    try { step.before(); } catch (e) { console.error('TehfizTour: before() threw', e); }
+  }
+  /* On a narrow screen the tracker panel is a full-height overlay. Any step
+     aiming at the topbar, the mushaf or the spot panel renders behind it, so
+     it is shut for every step that does not declare itself as living inside
+     it. Desktop is unaffected — closeTracker() is compact-only. */
+  if (!step.tracker) { try { closeTracker(); } catch {} }
+
+  // Removes whatever the previous step injected, so nothing tall is left
+  // pushing this step's target below the fold.
+  try { syncExamples(); } catch (e) { console.error('TehfizTour: syncExamples threw', e); }
+
+  whenStable(step.find, (el, r) => {
+    if (!running || !alive()) return;
+    // Skips follow the direction of travel, so Back never bounces forward into
+    // the step it just left.
+    if (step.find && !el) return go(dir);
+    const lead = firstOf(el);
+    if (el && !onScreen(r) && lead && lead.scrollIntoView) {
+      try { lead.scrollIntoView({ block: 'center', behavior: 'auto' }); } catch {}
+      return whenStable(step.find, (el2, r2) => {
+        if (!alive()) return;
+        paint(step, onScreen(r2) ? el2 : null, onScreen(r2) ? r2 : null, alive);
+      }, alive);
+    }
+    paint(step, el, r, alive);
+  }, alive);
+}
+
+function paint(step, el, rect, alive) {
+  requestAnimationFrame(() => {
+    if (!running || (alive && !alive())) return;
+    const hole = $('ttrHole'), card = $('ttrCard');
+    if (rect) {
+      const p = 6;
+      /* The hole animates left/top/width/height so it glides between steps.
+         But coming back from a centred step it was display:none with stale
+         coordinates — often 0,0 — so the first frame drew it in the top-left
+         corner and swept across. Place it with the transition suppressed, then
+         restore it for subsequent moves. */
+      const reappearing = hole.style.display === 'none' || !hole.style.width;
+      if (reappearing) hole.style.transition = 'none';
+      hole.style.display = 'block';
+      hole.style.left   = (rect.left - p) + 'px';
+      hole.style.top    = (rect.top - p) + 'px';
+      hole.style.width  = (rect.width + p * 2) + 'px';
+      hole.style.height = (rect.height + p * 2) + 'px';
+      if (reappearing) {
+        void hole.offsetWidth;               // flush before re-enabling
+        hole.style.transition = '';
+      }
+      $('ttrRoot').classList.remove('ttr-centred');
+    } else {
+      hole.style.display = 'none';
+      hole.style.width = '';                 // marks it as needing a fresh place
+      $('ttrRoot').classList.add('ttr-centred');
+    }
+    $('ttrTitle').textContent =
+      (typeof step.title === 'function') ? step.title() : step.title;
+    $('ttrBody').textContent  =
+      (typeof step.body === 'function') ? step.body() : step.body;
+    $('ttrCount').textContent = (i + 1) + ' of ' + STEPS.length;
+    $('ttrBack').style.visibility = i === 0 ? 'hidden' : 'visible';
+    $('ttrNext').textContent = (i === STEPS.length - 1) ? 'Done' : 'Next';
+    place(card, rect);
+  });
+}
+
+/* Below the target when it fits, above when it does not, centred when neither.
+   Clamped to the viewport: anchoring to a topbar button's left edge on a
+   narrow screen puts half the card off it. */
+function place(card, rect) {
+  card.style.visibility = 'hidden';
+  card.style.left = '0px'; card.style.top = '0px';
+  requestAnimationFrame(() => {
+    const cw = card.offsetWidth, ch = card.offsetHeight;
+    const vw = window.innerWidth, vh = window.innerHeight, M = 12;
+    let top;
+    if (rect && rect.bottom + ch + 16 <= vh - M)  top = rect.bottom + 12;
+    else if (rect && rect.top - ch - 16 >= M)     top = rect.top - ch - 12;
+    else                                          top = Math.max(M, (vh - ch) / 2);
+    let left = rect ? (rect.left + rect.width / 2 - cw / 2) : (vw - cw) / 2;
+    left = Math.max(M, Math.min(left, vw - cw - M));
+    card.style.left = left + 'px'; card.style.top = top + 'px';
+    card.style.visibility = 'visible';
+  });
+}
+
+/* ── mount ──────────────────────────────────────────────────────────────── */
+
+function mount() {
+  if (mounted) return;                 // a second mount would stack listeners
+  mounted = true;
+  const root = $('ttrRoot');
+  if (!root) return;
+  root.innerHTML =
+    '<div class="ttr-veil"></div>' +
+    '<div class="ttr-hole" id="ttrHole"></div>' +
+    '<div class="ttr-card" id="ttrCard">' +
+      '<div class="ttr-title" id="ttrTitle"></div>' +
+      '<div class="ttr-body" id="ttrBody"></div>' +
+      '<div class="ttr-foot">' +
+        '<span class="ttr-count" id="ttrCount"></span>' +
+        '<span class="ttr-spacer"></span>' +
+        '<button class="ttr-btn" data-ttr="skip">Skip</button>' +
+        '<button class="ttr-btn" data-ttr="back" id="ttrBack">Back</button>' +
+        '<button class="ttr-btn ttr-primary" data-ttr="next" id="ttrNext">Next</button>' +
+      '</div>' +
+    '</div>';
+
+  /* Document-level delegate, matching how TehfizSync and TehfizAdmin bind. */
+  document.addEventListener('click', (e) => {
+    const t = e.target.closest('[data-ttr]');
+    if (!t || !running) return;
+    const a = t.dataset.ttr;
+    if (a === 'skip') return end();
+    if (a === 'back') return go(-1);
+    if (a === 'next') return go(1);
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (!running) return;
+    // Captured before the app's own handlers: '?' opens Help, and the arrow
+    // keys move the mushaf.
+    if (e.key === 'Escape')     { e.preventDefault(); e.stopPropagation(); end(); }
+    if (e.key === 'ArrowRight') { e.preventDefault(); e.stopPropagation(); go(1); }
+    if (e.key === 'ArrowLeft')  { e.preventDefault(); e.stopPropagation(); go(-1); }
+  }, true);
+
+  let rt = null;
+  window.addEventListener('resize', () => {
+    if (!running) return;
+    clearTimeout(rt);
+    rt = setTimeout(show, 120);        // rects are stale after a rotation
+  });
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', mount);
+} else { mount(); }
+
+/* Every example is injected or removed to match the CURRENT step, not merely
+   added and left. The mark form is tall: leaving it up during the later steps
+   pushed the mistakes list and the footer buttons off the bottom of the panel,
+   so the very things those steps point at were off-screen. */
+function syncExamples() {
+  const step = STEPS[i] || {};
+  if (step.roster) ensureDemo();
+  if (step.seg) ensureDemoSeg(step.seg);
+  else { const a = $('ttrDemoRecite'), b = $('ttrDemoSpot');
+         if (a) a.remove(); if (b) b.remove(); }
+  if (step.spot) ensureDemoSpotNav();
+  else clearDemoSpotNav();
+  if (step.form) ensureDemoForm();
+  else { const f = $('ttrDemoForm'); if (f) f.remove(); }
+  if (step.mistake) ensureDemoMistake();
+  else { const m = $('ttrDemoMistake'); if (m) m.remove(); }
+}
+
+function decorate() { if (running) syncExamples(); }
+function active()   { return running; }
+
+window.TehfizTour = { start: () => start(true), startIfUnseen: () => start(false),
+                      active, decorate };
+
+})();
+</script>
+
+<style>
+/* ── TehfizTour — every selector prefixed .ttr- ───────────────────────── */
+#ttrRoot{display:none;}
+#ttrRoot.ttr-on{display:block;}
+
+/* Transparent and click-eating: a narrated tour must not let a stray tap fire
+   an app control whose result the teacher cannot see. 849 sits above the
+   sync overlay (600) and the shortcuts modal (500). */
+.ttr-veil{position:fixed;inset:0;z-index:849;background:transparent;}
+#ttrRoot.ttr-centred .ttr-veil{background:rgba(26,22,18,.72);}
+
+/* The dimming IS this element's shadow, spread far enough to cover any
+   viewport. The element itself stays transparent, so the target shows through
+   with rounded corners and no four-rect layout maths. */
+.ttr-hole{position:fixed;z-index:850;border-radius:8px;pointer-events:none;
+  box-shadow:0 0 0 9999px rgba(26,22,18,.72);
+  outline:2px solid var(--gold);outline-offset:0;
+  transition:left .18s ease,top .18s ease,width .18s ease,height .18s ease;}
+
+.ttr-card{position:fixed;z-index:851;width:min(330px,calc(100vw - 24px));
+  background:var(--parchment);border:.5px solid var(--gold);border-radius:10px;
+  box-shadow:0 8px 30px rgba(26,22,18,.4);padding:13px 14px 10px;
+  font-family:'Lora',serif;}
+.ttr-title{font-size:13px;font-weight:700;color:var(--ink);margin-bottom:5px;}
+.ttr-body{font-size:11.5px;line-height:1.6;color:var(--ink2);}
+.ttr-foot{display:flex;align-items:center;gap:6px;margin-top:11px;}
+.ttr-spacer{flex:1;}
+.ttr-count{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--ink3);}
+
+/* 44px from the start, per the rule for anything built after the touch-target
+   audit. The ink stays small; only the target grows. */
+.ttr-btn{min-height:44px;padding:0 13px;background:var(--parchment2);
+  border:.5px solid var(--border2);border-radius:7px;color:var(--ink2);
+  font-family:'Lora',serif;font-size:12px;cursor:pointer;}
+.ttr-btn:hover{border-color:var(--gold);background:var(--gold-pale);color:var(--ink);}
+.ttr-primary{background:var(--gold);border-color:var(--gold);color:#fff;font-weight:600;}
+.ttr-primary:hover{background:var(--gold);color:#fff;}
+
+/* Inert by construction: no data-tsy attributes, so the delegate cannot match
+   it even if a click somehow reached it. */
+/* Reserve a strip along the bottom for the badge. Without it the pill sat on
+   top of whatever ended the last line — on a recite segment row that was the
+   "…" whole-range button, i.e. the exact control its own step points at. */
+.ttr-demo{position:relative;pointer-events:none;padding-bottom:16px!important;
+  border:1px dashed var(--gold)!important;}
+.ttr-demo-pill{position:absolute;bottom:3px;right:8px;z-index:2;
+  font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:.04em;
+  background:var(--gold);color:#fff;border-radius:999px;padding:1px 6px;}
+
+/* The example mark form sits where the real one would, but is plainly not it:
+   dashed border, Example badge, and nothing inside it is a real control. */
+.ttr-demo-form{position:relative;display:block!important;}
+.ttr-demo-seg{position:relative;}
+.ttr-demo-btns{display:flex;flex-wrap:wrap;gap:3px;margin-top:5px;}
+.ttr-fake-btn{font-family:'Lora',serif;font-size:10px;padding:3px 7px;border-radius:5px;
+  border:.5px solid var(--border2);background:var(--parchment);color:var(--ink2);}
+.ttr-fake-add{background:var(--gold);border-color:var(--gold);color:#fff;font-weight:600;}
+.ttr-fake-sel{font-family:'Lora',serif;font-size:10px;padding:2px 6px;border-radius:4px;
+  border:.5px solid var(--border2);background:var(--parchment);color:var(--ink2);}
+.ttr-fake-in{color:var(--ink3);font-style:italic;}
+/* #spotActive is display:none until a test runs; ensureDemoSpotNav() sets that
+   inline and clearDemoSpotNav() puts it back. */
+/* Occupies the panel the way the real list does, instead of reading as a card
+   pasted underneath it. */
+.ttr-demo-spotnav{display:flex;flex-direction:column;flex:1;min-height:0;
+  margin:0;padding:0 0 16px;border:none!important;}
+.ttr-demo-spotnav .spot-list{flex:1;min-height:0;overflow-y:auto;padding:8px;}
+.ttr-demo-spotnav .spot-nav{flex-shrink:0;}
+.ttr-demo-spotnav > .ttr-demo-pill{bottom:3px;right:10px;}
+.ttr-fake-note{margin-top:6px;padding:4px 6px;border-radius:5px;
+  border:.5px solid var(--border2);background:var(--parchment);
+  font-family:'Lora',serif;font-size:10px;color:var(--ink3);font-style:italic;}
+
+.ttr-replay{min-height:44px;width:100%;margin-bottom:8px;
+  background:var(--parchment2);border:.5px solid var(--border2);border-radius:7px;
+  color:var(--ink2);font-family:'Lora',serif;font-size:12px;cursor:pointer;}
+.ttr-replay:hover{border-color:var(--gold);background:var(--gold-pale);color:var(--ink);}
 </style>
 
 </body>
