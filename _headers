@@ -1,0 +1,17 @@
+# Cloudflare reads this at build time and applies the headers at the edge.
+# The file itself is never served (requesting /_headers returns 404) — that is
+# expected and is not a sign it failed.
+#
+# Doing the noindex here rather than as a <meta> tag inside the two app files
+# avoids editing two ~800 KB single-file HTML apps and bumping six version
+# strings (filename, APP_VERSION, line-3 header comment, twice over) for a
+# change that has nothing to do with either app's behaviour.
+
+/app/*
+  X-Robots-Tag: noindex, follow
+
+# noindex  — keep these out of the search index. They are application shells:
+#            ~800 KB of JavaScript wrapped around an empty DOM, with no content
+#            worth ranking and every chance of being judged thin.
+# follow   — still crawl the links inside them, so any link equity they carry
+#            flows back to the real pages rather than dead-ending.
