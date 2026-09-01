@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Only indexable document pages belong here. /app/teacher/ and /app/student/
+  are applications carrying X-Robots-Tag: noindex, and listing a noindexed URL
+  in a sitemap is a contradiction Search Console reports as an error.
+
+  Trailing slashes are required: /dhor and /privacy both 307-redirect to the
+  slashed form, and a sitemap should give the final URL, not the redirect.
+
+  Update <lastmod> when a page's content actually changes. Faking it on every
+  deploy trains Google to ignore the field.
+-->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+
+  <url>
+    <loc>https://tehfiz.com/</loc>
+    <lastmod>2026-09-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>1.0</priority>
+  </url>
+
+  <url>
+    <loc>https://tehfiz.com/dhor/</loc>
+    <lastmod>2026-09-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <url>
+    <loc>https://tehfiz.com/privacy/</loc>
+    <lastmod>2026-09-01</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+
+</urlset>
