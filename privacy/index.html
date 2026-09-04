@@ -1,10 +1,35 @@
 <!DOCTYPE html>
+<!--
+     Tehfiz privacy & terms — v0_3
+     Deploys to privacy/index.html in the `tehfiz` repo.
+     Two version strings, not three: filename and the line above. There is no
+     APP_VERSION const because there is no script on this page.
+-->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Privacy &amp; Terms — Tehfīz</title>
 <meta name="description" content="What Tehfīz stores, what it deliberately does not store, and the terms of use.">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://tehfiz.com/privacy/">
+
+<!-- This page is linked from both apps and from /dhor/, so it does get shared.
+     Without these a share renders as a bare grey link. -->
+<meta property="og:title" content="Privacy &amp; Terms — Tehfīz">
+<meta property="og:description" content="There is no name field in our database. What Tehfīz stores, what it deliberately does not, and the terms of use.">
+<meta property="og:url" content="https://tehfiz.com/privacy/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Tehfīz">
+<meta property="og:image" content="https://tehfiz.com/og-home.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Tehfīz — mark a hifz lesson on the mushaf itself.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Privacy &amp; Terms — Tehfīz">
+<meta name="twitter:description" content="There is no name field in our database.">
+<meta name="twitter:image" content="https://tehfiz.com/og-home.jpg">
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -62,7 +87,7 @@ footer{margin-top:52px;padding-top:22px;border-top:1px solid var(--border);
   <h1>Privacy &amp; Terms</h1>
   <p class="sub">Tehfīz is used by children. This page explains what that means for the
   information we hold — and, more importantly, what we have deliberately arranged not to hold.</p>
-  <p class="updated">Last updated: 11 August 2026</p>
+  <p class="updated">Last updated: 4 September 2026</p>
 </header>
 
 <div class="toc">
@@ -73,7 +98,7 @@ footer{margin-top:52px;padding-top:22px;border-top:1px solid var(--border);
     <li><a href="#notes">A word about teacher notes</a></li>
     <li><a href="#retention">How long we keep things</a></li>
     <li><a href="#deletion">Deleting your data</a></li>
-    <li><a href="#enquiries">Enquiry forms</a></li>
+    <li><a href="#enquiries">Forms and enquiries</a></li>
     <li><a href="#aggregate">Anonymous statistics</a></li>
     <li><a href="#who">Who else can see it</a></li>
     <li><a href="#terms">Terms of use</a></li>
@@ -183,21 +208,39 @@ within 30 days.</p>
 
 <p>Parents and guardians may make this request as well as teachers.</p>
 
-<h2 id="enquiries">Enquiry forms</h2>
+<h2 id="enquiries">Forms and enquiries</h2>
 
-<p>Separately from the apps, we run two forms: one for people looking for a teacher, and one
-for teachers looking for students. These are Google Forms, and what you send through them
-goes to us by email — it is <strong>not</strong> stored in the database that holds
-recitation sessions, and it is never published anywhere.</p>
+<p>Separately from the apps, we run a few short forms — for people looking for a teacher,
+for teachers looking for students, and for arranging sessions directly. These are Google
+Forms, and what you send through them goes to us by email — it is <strong>not</strong>
+stored in the database that holds recitation sessions, and it is never published
+anywhere.</p>
 
 <ul>
   <li>We ask that enquiries about a child come from a <strong>parent or guardian</strong>,
     and we do not ask for a child's own name or contact details.</li>
   <li>We use what you send only to make an introduction, and only with your agreement.</li>
-  <li>We keep enquiries for up to 12 months in case a suitable match comes along later, then
-    delete them. Ask us at any time to delete yours sooner.</li>
+  <li>We keep enquiries only while they are useful — a match may come along later than
+    the first reply. Ask us at any time to delete yours and we will.</li>
   <li>Because Google Forms hosts these, your responses are also processed by Google.</li>
 </ul>
+
+<h3>Booking a session with us</h3>
+
+<p>One of those forms, on the <a href="/dhor/">dhor page</a>, is for booking a session
+directly with Qazi Emaduddin, who runs Tehfīz and also teaches. It asks for your name,
+your age, where you are, and how to reach you, so that a suitable time can be arranged.
+It is for <strong>adults booking for themselves</strong>.</p>
+
+<p>It is handled exactly like the enquiry forms above: it comes to us by email, it is not
+stored in the database that holds recitation sessions, it is never published, and you can
+ask us to delete it at any time.</p>
+
+<div class="callout warn">
+  <p><strong>Worth stating plainly:</strong> Tehfīz is run by someone who also teaches. If
+  you send an enquiry through the forms above, you may be introduced to him, and he will
+  say so. You are under no obligation, and enquiries he is not suited to are passed on.</p>
+</div>
 
 <p><strong>We do not verify anyone's qualifications and we do not vouch for teachers or
 families.</strong> An introduction is not a recommendation. Please make your own checks
