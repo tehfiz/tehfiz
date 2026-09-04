@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ═══════════════════════════════════════════════════════════════════
-     Tehfiz teacher app — v4_223
+     Tehfiz teacher app — v4_225
      Deployed from the `tehfiz` repo at public/app/teacher/index.html.
      NOTE: tehfiz-api also contains a public/app/ folder. That one is a local
      staging copy, gitignored, and never served — its routes are /api/* only.
@@ -390,12 +390,17 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
   .print-runhead{
     position:fixed; top:0; left:0; right:0; height:7mm;
     display:flex; align-items:center; justify-content:space-between;
-    background:#fff; border-bottom:.5pt solid #d8d0c4;
+    /* Bleed past the @page side margins so the band runs edge to edge and
+       reads as a header rather than a first line of content. Height is
+       unchanged: the vertical budget against A4 is already tight. */
+    margin:0 -12mm; padding:0 12mm;
+    background:#f2ede4;
+    border-bottom:1pt solid #b8841a;
     font-family:'IBM Plex Mono',monospace; font-size:7.5pt; color:#5a5248;
     letter-spacing:.04em;
   }
-  .prh-title{ font-weight:500; }
-  .prh-brand{ color:#b8841a; }
+  .prh-title{ font-weight:600; color:#1a1612; }
+  .prh-brand{ color:#b8841a; font-weight:600; }
 
   .print-report{ max-width:100%; margin-top:9mm; }
   .print-sheet{ padding-top:9mm; }
@@ -1038,9 +1043,7 @@ body.seg-arming .word-btn:hover,body.seg-arming .qcf-word:hover{outline:2px soli
 .modal.wide{max-width:840px;}
 .modal-title{font-size:15px;font-weight:600;margin-bottom:3px;}
 .modal-sub{font-size:11px;color:var(--ink3);margin-bottom:12px;}
-.topbar-for{font-size:9px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink3);
-  border:.5px solid var(--border2);border-radius:999px;padding:1px 6px;margin-left:6px;white-space:nowrap;font-weight:500;}
-@media(max-width:700px){.topbar-for{display:none;}}
+
 .modal-btns{margin-top:12px;display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap;}
 /* The review modal scrolls for a long session, and the actions sat at the very
    bottom of it — reachable only after scrolling past every mistake. Sticky, and
@@ -1531,7 +1534,7 @@ body.compact-ui .quick-form::before{
   <!-- Line 1: identity only, brand truly centred. -->
   <div class="topbar-line1">
     <a class="topbar-home" href="https://tehfiz.com" title="Tehf&#299;z home" aria-label="Home">&#127968;</a>
-    <div class="topbar-brand">Tehf&#299;z <span>Feedback Logger</span><span class="topbar-for">For teachers</span></div>
+    <div class="topbar-brand">Tehf&#299;z <span>For teachers</span></div>
     <!-- Filled by TehfizSync.renderWho(). Empty until signed in, so a teacher
          who has not connected an account sees the header they always did. -->
     <div class="topbar-line1-right" id="topbarWho"></div>
@@ -2299,7 +2302,7 @@ body.compact-ui .quick-form::before{
    console as APP_VERSION, or grep the deployed HTML for it. Bumped on every
    saved build; vcheck.py asserts it matches the filename, so a forgotten bump
    fails the integrity check rather than shipping a lie. */
-const APP_VERSION = 'v4_223';
+const APP_VERSION = 'v4_225';
 window.APP_VERSION = APP_VERSION;
 console.info('Tehfiz teacher app ' + APP_VERSION);
 
@@ -8331,7 +8334,11 @@ async function printReport(mode){
   // them open: the closed content sits in the UA shadow DOM, so `display:block`
   // on the children never reaches it. Setting the attribute on the CLONE means
   // the teacher's own collapsed/expanded state in review is untouched.
-  rep.querySelectorAll('details').forEach(d => { d.open = true; });
+  //
+  // Only in 'mistakes' mode. Full mode reproduces every mistake on the mushaf
+  // pages themselves, marked on the word it happened on, so expanding the list
+  // as well prints the same information twice — once well and once as a list.
+  if(mode === 'mistakes') rep.querySelectorAll('details').forEach(d => { d.open = true; });
   root.appendChild(rep);
 
   if(mode === 'full'){
@@ -8449,7 +8456,15 @@ async function printReport(mode){
 
   document.body.classList.add('printing', 'print-' + mode);
 
+  // The browser's PDF writer names the file after document.title. Swapping it
+  // for the session's export name is the only way to influence that, so a saved
+  // PDF sits next to its .qrs under the same name instead of arriving as
+  // "Tehfiz Feedback Logger for teachers.pdf".
+  const _prevTitle = document.title;
+  try{ document.title = makeFileName(s); }catch(err){}
+
   _printCleanup = () => {
+    document.title = _prevTitle;
     document.body.classList.remove('printing','print-metrics','print-mistakes','print-full');
     document.getElementById('printRoot').innerHTML = '';
     // Full mode painted the reviewed session onto the live mushaf. Put the
