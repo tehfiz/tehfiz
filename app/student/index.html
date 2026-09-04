@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ═══════════════════════════════════════════════════════════════════
-     Tehfiz student viewer — v1_116
+     Tehfiz student viewer — v1_120
      Deployed from the `tehfiz` repo at public/app/student/index.html.
      NOTE: tehfiz-api also contains a public/app/ folder. That one is a local
      staging copy, gitignored, and never served — its routes are /api/* only.
@@ -530,13 +530,21 @@ body.compact-ui .panel-footer{flex-shrink:0;}
 .btn-foot.accent{background:var(--gold);color:var(--ink);border-color:var(--gold);font-weight:600;}
 
 /* WORD TOOLTIP */
-.word-tooltip{position:fixed;z-index:600;background:var(--ink);color:var(--gold-light);border-radius:8px;padding:8px 12px;font-size:11px;font-family:'Lora',serif;max-width:230px;box-shadow:var(--shadow-lg);pointer-events:none;display:none;line-height:1.6;}
-.word-tooltip .tt-word{font-family:'Scheherazade New','Amiri',serif;font-size:17px;direction:rtl;display:block;margin-bottom:3px;color:white;}
-.word-tooltip .tt-badge{display:inline-block;padding:2px 6px;border-radius:999px;font-size:8px;font-weight:600;font-family:'IBM Plex Mono',monospace;margin-bottom:3px;}
-.word-tooltip .tt-corr{font-size:9px;opacity:.75;display:block;}
-.word-tooltip .tt-note{font-size:9px;opacity:.6;font-style:italic;display:block;margin-top:2px;}
-.word-tooltip .tt-sess{font-size:8px;opacity:.5;display:block;margin-top:2px;font-family:'IBM Plex Mono',monospace;}
-.word-tooltip .tt-rep{font-size:9px;color:var(--gold);font-weight:600;display:block;margin-top:2px;}
+.word-tooltip{position:fixed;z-index:600;background:var(--parchment);color:var(--ink);border-radius:8px;
+  border:1px solid var(--border2);border-left:4px solid var(--ink3);
+  padding:8px 12px;font-size:11px;font-family:'Lora',serif;max-width:250px;
+  box-shadow:var(--shadow-lg);pointer-events:none;display:none;line-height:1.6;}
+.word-tooltip .tt-word{font-family:'Scheherazade New','Amiri',serif;font-size:19px;direction:rtl;display:block;margin-bottom:4px;color:var(--ink);}
+/* Opacity is gone throughout. It was dimming already-low-contrast text on a
+   dark surface; on a pale one the ink tokens carry the hierarchy properly and
+   stay legible. */
+.word-tooltip .tt-badge{display:inline-block;padding:2px 7px;border-radius:999px;font-size:8px;font-weight:700;
+  font-family:'IBM Plex Mono',monospace;margin-bottom:3px;letter-spacing:.04em;}
+.word-tooltip .tt-corr{font-size:9px;display:block;font-weight:600;font-family:'IBM Plex Mono',monospace;letter-spacing:.03em;}
+.word-tooltip .tt-note{font-size:10px;color:var(--ink2);font-style:italic;display:block;margin-top:3px;}
+.word-tooltip .tt-sess{font-size:8px;color:var(--ink3);display:block;margin-top:3px;font-family:'IBM Plex Mono',monospace;}
+.word-tooltip .tt-rep{font-size:9px;color:var(--amber);font-weight:700;display:block;margin-top:2px;}
+.word-tooltip .tt-div{border-top:1px solid var(--border);margin:6px 0 4px;}
 .word-tooltip.visible{display:block;}
 
 /* MODALS */
@@ -560,9 +568,7 @@ body.compact-ui .panel-footer{flex-shrink:0;}
    under the bar. */
 .modal-btns.sticky{position:sticky;bottom:-20px;z-index:3;margin:12px -20px -20px;padding:12px 20px;
   background:var(--parchment);border-top:1px solid var(--border);border-radius:0 0 12px 12px;}
-.topbar-for{font-size:9px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink3);
-  border:.5px solid var(--border2);border-radius:999px;padding:1px 6px;margin-left:6px;white-space:nowrap;font-weight:500;}
-@media(max-width:700px){.topbar-for{display:none;}}
+
 .btn-m{padding:6px 12px;border-radius:5px;font-family:'Lora',serif;font-size:12px;cursor:pointer;}
 .btn-m.sec{background:none;border:.5px solid var(--border2);color:var(--ink2);}
 .btn-m.pri{background:var(--gold);color:var(--ink);border:none;font-weight:600;}
@@ -1045,7 +1051,7 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
   <!-- Line 1: identity only, brand centred by an equal-column grid. -->
   <div class="topbar-line1">
     <a class="topbar-home" href="https://tehfiz.com" title="Tehfīz home" aria-label="Home">🏠</a>
-    <div class="topbar-brand">Tehfīz <span>Feedback Viewer</span><span class="topbar-for">For students &amp; parents</span></div>
+    <div class="topbar-brand">Tehfīz <span>For students &amp; parents</span></div>
     <div class="topbar-line1-right"></div>
   </div>
   <!-- Line 2: position nav left, tools right — room freed by removing the
@@ -1448,7 +1454,7 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
    console as APP_VERSION, or grep the deployed HTML for it. Bumped on every
    saved build; vcheck.py asserts it matches the filename, so a forgotten bump
    fails the integrity check rather than shipping a lie. */
-const APP_VERSION = 'v1_116';
+const APP_VERSION = 'v1_120';
 window.APP_VERSION = APP_VERSION;
 console.info('Tehfiz student viewer ' + APP_VERSION);
 
@@ -1526,6 +1532,19 @@ function migrateId(id){return ID_MIGRATION[id]||id;}
 // class name. The mapping itself lives in SEVERITY.
 function _sevClassForCorr(corr){ return sev(corr).cls; }
 // Worst (most alarming) intervention level among a set of mistakes on the same word
+// The correction id of the most severe mistake in a list. _worstSevClass()
+// answers the same question but returns a CSS class, which cannot be looked up
+// in SEVERITY for its colours.
+function _worstCorrOf(mList){
+  const sevRank={c3:3,c2:2,c1:1,c0:0,c4:-1};
+  let worst='c0', worstRank=-2;
+  (mList||[]).forEach(m=>{
+    const r=sevRank[m.correction]??0;
+    if(r>worstRank){worstRank=r;worst=m.correction;}
+  });
+  return worst;
+}
+
 function _worstSevClass(mList){
   const sevRank={c3:3,c2:2,c1:1,c0:0,c4:-1};
   let worst=null, worstRank=-2;
@@ -3151,6 +3170,10 @@ window.addEventListener('DOMContentLoaded',()=>{
   }
   buildTopbarNav();loadPageIndex();loadSavedSessionsFromStorage();_resetScroll=true;loadJuz(1);
   document.addEventListener('click',e=>{if(!e.target.closest('.word-span')&&!e.target.closest('.qcf-word'))hideTooltip();});
+  // Follow the word it is anchored to. Capture phase so it fires for the
+  // scrolling panel as well as the window — scroll does not bubble.
+  document.addEventListener('scroll', _ttSchedule, {passive:true, capture:true});
+  window.addEventListener('resize', _ttSchedule);
   // Auto-hide hint bar after 5 minutes — uses a real wall-clock timestamp rather
   // than trusting a single setTimeout to fire exactly on schedule (a busy main
   // thread, or the tab being backgrounded, can throttle/delay a lone timer).
@@ -3541,7 +3564,7 @@ function wsHTML(text,sN,aN,pos){
   // "primary" type when several cover the same word — the tooltip lists them all.
   const sevCls=_worstSevClass(mList);
   const isRep=repeatWordKeys.has(wk);
-  const enc=encodeURIComponent(JSON.stringify(mList.map(m=>({type:m.type,correction:m.correction,note:m.note||'',sessionStudent:m.sessionStudent||'',sessionRange:m.sessionRange||'',sessionDate:m.sessionDate||'',ref:m.wordPosEnd&&m.wordPosEnd!==m.wordPos?`${sN}:${aN} words ${m.wordPos}–${m.wordPosEnd}`:`${sN}:${aN}`,word:m.word||text,typeConfig:m.typeConfig||null})))).replace(/'/g,'%27');
+  const enc=encodeURIComponent(JSON.stringify(mList.map(m=>({type:m.type,correction:m.correction,note:m.note||'',sessionRange:m.sessionRange||'',sessionDate:m.sessionDate||'',ref:m.wordPosEnd&&m.wordPosEnd!==m.wordPos?`${sN}:${aN} words ${m.wordPos}–${m.wordPosEnd}`:`${sN}:${aN}`,word:m.word||text,typeConfig:m.typeConfig||null})))).replace(/'/g,'%27');
   return`<span id="ws-${sN}-${aN}-${pos}" class="word-span type-tag ${sevCls}${isRep?' repeated':''}" data-s="${sN}" data-a="${aN}" onclick="showTT(event,this,'${enc}')">${text}</span>`;
 }
 
@@ -4738,7 +4761,7 @@ function renderMushafFromQuranCom(juzNum,pageMap,startPage,endPage,hizbByVerse={
         const fs=(w.v2page!==defaultV2page?`font-family:'${wFont}','UthmanicHafs',serif;`:'');
         if(mList.length){
           // Pass w.text (text_uthmani) so the tooltip shows readable Arabic, not PUA glyphs
-          const enc=encodeURIComponent(JSON.stringify(mList.map(m=>({type:m.type,correction:m.correction,note:m.note||'',sessionStudent:m.sessionStudent||'',sessionRange:m.sessionRange||'',sessionDate:m.sessionDate||'',ref:`${w.sNum}:${w.aNum}`,word:w.text,typeConfig:m.typeConfig||null})))).replace(/'/g,'%27');
+          const enc=encodeURIComponent(JSON.stringify(mList.map(m=>({type:m.type,correction:m.correction,note:m.note||'',sessionRange:m.sessionRange||'',sessionDate:m.sessionDate||'',ref:`${w.sNum}:${w.aNum}`,word:w.text,typeConfig:m.typeConfig||null})))).replace(/'/g,'%27');
           return`<span class="${cls}" style="${fs}" data-s="${w.sNum}" data-a="${w.aNum}" data-pos="${w.position}" onclick="showTT(event,this,'${enc}')">${w.code}</span>`;
         }
         return`<span class="${cls}" style="${fs}" data-s="${w.sNum}" data-a="${w.aNum}" data-pos="${w.position}">${w.code}</span>`;
@@ -5186,22 +5209,85 @@ function showTT(event,el,enc){
     // which in the viewer is empty — every type fell back to "Other", whose
     // colour is '' so the badge label rendered invisible on a pale pill.
     const t=resolveType(cfg,m.type);
-    if(mList.length>1)html+=`<div style="border-top:.5px solid rgba(255,255,255,.1);margin:4px 0 3px;padding-top:3px;"></div>`;
-    // On the dark tooltip the type's own colour goes on the TEXT with a faint
-    // tint behind it — the light bgColor fills are designed for parchment and
-    // turn into an unreadable pale blob here.
-    const tc=t.color||'var(--gold-light)';
-    html+=`<span class="tt-badge" style="color:${tc};border:1px solid ${tc};background:rgba(255,255,255,.06);">${esc(mTypeLabel(m,cfg))}</span><br>`;
-    html+=`<span class="tt-corr">${mCorrLabel(m,cfg)}</span>`;
+    const sv=sev(m.correction);
+    if(mList.length>1)html+=`<div class="tt-div"></div>`;
+    // The surface is pale now, so the type pill can use the fill it was
+    // designed with — bgColor + borderColor + colour on the text — instead of
+    // the outline-only fallback the dark tooltip forced.
+    const tc=t.color||'var(--ink2)';
+    const tb=t.bgColor||'var(--parchment2)';
+    const tbd=t.borderColor||tc;
+    html+=`<span class="tt-badge" style="color:${tc};border:1px solid ${tbd};background:${tb};">${esc(mTypeLabel(m,cfg))}</span><br>`;
+    html+=`<span class="tt-corr" style="color:${sv.color};">${mCorrLabel(m,cfg)}</span>`;
     if(m.note)html+=`<span class="tt-note">"${esc(m.note)}"</span>`;
-    const sessLine=[m.sessionStudent,m.sessionRange,m.sessionDate].filter(Boolean).join(' · ');
+    // No student name: the viewer shows one student at a time, so it is
+    // repetition — and it is the one identifying string this design avoids.
+    const sessLine=[m.sessionRange,m.sessionDate].filter(Boolean).join(' · ');
     if(sessLine)html+=`<span class="tt-sess">${esc(sessLine)}</span>`;
   });
   tt.innerHTML=html;
-  const x=Math.min(event.clientX+10,window.innerWidth-240),y=Math.max(event.clientY-95,8);
-  tt.style.left=x+'px';tt.style.top=y+'px';tt.classList.add('visible');
+  // The whole popup takes the WORST level present, so a word missed badly once
+  // and lightly twice reads at its worst rather than averaging into calm.
+  // Per-entry colour still distinguishes them inside.
+  const worst=sev(_worstCorrOf(mList));
+  tt.style.background=worst.bg;
+  tt.style.borderColor=worst.color;
+  tt.style.borderLeftColor=worst.color;
+  // Anchored to the WORD, not to the click. A fixed-position popup placed from
+  // event.clientY stays welded to the glass while the mushaf scrolls under it,
+  // ending up pointing at whatever text has slid beneath. Remembering the
+  // element lets it ride along and leave when the word does.
+  _ttAnchor = el;
+  tt.classList.add('visible');   // must be visible before it can be measured
+  _ttPlace();
 }
-function hideTooltip(){document.getElementById('wordTooltip').classList.remove('visible');}
+
+// ── TOOLTIP POSITIONING ──────────────────────────────────────────────
+let _ttAnchor = null;
+let _ttRaf = null;
+
+function _ttPlace(){
+  const tt = document.getElementById('wordTooltip');
+  if(!tt || !_ttAnchor || !tt.classList.contains('visible')) return;
+
+  // The word can be removed outright — a page downgraded to a placeholder, or
+  // a re-render. Nothing to point at means nothing to show.
+  if(!_ttAnchor.isConnected){ hideTooltip(); return; }
+
+  const r = _ttAnchor.getBoundingClientRect();
+  const panel = document.getElementById('pageContent');
+  const pr = panel ? panel.getBoundingClientRect()
+                   : {top:0, bottom:window.innerHeight, left:0, right:window.innerWidth};
+
+  // Scrolled clear of the reading panel — not merely off-window, since the
+  // panel has a header above it and the popup must not hang over that.
+  if(r.bottom < pr.top || r.top > pr.bottom){ hideTooltip(); return; }
+
+  const w = tt.offsetWidth, h = tt.offsetHeight;
+  let x = r.left + r.width/2 - w/2;
+  x = Math.max(8, Math.min(x, window.innerWidth - w - 8));
+
+  // Above the word by preference so the finger or cursor is not covering it;
+  // flipped below when there is no room, which is the case near the top.
+  let y = r.top - h - 8;
+  if(y < pr.top + 4) y = r.bottom + 8;
+  y = Math.min(y, window.innerHeight - h - 8);
+
+  tt.style.left = x + 'px';
+  tt.style.top  = y + 'px';
+}
+
+// rAF-throttled: scroll fires far faster than the screen refreshes, and
+// getBoundingClientRect forces layout each time.
+function _ttSchedule(){
+  if(_ttRaf) return;
+  _ttRaf = requestAnimationFrame(()=>{ _ttRaf = null; _ttPlace(); });
+}
+
+function hideTooltip(){
+  document.getElementById('wordTooltip').classList.remove('visible');
+  _ttAnchor = null;
+}
 
 // ── SESSION MANAGEMENT
 function loadSavedSessionsFromStorage(){
@@ -5219,7 +5305,7 @@ function saveSess(){
 }
 function recompute(){
   activeMistakes=[];const wkc={};
-  activeSessions.forEach((sess,si)=>{const col=SESSION_COLORS[si%SESSION_COLORS.length];const cfg=sess.typeConfig||null;(sess.mistakes||[]).forEach(m=>{activeMistakes.push({...m,sessionId:sess.id,sessionLabel:`${sess.student} · ${sessionDateText(sess)}`,sessionRange:sessionNameOf(sess),sessionStudent:sess.student||'',sessionDate:sessionDateText(sess),sessionColor:col,typeConfig:cfg});const wk=`${m.surah}:${m.ayah}:${m.wordPos}`;wkc[wk]=(wkc[wk]||0)+1;});});
+  activeSessions.forEach((sess,si)=>{const col=SESSION_COLORS[si%SESSION_COLORS.length];const cfg=sess.typeConfig||null;(sess.mistakes||[]).forEach(m=>{activeMistakes.push({...m,sessionId:sess.id,sessionLabel:sessionDateText(sess),sessionRange:sessionNameOf(sess),sessionDate:sessionDateText(sess),sessionColor:col,typeConfig:cfg});const wk=`${m.surah}:${m.ayah}:${m.wordPos}`;wkc[wk]=(wkc[wk]||0)+1;});});
   repeatWordKeys=new Set(Object.keys(wkc).filter(k=>wkc[k]>1));
 }
 function toggleSessionActive(id){
@@ -5437,7 +5523,7 @@ function renderMistakesList(){
     const cfg=m.typeConfig||null;
     const wk=`${m.surah}:${m.ayah}:${m.wordPos}`;const isR=wkm[wk].length>1;
     const refLabel=m.wordPosEnd&&m.wordPosEnd!==m.wordPos?`${m.surah}:${m.ayah} (words ${m.wordPos}–${m.wordPosEnd})`:`${m.surah}:${m.ayah}`;
-    const sessInfo=`${m.sessionStudent||''}${m.sessionRange?' · '+m.sessionRange:''}${m.sessionDate?' · '+m.sessionDate:''}`;
+    const sessInfo=[m.sessionRange,m.sessionDate].filter(Boolean).join(' · ');
     return`<div class="mistake-item ${_sevClassForCorr(m.correction)}${isR?' repeated-mistake':''}" onclick="navigateToVerse(${m.surah},${m.ayah},${m.wordPos||0})">
       <span class="m-badge" style="${typeBadgeStyle(cfg,m.type)}">${mTypeLabel(m,cfg)}</span>
       <div class="m-body">
@@ -6637,6 +6723,17 @@ function syncHintBar(){
   const C = window.TehfizClaim;
   const linked = !!(C && typeof C.isPaired === 'function' && C.isPaired());
   const bar = document.getElementById('hintBar');
+
+  /* Teacher review mode: the bar is addressed to a student who is not here.
+     "Sign in, or set up your PIN using the code your teacher has sent you" is
+     advice the teacher cannot act on and must not act on — TehfizClaim already
+     hides Log in in this mode so a teacher cannot claim an unclaimed code and
+     set that student's PIN. The bar was still inviting exactly that. */
+  if(window.TehfizReview && TehfizReview.active()){
+    document.body.classList.remove('hint-welcome');
+    if(bar) bar.style.display = 'none';
+    return;
+  }
 
   /* Once signed in the bar disappears entirely. "Highlighted words are
      mistakes your teacher recorded" was the old hint bar, and the tour now
@@ -8105,17 +8202,41 @@ function render() {
   const state = loading ? 'Loading…'
     : !token ? 'Not signed in — open this from the teacher app'
     : rows.length + ' session' + (rows.length === 1 ? '' : 's');
+  /* Split so the count survives on a narrow screen and the word does not.
+     Loading and error states have no short form worth inventing — they stay
+     whole, and trv-state-long is empty so nothing is hidden twice. */
+  const counted   = !loading && !!token;
+  const stateShort = counted ? String(rows.length) : state;
+  const stateRest  = counted ? (' session' + (rows.length === 1 ? '' : 's')) : '';
   root.innerHTML =
     '<div class="trv-banner">' +
-      '<span class="trv-eye">TEACHER REVIEW</span>' +
+      '<span class="trv-eye"><span class="trv-eye-long">TEACHER </span>REVIEW</span>' +
       '<span class="trv-who">' + esc(label) + '</span>' +
-      '<span class="trv-state">' + esc(state) + '</span>' +
-      '<button class="trv-btn" data-trv="reload">Reload</button>' +
+      '<span class="trv-state" title="' + esc(state) + '">' + esc(stateShort) +
+        '<span class="trv-state-long">' + esc(stateRest) + '</span></span>' +
+      '<button class="trv-btn" data-trv="reload" title="Reload this student\u2019s sessions" aria-label="Reload">' +
+        '\u21bb<span class="trv-btn-long"> Reload</span></button>' +
       /* The student flow is disabled on this page, so give the way to it —
          a clean URL with no review parameter, opened separately. */
-      '<a class="trv-btn trv-exit" href="/app/student" target="_blank" rel="noopener">Student sign-in \u2197</a>' +
+      '<a class="trv-btn trv-exit" href="/app/student" target="_blank" rel="noopener"' +
+        ' title="Open the student sign-in in a new tab" aria-label="Student sign-in">' +
+        '\u2197<span class="trv-btn-long"> Student sign-in</span></a>' +
     '</div>';
+  _trvSyncOffset();
 }
+
+/* The banner is position:fixed, so the body has to reserve its height by hand.
+   A flat 32px was right on a desktop single line and short on a phone, where
+   the second line landed on top of the app header. Measuring removes the guess
+   and keeps working whatever the banner later contains. */
+function _trvSyncOffset(){
+  const b = document.querySelector('.trv-banner');
+  if(!b) return;
+  requestAnimationFrame(()=>{
+    document.body.style.paddingTop = b.offsetHeight + 'px';
+  });
+}
+window.addEventListener('resize', _trvSyncOffset);
 
 /* ── events ─────────────────────────────────────────────────────────────── */
 
@@ -8156,11 +8277,29 @@ else mount();
 .trv-banner{position:fixed;top:0;left:0;right:0;z-index:1200;display:flex;align-items:center;
   gap:10px;padding:6px 14px;background:var(--ink);color:var(--gold-light);
   font-family:'Lora',serif;font-size:12px;box-shadow:0 2px 10px rgba(0,0,0,.3);}
+/* Height is set from JS by _trvSyncOffset() — see there for why a fixed value
+   cannot work. This is only the value before the first measurement lands. */
 body.trv-mode{padding-top:32px;}
+.trv-banner{flex-wrap:nowrap;}
 .trv-eye{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:1.5px;
   background:var(--gold);color:var(--ink);border-radius:3px;padding:2px 7px;font-weight:700;flex:none;}
-.trv-who{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.trv-state{color:var(--parchment3);font-size:11px;margin-left:auto;flex:none;}
+.trv-who{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;flex:1 1 auto;}
+.trv-state{color:var(--parchment3);font-size:11px;margin-left:auto;flex:none;white-space:nowrap;}
+.trv-btn{flex:none;white-space:nowrap;}
+
+/* Below 700px everything but the student's name gets short, and the name takes
+   whatever is left. Nothing is dropped: the eyebrow keeps its meaning at
+   "REVIEW" on a dark bar that exists only in review mode, and both buttons keep
+   their full wording in title/aria-label. */
+@media(max-width:700px){
+  .trv-banner{gap:6px;padding:5px 10px;font-size:11px;}
+  .trv-eye{font-size:8px;letter-spacing:1px;padding:2px 5px;}
+  .trv-eye .trv-eye-long{display:none;}
+  .trv-state{font-size:10px;max-width:42vw;overflow:hidden;text-overflow:ellipsis;}
+  .trv-state .trv-state-long{display:none;}
+  .trv-btn{padding:2px 6px;font-size:11px;line-height:1.4;}
+  .trv-btn .trv-btn-long{display:none;}
+}
 
 .trv-exit{text-decoration:none;display:inline-block;}
 .trv-bar{display:flex;gap:5px;align-items:center;flex-wrap:wrap;margin-top:5px;
