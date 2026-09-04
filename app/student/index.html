@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ═══════════════════════════════════════════════════════════════════
-     Tehfiz student viewer — v1_110
+     Tehfiz student viewer — v1_116
      Deployed from the `tehfiz` repo at public/app/student/index.html.
      NOTE: tehfiz-api also contains a public/app/ folder. That one is a local
      staging copy, gitignored, and never served — its routes are /api/* only.
@@ -10,7 +10,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Tehfīz: Feedback Viewer</title>
+<title>Tehfīz: Feedback Viewer — for students &amp; parents</title>
 <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
@@ -555,6 +555,14 @@ body.compact-ui .panel-footer{flex-shrink:0;}
 .term-opt:hover{border-color:var(--gold);}
 .term-opt.on{background:var(--gold-pale);border-color:var(--gold);color:var(--ink);font-weight:600;}
 .modal-btns{margin-top:12px;display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap;}
+/* Long reviews pushed the actions past the fold, reachable only after scrolling
+   every mistake. bottom:-20px cancels the modal's own padding so nothing shows
+   under the bar. */
+.modal-btns.sticky{position:sticky;bottom:-20px;z-index:3;margin:12px -20px -20px;padding:12px 20px;
+  background:var(--parchment);border-top:1px solid var(--border);border-radius:0 0 12px 12px;}
+.topbar-for{font-size:9px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink3);
+  border:.5px solid var(--border2);border-radius:999px;padding:1px 6px;margin-left:6px;white-space:nowrap;font-weight:500;}
+@media(max-width:700px){.topbar-for{display:none;}}
 .btn-m{padding:6px 12px;border-radius:5px;font-family:'Lora',serif;font-size:12px;cursor:pointer;}
 .btn-m.sec{background:none;border:.5px solid var(--border2);color:var(--ink2);}
 .btn-m.pri{background:var(--gold);color:var(--ink);border:none;font-weight:600;}
@@ -925,7 +933,15 @@ body.compact-ui .panel-footer{flex-shrink:0;}
 .spot-row-ref{font-size:10px;color:var(--ink);flex:1;}
 .spot-row-ref span{color:var(--ink3);}
 .spot-row-outcome{font-size:10px;font-weight:600;flex-shrink:0;}
-.spot-row-count{font-size:9px;color:var(--ink3);font-family:'IBM Plex Mono',monospace;}
+.spot-row-count{font-size:9px;color:var(--ink3);font-family:'IBM Plex Mono',monospace;flex-shrink:0;white-space:nowrap;}
+.spot-row-score{font-size:9px;font-weight:600;font-family:'IBM Plex Mono',monospace;}
+.spot-row-det>summary,.spot-result-det>summary{list-style:none;cursor:pointer;}
+.spot-row-det>summary::-webkit-details-marker,.spot-result-det>summary::-webkit-details-marker{display:none;}
+.spot-row-det[open]>summary,.spot-result-det[open]>summary{background:var(--parchment2);border-radius:5px 5px 0 0;}
+.spot-row-chev,.spot-result-chev{font-size:8px;color:var(--ink3);transition:transform .15s;flex-shrink:0;}
+.spot-row-det[open] .spot-row-chev,.spot-result-det[open] .spot-result-chev{transform:rotate(180deg);}
+.spot-row-body,.spot-result-body{padding:4px 8px 8px;background:var(--parchment2);border-radius:0 0 5px 5px;}
+.spot-result-score{font-size:10px;font-weight:600;font-family:'IBM Plex Mono',monospace;}
 .rw-repeated{box-shadow:0 0 0 2px var(--gold);border-radius:3px;padding:1px 2px;}
 .rv-remarks-multi{margin-top:7px;display:flex;flex-direction:column;gap:4px;}
 .rv-remark-line{font-size:10px;padding:4px 8px;background:var(--parchment2);border-radius:4px;border-left-width:3px;border-left-style:solid;}
@@ -1029,7 +1045,7 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
   <!-- Line 1: identity only, brand centred by an equal-column grid. -->
   <div class="topbar-line1">
     <a class="topbar-home" href="https://tehfiz.com" title="Tehfīz home" aria-label="Home">🏠</a>
-    <div class="topbar-brand">Tehfīz <span>Feedback Viewer</span></div>
+    <div class="topbar-brand">Tehfīz <span>Feedback Viewer</span><span class="topbar-for">For students &amp; parents</span></div>
     <div class="topbar-line1-right"></div>
   </div>
   <!-- Line 2: position nav left, tools right — room freed by removing the
@@ -1410,7 +1426,7 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
 <div class="modal-bg" id="reviewModal">
   <div class="modal wide">
     <div id="reviewContent"></div>
-    <div class="modal-btns">
+    <div class="modal-btns sticky">
       <button class="btn-m sec" onclick="closeModal('reviewModal')">Close</button>
       <button class="btn-m dark" onclick="copyReviewText()">Copy text</button>
     </div>
@@ -1421,7 +1437,7 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
 <div class="modal-bg" id="spotPopupModal">
   <div class="modal spot-popup">
     <div id="spotPopupContent"></div>
-    <div class="modal-btns">
+    <div class="modal-btns sticky">
       <button class="btn-m sec" onclick="closeModal('spotPopupModal')">Close</button>
     </div>
   </div>
@@ -1432,7 +1448,7 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
    console as APP_VERSION, or grep the deployed HTML for it. Bumped on every
    saved build; vcheck.py asserts it matches the filename, so a forgotten bump
    fails the integrity check rather than shipping a lie. */
-const APP_VERSION = 'v1_110';
+const APP_VERSION = 'v1_116';
 window.APP_VERSION = APP_VERSION;
 console.info('Tehfiz student viewer ' + APP_VERSION);
 
@@ -3360,10 +3376,31 @@ async function loadJuz(juzNum, appendMode='replace', scrollToPage=null){
       const v2pages=new Set();
       newVerses.forEach(v=>(v.words||[]).forEach(w=>{if(w.v2_page)v2pages.add(w.v2_page);}));
       if(!v2pages.size)pns.forEach(p=>v2pages.add(p));
-      // Skip bulk font loading for large ranges — fonts load lazily per page during upgrade.
-      // When appending/prepending a single juz, always pre-load fonts for the new pages.
+      // FONTS: block on the first screen only, stream the rest.
+      //
+      // QCF v2 ships one font per mushaf page, averaging ~140 KB, so a 20-page
+      // juz is roughly 2.7 MB. Awaiting all of it before rendering meant nothing
+      // appeared until the whole juz had downloaded. Lazy per-page loading only
+      // survived in the virtualized 3+ juz path, which a student almost never
+      // hits — they open one juz at a time.
+      //
+      // Ordered by distance from where the reader will actually be looking:
+      // scrollToPage when jumping to a specific page, otherwise the juz start.
+      // Without that, jumping to the last page of a juz waits on nineteen fonts
+      // it will never show.
       const _svWillVirtualize = pns.length > (JUZ_PAGES[2]-JUZ_PAGES[0]);
-      if(!_svWillVirtualize || appendMode!=='replace') await loadQcfFonts([...v2pages]);
+      if(!_svWillVirtualize || appendMode!=='replace'){
+        const anchor = (appendMode==='replace' && scrollToPage) ? scrollToPage : sp;
+        const ordered = [...v2pages].sort((a,b)=>Math.abs(a-anchor)-Math.abs(b-anchor));
+        const FIRST_PAINT_PAGES = 2;
+        await loadQcfFonts(ordered.slice(0, FIRST_PAINT_PAGES));
+        // Deliberately NOT awaited. ff.display is 'block', so a page whose face
+        // has not landed shows nothing briefly and then fills in, rather than
+        // flashing a fallback — and nobody is held at a spinner for megabytes
+        // they cannot see yet.
+        const rest = ordered.slice(FIRST_PAINT_PAGES);
+        if(rest.length) loadQcfFonts(rest).catch(()=>{});
+      }
       renderMushafFromQuranCom(juzNum,pm,sp,ep,hizbByVerse,appendMode);
     }catch(err){
       console.error(err);
@@ -4976,6 +5013,17 @@ function setTopbarHidden(hide){
 }
 
 // ── NAVIGATE TO VERSE — scrolls #pageContent after load
+// loadJuz() bails silently when a fetch is already running, so a request made
+// while the infinite scroller is appending a juz is discarded without a trace.
+// Ported from the teacher app, where it showed up as tapping a spot outside the
+// loaded juz appearing to do nothing.
+function whenJuzIdle(cb, tries){
+  tries = tries===undefined ? 240 : tries;   // ~4s at 60fps, then try anyway
+  if(!_isFetchingJuz || tries<=0){ cb(); return; }
+  requestAnimationFrame(()=>whenJuzIdle(cb, tries-1));
+}
+function juzIdle(tries){ return new Promise(res => whenJuzIdle(res, tries)); }
+
 async function navigateToVerse(surah,ayah,wordPos){
   if(_navBusy)return;_navBusy=true;
   // On mobile, close the sessions panel so the Quran is visible
@@ -4999,7 +5047,11 @@ async function _nav(surah,ayah,wordPos){
     if(!pageVerses.some(v=>v.verse_key===`${surah}:${ayah}`)){
       const jn = juzForVerse(surah, ayah);
       const s=document.getElementById('juzSel');if(s)s.value=jn;
-      await loadJuz(jn);
+      await juzIdle();
+      // It may have arrived meanwhile — the scroller could have appended the
+      // very juz being asked for. Re-check rather than reloading in 'replace'
+      // mode and throwing away everything else already on screen.
+      if(!pageVerses.some(v=>v.verse_key===`${surah}:${ayah}`)) await loadJuz(jn);
     }
   }
   // 2. Find the verse element and scroll to it (mushaf mode polls for DOM readiness)
@@ -5541,7 +5593,7 @@ function _msStageTab(S, stage){
       ${hd.length?`<div class="ms-rows">${hd.slice(-6).reverse().map(h=>`<div class="ms-row">
         <span class="ms-row-ref">${esc(h.label||'')}</span>
         <span class="ms-row-meta">${h.learned} → ${h.returned} after ${h.days}d</span>
-        <span class="ms-row-score" style="color:${h.delta>=0?'var(--green)':'var(--red)'};">${h.delta>0?'+':''}${h.delta}</span>
+        <span class="ms-row-score" style="color:${h.delta>=0?'var(--green)':'var(--red)'};">${h.delta>0?'+':''}${h.delta} pts</span>
       </div>`).join('')}</div>`:''}
     </div>`;
   }
@@ -5567,7 +5619,7 @@ function _msStageTab(S, stage){
       ${sq.rows.length?`<div class="ms-rows">${sq.rows.slice(0,12).map(r=>`<div class="ms-row">
         <span class="ms-row-ref">${esc(r.label||'')}</span>
         <span class="ms-row-meta">${seq(r)} · ${r.hearings}&times;${r.days?` over ${r.days}d`:''}</span>
-        <span class="ms-row-score" style="color:${col(r.status)};">${r.delta==null?'—':(r.delta>0?'+':'')+r.delta}</span>
+        <span class="ms-row-score" style="color:${col(r.status)};">${r.delta==null?'—':(r.delta>0?'+':'')+r.delta+' pts'}</span>
       </div>`).join('')}</div>`:''}
       ${sq.single?`<div class="ms-note" style="margin-top:6px;">${sq.single} passage${sq.single===1?' has':'s have'} been heard
         only once so far — no trajectory yet, shown with a dash.</div>`:''}
@@ -5616,8 +5668,8 @@ function _msSpotTab(S){
     ${cmp.length?`<div class="ms-sec-head" style="margin-top:10px;"><span>Spot vs full recitation</span>${hlpBtn('spot')}</div>
       <div class="ms-rows">${cmp.map(r=>`<div class="ms-row">
         <span class="ms-row-ref">Juz <strong>${r.juz}</strong></span>
-        <span class="ms-row-meta">recited ${r.recite} · spot ${r.spot}</span>
-        <span class="ms-row-score" style="color:${r.spot-r.recite<-15?'var(--red)':'var(--ink3)'};font-size:11px;">${r.spot-r.recite>0?'+':''}${r.spot-r.recite}</span>
+        <span class="ms-row-meta">recited ${r.recite}% · spot ${r.spot}%</span>
+        <span class="ms-row-score" style="color:${r.spot-r.recite<-15?'var(--red)':'var(--ink3)'};font-size:11px;">${r.spot-r.recite>0?'+':''}${r.spot-r.recite} pts</span>
       </div>`).join('')}</div>
       `:''}
   </div>`;
@@ -5848,7 +5900,7 @@ function _msSessions(S){
       return `<div class="ms-row" onclick="openSingleReview(${s.id})">
         <span class="ms-row-ref"><strong>${sessionDateText(s)}</strong> ${esc(sessionNameOf(s))}</span>
         <span class="ms-row-meta">${(s.mistakes||[]).length} mistakes</span>
-        <span class="ms-row-score" style="color:${b.color};">${sc==null?'—':sc}</span>
+        <span class="ms-row-score" style="color:${b.color};">${sc==null?'—':sc+'%'}</span>
       </div>`;
     }).join('')}
     </div></details>`;
@@ -5929,7 +5981,7 @@ function _mrvTimeline(ml, sessionCfg, getCfg, types){
 }
 
 // ── Spot test: outcome tally and a row per spot ───────────────────
-function _mrvSpotTest(spotTest, ml){
+function _mrvSpotTest(spotTest, ml, cfg){
   if(!spotTest?.enabled || !spotTest.spots?.length) return '';
   const spots = spotTest.spots;
   const {pass,partial,fail,none} = spotTally(spots);
@@ -5942,15 +5994,28 @@ function _mrvSpotTest(spotTest, ml){
       ${none?`<span class="m-badge" style="background:var(--parchment3);color:var(--ink3);">○ ${none} not assessed</span>`:''}
     </div>
     <div class="spot-rows">${spots.map((sp,i)=>{
-      const mc = ml.filter(m=>m.spotId===sp.id).length;
+      const sm = ml.filter(m=>m.spotId===sp.id);
+      const mc = sm.length;
       const color = {pass:'var(--green)',partial:'var(--amber)',fail:'var(--red)'}[sp.outcome]||'var(--ink3)';
       const label = {pass:'✓ Pass',partial:'~ Partial',fail:'✗ Fail'}[sp.outcome]||'○ —';
-      return `<div class="spot-row">
-        <span class="spot-row-n">#${i+1}</span>
-        <span class="spot-row-ref">${sp.surahName} <span>${sp.surah}:${sp.ayah}</span></span>
-        <span class="spot-row-outcome" style="color:${color};">${label}</span>
-        ${mc?`<span class="spot-row-count">${mc}✕</span>`:''}
-      </div>`;
+      // Read from what the teacher app STORED. The viewer never recomputes a
+      // score: it has no calibration model of its own, and recomputing would
+      // silently restate history under whatever formula shipped last.
+      const reach = sp.reached && sp.reached.key ? sp.reached.key : null;
+      const st = sp.strength || null;
+      // Mistakes first and always shown: "Mistakes: 0" is a result, and hiding
+      // it made a clean spot look unassessed. Outcome last, as the conclusion.
+      const head = `<span class="spot-row-n">#${i+1}</span>
+        <span class="spot-row-ref">${sp.surahName} <span>${sp.surah}:${sp.ayah}${reach?` → ${reach}`:''}</span></span>
+        <span class="spot-row-count">Mistakes: ${mc}</span>
+        ${st?`<span class="spot-row-score" style="color:${strengthBand(st.score).color};" title="Only comparable with other spot checks">${st.score}%</span>`:''}
+        <span class="spot-row-outcome" style="color:${color};">${label}</span>`;
+      if(!mc) return `<div class="spot-row">${head}</div>`;
+      return `<details class="spot-row-det"><summary class="spot-row">${head}
+        <span class="spot-row-chev">▾</span></summary>
+        <div class="spot-row-body">${sm
+          .sort((a,b)=>a.surah-b.surah||a.ayah-b.ayah||a.wordPos-b.wordPos)
+          .map(m=>_rvMistakeRow(m,cfg)).join('')}</div></details>`;
     }).join('')}</div>
   </div>`;
 }
@@ -6038,7 +6103,11 @@ function strengthArcSVG(v, color){
   </svg>`;
 }
 
-const STRENGTH_TIP = 'Memorization strength (0–100)\n\n'
+const STRENGTH_TIP = 'Memorization strength, shown as a percentage.\n\n'
+  + 'It is a SCORE, not a proportion of the Quran you have retained.\n\n'
+  + 'Scores only compare within the same model. Recited ranges score under '
+  + 'strength-v2; spot checks score under spot-v1 — same curve, different test, '
+  + 'since starting cold from a random point is harder than carrying on.\n\n'
   + 'Combines how often the student slipped with how much help each slip needed, '
   + 'measured per verse recited — so a long passage and a short one are comparable.\n\n'
   + 'Weighting: Lvl 0 self-corrected 0.25 · Lvl 1 repeat 1 · Lvl 2 hint 2 · Lvl 3 taught 3.\n'
@@ -6051,7 +6120,7 @@ function strengthCardHTML(v, label, sub){
   return `<div class="str-card str-${b.key}" title="${STRENGTH_TIP}">
     <div class="str-dial">
       ${strengthArcSVG(v, b.color)}
-      <div class="str-val" style="color:${b.color};">${v==null?'—':v}</div>
+      <div class="str-val" style="color:${b.color};">${v==null?'—':v+'%'}</div>
     </div>
     <div class="str-meta">
       <div class="str-title">${label}<span class="str-info" onclick="openInterventionGuide()">?</span></div>
@@ -6139,7 +6208,7 @@ function buildReviewHTML(s){
        + _rvFilterBar(fseg, ml.length, all.length)
        + _rvCharts(ml, cfg, types, tally)
        + _rvFocus(ml, cfg)
-       + _rvSpotTest(s.spotTest, ml)
+       + _rvSpotTest(s.spotTest, ml, cfg)
        /* Narrowed HERE and nowhere else. Passing a page-filtered list into
           _rvStrength would rebuild every chart from one page's mistakes — the
           bars would all collapse to the bar just tapped, and the strength score
@@ -6195,7 +6264,7 @@ function _rvStrength(s, ml){
                  title="Show only this segment's mistakes below">
       <div class="seg-stat-head"><span class="seg-stat-name">${esc(name)}</span><span class="seg-stat-stage">${esc(stage)}</span></div>
       <div class="seg-stat-body">
-        <span class="seg-stat-score" style="color:${b.color};">${v==null?'—':v}</span>
+        <span class="seg-stat-score" style="color:${b.color};">${v==null?'—':v+'%'}</span>
         <span class="seg-stat-band" style="color:${b.color};">${b.label}</span>
         ${clean?`<span class="seg-stat-clean">${clean.clean}/${clean.total} clean (${clean.pct}%)</span>`:''}
       </div>
@@ -6279,7 +6348,7 @@ function _rvFocus(ml, cfg){
 }
 
 // ── Spot test: scope, outcome tally, and a row per spot ───────────
-function _rvSpotTest(spotTest, ml){
+function _rvSpotTest(spotTest, ml, cfg){
   if(!spotTest?.enabled || !spotTest.spots?.length) return '';
   const spots = spotTest.spots;
   const {pass,partial,fail,none} = spotTally(spots);
@@ -6292,15 +6361,28 @@ function _rvSpotTest(spotTest, ml){
       ${none?`<span class="m-badge" style="background:var(--parchment3);color:var(--ink3);">○ ${none} not assessed</span>`:''}
     </div>
     <div class="spot-rows">${spots.map((sp,i)=>{
-      const mc = ml.filter(m=>m.spotId===sp.id).length;
+      const sm = ml.filter(m=>m.spotId===sp.id);
+      const mc = sm.length;
       const color = {pass:'var(--green)',partial:'var(--amber)',fail:'var(--red)'}[sp.outcome]||'var(--ink3)';
       const label = {pass:'✓ Pass',partial:'~ Partial',fail:'✗ Fail'}[sp.outcome]||'○ —';
-      return `<div class="spot-row">
-        <span class="spot-row-n">#${i+1}</span>
-        <span class="spot-row-ref">${sp.surahName} <span>${sp.surah}:${sp.ayah}</span></span>
-        <span class="spot-row-outcome" style="color:${color};">${label}</span>
-        ${mc?`<span class="spot-row-count">${mc}✕</span>`:''}
-      </div>`;
+      // Read from what the teacher app STORED. The viewer never recomputes a
+      // score: it has no calibration model of its own, and recomputing would
+      // silently restate history under whatever formula shipped last.
+      const reach = sp.reached && sp.reached.key ? sp.reached.key : null;
+      const st = sp.strength || null;
+      // Mistakes first and always shown: "Mistakes: 0" is a result, and hiding
+      // it made a clean spot look unassessed. Outcome last, as the conclusion.
+      const head = `<span class="spot-row-n">#${i+1}</span>
+        <span class="spot-row-ref">${sp.surahName} <span>${sp.surah}:${sp.ayah}${reach?` → ${reach}`:''}</span></span>
+        <span class="spot-row-count">Mistakes: ${mc}</span>
+        ${st?`<span class="spot-row-score" style="color:${strengthBand(st.score).color};" title="Only comparable with other spot checks">${st.score}%</span>`:''}
+        <span class="spot-row-outcome" style="color:${color};">${label}</span>`;
+      if(!mc) return `<div class="spot-row">${head}</div>`;
+      return `<details class="spot-row-det"><summary class="spot-row">${head}
+        <span class="spot-row-chev">▾</span></summary>
+        <div class="spot-row-body">${sm
+          .sort((a,b)=>a.surah-b.surah||a.ayah-b.ayah||a.wordPos-b.wordPos)
+          .map(m=>_rvMistakeRow(m,cfg)).join('')}</div></details>`;
     }).join('')}</div>
   </div>`;
 }
@@ -6807,12 +6889,21 @@ function buildSpotPopupHTML(sess){
     const outcomeColor = {pass:'var(--green)',partial:'var(--amber)',fail:'var(--red)'}[sp.outcome] || 'var(--ink3)';
     const outcomeLabel = {pass:'✓ Pass',partial:'~ Partial',fail:'✗ Fail'}[sp.outcome] || '○ —';
     const outcomeBg = {pass:'var(--green-bg)',partial:'var(--amber-bg)',fail:'var(--red-bg)'}[sp.outcome] || 'var(--parchment3)';
-    h += `<div class="spot-result-card">
-      <span class="spot-result-num">#${i+1}</span>
-      <span class="spot-result-name">${sp.surahName||''} <span class="spot-result-ref">${sp.surah}:${sp.ayah}</span></span>
-      <span class="spot-result-outcome" style="color:${outcomeColor};background:${outcomeBg};padding:2px 6px;border-radius:999px;">${outcomeLabel}</span>
-      ${mc?`<span class="spot-result-mc">${mc}✕</span>`:''}
-    </div>`;
+    const sm = ml.filter(m=>m.spotId===sp.id);
+    const reach = sp.reached && sp.reached.key ? sp.reached.key : null;
+    const stg = sp.strength || null;
+    const head = `<span class="spot-result-num">#${i+1}</span>
+      <span class="spot-result-name">${sp.surahName||''} <span class="spot-result-ref">${sp.surah}:${sp.ayah}${reach?` → ${reach}`:''}</span></span>
+      <span class="spot-result-mc">Mistakes: ${mc}</span>
+      ${stg?`<span class="spot-result-score" style="color:${strengthBand(stg.score).color};" title="Only comparable with other spot checks">${stg.score}%</span>`:''}
+      <span class="spot-result-outcome" style="color:${outcomeColor};background:${outcomeBg};padding:2px 6px;border-radius:999px;">${outcomeLabel}</span>`;
+    // A <details> with nothing inside is a disclosure arrow that does nothing.
+    if(!mc){ h += `<div class="spot-result-card">${head}</div>`; return; }
+    h += `<details class="spot-result-det"><summary class="spot-result-card">${head}
+      <span class="spot-result-chev">▾</span></summary>
+      <div class="spot-result-body">${sm
+        .sort((a,b)=>a.surah-b.surah||a.ayah-b.ayah||a.wordPos-b.wordPos)
+        .map(m=>_rvMistakeRow(m, sess.typeConfig||null)).join('')}</div></details>`;
   });
   h += `</div>`;
 
