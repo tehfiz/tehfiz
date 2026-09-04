@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ═══════════════════════════════════════════════════════════════════
-     Tehfiz teacher app — v4_207
+     Tehfiz teacher app — v4_223
      Deployed from the `tehfiz` repo at public/app/teacher/index.html.
      NOTE: tehfiz-api also contains a public/app/ folder. That one is a local
      staging copy, gitignored, and never served — its routes are /api/* only.
@@ -10,7 +10,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>Tehfīz: Feedback Logger</title>
+<title>Tehfīz: Feedback Logger — for teachers</title>
 <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
@@ -353,6 +353,160 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
 .flow-container{direction:rtl;text-align:right;font-family:'Scheherazade New','Amiri','Traditional Arabic',serif;font-size:var(--arabic-size);color:var(--ink);line-height:3;padding:4px 0;unicode-bidi:isolate;}
 /* clearfix so the page frame contains floated hizb markers */
 .flow-container::after{content:'';display:table;clear:both;}
+
+/* ── PRINT MODE PICKER ── */
+#printRoot{display:none;}
+.print-opts{display:flex;flex-direction:column;gap:8px;}
+.print-opt{text-align:left;background:var(--parchment);border:1px solid var(--border);border-radius:8px;padding:10px 12px;cursor:pointer;font-family:'Lora',serif;display:flex;flex-direction:column;gap:3px;transition:border-color .12s,background .12s;}
+.print-opt:hover:not(:disabled){border-color:var(--gold);background:var(--gold-pale);}
+.print-opt:disabled{opacity:.5;cursor:not-allowed;}
+.print-opt strong{font-size:14px;color:var(--ink);}
+.print-opt span{font-size:11px;color:var(--ink2);line-height:1.5;}
+
+/* ── PRINT ──────────────────────────────────────────────────────────
+   Everything is hidden and #printRoot alone is shown. Hiding the app rather
+   than restyling it means the print layout never inherits the fixed nav, the
+   modal overlay or the scroll panel — none of which have a sensible printed
+   form. The three body classes then subtract sections from the clone. */
+@media print{
+  /* Top margin carries the running header; 20mm leaves it clear of content. */
+  @page{ size:A4; margin:20mm 12mm 14mm; }
+
+  /* Colour is the whole point here: the intervention levels ARE colours, and a
+     greyscale print of them says nothing. Browsers still require the user to
+     tick "background graphics", which the dialog tells them to do. */
+  *{ -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
+
+  body.printing > *{ display:none !important; }
+  body.printing #printRoot{ display:block !important; }
+  body.printing{ background:#fff !important; overflow:visible !important; height:auto !important; }
+  body.printing::before{ display:none !important; }   /* the paper-grain overlay */
+
+  #printRoot{ background:#fff; color:#000; }
+
+  /* Repeats on every sheet. It sits at the top of the CONTENT box, so both the
+     report and each mushaf sheet reserve space for it rather than sliding
+     underneath. */
+  .print-runhead{
+    position:fixed; top:0; left:0; right:0; height:7mm;
+    display:flex; align-items:center; justify-content:space-between;
+    background:#fff; border-bottom:.5pt solid #d8d0c4;
+    font-family:'IBM Plex Mono',monospace; font-size:7.5pt; color:#5a5248;
+    letter-spacing:.04em;
+  }
+  .prh-title{ font-weight:500; }
+  .prh-brand{ color:#b8841a; }
+
+  .print-report{ max-width:100%; margin-top:9mm; }
+  .print-sheet{ padding-top:9mm; }
+
+  /* Interactive affordances that mean nothing on paper. Named individually,
+     NOT `button{display:none}` — the per-page chart draws each bar as a
+     button element with class plc-col, so a blanket rule silently prints the
+     axis with no data in it. */
+  #printRoot .rv-chev,#printRoot .spot-row-chev,#printRoot .str-info,
+  #printRoot .rv-filterbar,#printRoot .rv-filter-tag,
+  #printRoot .m-del,#printRoot .m-edit,#printRoot .spot-end-chip,
+  #printRoot .seg-del,#printRoot .seg-mini{ display:none !important; }
+  /* Buttons that carry data keep their box but lose the affordance. */
+  #printRoot button{ cursor:default !important; }
+  #printRoot .plc-col{ pointer-events:none; }
+
+  /* <details> print collapsed by default — force every disclosure open, or the
+     mistake list prints as a summary line and nothing else. */
+  #printRoot details{ display:block !important; }
+  #printRoot details > summary{ list-style:none; }
+  #printRoot details > *:not(summary){ display:block !important; }
+
+  /* Keep a card from being split across sheets. */
+  #printRoot .seg-stat,#printRoot .spot-card,#printRoot .review-verse,
+  #printRoot .mistake-item,#printRoot .str-card{ break-inside:avoid; page-break-inside:avoid; }
+
+  /* MODE: summary only */
+  body.print-metrics #printRoot .rv-details,
+  body.print-metrics #printRoot .print-mushaf{ display:none !important; }
+
+  /* MODE: summary + mistakes */
+  body.print-mistakes #printRoot .print-mushaf{ display:none !important; }
+
+  /* MODE: everything. Each mushaf page gets its own sheet — a page split across
+     two sheets is unreadable, and the whole point is a faithful facsimile. */
+  .print-mushaf{ margin-top:0; }
+  .print-sheet{
+    break-before:page; page-break-before:always;
+    break-inside:avoid; page-break-inside:avoid;
+  }
+  .print-gap-note{
+    margin-top:6mm; padding:6mm; border:.5pt dashed #b8841a; border-radius:4px;
+    font-family:'Lora',serif; font-size:10pt; color:#5a5248; font-style:italic;
+  }
+  /* Width is set in px by _printMushafMetrics via _applyMushafZoomToPages, and
+     is derived from the paper. A width:100% override here would stretch the
+     frame back out and undo the fit that stops it spilling onto a second sheet. */
+  .print-sheet .mushaf-page{
+    break-before:auto !important; page-break-before:auto !important;
+    break-inside:avoid; page-break-inside:avoid;
+    max-width:100% !important;
+    transform:none !important; margin:0 auto !important;
+    box-shadow:none !important;
+  }
+  /* The caption band travels WITH its page — break-before sits on .print-sheet,
+     not on the page, so the two can never be separated across a sheet. */
+  .print-sheet-band{
+    display:flex; align-items:baseline; gap:8px; flex-wrap:wrap;
+    padding:0 0 3mm; margin-bottom:2mm;
+    border-bottom:1.5pt solid #d8d0c4;
+    font-family:'IBM Plex Mono',monospace; font-size:8pt;
+  }
+  /* The two segment kinds are different documents and must not be mistaken for
+     one another at a glance: a recited range was read end to end, a spot check
+     was sampled. Colour carries it, the word confirms it. */
+  .print-sheet-band.recite{ border-bottom-color:#5a5248; }
+  .print-sheet-band.spot{ border-bottom-color:#1a4a8a; }
+  .psb-kind{
+    font-weight:700; letter-spacing:.06em; text-transform:uppercase;
+    border-radius:999px; padding:1px 7px; white-space:nowrap;
+  }
+  .print-sheet-band.recite .psb-kind{ background:#e8e0d4; color:#1a1612; }
+  .print-sheet-band.spot   .psb-kind{ background:#ddeeff; color:#1a4a8a; }
+  .psb-label{ font-family:'Lora',serif; font-size:10pt; font-weight:700; color:#1a1612; }
+  .psb-sub{ color:#5a5248; }
+  .psb-page{ margin-left:auto; color:#9a928a; white-space:nowrap; }
+  .psb-cont{ font-style:italic; }
+
+  /* Words inside a spot's recited span, underlined so the range reads as one
+     continuous stroke through the page.
+     Drawn as a background gradient pinned to the bottom of the CONTENT box, not
+     as border-bottom or text-decoration: border-bottom is already how a mistake
+     marks itself and would be overwritten, and text-decoration sits at the
+     baseline where Arabic descenders cross it. A gradient sits just above the
+     mistake's own border, so a mistake word inside a spot shows both — the
+     range beneath, its severity marker below that.
+
+     Scoped under #printRoot deliberately. `.qcf-word{background:none}` is
+     declared LATER in the sheet at equal specificity, so a bare .spot-print-w
+     rule is reset to nothing and no underline ever appears — which is exactly
+     what happened. The id selector outranks it. */
+  /* Full-line stroke. Drawn as a pseudo-element rather than a background on
+     .msl: the line box is 2.55em tall with its glyphs vertically centred, so a
+     bottom-pinned background would sit well below the text. Positioning from
+     the centre puts it just under the glyphs, at the same height as the
+     per-word underline on partial lines. */
+  #printRoot .msl.spot-print-line{ position:relative; }
+  #printRoot .msl.spot-print-line::after{
+    content:''; position:absolute; left:0; right:0;
+    top:calc(50% + 0.6em); height:2px;
+    background:rgba(184,132,26,.9);
+    pointer-events:none;
+  }
+
+  #printRoot .spot-print-w{
+    background-image:linear-gradient(to top, rgba(184,132,26,.9) 0, rgba(184,132,26,.9) 2px, transparent 2px) !important;
+    background-repeat:repeat-x !important;
+    background-position:0 100% !important;
+    padding-bottom:2px;
+  }
+}
 
 /* ── QCF MUSHAF LINE-BY-LINE LAYOUT ── */
 /* Fixed 680px canonical page, scaled by JS to fit container */
@@ -884,7 +1038,16 @@ body.seg-arming .word-btn:hover,body.seg-arming .qcf-word:hover{outline:2px soli
 .modal.wide{max-width:840px;}
 .modal-title{font-size:15px;font-weight:600;margin-bottom:3px;}
 .modal-sub{font-size:11px;color:var(--ink3);margin-bottom:12px;}
+.topbar-for{font-size:9px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink3);
+  border:.5px solid var(--border2);border-radius:999px;padding:1px 6px;margin-left:6px;white-space:nowrap;font-weight:500;}
+@media(max-width:700px){.topbar-for{display:none;}}
 .modal-btns{margin-top:12px;display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap;}
+/* The review modal scrolls for a long session, and the actions sat at the very
+   bottom of it — reachable only after scrolling past every mistake. Sticky, and
+   bled to the modal edges so it reads as a bar rather than a floating row.
+   bottom:-20px cancels the modal's own padding so nothing shows beneath it. */
+.modal-btns.sticky{position:sticky;bottom:-20px;z-index:3;margin:12px -20px -20px;padding:12px 20px;
+  background:var(--parchment);border-top:1px solid var(--border);border-radius:0 0 12px 12px;}
 .btn-m{padding:6px 13px;border-radius:5px;font-family:'Lora',serif;font-size:12px;cursor:pointer;}
 .btn-m.sec{background:none;border:.5px solid var(--border2);color:var(--ink2);}
 .btn-m.pri{background:var(--gold);color:var(--ink);border:none;font-weight:600;}
@@ -1097,7 +1260,15 @@ body.seg-arming .word-btn:hover,body.seg-arming .qcf-word:hover{outline:2px soli
 .spot-row-ref{font-size:10px;color:var(--ink);flex:1;}
 .spot-row-ref span{color:var(--ink3);}
 .spot-row-outcome{font-size:10px;font-weight:600;flex-shrink:0;}
-.spot-row-count{font-size:9px;color:var(--ink3);font-family:'IBM Plex Mono',monospace;}
+.spot-row-count{font-size:9px;color:var(--ink3);font-family:'IBM Plex Mono',monospace;flex-shrink:0;white-space:nowrap;}
+.spot-row-score{font-size:9px;font-weight:600;font-family:'IBM Plex Mono',monospace;}
+.spot-row-det{border-radius:5px;}
+.spot-row-det>summary{list-style:none;cursor:pointer;}
+.spot-row-det>summary::-webkit-details-marker{display:none;}
+.spot-row-det[open]>summary{background:var(--parchment2);border-radius:5px 5px 0 0;}
+.spot-row-chev{font-size:8px;color:var(--ink3);transition:transform .15s;flex-shrink:0;}
+.spot-row-det[open] .spot-row-chev{transform:rotate(180deg);}
+.spot-row-body{padding:4px 8px 8px;background:var(--parchment2);border-radius:0 0 5px 5px;}
 
 
 /* EDIT MODAL */
@@ -1173,6 +1344,30 @@ body.seg-arming .word-btn:hover,body.seg-arming .qcf-word:hover{outline:2px soli
 .spot-card-head{display:flex;align-items:center;gap:5px;margin-bottom:3px;}
 .spot-num{font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:700;color:var(--spot-blue);background:var(--spot-blue-bg);border-radius:999px;padding:1px 5px;white-space:nowrap;}
 .spot-ref{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--ink2);}
+.spot-range-row{display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin-top:2px;}
+.spot-range-cap{font-size:8px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3);font-family:'Lora',serif;}
+.spot-range-start{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--ink);font-weight:600;}
+.spot-range-arrow{font-size:9px;color:var(--ink3);}
+.spot-regen{font-size:8px;color:var(--ink3);font-style:italic;}
+.spot-end-chip{font-family:'IBM Plex Mono',monospace;font-size:9px;padding:1px 5px;border-radius:4px;border:.5px solid var(--border2);background:var(--parchment);color:var(--ink);cursor:pointer;white-space:nowrap;}
+.spot-end-chip:hover{border-color:var(--gold);}
+.spot-end-chip.auto{color:var(--ink3);font-style:italic;border-style:dashed;}
+.spot-end-chip.empty{color:var(--ink3);font-style:italic;border-style:dashed;font-family:'Lora',serif;}
+.spot-end-chip.armed{background:var(--gold);color:var(--ink);border-color:var(--gold);font-style:normal;font-family:'Lora',serif;animation:segPulse 1.1s ease-in-out infinite;}
+.spot-score-row{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:3px;font-size:8px;font-family:'IBM Plex Mono',monospace;}
+.spot-live{display:flex;align-items:center;gap:5px;margin-top:4px;padding:3px 6px;border-radius:4px;background:var(--parchment2);border:.5px dashed var(--border2);font-size:9px;font-family:'IBM Plex Mono',monospace;}
+.spot-live-dot{width:5px;height:5px;border-radius:50%;background:var(--gold);flex-shrink:0;animation:spotLivePulse 1.6s ease-in-out infinite;}
+@keyframes spotLivePulse{0%,100%{opacity:.35;}50%{opacity:1;}}
+.spot-live-val{font-weight:700;flex-shrink:0;}
+.spot-live-band{color:var(--ink2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.spot-live-rec{color:var(--ink3);font-style:italic;flex-shrink:0;}
+/* The recommendation is a hint, not a selection: a dashed ring, deliberately
+   quieter than the solid fill a chosen outcome gets. The teacher hears things
+   a mistake count cannot carry, so nothing here pre-empts their call. */
+.spot-outcome-btn.rec{border-style:dashed;border-color:var(--gold);color:var(--amber);background:var(--gold-pale);}
+@media(prefers-reduced-motion:reduce){.spot-live-dot{animation:none;opacity:.8;}}
+.spot-score-extent{color:var(--ink3);}
+.spot-score-val{font-weight:600;}
 .spot-name{font-size:11px;color:var(--ink);font-weight:600;flex:1;}
 .spot-regen{background:none;border:none;cursor:pointer;font-size:11px;color:var(--ink3);padding:1px 3px;border-radius:3px;flex-shrink:0;}
 .spot-regen:hover{color:var(--gold);background:var(--gold-pale);}
@@ -1336,7 +1531,7 @@ body.compact-ui .quick-form::before{
   <!-- Line 1: identity only, brand truly centred. -->
   <div class="topbar-line1">
     <a class="topbar-home" href="https://tehfiz.com" title="Tehf&#299;z home" aria-label="Home">&#127968;</a>
-    <div class="topbar-brand">Tehf&#299;z <span>Feedback Logger</span></div>
+    <div class="topbar-brand">Tehf&#299;z <span>Feedback Logger</span><span class="topbar-for">For teachers</span></div>
     <!-- Filled by TehfizSync.renderWho(). Empty until signed in, so a teacher
          who has not connected an account sees the header they always did. -->
     <div class="topbar-line1-right" id="topbarWho"></div>
@@ -1645,13 +1840,46 @@ body.compact-ui .quick-form::before{
 <div class="modal-bg" id="reviewModal">
   <div class="modal wide">
     <div id="reviewContent"></div>
-    <div class="modal-btns">
+    <div class="modal-btns sticky">
       <button class="btn-m sec" onclick="closeModal('reviewModal')">Close</button>
       <button class="btn-m pri" onclick="exportReviewQRS()">&#8681; Save &amp; Export</button>
       <button class="btn-m dark" onclick="copyReviewText()">Copy text</button>
+      <button class="btn-m sec" onclick="openPrintDialog()">&#128424; Print / PDF</button>
     </div>
   </div>
 </div>
+
+<!-- PRINT MODE MODAL -->
+<div class="modal-bg" id="printModal">
+  <div class="modal" style="max-width:440px;">
+    <h3 style="margin-bottom:4px;">Print / save as PDF</h3>
+    <p style="font-size:12px;color:var(--ink2);margin-bottom:14px;line-height:1.6;">
+      Choose how much to include. In the print dialog pick <strong>Save as PDF</strong>
+      as the destination, and turn on background graphics so the mistake colours print.
+    </p>
+    <div class="print-opts">
+      <button class="print-opt" onclick="printReport('metrics')">
+        <strong>Summary</strong>
+        <span>Strength, ranges and tallies. One page — the version to hand a parent.</span>
+      </button>
+      <button class="print-opt" onclick="printReport('mistakes')">
+        <strong>Summary + mistakes</strong>
+        <span>Adds every mistake with its verse context. What the student works from.</span>
+      </button>
+      <button class="print-opt" id="printFullBtn" onclick="printReport('full')">
+        <strong>Everything, with the mushaf</strong>
+        <span id="printNote"></span>
+      </button>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-m sec" onclick="closeModal('printModal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Print target. Empty except during printing; content is cloned in so the
+     print layout never has to fight the live nav, modal and scroll panel. -->
+<div id="printRoot"></div>
 
 <!-- SHORTCUTS MODAL -->
 <div class="modal-bg" id="shortcutsModal">
@@ -2071,7 +2299,7 @@ body.compact-ui .quick-form::before{
    console as APP_VERSION, or grep the deployed HTML for it. Bumped on every
    saved build; vcheck.py asserts it matches the filename, so a forgotten bump
    fails the integrity check rather than shipping a lie. */
-const APP_VERSION = 'v4_207';
+const APP_VERSION = 'v4_223';
 window.APP_VERSION = APP_VERSION;
 console.info('Tehfiz teacher app ' + APP_VERSION);
 
@@ -2961,6 +3189,11 @@ let rangeStart = null; // {surah, ayah, pos, el} — set when long-press/shift-c
 // dozens of times a session, marking a boundary is two or three.
 let segments = [];
 let segmentArm = null;      // {segId, which:'start'|'end'} | null
+// spotReachArm: set while the teacher has armed "mark where they reached" from
+// a spot card. Same arm-then-tap contract as segmentArm, and mutually exclusive
+// with it — wordTapped() consumes whichever is set.
+let spotReachArm = null;    // {idx} | null
+let _spotArmTimeout = null;
 let _segArmTimeout = null;
 let _segConfirm = null;
 // The segment currently being recited. Verse containment still RESOLVES which
@@ -3376,7 +3609,8 @@ function setupKeyboardShortcuts(){
         if(_spotScopeWarn){ e.preventDefault(); dismissSpotScopeWarn(); break; }
         if(_segOrphanWarn){ e.preventDefault(); dismissOrphanWarn(); break; }
         if(_rangePicker){ e.preventDefault(); closeRangePicker(); break; }
-        if(segmentArm){ e.preventDefault(); cancelSegmentArm(); break; } clearRangeState(); hideRangeNotice(); cancelForm(); break;
+        if(segmentArm){ e.preventDefault(); cancelSegmentArm(); break; }
+        if(spotReachArm){ e.preventDefault(); cancelSpotReachArm(); break; } clearRangeState(); hideRangeNotice(); cancelForm(); break;
       case 'enter':
         if(!document.getElementById('quickForm').classList.contains('hidden')){
           // Also commit when Enter is pressed while the "other" inputs are focused
@@ -3606,7 +3840,7 @@ const MUSHAF_REF_FOOTER_NUM_PAD = 20;
 // Single source of truth: given the current mushafZoomLevel and viewport,
 // compute every derived dimension. Every call site (render, live zoom change,
 // resize, virtualizer placeholders) must use this — never re-derive locally.
-function computeMushafZoomMetrics(){
+function computeMushafZoomMetrics(overrideWidth){
   const panel = document.getElementById('pageContent');
   // Read the panel's REAL horizontal padding from computed style rather than
   // guessing a constant — this is what was making the page render too wide
@@ -3623,7 +3857,9 @@ function computeMushafZoomMetrics(){
   // Percentage floor AND absolute pixel floor both apply — whichever gives the
   // larger (safer) width wins, so narrow windows don't collapse below a
   // still-renderable minimum even at the lowest zoom step.
-  const width = Math.max(MUSHAF_ABS_MIN_WIDTH_PX, Math.round(viewportW * widthPct / 100));
+  const width = overrideWidth
+    ? Math.round(overrideWidth)
+    : Math.max(MUSHAF_ABS_MIN_WIDTH_PX, Math.round(viewportW * widthPct / 100));
   const font  = Math.max(1, width * MUSHAF_REF_FONT / MUSHAF_REF_WIDTH);
   const scale = font / MUSHAF_REF_FONT; // 1.0 at the 680px/26px reference point
 
@@ -4587,15 +4823,32 @@ async function loadJuz(juzNum, appendMode = 'replace') {
       const v2pages=new Set();
       newVerses.forEach(v=>(v.words||[]).forEach(w=>{if(w.v2_page)v2pages.add(w.v2_page);}));
       if(!v2pages.size) pageNums.forEach(p=>v2pages.add(p));
-      // For small loads (1-2 juz) pre-load all fonts before rendering.
-      // For large loads (virtualized) skip bulk font loading — fonts are loaded
-      // lazily per page during _virtUpgradePage to avoid blocking the initial render.
+      // FONTS: block on the first screen only, stream the rest.
+      //
+      // QCF v2 ships one font per mushaf page, averaging ~140 KB, so a 20-page
+      // juz is roughly 2.7 MB. Awaiting all of it before calling the renderer
+      // meant nothing appeared until the whole juz had downloaded — the very
+      // thing per-page loading was supposed to prevent. It survived only in the
+      // virtualized 3+ juz path, which almost nobody hits.
+      //
+      // Ordered by distance from where the reader will actually be looking, so
+      // the pages just below the fold arrive first as they scroll.
       const willVirtualize = pageNums.length > (JUZ_PAGES[2] - JUZ_PAGES[0]); // 3+ juz threshold
-      if(!willVirtualize && appendMode === 'replace'){
-        await loadQcfFonts([...v2pages]);
-      } else if (appendMode !== 'replace') {
-        // When appending, pre-load fonts for the new pages
-        await loadQcfFonts([...v2pages]);
+      if(!willVirtualize || appendMode !== 'replace'){
+        const anchor = (appendMode === 'replace' && _jumpTargetPage) ? _jumpTargetPage : startPage;
+        const ordered = [...v2pages].sort((a,b) => Math.abs(a-anchor) - Math.abs(b-anchor));
+        // One page fills most of the panel at normal zoom, so 1 would paint
+        // fastest; 2 costs ~140 KB more and covers the case where the reader
+        // scrolls immediately, before the streamed remainder has landed. Drop to
+        // 1 if first paint matters more than that.
+        const FIRST_PAINT_PAGES = 2;
+        await loadQcfFonts(ordered.slice(0, FIRST_PAINT_PAGES));
+        // Deliberately NOT awaited. ff.display is 'block', so a page whose face
+        // has not landed shows nothing for a moment and then fills in, rather
+        // than flashing a fallback — and the reader is not held at a spinner
+        // for two and a half megabytes they cannot see yet.
+        const rest = ordered.slice(FIRST_PAINT_PAGES);
+        if(rest.length) loadQcfFonts(rest).catch(()=>{});
       }
       renderMushafFromQuranCom(juzNum, pageMap, startPage, endPage, hizbByVerse, null, appendMode);
     }catch(err){
@@ -5736,7 +5989,11 @@ async function navigateToVerse(surah, ayah, wordPos, onSettled) {
     // already gives us exact verse boundaries for every juz.
     const juzNum = juzForVerse(surah, ayah);
     const sel=document.getElementById('juzSel'); if(sel) sel.value=juzNum;
-    await loadJuz(juzNum);
+    // Wait out any load already running, or this one is silently discarded.
+    await juzIdle();
+    // It may have arrived meanwhile — the scroller could have appended the very
+    // juz being asked for. Re-check rather than reloading and losing the rest.
+    if(!pageVerses.find(v=>v.verse_key===`${surah}:${ayah}`)) await loadJuz(juzNum);
     doScroll();
   }
 }
@@ -6647,6 +6904,9 @@ function wordTapped(el, shiftHeld) {
   // mistake. The banner + Escape + timeout make sure this mode is never a
   // surprise.
   if(segmentArm){ _applySegmentMark(surah, ayah); return; }
+
+  // ── SPOT REACH MARKING: armed from a spot card, consumes this tap ──
+  if(spotReachArm){ _applySpotReachMark(surah, ayah); return; }
 
   // ── RANGE MODE: confirm end word ──
   if(rangeStart){
@@ -7753,12 +8013,461 @@ async function loadSessionIntoEditor(sess){
   closeSessions();
 }
 
-function reApplyHighlights(){
-  mistakes.forEach(m=>{
-    const we=document.querySelector(`.word-btn[data-surah="${m.surah}"][data-ayah="${m.ayah}"][data-pos="${m.wordPos}"]`);
-    if(we){ we.className=`word-btn type-tag ${_sevClassForCorr(m.correction)}`; we.style.cssText=''; }
-  
+// Repaints every logged mistake onto whatever word elements are currently in
+// the DOM. Three things this used to get wrong, all of which made a reloaded
+// session look clean in mushaf mode:
+//   • only .word-btn was queried, so QCF pages were never marked at all
+//   • only wordPos was covered, so multi-word mistakes lost every word but the
+//     first
+//   • style.cssText was cleared unconditionally, which wipes the per-page
+//     font-family QCF words carry inline and renders them as tofu
+// The edit path at saveEdit() already did all three correctly; this is the same
+// logic, and the two should be kept in step.
+// list defaults to the live session. Printing a PAST session must pass that
+// session's own mistakes: the global `mistakes` holds whatever is being logged
+// right now, which for a freshly opened review is usually nothing at all —
+// which is exactly why reviewed sessions printed with clean mushaf pages.
+// Reset every marked word to its base class, preserving the inline
+// font-family QCF words carry per page — clearing cssText without putting it
+// back renders the page as tofu.
+function _clearWordMarks(){
+  document.querySelectorAll('.qcf-word.type-tag,.word-btn.type-tag').forEach(el=>{
+    const ff = el.style.fontFamily;
+    el.className = el.classList.contains('qcf-word') ? 'qcf-word' : 'word-btn';
+    el.style.cssText = '';
+    if(ff) el.style.fontFamily = ff;
   });
+}
+
+function reApplyHighlights(list){
+  (list || mistakes).forEach(m=>{
+    const posStart = m.wordPos, posEnd = m.wordPosEnd || m.wordPos;
+    for(let p=posStart; p<=posEnd; p++){
+      ['.word-btn','.qcf-word'].forEach(sel=>{
+        const el=document.querySelector(`${sel}[data-surah="${m.surah}"][data-ayah="${m.ayah}"][data-pos="${p}"]`);
+        if(!el) return;
+        const ff=el.style.fontFamily;
+        el.className=`${sel.slice(1)} type-tag ${_sevClassForCorr(m.correction)}`;
+        el.style.cssText='';
+        if(ff) el.style.fontFamily=ff;
+      });
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// PRINT / PDF
+// ───────────────────────────────────────────────────────────────────
+// Print stylesheet + window.print(), NOT jsPDF. jsPDF would add several hundred
+// KB to a file already past 800 KB, and html2canvas rasterises the QCF glyphs
+// into a bitmap — soft, unselectable, unsearchable Arabic. The browser's own
+// PDF writer keeps the mushaf as real text at real resolution.
+//
+// Content is CLONED into #printRoot rather than styled in place. Trying to
+// print the live DOM means fighting a fixed nav, a modal overlay and a
+// scrolling panel, and source order would put the mushaf before the report.
+// A clean container costs one clone and removes all of it.
+
+let _printCleanup = null;
+
+// Pages the session actually touched. Recite segments contribute their whole
+// range; spot segments do NOT — their segment range is the scope the spots were
+// drawn from (often a whole juz), not what was recited. Each spot contributes
+// only its own start→reached span.
+function sessionRecitedPages(s){
+  const set = new Set();
+  const add = (aKey, bKey) => {
+    if(!keyValid(aKey) || !keyValid(bKey)) return;
+    let a = keyAbs(aKey), b = keyAbs(bKey);
+    if(a > b) [a, b] = [b, a];
+    const p1 = pageForAbs(a), p2 = pageForAbs(b);
+    for(let p = p1; p <= p2; p++) set.add(p);
+  };
+  (s.segments || []).forEach(sg => {
+    if(sg.mode === 'spot') return;
+    const o = segOrdered(sg);
+    add(o.startKey, o.endKey);
+  });
+  ((s.spotTest && s.spotTest.spots) || []).forEach(sp => {
+    if(!sp.reached || !sp.reached.key) return;
+    add(`${sp.surah}:${sp.ayah}`, sp.reached.key);
+  });
+  return [...set].sort((a,b) => a-b);
+}
+
+// Which of those pages are actually renderable right now. A page that is not in
+// the DOM cannot be printed: the mushaf holds the juz currently loaded, which
+// need not be the juz of the session being reviewed. Reported honestly in the
+// dialog rather than silently dropped.
+function _printablePages(pages){
+  const have = [], missing = [];
+  pages.forEach(p => (document.getElementById(`pg-${p}`) ? have : missing).push(p));
+  return {have, missing};
+}
+
+// Which juz a page belongs to. JUZ_PAGES holds each juz's first page.
+function _juzForPage(p){
+  let j = 1;
+  for(let i = JUZ_PAGES.length - 1; i >= 0; i--){ if(p >= JUZ_PAGES[i]){ j = i + 1; break; } }
+  return j;
+}
+
+// Pull in any juz the session covers but the mushaf isn't currently showing.
+// Uses the same 'append' path the infinite scroller uses, so the pages land in
+// the DOM exactly as if the teacher had scrolled to them — no second renderer,
+// and no guessing at what a page should look like.
+//
+// Sequential, not parallel: loadJuz() guards on _isFetchingJuz and returns
+// immediately when one is already in flight, so firing these together would
+// silently drop all but the first.
+async function _ensurePagesLoaded(pages){
+  const need = [...new Set(pages.map(_juzForPage))].filter(j => !_activeJuzs.includes(j));
+  for(const j of need){
+    showToast(`Loading Juz ${j}…`);
+    await loadJuz(j, 'append');
+  }
+  // loadJuz resolving is NOT proof the pages exist: it returns silently when
+  // _isFetchingJuz is already set, and a page fetch can fail on its own. Verify,
+  // retry each juz once, then report what is genuinely missing instead of
+  // letting the sheet loop drop it without a word — which is how a print can
+  // come out holding one spot when it should hold seven.
+  let missing = pages.filter(p => !document.getElementById(`pg-${p}`));
+  if(missing.length){
+    for(const j of [...new Set(missing.map(_juzForPage))]){
+      _activeJuzs = _activeJuzs.filter(x => x !== j);   // let loadJuz run again
+      await loadJuz(j, 'append');
+    }
+    missing = pages.filter(p => !document.getElementById(`pg-${p}`));
+  }
+  if(missing.length){
+    console.warn('[print] pages absent after loading:', missing, '| active juz:', _activeJuzs.slice());
+    showToast(`${missing.length} page${missing.length!==1?'s':''} could not be loaded`);
+  }
+  return missing;
+}
+
+function openPrintDialog(){
+  const s = reviewingSession;
+  if(!s){ showToast('Open a session first'); return; }
+  const groups = _printGroups(s);
+  const sheets = groups.reduce((n, g) => n + g.pages.length, 0);
+  const pages  = [...new Set(groups.flatMap(g => g.pages))];
+  const {missing} = _printablePages(pages);
+  const nRec = groups.filter(g => g.kind === 'recite').length;
+  const nSpot = groups.filter(g => g.kind === 'spot').length;
+  const parts = [];
+  if(nRec)  parts.push(`${nRec} recited range${nRec!==1?'s':''} in full`);
+  if(nSpot) parts.push(`${nSpot} spot check${nSpot!==1?'s':''}, one group each`);
+  // sheets, not pages: a page shared by two spots prints once per spot.
+  const note = !sheets
+    ? 'No confirmed ranges in this session, so there are no mushaf pages to print.'
+    : `${parts.join(' and ')} — ${sheets} sheet${sheets!==1?'s':''}.`
+      + (missing.length ? ` ${missing.length} page${missing.length!==1?'s':''} will be fetched first, so give it a moment.` : '');
+  document.getElementById('printNote').textContent = note;
+  document.getElementById('printFullBtn').disabled = !sheets;
+  document.getElementById('printModal').classList.add('open');
+}
+
+// Pages spanned by a verse range, inclusive.
+function _pagesBetween(aKey, bKey){
+  if(!keyValid(aKey) || !keyValid(bKey)) return [];
+  let a = keyAbs(aKey), b = keyAbs(bKey);
+  if(a > b) [a, b] = [b, a];
+  const out = [];
+  for(let p = pageForAbs(a); p <= pageForAbs(b); p++) out.push(p);
+  return out;
+}
+
+// The printed mushaf is organised by SEGMENT, not as one flat page list. The
+// two kinds are different documents: a recite segment is a continuous passage
+// the student read end to end, so it prints straight through; a spot segment is
+// a set of samples, so it prints one group per spot. Flattening them made a
+// recited range look like a spot test that happened to have no spots on it.
+function _printGroups(s){
+  const out = [];
+  const spots = (s.spotTest && s.spotTest.spots) || [];
+  let spotsEmitted = false;
+  (s.segments || []).forEach(sg => {
+    if(sg.mode === 'spot'){
+      // spotTest is session-level, not per-segment, so emit once however many
+      // spot segments exist — a second one would otherwise duplicate them all.
+      if(spotsEmitted) return;
+      spotsEmitted = true;
+      spots.forEach((sp, i) => {
+        if(!sp.reached || !keyValid(sp.reached.key)) return;   // extent unknown
+        const pages = _pagesBetween(`${sp.surah}:${sp.ayah}`, sp.reached.key);
+        if(pages.length) out.push({
+          kind:'spot', spot:sp, idx:i, pages,
+          label:`Spot ${i+1} of ${spots.length}`,
+          sub:`${sp.surahName||''} ${sp.surah}:${sp.ayah} → ${sp.reached.key}`
+        });
+      });
+    } else {
+      const o = segOrdered(sg);
+      const pages = _pagesBetween(o.startKey, o.endKey);
+      if(pages.length) out.push({
+        kind:'recite', pages,
+        label:'Recited in full',
+        sub: sg.rangeLabel || describeRange(o.startKey, o.endKey) || `${o.startKey} → ${o.endKey}`
+      });
+    }
+  });
+  return out;
+}
+
+// Underline the words one spot actually covered, first word to reached word.
+// Mistakes inside the span are NOT skipped: the old version painted a
+// background, which would have covered the severity colour, so it had to leave
+// mistake words out and the range came out perforated. An underline is drawn
+// under the box and competes with nothing, so the span runs unbroken and a
+// mistake keeps its own colour and its own marker on top of it.
+function _shadeSpotOnSheet(sheetEl, spot){
+  if(!spot.reached || !keyValid(spot.reached.key)) return;
+  const a = keyAbs(`${spot.surah}:${spot.ayah}`), b = keyAbs(spot.reached.key);
+  const inRange = w => {
+    const v = absVerse(+w.dataset.surah, +w.dataset.ayah);
+    return v >= a && v <= b;
+  };
+
+  // A mushaf line (.msl) is a flex row and its words are justified across it,
+  // so the space BETWEEN words belongs to no element. Painting each word
+  // individually therefore can never join up — that is the segmented look.
+  //
+  // Where a line is covered end to end, underline the LINE and skip its words:
+  // one rule across the full width, unbroken. Only the first and last lines of
+  // a spot are partly covered, and those fall back to per-word marking, where
+  // the gaps are correct anyway because the range genuinely stops mid-line.
+  const lines = sheetEl.querySelectorAll('.msl');
+  const handled = new Set();
+  lines.forEach(line => {
+    const words = line.querySelectorAll('.qcf-word[data-surah][data-ayah],.word-btn[data-surah][data-ayah]');
+    if(!words.length) return;
+    let all = true, any = false;
+    words.forEach(w => { if(inRange(w)) any = true; else all = false; });
+    if(!any) return;
+    if(all){
+      line.classList.add('spot-print-line');
+      words.forEach(w => handled.add(w));
+    }
+  });
+
+  sheetEl.querySelectorAll('.qcf-word[data-surah][data-ayah],.word-btn[data-surah][data-ayah]').forEach(w => {
+    if(handled.has(w)) return;
+    if(inRange(w)) w.classList.add('spot-print-w');
+  });
+}
+
+// A4 at 96dpi is 794 x 1123px. Side margins take 12mm each; vertically the
+// @page margins, the running header and the caption band all eat into the box
+// before the mushaf frame gets any.
+const PRINT_BOX_W = 794 - Math.round(24 / 25.4 * 96);
+const PRINT_BOX_H = 1123 - Math.round(34 / 25.4 * 96)   // @page top+bottom
+                         - Math.round(9  / 25.4 * 96)   // running header strip
+                         - 58;                          // caption band + rule + slack
+
+// Height is MEASURED, not assumed. The first version used a constant estimate
+// of the frame's height (1104px at reference width) and pages still spilled,
+// because the real height depends on the hizb markers, the buffer blocks on
+// pages 1-2, and the floors inside computeMushafZoomMetrics. Every one of those
+// scales with width, so measuring a real page at its real width gives the exact
+// ratio: height(w) = liveHeight * w / liveWidth. Solve for the width whose
+// height fits the box, then take whichever of that and the width limit is
+// smaller.
+//
+// The TALLEST target page decides, not the first: pages 1-2 carry decorative
+// buffer blocks and stand taller than a standard 15-line page, so sizing off a
+// standard page would push those two over the edge.
+function _printMushafMetrics(pages){
+  let ratio = Infinity;             // px of height per px of width
+  (pages || []).forEach(p => {
+    const el = document.getElementById(`pg-${p}`);
+    if(!el || el.dataset.rendered === 'placeholder') return;
+    const r = el.getBoundingClientRect();
+    if(r.width > 0 && r.height > 0) ratio = Math.min(ratio, r.width / r.height);
+  });
+  const wForHeight = Number.isFinite(ratio) ? PRINT_BOX_H * ratio : PRINT_BOX_W;
+  // 0.985 leaves a hair of slack: sub-pixel rounding in the print renderer has
+  // no margin to absorb, and one pixel over is a whole extra sheet.
+  const w = Math.min(PRINT_BOX_W, wForHeight) * 0.985;
+  return computeMushafZoomMetrics(w);
+}
+
+// Teacher name for the running header. It lives inside the TehfizSync closure
+// as `teacher.name`, so read the rendered label instead of reaching in — and
+// fall back to no attribution rather than inventing one.
+function _printTeacherName(){
+  const el = document.querySelector('#topbarWho .topbar-who-name');
+  const n = el && el.textContent ? el.textContent.trim() : '';
+  return n && n !== 'Signed in' ? n : '';
+}
+
+
+async function printReport(mode){
+  closeModal('printModal');
+  const s = reviewingSession;
+  if(!s) return;
+
+  const root = document.getElementById('printRoot');
+  root.innerHTML = '';
+
+  // The report itself — exactly what the review modal shows, so there is one
+  // builder and no second layout to keep in step.
+  // Running header. position:fixed repeats on every printed sheet in every
+  // browser that matters, which is the only way to get a running head without
+  // @page margin boxes — those are in the spec but implemented by nobody.
+  const who = _printTeacherName();
+  const head = document.createElement('div');
+  head.className = 'print-runhead';
+  head.innerHTML =
+      `<span class="prh-title">Session report for ${esc(s.student || 'student')}`
+    + `${who ? ' — by ' + esc(who) : ''}</span>`
+    + `<span class="prh-brand">tehfiz.com</span>`;
+  root.appendChild(head);
+
+  const rep = document.createElement('div');
+  rep.className = 'print-report';
+  rep.innerHTML = document.getElementById('reviewContent').innerHTML;
+  // <details> print closed unless the attribute is set. CSS alone cannot force
+  // them open: the closed content sits in the UA shadow DOM, so `display:block`
+  // on the children never reaches it. Setting the attribute on the CLONE means
+  // the teacher's own collapsed/expanded state in review is untouched.
+  rep.querySelectorAll('details').forEach(d => { d.open = true; });
+  root.appendChild(rep);
+
+  if(mode === 'full'){
+    const groups = _printGroups(s);
+    const wanted = [...new Set(groups.flatMap(g => g.pages))].sort((a,b)=>a-b);
+    // Fetch first, THEN ask what is renderable — asking beforehand would
+    // report on the mushaf as it stood before the juz were appended.
+    if(wanted.length) await _ensurePagesLoaded(wanted);
+    // Gate on what was WANTED, not on what happens to be renderable: a page
+    // that cannot be produced still deserves a gap sheet saying so.
+    if(wanted.length){
+      showToast('Preparing mushaf pages…');
+
+      // Virtualised pages are placeholders with no content and a 520px min
+      // height — they print as blank sheets. Force each target page to full
+      // before it is cloned, and stop the downgrade timers from swapping one
+      // back out mid-print.
+      if(window._virtData){
+        const {pageHtmlChunks, qcPages} = window._virtData;
+        // _virtData only ever holds the LAST render, so when two juz are in
+        // the DOM only one of them can be upgraded from here. Pages left as
+        // placeholders become gap sheets rather than disappearing.
+        wanted.forEach(p => {
+          const i = qcPages.indexOf(p);
+          if(i >= 0) _virtUpgradePage(p, i, pageHtmlChunks[i]);
+        });
+      }
+      _virtDowngradeTimers.forEach(t => clearTimeout(t));
+      _virtDowngradeTimers.clear();
+
+      // Marks are painted onto word elements, not stored on them, so a page
+      // upgraded a moment ago carries none until this runs.
+      // The reviewed session's marks, not the live one's.
+      _clearWordMarks();
+      reApplyHighlights(s.mistakes || []);
+
+      // Which pages actually made it. `_printablePages` was measured against
+      // the mushaf as it stood BEFORE the juz were appended, so it is recomputed
+      // here rather than reused.
+      const renderable = wanted.filter(p => {
+        const el = document.getElementById(`pg-${p}`);
+        return el && el.dataset.rendered !== 'placeholder';
+      });
+      // ff.display is 'block', so an unloaded face renders nothing at all rather
+      // than falling back. Awaiting both the faces and the document is the
+      // difference between a mushaf and a blank sheet.
+      await loadQcfFonts(renderable);
+      try{ await document.fonts.ready; }catch(err){}
+
+      // One metrics object for every sheet, sized to the PAPER rather than to
+      // the on-screen panel. Without it a page inherits whatever zoom the
+      // teacher happened to be using and spills onto a second sheet.
+      const pm = _printMushafMetrics(renderable);
+      const wrap = document.createElement('div');
+      wrap.className = 'print-mushaf';
+
+      groups.forEach(g => {
+        g.pages.forEach((p, i) => {
+          const el = document.getElementById(`pg-${p}`);
+
+          // A missing or un-upgraded page becomes a visible gap. Skipping it
+          // silently is how a seven-spot session printed as one and nothing in
+          // the output said otherwise.
+          if(!el || el.dataset.rendered === 'placeholder'){
+            const gap = document.createElement('div');
+            gap.className = 'print-sheet gap';
+            gap.innerHTML =
+                `<div class="print-sheet-band ${g.kind}">`
+              + `<span class="psb-kind">${g.kind === 'spot' ? 'Spot check' : 'Recited in full'}</span>`
+              + `<span class="psb-label">${esc(g.label)}</span>`
+              + `<span class="psb-sub">${esc(g.sub)}</span>`
+              + `<span class="psb-page">Mushaf page ${p}</span></div>`
+              + `<p class="print-gap-note">Mushaf page ${p} could not be loaded, so it is not `
+              + `reproduced here. Everything recorded for this range is in the report above.</p>`;
+            wrap.appendChild(gap);
+            return;
+          }
+
+          const sheet = document.createElement('div');
+          sheet.className = 'print-sheet ' + g.kind;
+
+          const c = el.cloneNode(true);
+          c.removeAttribute('id');
+          c.style.transform = '';
+          c.style.marginBottom = '';
+
+          // Only spot sheets get the range tint. The live gutter is not reused:
+          // it is absolutely positioned against the current scroll layout (stale
+          // the moment it is cloned) and it runs to getSpotEndVerse — the spot's
+          // TERRITORY up to the next spot, not what was recited. On paper the
+          // honest boundary is `reached`.
+          if(g.kind === 'spot') _shadeSpotOnSheet(c, g.spot);
+
+          _applyMushafZoomToPages([c], pm);
+          _applyHizbZoomToPages([c], pm);
+
+          const band = document.createElement('div');
+          band.className = 'print-sheet-band ' + g.kind;
+          const cont = g.pages.length > 1
+            ? ` <span class="psb-cont">page ${i+1} of ${g.pages.length}</span>` : '';
+          band.innerHTML =
+              `<span class="psb-kind">${g.kind === 'spot' ? 'Spot check' : 'Recited in full'}</span>`
+            + `<span class="psb-label">${esc(g.label)}</span>`
+            + `<span class="psb-sub">${esc(g.sub)}</span>`
+            + `<span class="psb-page">Mushaf page ${p}${cont}</span>`;
+
+          sheet.appendChild(band);
+          sheet.appendChild(c);
+          wrap.appendChild(sheet);
+        });
+      });
+      if(wrap.children.length) root.appendChild(wrap);
+    }
+  }
+
+  document.body.classList.add('printing', 'print-' + mode);
+
+  _printCleanup = () => {
+    document.body.classList.remove('printing','print-metrics','print-mistakes','print-full');
+    document.getElementById('printRoot').innerHTML = '';
+    // Full mode painted the reviewed session onto the live mushaf. Put the
+    // live session's own marks back, or the teacher returns to a page wearing
+    // someone else's mistakes.
+    if(mode === 'full'){ _clearWordMarks(); reApplyHighlights(); }
+    _printCleanup = null;
+  };
+  // afterprint is unreliable across browsers when the dialog is cancelled, so
+  // a timeout backstop makes sure the app never stays stuck in print state.
+  window.addEventListener('afterprint', function _ap(){
+    window.removeEventListener('afterprint', _ap);
+    if(_printCleanup) _printCleanup();
+  });
+  setTimeout(()=>{ if(_printCleanup) _printCleanup(); }, 60000);
+
+  // A frame for layout to settle before the dialog freezes it.
+  requestAnimationFrame(()=>requestAnimationFrame(()=>window.print()));
 }
 
 function openSessions(){renderSessionsList();document.getElementById('sessionsOverlay').classList.add('open');}
@@ -7956,7 +8665,7 @@ function buildReviewHTML(s){
        + _rvFilterBar(fseg, ml.length, all.length)
        + _rvCharts(ml, cfg, types, tally)
        + _rvFocus(ml, cfg)
-       + _rvSpotTest(s.spotTest, ml)
+       + _rvSpotTest(s.spotTest, ml, cfg)
        /* Narrowed HERE and nowhere else. Passing a page-filtered list into
           _rvStrength would rebuild every chart from one page's mistakes — the
           bars would all collapse to the bar just tapped, and the strength score
@@ -8017,7 +8726,7 @@ function _rvStrength(s, ml){
                  title="Show only this segment's mistakes below">
       <div class="seg-stat-head"><span class="seg-stat-name">${esc(name)}</span><span class="seg-stat-stage">${esc(stage)}</span></div>
       <div class="seg-stat-body">
-        <span class="seg-stat-score" style="color:${b.color};">${v==null?'—':v}</span>
+        <span class="seg-stat-score" style="color:${b.color};">${v==null?'—':v+'%'}</span>
         <span class="seg-stat-band" style="color:${b.color};">${b.label}</span>
         ${clean?`<span class="seg-stat-clean">${clean.clean}/${clean.total} clean (${clean.pct}%)</span>`:''}
       </div>
@@ -8101,7 +8810,7 @@ function _rvFocus(ml, cfg){
 }
 
 // ── Spot test: scope, outcome tally, and a row per spot ───────────
-function _rvSpotTest(spotTest, ml){
+function _rvSpotTest(spotTest, ml, cfg){
   if(!spotTest?.enabled || !spotTest.spots?.length) return '';
   const spots = spotTest.spots;
   const {pass,partial,fail,none} = spotTally(spots);
@@ -8114,15 +8823,30 @@ function _rvSpotTest(spotTest, ml){
       ${none?`<span class="m-badge" style="background:var(--parchment3);color:var(--ink3);">○ ${none} not assessed</span>`:''}
     </div>
     <div class="spot-rows">${spots.map((sp,i)=>{
-      const mc = ml.filter(m=>m.spotId===sp.id).length;
+      const sm = ml.filter(m=>m.spotId===sp.id);
+      const mc = sm.length;
       const color = {pass:'var(--green)',partial:'var(--amber)',fail:'var(--red)'}[sp.outcome]||'var(--ink3)';
       const label = {pass:'✓ Pass',partial:'~ Partial',fail:'✗ Fail'}[sp.outcome]||'○ —';
-      return `<div class="spot-row">
-        <span class="spot-row-n">#${i+1}</span>
-        <span class="spot-row-ref">${sp.surahName} <span>${sp.surah}:${sp.ayah}</span></span>
-        <span class="spot-row-outcome" style="color:${color};">${label}</span>
-        ${mc?`<span class="spot-row-count">${mc}✕</span>`:''}
-      </div>`;
+      // Reach and score come from what was STORED on the spot, never recomputed
+      // here: review runs with a different session's mistakes in scope.
+      const reach = sp.reached && sp.reached.key ? sp.reached.key : null;
+      const st = sp.strength || null;
+      // Mistakes first and always shown — "Mistakes: 0" is a result, and hiding
+      // it made a clean spot look like one nobody had assessed. Outcome last,
+      // because it is the conclusion the two figures before it lead to.
+      const head = `<span class="spot-row-n">#${i+1}</span>
+        <span class="spot-row-ref">${sp.surahName} <span>${sp.surah}:${sp.ayah}${reach?` → ${esc(reach)}`:''}</span></span>
+        <span class="spot-row-count">Mistakes: ${mc}</span>
+        ${st?`<span class="spot-row-score" style="color:${strengthBand(st.score).color};" title="Only comparable with other spot checks — a cold start is harder than carrying on">${st.score}%</span>`:''}
+        <span class="spot-row-outcome" style="color:${color};">${label}</span>`;
+      // No mistakes: a plain row. A <details> with an empty body is a
+      // disclosure arrow that does nothing when tapped.
+      if(!mc) return `<div class="spot-row">${head}</div>`;
+      return `<details class="spot-row-det"><summary class="spot-row">${head}
+        <span class="spot-row-chev">▾</span></summary>
+        <div class="spot-row-body">${sm
+          .sort((a,b)=>a.surah-b.surah||a.ayah-b.ayah||a.wordPos-b.wordPos)
+          .map(m=>_rvMistakeRow(m,cfg)).join('')}</div></details>`;
     }).join('')}</div>
   </div>`;
 }
@@ -8205,7 +8929,12 @@ function strengthArcSVG(v, color){
   </svg>`;
 }
 
-const STRENGTH_TIP = 'Memorization strength (0–100)\n\n'
+const STRENGTH_TIP = 'Memorization strength, shown as a percentage.\n\n'
+  + 'It is a SCORE, not a proportion of the Quran retained.\n\n'
+  + 'Scores are only comparable within the same model. Recited segments score '
+  + 'under strength-v2; spot checks score under spot-v1, which uses the same '
+  + 'curve but a different test condition — a cold start from a random point is '
+  + 'harder than continuing, so the same student scores lower on spots.\n\n'
   + 'Combines how often the student slipped with how much help each slip needed, '
   + 'measured per PAGE recited, counting part-pages as fractions.\n\n'
   + 'Pages rather than verses because a verse is not a unit of quantity — they run '
@@ -8222,7 +8951,7 @@ function strengthCardHTML(v, label, sub){
   return `<div class="str-card str-${b.key}" title="${STRENGTH_TIP}">
     <div class="str-dial">
       ${strengthArcSVG(v, b.color)}
-      <div class="str-val" style="color:${b.color};">${v==null?'—':v}</div>
+      <div class="str-val" style="color:${b.color};">${v==null?'—':v+'%'}</div>
     </div>
     <div class="str-meta">
       <div class="str-title">${label}<span class="str-info" onclick="openShortcutsToStrength()">?</span></div>
@@ -8268,7 +8997,7 @@ function buildTextReport(s){
   if(_sVal!=null || _segs.length){
     t+='💪 *Memorization Strength*\n';
     if(_sVal!=null){
-      t+=`   Session : ${_sVal}/100 — ${strengthBand(_sVal).label}`;
+      t+=`   Session : ${_sVal}% — ${strengthBand(_sVal).label}`;
       t+=`   (${(+_sInp.pages||0).toFixed(1)} pages, ${_sInp.verses} ayat, ${_sInp.mistakes} mistake${_sInp.mistakes!==1?'s':''})\n`;
     }
     if(_segs.length){
@@ -8283,7 +9012,7 @@ function buildTextReport(s){
         const v = strengthFromInputs(inp);
         t+= v==null
           ? `   ○ ${label} — too short to score (${(+inp.pages||0).toFixed(2)} of a page)\n`
-          : `   • ${label} : ${v}/100 — ${strengthBand(v).label}   (${inp.verses} ayat, ${inp.mistakes} mistake${inp.mistakes!==1?'s':''})\n`;
+          : `   • ${label} : ${v}% — ${strengthBand(v).label}   (${inp.verses} ayat, ${inp.mistakes} mistake${inp.mistakes!==1?'s':''})\n`;
       });
     }
     t+='\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n';
@@ -8298,7 +9027,10 @@ function buildTextReport(s){
     sp.forEach((spot,i)=>{
       const outLabel = {pass:'✓ Pass', partial:'~ Partial', fail:'✗ Fail'}[spot.outcome] || '○ —';
       const mc = s.mistakes.filter(m=>m.spotId===spot.id).length;
-      t+=`   ${i+1}. ${spot.surahName} ${spot.surah}:${spot.ayah}  ${outLabel}${mc?`  (${mc} mistake${mc!==1?'s':''})`:''}`;
+      const reach = spot.reached && spot.reached.key ? ` → ${spot.reached.key}` : '';
+      const st = spot.strength;
+      const score = st ? `  ${st.score}%` : '';
+      t+=`   ${i+1}. ${spot.surahName} ${spot.surah}:${spot.ayah}${reach}  ${outLabel}${score}${mc?`  (${mc} mistake${mc!==1?'s':''})`:''}`;
       if(spot.note) t+=`  — ${spot.note}`;
       t+='\n';
     });
@@ -9241,14 +9973,38 @@ function buildAllSpots(count, minVerses, verses){
   const total  = verses.length;
   const segSize = total / count; // floating point — segments are equal width
 
+  // Minimum separation between consecutive spots. Half the ideal spacing, and
+  // never below minVerses, so a spot is always at least as far from its
+  // neighbour as the shortest thing a student could be asked to recite.
+  const minGap = Math.max(minVerses, Math.floor(segSize * 0.5));
+  let prevIdx = -Infinity;
+
   return Array.from({length: count}, (_, i)=>{
     // Each segment spans [segStart, segEnd)
     const segStart = Math.round(i * segSize);
     const segEnd   = Math.round((i + 1) * segSize);
-    // Pickable window: leave at least minVerses from the pick to the next segment start,
-    // so spots never crowd the boundary. But don't shrink below 1 pickable verse.
-    const pickEnd  = Math.max(segStart + 1, segEnd - minVerses + 1);
-    const idx      = segStart + Math.floor(Math.random() * (pickEnd - segStart));
+
+    // SEQUENTIAL minimum-gap picking.
+    //
+    // Equal segments alone keep each spot in its own band but say nothing about
+    // the gap BETWEEN two of them: one landing late in its band and the next
+    // early in the following one can sit a couple of ayat apart, which reads as
+    // clustering even though the segmentation is correct.
+    //
+    // A fixed inset at both ends fixes that but pays for it everywhere — it
+    // discards the top of every window even when the previous spot landed early
+    // and there was no crowding to avoid. Carrying the previous pick forward
+    // constrains only where it actually must: the floor rises just enough to
+    // hold minGap, and the rest of the band stays available. Same guarantee,
+    // more randomness kept.
+    let pickLo = Math.max(segStart, prevIdx + minGap);
+    let pickHi = Math.max(segStart + 1, segEnd - minVerses + 1);
+    // A short scope, or many spots in a small range, can push the floor past
+    // the ceiling. Give ground on the gap rather than returning nothing.
+    if(pickLo >= pickHi) pickLo = Math.max(segStart, Math.min(prevIdx + 1, pickHi - 1));
+    if(pickLo >= pickHi) pickLo = segStart, pickHi = segStart + 1;
+    const idx  = pickLo + Math.floor(Math.random() * (pickHi - pickLo));
+    prevIdx    = idx;
     const v        = verses[Math.min(idx, total - 1)];
     const vw       = allVerseWords[`${v.surah}:${v.ayah}`] || [];
     return {
@@ -9578,20 +10334,72 @@ function renderSpotList(){
   list.innerHTML = spotState.spots.map((s,i) => {
     const isActive = i === spotState.currentIndex;
     const oClass = s.outcome ? `outcome-${s.outcome}` : '';
+    // Only the spot being recited gets a live reading. Scoring the others from
+    // wherever the page happens to be scrolled would be meaningless.
+    const live = (isActive && !s.outcome) ? spotLiveStrength(i) : null;
+    const rec  = live ? spotRecommendedOutcome(live.score) : null;
+    const recCls = o => (rec === o && !s.outcome) ? ' rec' : '';
     return `<div class="spot-card${isActive?' active-spot':''} ${oClass}" id="spot-card-${i}" onclick="goToSpot(${i})">
       <div class="spot-card-head">
         <span class="spot-num">#${i+1}</span>
         <span class="spot-name">${s.surahName}</span>
       </div>
-      <div class="spot-ref">${s.surah}:${s.ayah}${s.regenerated?' ·regenerated':''}</div>
-      <div class="spot-outcome-row">
-        <button class="spot-outcome-btn${s.outcome==='pass'?' sel-pass':''}" onclick="event.stopPropagation();setSpotOutcome(${i},'pass')">✓ Pass</button>
-        <button class="spot-outcome-btn${s.outcome==='partial'?' sel-partial':''}" onclick="event.stopPropagation();setSpotOutcome(${i},'partial')">~ Partial</button>
-        <button class="spot-outcome-btn${s.outcome==='fail'?' sel-fail':''}" onclick="event.stopPropagation();setSpotOutcome(${i},'fail')">✗ Fail</button>
+      <div class="spot-range-row">
+        <span class="spot-range-cap">Recited range</span>
+        <span class="spot-range-start">${s.surah}:${s.ayah}</span>
+        <span class="spot-range-arrow">→</span>
+        ${spotEndChipHTML(s,i)}
+        ${s.regenerated?'<span class="spot-regen">·regenerated</span>':''}
       </div>
-      ${s.mistakeCount?`<div class="spot-mistake-count">${s.mistakeCount} mistake${s.mistakeCount!==1?'s':''} logged</div>`:''}
+      <div class="spot-outcome-row">
+        <button class="spot-outcome-btn${s.outcome==='pass'?' sel-pass':''}${recCls('pass')}" onclick="event.stopPropagation();setSpotOutcome(${i},'pass')">✓ Pass</button>
+        <button class="spot-outcome-btn${s.outcome==='partial'?' sel-partial':''}${recCls('partial')}" onclick="event.stopPropagation();setSpotOutcome(${i},'partial')">~ Partial</button>
+        <button class="spot-outcome-btn${s.outcome==='fail'?' sel-fail':''}${recCls('fail')}" onclick="event.stopPropagation();setSpotOutcome(${i},'fail')">✗ Fail</button>
+      </div>
+      ${live ? `<div class="spot-live" title="Provisional — recalculated as you mark mistakes and follow along. Firms up when you set the outcome.">
+        <span class="spot-live-dot"></span>
+        <span class="spot-live-val" style="color:${strengthBand(live.score).color};">${live.score}%</span>
+        <span class="spot-live-band">${strengthBand(live.score).label}</span>
+        <span class="spot-live-rec">suggests ${rec}</span>
+      </div>` : ''}
+      <div class="spot-mistake-count">Mistakes: ${s.mistakeCount||0}</div>
+      ${spotScoreRowHTML(s)}
     </div>`;
   }).join('');
+}
+
+// End of the recited range, as a tappable chip. Mirrors the segment chips: the
+// text says where it came from, so "auto mark" reads as a promise rather than
+// an empty field, and a value that was set by hand looks different from one
+// that was observed.
+function spotEndChipHTML(s, i){
+  const armed = spotReachArm && spotReachArm.idx === i;
+  const key   = s.reached && keyValid(s.reached.key) ? s.reached.key : null;
+  const src   = s.reached ? s.reached.src : null;
+  const state = armed ? ' armed' : !key ? ' empty' : src !== 'marked' ? ' auto' : '';
+  const txt   = armed ? 'tap a word…' : (key || 'auto mark');
+  const ttl   = armed        ? 'Now tap the last word the student recited — Esc to cancel'
+              : !key         ? 'Fills in automatically when you mark the outcome — or tap to set it now'
+              : src==='marked' ? `Reached ${key} — you set this, tap to change`
+                               : `Reached ${key} — filled in automatically, tap to correct`;
+  return `<button class="spot-end-chip${state}" title="${ttl}"
+            onclick="event.stopPropagation();armSpotReach(${i})">${txt}</button>`;
+}
+
+// Extent and score, once there is something to say. Kept off the range row so
+// the range reads as one clean statement.
+function spotScoreRowHTML(s){
+  const inp = spotStrengthInputs(s);
+  if(!inp) return '';
+  const st = s.strength;
+  const amount = inp.pages >= 1 ? `${inp.pages.toFixed(1)} pages`
+                                : `${Math.round(inp.pages*100)}% of a page`;
+  const band = strengthBand(st ? st.score : null);
+  return `<div class="spot-score-row">
+    <span class="spot-score-extent">${inp.verses} ayat · ${amount}</span>
+    <span class="spot-score-val" style="color:${band.color};"
+          title="${st?`${st.model} — only comparable with other spot scores`:'Under half a page — too short to score reliably'}">${st?`${st.score}%`:'not scored'}</span>
+  </div>`;
 }
 
 // ── NAVIGATION ───────────────────────────────────────────────────
@@ -9603,6 +10411,11 @@ function whenJuzIdle(cb, tries){
   if(!_isFetchingJuz || tries<=0){ cb(); return; }
   requestAnimationFrame(()=>whenJuzIdle(cb, tries-1));
 }
+// Awaitable form, for async callers. loadJuz() bails silently when a fetch is
+// already in flight, so any request made while the infinite scroller is
+// appending a juz is dropped without a trace — which is exactly why tapping a
+// spot outside the loaded juz appeared to do nothing at all.
+function juzIdle(tries){ return new Promise(res => whenJuzIdle(res, tries)); }
 
 async function goToSpot(idx){
   if(idx < 0 || idx >= spotState.spots.length) return;
@@ -9672,6 +10485,10 @@ function setSpotOutcome(idx, outcome){
   if(idx < 0 || idx >= spotState.spots.length) return;
   clearTimeout(spotState._advanceTimer);
   spotState.spots[idx].outcome = outcome;
+  // Synchronous, and FIRST. The auto-advance below repaints the mushaf, so a
+  // capture running after it would read the next spot's position.
+  captureSpotReach(idx);
+  refreshSpotStrength(idx);
   renderSpotList();
   updateSpotNav();
   syncBottomBar();
@@ -9725,6 +10542,200 @@ function getSpotEndVerse(idx){
     const endAyah = AYAH_COUNTS[endSurah - 1] || 1;
     return {surah: endSurah, ayah: endAyah};
   }
+}
+
+// ── SPOT REACH & PER-SPOT STRENGTH ───────────────────────────────
+// A spot records where the student ACTUALLY got to, captured the same way a
+// recite segment captures its end: the last fully visible verse at the moment
+// the outcome is marked, floored by the spot's own furthest mistake so a spot
+// can never end before something logged inside it.
+//
+// There is no target extent, by design. Spot testing gauges confidence, and the
+// teacher stops when they have the answer — sometimes two ayat, sometimes half a
+// juz. A target would turn a judgement instrument into a completion test.
+
+// Furthest mistake belonging to ONE spot. _mistakeExtremes() spans the whole
+// session, which would drag spot #1's end forward to a mistake made in spot #7.
+function _spotMistakeExtremes(spotId){
+  const ml = (mistakes||[]).filter(m=>m.spotId===spotId && m.surah && m.ayah);
+  if(!ml.length) return null;
+  let hi = ml[0];
+  ml.forEach(m=>{ if(absVerse(m.surah,m.ayah) > absVerse(hi.surah,hi.ayah)) hi = m; });
+  return {last:`${hi.surah}:${hi.ayah}`};
+}
+
+// MUST be called synchronously from setSpotOutcome, BEFORE the auto-advance
+// timer is armed. goToSpot() repaints the mushaf, so a capture that runs after
+// navigation records the NEXT spot's position as this spot's endpoint — wrong,
+// silent, and invisible in review.
+//
+// Only ever fills an end nobody has yet. Re-marking an outcome does not move a
+// boundary that was already observed, and a 'marked' end set by hand is never
+// touched at all — corrections go through armSpotReach(), not through here.
+function captureSpotReach(idx){
+  const s = spotState.spots[idx];
+  if(!s) return;
+  if(s.reached) return;
+
+  const b = _visibleVerseBounds();
+  let key = b?.end || null;
+  const ex = _spotMistakeExtremes(s.id);
+  if(ex && (!key || keyAbs(ex.last) > keyAbs(key))) key = ex.last;
+  if(!key) return;
+
+  // A spot cannot run into the next one — getSpotEndVerse is already the
+  // authority on where this spot's territory stops.
+  const cap = getSpotEndVerse(idx);
+  if(cap){
+    const capKey = `${cap.surah}:${cap.ayah}`;
+    if(keyValid(capKey) && keyAbs(key) > keyAbs(capKey)) key = capKey;
+  }
+  // Nor can it end before it starts.
+  const startKey = `${s.surah}:${s.ayah}`;
+  if(keyAbs(key) < keyAbs(startKey)) key = startKey;
+
+  s.reached = {key, src:'auto'};
+}
+
+// ── MANUAL REACH PICKER ──────────────────────────────────────────
+// Same contract as armSegmentMark: arm from the card, then tap a word in the
+// mushaf. Re-capturing from whatever happens to be on screen was the wrong
+// affordance — the teacher knows where the student stopped, and asking them to
+// scroll there first and then press a button is two steps to say one thing.
+function armSpotReach(idx){
+  clearRangeState(); hideRangeNotice();
+  if(segmentArm) cancelSegmentArm();
+  spotReachArm = {idx};
+  document.body.classList.add('seg-arming');
+  showSpotReachNotice();
+  renderSpotList();
+  clearTimeout(_spotArmTimeout);
+  _spotArmTimeout = setTimeout(()=>{
+    if(spotReachArm){ cancelSpotReachArm(); showToast('Spot marking cancelled — took too long'); }
+  }, SEG_ARM_TIMEOUT_MS);
+}
+
+function cancelSpotReachArm(){
+  if(!spotReachArm) return;
+  spotReachArm = null;
+  clearTimeout(_spotArmTimeout);
+  if(!segmentArm) document.body.classList.remove('seg-arming');
+  hideSegNotice();
+  renderSpotList();
+}
+
+function showSpotReachNotice(){
+  let n=document.getElementById('segNotice');
+  if(!n){ n=document.createElement('div'); n.id='segNotice'; document.body.appendChild(n); }
+  n.className='seg-notice';
+  n.innerHTML=`<span class="seg-notice-icon">⌖</span><br><strong>Tap the LAST word the student recited</strong><br><span class="seg-notice-sub">Setting where this spot was reached · Esc to cancel</span>`;
+  n.style.opacity='1';
+}
+
+// Applied from wordTapped(). Verse granularity, exactly as segments do it —
+// students recite whole ayahs, so a word-level boundary is false precision.
+function _applySpotReachMark(surah, ayah){
+  const idx = spotReachArm.idx;
+  cancelSpotReachArm();
+  const s = spotState.spots[idx];
+  if(!s) return;
+  const key = `${surah}:${ayah}`;
+  const startKey = `${s.surah}:${s.ayah}`;
+  if(!keyValid(key) || keyAbs(key) < keyAbs(startKey)){
+    showToast('That is before the spot starts'); return;
+  }
+  const cap = getSpotEndVerse(idx);
+  if(cap){
+    const capKey = `${cap.surah}:${cap.ayah}`;
+    if(keyValid(capKey) && keyAbs(key) > keyAbs(capKey)){
+      showToast('That is inside the next spot'); return;
+    }
+  }
+  s.reached = {key, src:'marked'};
+  refreshSpotStrength(idx);
+  sessionSaved = false;
+  renderSpotList();
+  const inp = spotStrengthInputs(s);
+  showToast(`Spot ${idx+1} reached ${key}${inp?` · ${inp.verses} verses`:''}`);
+}
+
+// Raw inputs for one spot, in the shape strengthInputs() already produces, so a
+// future recalibration can refit spots from history exactly as it refits
+// sessions. A score is lossy; the inputs are not.
+function spotStrengthInputs(s){
+  if(!s || !s.reached || !keyValid(s.reached.key)) return null;
+  const startKey = `${s.surah}:${s.ayah}`;
+  if(!keyValid(startKey)) return null;
+  const a = keyAbs(startKey), b = keyAbs(s.reached.key);
+  if(b < a) return null;
+  return strengthInputs((mistakes||[]).filter(m=>m.spotId===s.id),
+                        b - a + 1,
+                        pageExtent(a, b));
+}
+
+// spot-v1 rides the SAME curve and constants as strength-v2 — a qualifying spot
+// has recited at least minPages, so the per-page denominator applies unchanged.
+// It is still a separate model id because the TEST CONDITION differs: a cold
+// start from a random point with no run-up is not a continuous recitation, and
+// the same student scores lower on spots. That gap belongs to the format, not
+// the memory, so the two must never be averaged.
+//
+// strengthFromInputs() returns null below STRENGTH_MODEL.minPages (0.5 — "below
+// half a page, one mistake swings the score wildly"). That IS the threshold;
+// there is deliberately no second constant here to drift out of step with it.
+function spotStrength(s){
+  const inp = spotStrengthInputs(s);
+  if(!inp) return null;
+  const score = strengthFromInputs(inp);
+  if(score == null) return null;      // under minPages — not enough recited
+  return {model:'spot-v1', score, inputs:inp};
+}
+
+// Provisional strength WHILE a spot is being recited, before any outcome is
+// marked. Uses the current visible verse bound as a stand-in for `reached` —
+// the same signal captureSpotReach() will commit when the teacher marks the
+// outcome, so the live figure and the stored one agree rather than jumping.
+//
+// Returns null until enough has been recited to clear minPages, which is the
+// honest answer: below half a page one mistake swings the score wildly, and a
+// number that lurches on every mark is worse than no number.
+function spotLiveStrength(idx){
+  const s = spotState.spots[idx];
+  if(!s) return null;
+  if(s.reached) return s.strength || null;      // already committed
+  const b = _visibleVerseBounds();
+  let key = b && b.end ? b.end : null;
+  const ex = _spotMistakeExtremes(s.id);
+  if(ex && (!key || keyAbs(ex.last) > keyAbs(key))) key = ex.last;
+  if(!key) return null;
+  const cap = getSpotEndVerse(idx);
+  if(cap){
+    const capKey = `${cap.surah}:${cap.ayah}`;
+    if(keyValid(capKey) && keyAbs(key) > keyAbs(capKey)) key = capKey;
+  }
+  return spotStrength({...s, reached:{key, src:'live'}});
+}
+
+// Which outcome the score points to. A SUGGESTION only: the teacher hears
+// things a mistake count cannot carry — hesitation, tone, whether a recovery
+// was real — and outcome stays their call. Thresholds are the model's own
+// bands rather than new numbers invented here, so a recalibration moves the
+// recommendation with the score instead of leaving the two disagreeing.
+function spotRecommendedOutcome(score){
+  if(score == null) return null;
+  const key = strengthBand(score).key;
+  if(key === 'vstrong' || key === 'strong') return 'pass';
+  if(key === 'steady'  || key === 'shaky')  return 'partial';
+  return 'fail';
+}
+
+// Recompute and store. Called after reach capture; null is stored as absent
+// rather than 0, so an unscored spot is never mistaken for a failed one.
+function refreshSpotStrength(idx){
+  const s = spotState.spots[idx];
+  if(!s) return;
+  const st = spotStrength(s);
+  if(st) s.strength = st; else delete s.strength;
 }
 
 function applySpotHighlights(s, idx){
@@ -10052,12 +11063,44 @@ function drawSpotGutter(s, idx){
 // upgrade only — which is why it was missing on pages scrolled to by hand and
 // stale on pages whose font hadn't loaded yet.
 let _gutterRaf = null;
+// Surgical update: rebuilding the whole spot list on every scroll frame would
+// also rebuild the outcome buttons, and a tap landing mid-rebuild would miss.
+function _refreshSpotLiveBadge(idx){
+  const card = document.getElementById(`spot-card-${idx}`);
+  if(!card) return;
+  const el = card.querySelector('.spot-live');
+  const live = spotLiveStrength(idx);
+  if(!live){ if(el) el.remove(); return; }
+  const band = strengthBand(live.score);
+  const rec  = spotRecommendedOutcome(live.score);
+  if(el){
+    el.querySelector('.spot-live-val').textContent = `${live.score}%`;
+    el.querySelector('.spot-live-val').style.color = band.color;
+    el.querySelector('.spot-live-band').textContent = band.label;
+    el.querySelector('.spot-live-rec').textContent = `suggests ${rec}`;
+  } else {
+    renderSpotList();   // first time it becomes scorable, the row has to appear
+    return;
+  }
+  const btns = card.querySelectorAll('.spot-outcome-btn');
+  ['pass','partial','fail'].forEach((o,i)=>{
+    if(btns[i]) btns[i].classList.toggle('rec', o === rec);
+  });
+}
+
 function scheduleGutterRedraw(){
   if(!spotState.enabled || !spotState.spots.length) return;
   if(_gutterRaf) return;
   _gutterRaf = requestAnimationFrame(()=>{
     _gutterRaf = null;
     drawSpotGutterFull();
+    // The live score is derived from the visible verse bound, so it goes stale
+    // the moment the teacher scrolls. This scheduler is already rAF-throttled
+    // and already fires on scroll and resize, so the refresh rides along rather
+    // than adding a second listener.
+    if(spotState.currentIndex >= 0 && !spotState.spots[spotState.currentIndex]?.outcome){
+      _refreshSpotLiveBadge(spotState.currentIndex);
+    }
   });
 }
 function setupGutterRedrawHooks(){
@@ -11938,8 +12981,17 @@ function render() {
 
   if (!signedIn()) {
     body.innerHTML = err +
-      '<p class="tsy-lead">Sign in with the Google account you teach under. ' +
-      'Sessions you send become visible to the student in their viewer.</p>' +
+      '<div class="tsy-notyou">' +
+        '<strong>Are you a student or a parent?</strong>' +
+        '<span>This app is for teachers, and signing in here will not show you ' +
+        'anything. Open the viewer instead and enter the code your teacher sent you.</span>' +
+        '<a class="tsy-notyou-btn" href="/app/student/">Go to the student viewer \u2192</a>' +
+        '<span class="tsy-notyou-sub">No teacher yet? ' +
+          '<a href="https://docs.google.com/forms/d/e/1FAIpQLSfNCLnyFK47HuW7mGVdMQuWMt1RU0sj_Lm8Xgqvk6sg5eYl5w/viewform" target="_blank" rel="noopener">Tell us what you are looking for</a>' +
+        '.</span>' +
+      '</div>' +
+      '<p class="tsy-lead"><strong>Teachers:</strong> sign in with the Google account you ' +
+      'teach under. Sessions you send become visible to the student in their viewer.</p>' +
       '<div id="tsyGBtn" class="tsy-gbtn"></div>' +
       /* Under the button, not above it: someone who came here to sign in should
          reach the button first. Plain text links rather than buttons, so
@@ -12486,6 +13538,15 @@ window.TehfizSync = {
 .tsy-overlay{display:none;position:fixed;inset:0;background:rgba(26,22,18,.5);z-index:600;
   align-items:flex-end;justify-content:center;}
 .tsy-overlay.tsy-on{display:flex;}
+.tsy-notyou{border:1px solid var(--gold);background:var(--gold-pale);border-radius:10px;
+  padding:12px 14px;margin-bottom:14px;display:flex;flex-direction:column;gap:6px;}
+.tsy-notyou strong{font-size:14px;color:var(--ink);}
+.tsy-notyou span{font-size:12px;color:var(--ink2);line-height:1.55;}
+.tsy-notyou-btn{align-self:flex-start;background:var(--gold);color:var(--ink);text-decoration:none;
+  border-radius:6px;padding:7px 14px;font-size:13px;font-weight:600;margin-top:2px;}
+.tsy-notyou-btn:hover{opacity:.88;}
+.tsy-notyou-sub{font-size:11px !important;color:var(--ink3) !important;}
+.tsy-notyou-sub a{color:var(--amber);}
 .tsy-panel{background:var(--parchment);border-radius:12px 12px 0 0;width:100%;max-width:640px;
   max-height:86vh;overflow-y:auto;padding:18px 20px 22px;border:1px solid var(--border2);
   box-shadow:var(--shadow-lg);font-family:'Lora',serif;color:var(--ink);}
