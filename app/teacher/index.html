@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ═══════════════════════════════════════════════════════════════════
-     Tehfiz teacher app — v4_295
+     Tehfiz teacher app — v4_296
      Deployed from the `tehfiz` repo at public/app/teacher/index.html.
      NOTE: tehfiz-api also contains a public/app/ folder. That one is a local
      staging copy, gitignored, and never served — its routes are /api/* only.
@@ -2607,7 +2607,7 @@ body.compact-ui .quick-form::before{
    console as APP_VERSION, or grep the deployed HTML for it. Bumped on every
    saved build; vcheck.py asserts it matches the filename, so a forgotten bump
    fails the integrity check rather than shipping a lie. */
-const APP_VERSION = 'v4_295';
+const APP_VERSION = 'v4_296';
 window.APP_VERSION = APP_VERSION;
 console.info('Tehfiz teacher app ' + APP_VERSION);
 
@@ -17211,6 +17211,98 @@ function renderList() {
         (busy ? '…' : action.label) + '</button>' +
     '</div>' + teacherProfileBlock(t);
   }).join('');
+  rows = bcPanel() + rows;
+}
+
+/* ── BROADCAST ──────────────────────────────────────────────────────────────
+   Deliberately awkward in one respect: the send button stays disabled until a
+   test has gone out in this sitting. A broadcast cannot be recalled, and the
+   cheapest moment to notice a wrong subject line or a broken greeting is
+   before it reaches forty people rather than after. */
+let bcOpen = false, bcAudience = null, bcTested = false, bcBusy = '', bcLog = [];
+
+async function bcLoadAudience() {
+  try { bcAudience = await api('/api/admin/broadcast'); }
+  catch { bcAudience = { count: 0, configured: false }; }
+  renderList();
+}
+
+function bcPanel() {
+  if (!bcOpen) return '';
+  const a = bcAudience;
+  const ready = a && a.configured;
+  return '<div class="tad-panel bc-panel">' +
+    '<div class="bc-head"><strong>Broadcast to teachers</strong>' +
+      '<button class="tad-mini" data-tad="bcclose">Close</button></div>' +
+    (!a ? '<p class="tad-note">Checking\u2026</p>'
+      : !ready ? '<p class="tad-note bc-warn">Mail is not configured on the server \u2014 ' +
+                 'RESEND_API_KEY and MAIL_FROM must be set before anything can be sent.</p>'
+      : '<p class="tad-note">Goes to <strong>' + a.count + '</strong> active teacher' +
+        (a.count === 1 ? '' : 's') + ', one message each \u2014 nobody sees anyone else\u2019s address. ' +
+        'Use <code>{{name}}</code> anywhere in the body for the teacher\u2019s name.</p>') +
+    '<input id="bcSubject" class="bc-in" placeholder="Subject">' +
+    '<textarea id="bcBody" class="bc-in bc-body" rows="12" placeholder="Message\u2026"></textarea>' +
+    '<div class="bc-actions">' +
+      '<button class="tad-mini" data-tad="bctest"' + (ready ? '' : ' disabled') + '>' +
+        'Send test to me</button>' +
+      '<button class="tad-mini bc-send" data-tad="bcsend"' +
+        (ready && bcTested ? '' : ' disabled') + ' title="' +
+        (bcTested ? 'Send to every active teacher' : 'Send yourself a test first') + '">' +
+        'Send to all ' + (a ? a.count : '') + '</button>' +
+      (bcBusy ? '<span class="bc-busy">' + esc(bcBusy) + '</span>' : '') +
+    '</div>' +
+    (bcLog.length ? '<div class="bc-log">' + bcLog.map(esc).join('<br>') + '</div>' : '') +
+  '</div>';
+}
+
+function bcRead() {
+  // Read before any re-render, for the reason the profile form had to learn:
+  // render() rebuilds these inputs and anything read afterwards reads an empty
+  // box.
+  const s = document.getElementById('bcSubject');
+  const b = document.getElementById('bcBody');
+  return { subject: s ? s.value : '', text: b ? b.value : '' };
+}
+
+async function bcSendTest() {
+  const { subject, text } = bcRead();
+  if (!subject || !text) { toast('Subject and message are both needed'); return; }
+  bcBusy = 'Sending test\u2026'; renderList();
+  try {
+    const r = await api('/api/admin/broadcast', { method: 'POST', body: { subject, text, testTo: 'self' } });
+    bcTested = !!r.sent;
+    bcLog = [r.sent ? 'Test sent to ' + r.to + '. Check it, then send to all.'
+                    : 'Test failed \u2014 nothing was sent to anyone.'];
+  } catch (err) { bcLog = ['Test failed: ' + ((err && err.message) || 'unknown')]; }
+  bcBusy = ''; renderList();
+}
+
+async function bcSendAll() {
+  const { subject, text } = bcRead();
+  if (!bcTested) { toast('Send yourself a test first'); return; }
+  const n = bcAudience ? bcAudience.count : 0;
+  if (!confirm('Send this to ' + n + ' teacher' + (n === 1 ? '' : 's') + '? This cannot be undone.')) return;
+
+  let after = '', sent = 0, failed = [];
+  bcLog = []; bcBusy = 'Sending\u2026'; renderList();
+  try {
+    do {
+      const r = await api('/api/admin/broadcast', { method: 'POST', body: { subject, text, after, limit: 20 } });
+      sent += r.sent || 0;
+      if (r.failures && r.failures.length) failed = failed.concat(r.failures);
+      after = r.cursor;
+      bcBusy = 'Sent ' + sent + '\u2026'; renderList();
+    } while (after);
+    bcLog = ['Sent to ' + sent + ' teacher' + (sent === 1 ? '' : 's') + '.'];
+    if (failed.length) bcLog.push('Failed: ' + failed.join(', '));
+    // A second accidental send of the same text is the likeliest mistake from
+    // here, so the gate closes again behind it.
+    bcTested = false;
+  } catch (err) {
+    bcLog = ['Stopped after ' + sent + ': ' + ((err && err.message) || 'unknown'),
+             'Nobody already sent to will be sent to again if you resume.'];
+  }
+  bcBusy = ''; renderList();
 }
 
 /* Read-only by design — there is no admin write path on the server either, so
@@ -18214,6 +18306,10 @@ document.addEventListener('click', async (e) => {
   if (act === 'pre')      return addPreapproval();
   if (act === 'tedit')    return toggleTeacherManage(t.dataset.id, t.dataset.email);
   if (act === 'texport')  return exportTeachersCSV();
+  if (act === 'bcopen')   { bcOpen = true; bcTested = false; bcLog = []; bcLoadAudience(); return renderList(); }
+  if (act === 'bcclose')  { bcOpen = false; return renderList(); }
+  if (act === 'bctest')   return bcSendTest();
+  if (act === 'bcsend')   return bcSendAll();
   if (act === 'tprof') {
     openProfileId = (openProfileId === t.dataset.id ? null : t.dataset.id);
     return renderList();
@@ -18322,6 +18418,7 @@ function mount() {
         '<div class="tad-tabs">' +
           '<button class="tad-tab on" data-tad="tab" data-t="teachers">Teachers</button>' +
           '<button class="tad-mini" data-tad="texport" title="Download every teacher and their details">\u2b07 CSV</button>' +
+          '<button class="tad-mini" data-tad="bcopen" title="Email every active teacher">\u2709 Broadcast</button>' +
           '<button class="tad-tab" data-tad="tab" data-t="students">Students</button>' +
           '<button class="tad-tab" data-tad="tab" data-t="sessions">Sessions</button>' +
           '<button class="tad-tab" data-tad="tab" data-t="overview">Overview</button>' +
@@ -18540,6 +18637,19 @@ window.TehfizAdmin = { open, available };
   text-overflow:ellipsis;white-space:nowrap;}
 .tad-who span{display:block;font-size:9px;color:var(--ink3);overflow:hidden;
   text-overflow:ellipsis;white-space:nowrap;}
+.bc-panel{background:var(--parchment2);}
+.bc-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+.bc-in{width:100%;box-sizing:border-box;font-family:'Lora',serif;font-size:12px;padding:6px 8px;
+  margin-bottom:6px;border:.5px solid var(--border2);border-radius:5px;
+  background:var(--parchment);color:var(--ink);}
+.bc-body{font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.5;resize:vertical;}
+.bc-actions{display:flex;gap:8px;align-items:center;}
+.bc-send{border-color:var(--gold)!important;color:var(--gold)!important;}
+.bc-send[disabled]{opacity:.45;cursor:not-allowed;}
+.bc-busy{font-size:10px;color:var(--ink3);font-style:italic;}
+.bc-warn{color:var(--amber);}
+.bc-log{margin-top:8px;font-size:10px;color:var(--ink2);line-height:1.6;
+  border-left:2px solid var(--gold);padding-left:8px;}
 .tad-prof{border:.5px solid var(--border2);background:var(--parchment2);color:var(--ink3);
   font-size:8px;text-transform:uppercase;letter-spacing:.05em;border-radius:999px;
   padding:2px 7px;cursor:pointer;flex-shrink:0;}
