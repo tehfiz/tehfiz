@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ═══════════════════════════════════════════════════════════════════
-     Tehfiz teacher app — v4_296
+     Tehfiz teacher app — v4_297
      Deployed from the `tehfiz` repo at public/app/teacher/index.html.
      NOTE: tehfiz-api also contains a public/app/ folder. That one is a local
      staging copy, gitignored, and never served — its routes are /api/* only.
@@ -2607,7 +2607,7 @@ body.compact-ui .quick-form::before{
    console as APP_VERSION, or grep the deployed HTML for it. Bumped on every
    saved build; vcheck.py asserts it matches the filename, so a forgotten bump
    fails the integrity check rather than shipping a lie. */
-const APP_VERSION = 'v4_296';
+const APP_VERSION = 'v4_297';
 window.APP_VERSION = APP_VERSION;
 console.info('Tehfiz teacher app ' + APP_VERSION);
 
@@ -17156,14 +17156,18 @@ function renderList() {
 
   const rows = visible();
   if (!rows.length) {
-    host.innerHTML = '<div class="tad-empty">' +
+    /* Also prefixed here: filtering to a status with nobody in it would
+       otherwise make the open composer vanish mid-compose. */
+    host.innerHTML = bcPanel() + '<div class="tad-empty">' +
       (query ? 'No teacher matches “' + esc(query) + '”.'
              : filter === 'pending' ? 'Nobody is waiting for approval.'
              : 'Nothing here.') + '</div>';
     return;
   }
 
-  host.innerHTML = rows.map((t) => {
+  // bcPanel() first: `rows` is the array of teachers, and the composer is
+  // markup that belongs above their list.
+  host.innerHTML = bcPanel() + rows.map((t) => {
     const busy = busyId === t.id;
     /* Never signed in. A genuine signup writes last_seen_at in the same INSERT
        as created_at, so the two are only ever both set or both absent — which
@@ -17211,7 +17215,6 @@ function renderList() {
         (busy ? '…' : action.label) + '</button>' +
     '</div>' + teacherProfileBlock(t);
   }).join('');
-  rows = bcPanel() + rows;
 }
 
 /* ── BROADCAST ──────────────────────────────────────────────────────────────
