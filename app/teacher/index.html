@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ═══════════════════════════════════════════════════════════════════
-     Tehfiz teacher app — v4_297
+     Tehfiz teacher app — v4_298
      Deployed from the `tehfiz` repo at public/app/teacher/index.html.
      NOTE: tehfiz-api also contains a public/app/ folder. That one is a local
      staging copy, gitignored, and never served — its routes are /api/* only.
@@ -2607,7 +2607,7 @@ body.compact-ui .quick-form::before{
    console as APP_VERSION, or grep the deployed HTML for it. Bumped on every
    saved build; vcheck.py asserts it matches the filename, so a forgotten bump
    fails the integrity check rather than shipping a lie. */
-const APP_VERSION = 'v4_297';
+const APP_VERSION = 'v4_298';
 window.APP_VERSION = APP_VERSION;
 console.info('Tehfiz teacher app ' + APP_VERSION);
 
@@ -17223,6 +17223,40 @@ function renderList() {
    cheapest moment to notice a wrong subject line or a broken greeting is
    before it reaches forty people rather than after. */
 let bcOpen = false, bcAudience = null, bcTested = false, bcBusy = '', bcLog = [];
+/* Which teachers are ticked. Null means "not chosen yet" and is treated as
+   everyone active — so opening the panel and sending without touching anything
+   behaves the way it did before the picker existed. */
+let bcExcluded = new Set();
+let bcExtra = '';
+
+function bcActiveTeachers() {
+  return (teachers || []).filter((t) => t.status === 'active');
+}
+/* Ticked teachers plus anything typed. Deduping and validation happen on the
+   server too — this copy is only so the count on the button is honest. */
+function bcRecipients() {
+  const picked = bcActiveTeachers().filter((t) => !bcExcluded.has(t.id)).map((t) => t.email);
+  const typed = String(bcExtra || '').split(/[,\n;]+/).map((s) => s.trim()).filter(Boolean);
+  const all = [];
+  for (const e of picked.concat(typed)) {
+    const k = e.toLowerCase();
+    if (!all.some((x) => x.toLowerCase() === k)) all.push(e);
+  }
+  return all;
+}
+function bcToggleOne(id) {
+  // Read the typed box first: re-rendering replaces it.
+  bcExtra = (document.getElementById('bcExtra') || {}).value ?? bcExtra;
+  if (bcExcluded.has(id)) bcExcluded.delete(id); else bcExcluded.add(id);
+  bcTested = false;           // the audience changed; re-test before sending
+  renderList();
+}
+function bcSetAll(on) {
+  bcExtra = (document.getElementById('bcExtra') || {}).value ?? bcExtra;
+  bcExcluded = on ? new Set() : new Set(bcActiveTeachers().map((t) => t.id));
+  bcTested = false;
+  renderList();
+}
 
 async function bcLoadAudience() {
   try { bcAudience = await api('/api/admin/broadcast'); }
@@ -17240,18 +17274,33 @@ function bcPanel() {
     (!a ? '<p class="tad-note">Checking\u2026</p>'
       : !ready ? '<p class="tad-note bc-warn">Mail is not configured on the server \u2014 ' +
                  'RESEND_API_KEY and MAIL_FROM must be set before anything can be sent.</p>'
-      : '<p class="tad-note">Goes to <strong>' + a.count + '</strong> active teacher' +
-        (a.count === 1 ? '' : 's') + ', one message each \u2014 nobody sees anyone else\u2019s address. ' +
+      : '<p class="tad-note">One message each \u2014 nobody sees anyone else\u2019s address. ' +
         'Use <code>{{name}}</code> anywhere in the body for the teacher\u2019s name.</p>') +
+    (ready ? '<div class="bc-who">' +
+      '<div class="bc-who-h"><span>Recipients</span>' +
+        '<button class="tad-mini" data-tad="bcall">All</button>' +
+        '<button class="tad-mini" data-tad="bcnone">None</button></div>' +
+      '<div class="bc-list">' +
+        bcActiveTeachers().map((t) =>
+          '<label class="bc-chk"><input type="checkbox" data-tad="bcone" data-id="' + esc(t.id) + '"' +
+          (bcExcluded.has(t.id) ? '' : ' checked') + '> ' +
+          esc(t.name || t.email) +
+          (t.name ? '<span class="bc-em">' + esc(t.email) + '</span>' : '') +
+          '</label>').join('') +
+        (bcActiveTeachers().length ? '' : '<span class="tad-note">No active teachers.</span>') +
+      '</div>' +
+      '<input id="bcExtra" class="bc-in bc-extra" value="' + esc(bcExtra) + '" ' +
+        'placeholder="Also send to (comma-separated addresses)">' +
+    '</div>' : '') +
     '<input id="bcSubject" class="bc-in" placeholder="Subject">' +
     '<textarea id="bcBody" class="bc-in bc-body" rows="12" placeholder="Message\u2026"></textarea>' +
     '<div class="bc-actions">' +
       '<button class="tad-mini" data-tad="bctest"' + (ready ? '' : ' disabled') + '>' +
         'Send test to me</button>' +
       '<button class="tad-mini bc-send" data-tad="bcsend"' +
-        (ready && bcTested ? '' : ' disabled') + ' title="' +
-        (bcTested ? 'Send to every active teacher' : 'Send yourself a test first') + '">' +
-        'Send to all ' + (a ? a.count : '') + '</button>' +
+        (ready && bcTested && bcRecipients().length ? '' : ' disabled') + ' title="' +
+        (bcTested ? 'Send to the selected recipients' : 'Send yourself a test first') + '">' +
+        'Send to ' + bcRecipients().length + '</button>' +
       (bcBusy ? '<span class="bc-busy">' + esc(bcBusy) + '</span>' : '') +
     '</div>' +
     (bcLog.length ? '<div class="bc-log">' + bcLog.map(esc).join('<br>') + '</div>' : '') +
@@ -17264,6 +17313,8 @@ function bcRead() {
   // box.
   const s = document.getElementById('bcSubject');
   const b = document.getElementById('bcBody');
+  const x = document.getElementById('bcExtra');
+  if (x) bcExtra = x.value;
   return { subject: s ? s.value : '', text: b ? b.value : '' };
 }
 
@@ -17283,14 +17334,17 @@ async function bcSendTest() {
 async function bcSendAll() {
   const { subject, text } = bcRead();
   if (!bcTested) { toast('Send yourself a test first'); return; }
-  const n = bcAudience ? bcAudience.count : 0;
-  if (!confirm('Send this to ' + n + ' teacher' + (n === 1 ? '' : 's') + '? This cannot be undone.')) return;
+  const emails = bcRecipients();
+  if (!emails.length) { toast('Nobody selected'); return; }
+  if (!confirm('Send this to ' + emails.length + ' recipient' +
+               (emails.length === 1 ? '' : 's') + '? This cannot be undone.')) return;
 
-  let after = '', sent = 0, failed = [];
+  // The explicit list pages by position, so the cursor starts at 0 rather than ''.
+  let after = 0, sent = 0, failed = [];
   bcLog = []; bcBusy = 'Sending\u2026'; renderList();
   try {
     do {
-      const r = await api('/api/admin/broadcast', { method: 'POST', body: { subject, text, after, limit: 20 } });
+      const r = await api('/api/admin/broadcast', { method: 'POST', body: { subject, text, emails, after, limit: 20 } });
       sent += r.sent || 0;
       if (r.failures && r.failures.length) failed = failed.concat(r.failures);
       after = r.cursor;
@@ -18311,6 +18365,9 @@ document.addEventListener('click', async (e) => {
   if (act === 'texport')  return exportTeachersCSV();
   if (act === 'bcopen')   { bcOpen = true; bcTested = false; bcLog = []; bcLoadAudience(); return renderList(); }
   if (act === 'bcclose')  { bcOpen = false; return renderList(); }
+  if (act === 'bcall')    return bcSetAll(true);
+  if (act === 'bcnone')   return bcSetAll(false);
+  if (act === 'bcone')    return bcToggleOne(t.dataset.id);
   if (act === 'bctest')   return bcSendTest();
   if (act === 'bcsend')   return bcSendAll();
   if (act === 'tprof') {
@@ -18646,6 +18703,15 @@ window.TehfizAdmin = { open, available };
   margin-bottom:6px;border:.5px solid var(--border2);border-radius:5px;
   background:var(--parchment);color:var(--ink);}
 .bc-body{font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.5;resize:vertical;}
+.bc-who{border:.5px solid var(--border2);border-radius:6px;padding:7px 9px;margin-bottom:7px;
+  background:var(--parchment);}
+.bc-who-h{display:flex;align-items:center;gap:6px;margin-bottom:5px;font-size:9px;
+  text-transform:uppercase;letter-spacing:.05em;color:var(--ink3);font-weight:600;}
+.bc-who-h span{flex:1;}
+.bc-list{max-height:132px;overflow-y:auto;display:flex;flex-direction:column;gap:2px;margin-bottom:6px;}
+.bc-chk{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--ink);cursor:pointer;}
+.bc-em{color:var(--ink3);font-size:9px;}
+.bc-extra{margin-bottom:0;}
 .bc-actions{display:flex;gap:8px;align-items:center;}
 .bc-send{border-color:var(--gold)!important;color:var(--gold)!important;}
 .bc-send[disabled]{opacity:.45;cursor:not-allowed;}
