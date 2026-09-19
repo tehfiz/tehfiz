@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ═══════════════════════════════════════════════════════════════════
-     Tehfiz student viewer — v1_120
+     Tehfiz student viewer — v1_150
      Deployed from the `tehfiz` repo at public/app/student/index.html.
      NOTE: tehfiz-api also contains a public/app/ folder. That one is a local
      staging copy, gitignored, and never served — its routes are /api/* only.
@@ -18,6 +18,10 @@
   --ink:#1a1612;--ink2:#5a5248;--ink3:#9a928a;
   --parchment:#faf7f2;--parchment2:#f2ede4;--parchment3:#e8e0d4;
   --gold:#b8841a;--gold-light:#f5e8c8;--gold-pale:#fdf5e0;
+  /* Off the green→amber→red intervention ramp on purpose: a tajweed mistake
+     has no intervention level, so its colour must not read as a point on that
+     scale. Matches the teacher app's token exactly. */
+  --tajweed:#1f6f8b; --tajweed-bg:#dbeef5;
   --green:#2d6a4f;--green-bg:#d8f3dc;
   --lvl1-yellow:#c9a227;--lvl1-yellow-bg:#fdf3d4;
   --lvl2-orange:#b8560c;--lvl2-orange-bg:#ffe2c2;
@@ -205,7 +209,8 @@ body.hint-welcome .hint-tour-btn{display:inline-block;}
 .mph-right{min-width:var(--mz-header-minwidth,44px);text-align:right;}
 .mushaf-page-content{padding:12px 18px 8px;}
 .mushaf-page-content .flow-container{text-align:justify;text-align-last:right;}
-.mushaf-page-footer{border-top:1px solid rgba(184,132,26,.3);background:var(--gold-pale);display:flex;align-items:stretch;height:var(--mz-footer-height,26px);}
+.mushaf-page-footer{
+  position:relative;border-top:1px solid rgba(184,132,26,.3);background:var(--gold-pale);display:flex;align-items:stretch;height:var(--mz-footer-height,26px);}
 .mpf-ornament{flex:1;display:flex;align-items:center;overflow:hidden;padding:0 var(--mz-footer-orn-pad,5px);}
 .mpf-ornament svg{width:100%;height:var(--mz-footer-orn-h,14px);display:block;}
 .mpf-divider{width:1px;background:rgba(184,132,26,.3);}
@@ -246,6 +251,10 @@ body.hint-welcome .hint-tour-btn{display:inline-block;}
 .word-span.sev-1,.qcf-word.sev-1{border-bottom-color:var(--lvl1-yellow);}
 .word-span.sev-2,.qcf-word.sev-2{border-bottom-color:var(--lvl2-orange);}
 .word-span.sev-3,.qcf-word.sev-3{border-bottom-color:var(--red);}
+/* Dashed as well as differently coloured: colour alone separates it from the
+   intervention ramp, but a dashed rule survives greyscale and colour-blindness,
+   and on the mushaf the underline is the only signal a word carries. */
+.word-span.sev-tajweed,.qcf-word.sev-tajweed{border-bottom-color:var(--tajweed);border-bottom-style:dashed;}
 .word-span.sev-other,.qcf-word.sev-other{border-bottom-color:var(--ink3);}
 .word-span.repeated{box-shadow:0 0 0 2px var(--gold);border-radius:4px;}
 .word-span.sev-3.repeated{box-shadow:0 0 0 1px var(--red),0 0 0 3px var(--gold);}
@@ -292,6 +301,32 @@ body.hint-welcome .hint-tour-btn{display:inline-block;}
 .qcf-word.sev-3.repeated{box-shadow:0 0 0 1px var(--red),0 0 0 3px var(--gold);}
 .qcf-word[class*="type-"]:hover{filter:brightness(.91);}
 .qcf-end-marker{font-family:'Scheherazade New','Amiri',serif;display:inline;cursor:default;}
+.qcf-ruku-ain{position:absolute;top:-9px;left:50%;transform:translateX(-50%);
+  font-family:'UthmanicHafs','Scheherazade New',serif;font-size:11px;line-height:1;
+  color:var(--gold);pointer-events:none;}
+.qcf-end-latin{position:relative;display:inline-flex;align-items:center;justify-content:center;
+  width:1.55em;height:1.55em;vertical-align:middle;color:var(--gold);line-height:1;}
+.qcf-end-latin .ayah-rosette{position:absolute;inset:0;width:100%;height:100%;}
+.qcf-end-latin i{position:relative;font-style:normal;font-family:'Lora',Georgia,serif;
+  font-weight:600;font-size:.40em;color:var(--ink);letter-spacing:-.02em;}
+/* .msl-hizb.msl-ruku, not .msl-ruku: the badge carries BOTH classes, so at
+   equal specificity whichever rule comes later wins. .msl-hizb sets
+   left:-77px, and with left, right and width all resolved an absolutely
+   positioned box honours `left` — so the badge pinned itself to a fixed,
+   unscaling position in the wrong gutter. Two classes beat one wherever these
+   rules happen to sit. */
+.msl-hizb.msl-ruku{left:auto;right:-77px;direction:ltr;cursor:pointer;}
+.msl-ruku .mr-ain{font-size:1.9em;line-height:1;}
+.msl-ruku b{font-family:'IBM Plex Mono',monospace;font-weight:500;color:var(--ink2);
+  font-size:1.15em;line-height:1;margin-top:1px;}
+.mpf-prog{
+  position:absolute;top:50%;transform:translateY(-50%);z-index:2;
+  font-family:'Lora',serif;font-size:var(--mz-footer-prog,10px);
+  color:var(--ink2);white-space:nowrap;pointer-events:none;
+  background:var(--gold-pale);padding:0 4px;max-width:42%;overflow:hidden;text-overflow:ellipsis;
+}
+.mpf-prog-l{left:10px;}
+.mpf-prog-r{right:10px;}
 /* Hizb circle in left gutter */
 .msl-hizb{position:absolute;left:-77px;top:50%;transform:translateY(-50%);width:34px;height:34px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:'Scheherazade New','Amiri',serif;font-size:7.5px;font-weight:600;line-height:1.2;border-radius:50%;color:var(--gold);background:var(--gold-pale);border:1.5px solid var(--gold);text-align:center;}
 .msl-hizb.hizb-full{background:var(--gold);color:var(--ink);font-size:12px;}
@@ -416,9 +451,20 @@ body.compact-ui .panel-footer{flex-shrink:0;}
 
 /* Stats */
 .stats-row{display:flex;gap:3px;padding:6px 8px;flex-shrink:0;border-bottom:1px solid var(--border);}
-.stat-pill{flex:1;background:var(--parchment);border-radius:5px;padding:3px 4px;text-align:center;border:.5px solid var(--border);}
-.stat-pill .n{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:500;display:block;}
-.stat-pill .l{font-size:8px;color:var(--ink3);display:block;}
+/* .stat-pill retired — it showed Total / Lvl 1 / Lvl 2 / Lvl 3 only, so a
+   session with a Lvl 0 mistake and a tajweed mark displayed a total of 17
+   above bands summing to 15, with nothing on screen accounting for the other
+   two. The statbar carries every band including tajweed, so it reconciles to
+   the total by construction. Ported from the teacher app, which already made
+   this change. */
+.statbar{display:flex;align-items:center;gap:7px;flex:1;min-width:0;padding:4px 7px;background:var(--parchment2);border-radius:5px;border:.5px solid var(--border);}
+.sb-total{font-family:'Lora',serif;font-size:14px;font-weight:700;color:var(--ink);line-height:1;flex:none;}
+.sb-bar{display:flex;flex:1;min-width:0;height:16px;border-radius:4px;overflow:hidden;background:var(--parchment3);gap:1px;}
+.sb-seg{border:none;padding:0;cursor:pointer;transition:opacity .12s;min-width:14px;font-family:'IBM Plex Mono',monospace;font-size:9px;color:#fff;line-height:16px;text-align:center;}
+.sb-seg:hover{opacity:.75;}
+.sb-seg.on{box-shadow:inset 0 0 0 2px var(--ink);}
+.sb-empty{flex:1;font-size:9px;color:var(--ink3);font-style:italic;line-height:16px;padding-left:5px;}
+.sb-clear{flex:none;background:none;border:none;color:var(--amber);cursor:pointer;font-size:11px;padding:0 2px;line-height:1;}
 
 /* Mistakes scroll */
 .mistakes-scroll{flex:1;overflow-y:auto;padding:6px 8px;min-height:0;}
@@ -431,8 +477,37 @@ body.compact-ui .panel-footer{flex-shrink:0;}
 .mlist-chip:hover{background:var(--parchment3);}
 .mlist-chip.active{background:var(--gold);color:var(--ink);border-color:var(--gold);font-weight:600;}
 /* Selected-type color comes from --type-color set inline per-chip at render
-   time (see typeBtn() in renderMlistControls) rather than fixed per-id rules. */
+   time (see renderFilterSheet) rather than fixed per-id rules. */
 .mlist-chip.active.type-chip{background:var(--type-color,var(--gold));color:white;border-color:var(--type-color,var(--gold));}
+/* ── Filter sheet ────────────────────────────────────────────────────────
+   The inline filter block used to grow a row per dimension and a chip per
+   value. That is fine for one session and unusable across a year: types
+   saturate at eleven, tajweed rules at seventeen, makhraj letters at
+   twenty-nine — and the student who has touched all of them is exactly the
+   one whose filters matter. Deriving chips from present data stops EMPTY
+   categories showing; it does not stop growth.
+   So the inline area keeps only what is active, and everything else moves
+   into a sheet whose height is independent of both the number of dimensions
+   and the number of values. */
+.fs-body{flex:1;overflow-y:auto;padding:0 18px 4px;min-height:0;}
+.fs-sec{margin-bottom:13px;}
+.fs-sec-h{font-size:8px;font-weight:600;color:var(--ink3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:5px;}
+.fs-chips{display:flex;gap:4px;flex-wrap:wrap;}
+/* Tajweed sub-rules are nested under the category rather than listed beside
+   it: category -> type -> sub-rule is the real shape of the data, and the
+   same hierarchy the quick form already uses at input time. */
+.fs-nest{margin:7px 0 0 9px;padding-left:10px;border-left:2px solid var(--tajweed-bg);}
+.fs-nest .fs-sec-h{color:var(--tajweed);}
+.fs-n{opacity:.62;font-family:'IBM Plex Mono',monospace;font-size:8px;margin-left:3px;}
+.mlist-chip.zero{opacity:.4;}
+.fs-letter{font-size:13px;line-height:1.05;padding:1px 8px 3px;}
+.fs-foot{flex-shrink:0;display:flex;align-items:center;gap:8px;padding:10px 18px;border-top:1px solid var(--border);background:var(--parchment);}
+.fs-count{font-size:10px;color:var(--ink3);flex:1;min-width:0;}
+/* Active-filter pills in the always-visible row — tap to remove that one. */
+.mlist-pill{font-size:9px;padding:2px 6px 2px 8px;border-radius:999px;border:.5px solid var(--gold);background:var(--gold-pale);color:var(--ink);cursor:pointer;font-family:'Lora',serif;white-space:nowrap;}
+.mlist-pill:hover{background:var(--amber-bg);border-color:var(--amber);}
+.mlist-pill .x{opacity:.5;margin-left:3px;}
+.sess-period-row{display:flex;gap:4px;padding:0 9px 7px;background:var(--parchment);border-bottom:1px solid var(--border);flex-shrink:0;}
 .mlist-reset{font-size:9px;color:var(--gold);cursor:pointer;text-decoration:underline;white-space:nowrap;margin-left:auto;}
 .mlist-reset:hover{color:var(--amber);}
 
@@ -453,10 +528,17 @@ body.compact-ui .panel-footer{flex-shrink:0;}
 .sev-2{background:var(--lvl2-orange-bg);}
 .sev-3{background:var(--red-bg);}
 .sev-other{background:var(--parchment2);}
+.sev-tajweed{background:var(--tajweed-bg);}
+.lt-hit{color:var(--tajweed);background:var(--tajweed-bg);
+  text-decoration:underline;text-decoration-color:var(--tajweed);
+  text-decoration-thickness:2px;text-underline-offset:3px;border-radius:2px;}
+
+.c-tajweed{color:var(--tajweed);font-weight:600;}
 /* Word-level extra for the most alarming level. No font-weight here: QCF V2 are
    single-weight per-page glyph fonts, so any bold request is synthesised by the
    browser smearing each glyph, which visibly distorts the ligatures. */
 .qcf-word.sev-3,.word-span.sev-3{box-shadow:0 0 0 1px var(--red);}
+.qcf-word.sev-tajweed,.word-span.sev-tajweed{box-shadow:0 0 0 1px var(--tajweed);}
 
 /* Mistake items */
 .mistake-item{border-radius:6px;border:.5px solid var(--border);padding:6px 8px;margin-bottom:5px;display:flex;gap:5px;align-items:flex-start;cursor:pointer;transition:border-color .12s,background .12s,transform .1s;animation:slideIn .15s ease;}
@@ -542,6 +624,10 @@ body.compact-ui .panel-footer{flex-shrink:0;}
   font-family:'IBM Plex Mono',monospace;margin-bottom:3px;letter-spacing:.04em;}
 .word-tooltip .tt-corr{font-size:9px;display:block;font-weight:600;font-family:'IBM Plex Mono',monospace;letter-spacing:.03em;}
 .word-tooltip .tt-note{font-size:10px;color:var(--ink2);font-style:italic;display:block;margin-top:3px;}
+/* Set apart from the note by a rule and by not being italic: one is reference,
+   the other is what the teacher said about this student. */
+.word-tooltip .tt-guide{font-size:10px;color:var(--ink);display:block;margin-top:5px;padding-top:5px;
+  border-top:1px solid var(--border);line-height:1.5;}
 .word-tooltip .tt-sess{font-size:8px;color:var(--ink3);display:block;margin-top:3px;font-family:'IBM Plex Mono',monospace;}
 .word-tooltip .tt-rep{font-size:9px;color:var(--amber);font-weight:700;display:block;margin-top:2px;}
 .word-tooltip .tt-div{border-top:1px solid var(--border);margin:6px 0 4px;}
@@ -591,6 +677,13 @@ body.compact-ui .panel-footer{flex-shrink:0;}
 .donut-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;}
 .donut-center .big{font-family:'IBM Plex Mono',monospace;font-size:18px;font-weight:500;}
 .donut-center .lbl{font-size:9px;color:var(--ink3);}
+/* Only rendered when a session has BOTH categories — a one-sided session must
+   read exactly as it did before this existed (DESIGN_tajweed_split.md §5.1). */
+.bar-group-h{font-size:8px;font-weight:600;color:var(--ink3);letter-spacing:.06em;text-transform:uppercase;margin:6px 0 3px;}
+.bar-group-h:first-child{margin-top:0;}
+/* Sits under the legend, not in it: tajweed is not a slice of the ring, and a
+   legend dot would imply it was. */
+.dl-note{font-size:9px;color:var(--tajweed);margin-top:5px;font-style:italic;}
 .donut-legend{display:flex;flex-direction:column;gap:3px;}
 .dl-row{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--ink2);}
 .dl-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
@@ -621,6 +714,14 @@ body.compact-ui .panel-footer{flex-shrink:0;}
 .hlp-t p{font-size:11px;color:var(--ink2);line-height:1.6;margin:0 0 6px;}
 .hlp-t p:last-child{margin-bottom:0;}
 .hlp-t.flash{background:var(--gold-pale);border-left-color:var(--gold);}
+.tj-region{font-size:9px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--gold);margin:12px 0 5px;}
+.tj-rows{display:flex;flex-direction:column;gap:2px;}
+.tj-row{display:flex;align-items:baseline;gap:8px;padding:4px 7px;border-radius:5px;background:var(--parchment2);}
+.tj-letter{font-family:'Scheherazade New','Amiri',serif;font-size:19px;line-height:1.2;color:var(--ink);
+  flex:0 0 26px;text-align:center;direction:rtl;}
+.tj-rule{font-size:10px;font-weight:600;color:var(--tajweed);flex:0 0 108px;line-height:1.4;}
+.tj-text{font-size:11px;color:var(--ink2);line-height:1.5;flex:1;min-width:0;}
+@media(max-width:420px){.tj-rule{flex:0 0 84px;font-size:9px;}.tj-text{font-size:10px;}}
 /* juz rotation strip */
 .jz-strip{display:flex;flex-wrap:wrap;gap:3px;}
 .jz{width:62px;padding:5px 6px 6px;border-radius:6px;display:flex;flex-direction:column;gap:2px;cursor:default;border:.5px solid transparent;}
@@ -658,6 +759,47 @@ body.compact-ui .panel-footer{flex-shrink:0;}
 .jzp.lock{background:var(--parchment3);border-color:var(--border2);color:var(--ink2);cursor:not-allowed;}
 /* trend */
 .ms-chart{width:100%;height:auto;display:block;}
+.tj-of{width:96px;flex-shrink:0;font-size:8px;color:var(--ink3);text-align:left;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.tj-letter{font-size:15px;color:var(--ink);font-family:'UthmanicHafs','Scheherazade New',serif;}
+.tj-sub{font-size:9px;color:var(--ink3);font-weight:400;}
+.tj-spark{display:flex;align-items:flex-end;gap:2px;height:30px;padding:2px 0;}
+.tj-spark-b{flex:1;min-width:2px;background:var(--tajweed);border-radius:1px 1px 0 0;opacity:.8;}
+.tj-caveats{font-size:9px;color:var(--ink3);font-style:italic;line-height:1.6;}
+.lg-scroll{overflow-x:auto;}
+.lg-table{width:100%;border-collapse:collapse;font-family:'Lora',serif;font-size:10px;}
+.lg-table th{text-align:left;font-size:8px;text-transform:uppercase;letter-spacing:.05em;
+  color:var(--ink3);font-weight:600;padding:4px 6px;border-bottom:1px solid var(--border);white-space:nowrap;}
+.lg-table td{padding:5px 6px;border-bottom:.5px solid var(--border2);vertical-align:top;color:var(--ink);}
+.lg-table tr:last-child td{border-bottom:none;}
+.lg-sub{font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--ink3);margin-top:1px;}
+.lg-n{font-family:'IBM Plex Mono',monospace;text-align:right;white-space:nowrap;}
+.lg-range{max-width:150px;}
+.lg-notes{max-width:180px;font-style:italic;color:var(--ink2);font-size:9px;}
+.lg-sess td{background:var(--parchment);border-bottom:.5px solid var(--border);padding:6px;}
+.lg-sess b{font-size:10px;color:var(--ink);}
+.lg-sub-i{font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--ink3);margin-left:5px;}
+.lg-dur{font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--ink2);margin-left:8px;
+  background:var(--gold-pale);border-radius:3px;padding:1px 5px;}
+.lg-segn{font-size:8px;color:var(--ink3);margin-left:8px;font-style:italic;}
+.lg-note-line{font-size:9px;font-style:italic;color:var(--ink2);margin-top:3px;
+  border-left:2px solid var(--gold);padding-left:6px;}
+.lg-seg td:first-child{padding-left:14px;}
+.lg-range-pick{display:inline-flex;align-items:center;gap:4px;margin-left:4px;}
+.lg-range-pick input{font-family:'IBM Plex Mono',monospace;font-size:9px;padding:2px 4px;
+  border:.5px solid var(--border2);border-radius:4px;background:var(--parchment);color:var(--ink);}
+.lg-range-pick b{color:var(--ink3);font-size:9px;}
+/* Print: everything except the log itself is hidden, and the table is allowed
+   to break across pages with its header repeating — which is the one thing a
+   long log needs and a screenshot cannot give you. */
+@media print{
+  body.printing-log *{visibility:hidden;}
+  body.printing-log #logPrintArea, body.printing-log #logPrintArea *{visibility:visible;}
+  body.printing-log #logPrintArea{position:absolute;left:0;top:0;width:100%;border:none;box-shadow:none;}
+  body.printing-log .lg-scroll{overflow:visible;}
+  body.printing-log .lg-table thead{display:table-header-group;}
+  body.printing-log .lg-table tr{break-inside:avoid;}
+}
 .ms-tabs{display:flex;gap:3px;flex-wrap:wrap;margin-bottom:6px;}
 .ms-tab{display:flex;align-items:center;gap:5px;background:var(--parchment);border:.5px solid var(--border2);border-radius:5px;padding:4px 8px;font-family:'Lora',serif;font-size:10px;color:var(--ink2);cursor:pointer;}
 .ms-tab:hover{border-color:var(--gold);}
@@ -915,6 +1057,11 @@ body.compact-ui .panel-footer{flex-shrink:0;}
 .rv-head h2{font-size:16px;font-weight:600;}
 .rv-sub{font-size:11px;color:var(--ink3);}
 .rv-remarks{font-size:11px;color:var(--ink2);font-style:italic;margin-top:5px;padding:5px 8px;background:var(--parchment2);border-radius:5px;border-left:3px solid var(--gold);}
+/* The tajweed list carries the same petrol accent the marks themselves do. */
+.rv-details.tajweed{border-left:3px solid var(--tajweed);}
+.rv-details.tajweed .rv-summary > span:first-child{color:var(--tajweed);}
+.rv-focus-tag{font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--ink3);
+  border:.5px solid var(--border2);border-radius:3px;padding:1px 5px;margin-left:6px;white-space:nowrap;}
 .rv-badges{display:flex;gap:5px;flex-wrap:wrap;margin-top:7px;}
 .rv-badges .m-badge{font-size:9px;}
 .chart-note{font-size:8px;color:var(--ink3);margin-bottom:6px;font-style:italic;}
@@ -996,6 +1143,14 @@ body.compact-ui .panel-footer{flex-shrink:0;}
 .sess-toolbar-btn.accent{background:var(--gold);color:var(--ink);font-weight:600;}
 .sess-toolbar-btn.accent:hover{opacity:.87;}
 /* Help modal tabs */
+.vtabs-wrap{display:flex;gap:0;flex:1;min-height:0;overflow:hidden;}
+.vtabs-rail{flex:0 0 128px;display:flex;flex-direction:column;gap:2px;padding:10px 8px 10px 0;border-right:1px solid var(--border2);overflow-y:auto;}
+.vtabs-panels{flex:1;min-width:0;overflow-y:auto;padding:12px 8px 12px 14px;}
+.vtab-btn{display:flex;align-items:center;gap:7px;text-align:left;padding:8px 10px;font-family:'Lora',serif;font-size:11px;color:var(--ink3);background:none;border:none;border-radius:0 6px 6px 0;cursor:pointer;transition:background .12s,color .12s;white-space:nowrap;}
+.vtab-btn span{font-size:12px;flex-shrink:0;width:14px;text-align:center;}
+.vtab-btn:hover:not(.active){background:var(--parchment2);color:var(--ink2);}
+.vtab-btn.active{background:var(--gold-pale);color:var(--amber);font-weight:600;}
+@media(max-width:480px){.vtabs-rail{flex:0 0 104px;}.vtab-btn{font-size:10px;padding:7px 8px;}}
 .sv-tab{padding:6px 7px;font-size:11px;cursor:pointer;color:var(--ink3);border-bottom:2px solid transparent;font-family:'Lora',serif;background:none;border-top:none;border-left:none;border-right:none;transition:all .12s;white-space:nowrap;flex:1;text-align:center;}
 .sv-tab:hover:not(.active){color:var(--ink2);}
 .sv-tab.active{color:var(--gold);border-bottom-color:var(--gold);font-weight:600;}
@@ -1163,10 +1318,7 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
           <button class="active-banner-clear" onclick="clearAllActive()">Clear all</button>
         </div>
         <div class="stats-row">
-          <div class="stat-pill"><span class="n" id="st0">0</span><span class="l">Total</span></div>
-          <div class="stat-pill"><span class="n" id="st1" style="color:var(--lvl1-yellow)">0</span><span class="l">Lvl 1</span></div>
-          <div class="stat-pill"><span class="n" id="st2" style="color:var(--lvl2-orange)">0</span><span class="l">Lvl 2</span></div>
-          <div class="stat-pill"><span class="n" id="st3" style="color:var(--red)">0</span><span class="l">Lvl 3</span></div>
+          <div class="statbar" id="statBar" title="Tap a band to filter the list below"></div>
         </div>
         <div class="mlist-controls" id="mlistControls"></div>
         <div class="mistakes-scroll" id="mistakesList"></div>
@@ -1182,6 +1334,15 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
           <button class="sess-toolbar-btn" onclick="clearAllActive()" title="Delete all sessions">✕ Delete all</button>
           <label class="sess-toolbar-btn accent" style="cursor:pointer;">⬇ Import<input type="file" accept=".qrs" multiple style="display:none;" onchange="importSession(event)"></label>
         </div>
+      </div>
+      <!-- Selects sessions; it does not filter the mistake list. The sheet's
+           own time section narrows WITHIN whatever is selected here. Two
+           different jobs, so both exist. -->
+      <div class="sess-period-row">
+        <button class="sess-toolbar-btn" onclick="selectSessionsInPeriod('week')">This week</button>
+        <button class="sess-toolbar-btn" onclick="selectSessionsInPeriod('month')">This month</button>
+        <button class="sess-toolbar-btn" onclick="selectSessionsInPeriod('year')">This year</button>
+        <button class="sess-toolbar-btn" onclick="selectSessionsInPeriod(null)">All</button>
       </div>
       <div class="sess-list-inner" id="sessListInner"><div class="empty-hint">No sessions yet.</div></div>
     </div>
@@ -1208,6 +1369,36 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
         How the stages are named for you. Your choice, not the teacher's — the
         session itself is unchanged either way.
       </div>
+    </div>
+
+    <div style="border-top:.5px solid var(--border);padding-top:10px;margin-top:10px;">
+      <label style="display:flex;align-items:center;justify-content:space-between;user-select:none;">
+        <span>ع Ruku markers</span>
+        <span style="font-size:10px;color:var(--ink3);font-weight:400;margin-right:6px;font-family:'Lora',serif;">Mark where each ruku ends</span>
+        <button id="rukuSwitch" onclick="toggleMushafPref('showRuku')" style="position:relative;width:40px;height:22px;border-radius:11px;border:none;cursor:pointer;transition:background .2s;background:var(--parchment3);flex-shrink:0;">
+          <span id="rukuThumb" style="position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:white;transition:transform .2s;display:block;box-shadow:0 1px 4px rgba(0,0,0,.2);"></span>
+        </button>
+      </label>
+    </div>
+
+    <div style="border-top:.5px solid var(--border);padding-top:10px;margin-top:10px;">
+      <label style="display:flex;align-items:center;justify-content:space-between;user-select:none;">
+        <span>123 Latin verse numbers</span>
+        <span style="font-size:10px;color:var(--ink3);font-weight:400;margin-right:6px;font-family:'Lora',serif;">Instead of the Arabic-Indic glyph</span>
+        <button id="latinSwitch" onclick="toggleMushafPref('latinNumerals')" style="position:relative;width:40px;height:22px;border-radius:11px;border:none;cursor:pointer;transition:background .2s;background:var(--parchment3);flex-shrink:0;">
+          <span id="latinThumb" style="position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:white;transition:transform .2s;display:block;box-shadow:0 1px 4px rgba(0,0,0,.2);"></span>
+        </button>
+      </label>
+    </div>
+
+    <div style="border-top:.5px solid var(--border);padding-top:10px;margin-top:10px;">
+      <label style="display:flex;align-items:center;justify-content:space-between;user-select:none;">
+        <span>📄 Pages remaining</span>
+        <span style="font-size:10px;color:var(--ink3);font-weight:400;margin-right:6px;font-family:'Lora',serif;">To the end of the surah and juz</span>
+        <button id="progSwitch" onclick="toggleMushafPref('showPageProgress')" style="position:relative;width:40px;height:22px;border-radius:11px;border:none;cursor:pointer;transition:background .2s;background:var(--gold);flex-shrink:0;">
+          <span id="progThumb" style="position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:white;transition:transform .2s;display:block;transform:translateX(18px);box-shadow:0 1px 4px rgba(0,0,0,.2);"></span>
+        </button>
+      </label>
     </div>
 
     <div style="border-top:.5px solid var(--border);padding-top:10px;margin-top:10px;">
@@ -1238,16 +1429,20 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
       <!-- The tour fires once, on the login that sets a student's PIN. This is
            the only way back to it. -->
       <button class="ttr-replay" onclick="closeModal('interventionModal');if(window.TehfizTour)TehfizTour.start();">&#128161; Show me around</button>
-      <div style="display:flex;gap:0;border-bottom:1px solid var(--border2);margin:0 -18px;padding:0 18px;overflow-x:auto;">
-        <button class="sv-tab active" id="svt-types"  onclick="switchSvTab('types')">📝 Mistake Types</button>
-        <button class="sv-tab"        id="svt-levels" onclick="switchSvTab('levels')">🎯 Intervention Levels</button>
-        <button class="sv-tab"        id="svt-keys"   onclick="switchSvTab('keys')">⌨ Shortcuts</button>
-        <button class="sv-tab"        id="svt-progress" onclick="switchSvTab('progress')">📈 Progress</button>
-      </div>
     </div>
 
-    <!-- scrollable content -->
-    <div style="flex:1;overflow-y:auto;padding:12px 18px;">
+    <!-- Vertical rail, as in the teacher app. A horizontal strip scrolled
+         sideways once there were five tabs, which hides the ones it cannot fit
+         and gives no sign they exist. -->
+    <div class="vtabs-wrap">
+      <div class="vtabs-rail">
+        <button class="vtab-btn active" id="svt-types"  onclick="switchSvTab('types')"><span>✎</span>Mistake Types</button>
+        <button class="vtab-btn" id="svt-levels" onclick="switchSvTab('levels')"><span>◉</span>Intervention</button>
+        <button class="vtab-btn" id="svt-tajweed" onclick="switchSvTab('tajweed')"><span>〜</span>Tajweed</button>
+        <button class="vtab-btn" id="svt-progress" onclick="switchSvTab('progress')"><span>📈</span>Progress</button>
+        <button class="vtab-btn" id="svt-keys"   onclick="switchSvTab('keys')"><span>⌨</span>Shortcuts</button>
+      </div>
+      <div class="vtabs-panels">
 
       <!-- TAB: Shortcuts -->
       <div id="svp-keys" style="display:none;">
@@ -1278,6 +1473,15 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
             <tr style="border-bottom:.5px solid var(--border);"><td style="padding:6px 8px;font-family:'IBM Plex Mono',monospace;background:var(--parchment2);border-radius:3px;color:var(--ink2);">d</td><td style="padding:6px 8px;color:var(--ink2);">Faster</td></tr>
           </tbody>
         </table>
+      </div>
+
+      <!-- TAB: Tajweed reference. Body is built by renderTajweedGuide() from the
+           same MAKHRAJ_GUIDE and TAJWEED_GUIDE the mistake popups use, so the
+           reference and the reminders can never drift apart. -->
+      <div id="svp-tajweed" style="display:none;">
+        <p style="font-size:11px;color:var(--ink3);font-style:italic;margin-bottom:10px;">
+          The same notes that appear when you tap a marked word, gathered in one place</p>
+        <div id="tjGuideBody"></div>
       </div>
 
       <!-- TAB: Progress report -->
@@ -1390,7 +1594,8 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
         </div>
       </div>
 
-    </div><!-- end scrollable -->
+      </div><!-- end vtabs-panels -->
+    </div><!-- end vtabs-wrap -->
 
     <!-- sticky footer -->
     <div style="padding:10px 18px;border-top:1px solid var(--border);flex-shrink:0;display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--parchment);">
@@ -1404,6 +1609,21 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
 </div>
 
 <!-- SHARE MODAL -->
+<div class="modal-bg" id="filterSheet">
+  <div class="modal" style="max-width:460px;padding:0;display:flex;flex-direction:column;max-height:86vh;overflow:hidden;">
+    <div style="padding:16px 18px 10px;flex-shrink:0;">
+      <div class="modal-title">Filters</div>
+      <div class="modal-sub" id="fsScope" style="margin-bottom:0;"></div>
+    </div>
+    <div class="fs-body" id="fsBody"></div>
+    <div class="fs-foot">
+      <span class="fs-count" id="fsCount"></span>
+      <span class="mlist-reset" style="margin-left:0;" onclick="resetMistakeFilters()">Clear all</span>
+      <button class="btn-m pri" onclick="closeModal('filterSheet')">Done</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-bg" id="shareModal">
   <div class="modal">
     <div class="modal-title">Session Report</div>
@@ -1454,7 +1674,7 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
    console as APP_VERSION, or grep the deployed HTML for it. Bumped on every
    saved build; vcheck.py asserts it matches the filename, so a forgotten bump
    fails the integrity check rather than shipping a lie. */
-const APP_VERSION = 'v1_120';
+const APP_VERSION = 'v1_150';
 window.APP_VERSION = APP_VERSION;
 console.info('Tehfiz student viewer ' + APP_VERSION);
 
@@ -1494,17 +1714,45 @@ function juzForVerse(surah, ayah){
 // always resolves from each session's own embedded typeConfig first, since
 // that's the source of truth for what a teacher's catalog looked like when
 // that session was logged).
+//
+// The list itself was MISSING until v1_130 — the comment above described it,
+// nothing defined it, and getType() therefore sent every standard id to
+// MISTAKE_TYPE_OTHER. That returns category 'other', so isTajweedMistake()
+// was false for every tajweed mistake at any call site that didn't thread a
+// cfg through, and the null correction then fell into corrTally's c0 bucket.
+// A tajweed mark read as "Lvl 0 · No intervention", counted into the hifz
+// strength score, and made the viewer disagree with the teacher app on the
+// same session. Ids, labels and categories are byte-identical to the teacher
+// app's copy so the two stay diffable. No colors: in the teacher app those
+// come from the palette when the active list is built, and every caller here
+// already falls back to var(--ink3).
+const MISTAKE_TYPE_LIBRARY = [
+  {id:'hesitation',      label:'Hesitation', category:'tehfiz'},
+  {id:'wrong-word',      label:'Wrong word', category:'tehfiz'},
+  {id:'skipped',         label:'Skipped',    category:'tehfiz'},
+  {id:'added-word',      label:'Added word', category:'tehfiz'},
+  {id:'word-order',      label:'Word order', category:'tehfiz'},
+  {id:'harakaat',        label:'Wrong harakah', category:'tehfiz'},
+  {id:'makhraj',         label:'Makhraj',    category:'tajweed'},
+  {id:'tajweed-general', label:'Tajweed',    category:'tajweed'},
+  {id:'madd',            label:'Madd',       category:'tajweed'},
+  {id:'ghunnah',         label:'Ghunnah',    category:'tajweed'},
+  {id:'qalqalah',        label:'Qalqalah',   category:'tajweed'},
+];
 const MISTAKE_TYPE_OTHER={id:'other',label:'Other',category:'other',color:'',bgColor:'var(--parchment3)',borderColor:'var(--border2)'};
 // Frozen definitions for the old m1-m6 scheme — kept ONLY so mistakes from
 // sessions saved before this feature existed (with no embedded typeConfig at
 // all) still resolve to something sensible.
+// `category` was absent from every entry here until v1_130 while the teacher
+// app's copy carried it — so a pre-typeConfig session's m4/m5 resolved as
+// tajweed in one app and as hifz in the other. Same session, two answers.
 const LEGACY_TYPE_FALLBACK={
-  m1:{id:'m1',label:'Hesitation',color:'var(--amber)', bgColor:'var(--amber-bg)', borderColor:'var(--amber)'},
-  m2:{id:'m2',label:'Wrong word',color:'var(--red)',   bgColor:'var(--red-bg)',   borderColor:'var(--red)'},
-  m3:{id:'m3',label:'Skipped',   color:'var(--coral)', bgColor:'var(--coral-bg)', borderColor:'var(--coral)'},
-  m4:{id:'m4',label:'Makhraj',   color:'var(--purple)',bgColor:'var(--purple-bg)',borderColor:'var(--purple)'},
-  m5:{id:'m5',label:'Tajweed',   color:'var(--teal)',  bgColor:'var(--teal-bg)',  borderColor:'var(--teal)'},
-  m6:{id:'m6',label:'Other',     color:'',             bgColor:'var(--parchment3)',borderColor:'var(--border2)'},
+  m1:{id:'m1',label:'Hesitation',category:'tehfiz', color:'var(--amber)', bgColor:'var(--amber-bg)', borderColor:'var(--amber)'},
+  m2:{id:'m2',label:'Wrong word',category:'tehfiz', color:'var(--red)',   bgColor:'var(--red-bg)',   borderColor:'var(--red)'},
+  m3:{id:'m3',label:'Skipped',   category:'tehfiz', color:'var(--coral)', bgColor:'var(--coral-bg)', borderColor:'var(--coral)'},
+  m4:{id:'m4',label:'Makhraj',   category:'tajweed',color:'var(--purple)',bgColor:'var(--purple-bg)',borderColor:'var(--purple)'},
+  m5:{id:'m5',label:'Tajweed',   category:'tajweed',color:'var(--teal)',  bgColor:'var(--teal-bg)',  borderColor:'var(--teal)'},
+  m6:{id:'m6',label:'Other',     category:'other',  color:'',             bgColor:'var(--parchment3)',borderColor:'var(--border2)'},
 };
 const CORRECTION_TYPES=[
   {id:'c0', label:'Lvl 0 · No intervention', shortLabel:'Lvl 0', cssClass:'c0'},
@@ -1520,7 +1768,12 @@ const ID_MIGRATION={
   makhraj:'makhraj',tajweed:'tajweed-general',other:'other',
   self:'c1',prompted:'c2',teacher:'c3'
 };
+// Mirrors the teacher app's getType, minus its `mistakeTypesActive` first
+// stage — this viewer has no local catalog to consult. The library lookup is
+// what stops a standard id falling all the way through to 'other'.
 function getType(id){
+  const lib = MISTAKE_TYPE_LIBRARY.find(t => t.id === id);
+  if(lib) return lib;
   if(id==='other') return MISTAKE_TYPE_OTHER;
   if(LEGACY_TYPE_FALLBACK[id]) return LEGACY_TYPE_FALLBACK[id];
   return MISTAKE_TYPE_OTHER;
@@ -1531,6 +1784,344 @@ function migrateId(id){return ID_MIGRATION[id]||id;}
 // Thin alias kept because it reads better at the call sites that only want the
 // class name. The mapping itself lives in SEVERITY.
 function _sevClassForCorr(corr){ return sev(corr).cls; }
+
+// ── HIGHLIGHTING THE MARKED LETTER ──────────────────────────────────
+// Finds the idx-th base letter in a display string and returns its character
+// span, absorbing the diacritics that follow it so the mark travels with its
+// letter rather than being orphaned.
+//
+// The counting rule MUST match wordLetters(): skip combining marks, skip
+// tatweel, count everything else that normalises into the makhraj table — so
+// the two agree without the viewer needing a copy of that table.
+//
+// U+0671 ALIF WASLA is included explicitly and is easy to miss: it sits
+// OUTSIDE the U+0621-U+064A block, it opens a very large share of Quranic
+// words (ٱلْـ), and wordLetters() folds it to alif. Leaving it out shifted every
+// letter index by one on any word beginning with it.
+const _AR_BASE = /[\u0621-\u063F\u0641-\u064A\u0671]/;
+function letterSpanAt(text, idx){
+  const ch = [...(text || '')];
+  let n = -1;
+  for(let k = 0; k < ch.length; k++){
+    if(/\p{Mn}/u.test(ch[k])) continue;
+    if(!_AR_BASE.test(ch[k])) continue;
+    if(++n === idx){
+      let end = k;
+      while(end + 1 < ch.length && /\p{Mn}/u.test(ch[end + 1])) end++;
+      return [k, end];
+    }
+  }
+  return null;
+}
+
+// The word with its marked letter wrapped. Returns escaped HTML either way.
+//
+// The wrapper carries ONLY colour, background and text-decoration. Anything
+// that creates a layout box — padding, margin, border, inline-block — breaks
+// Arabic cursive joining across the span boundary and the word visibly falls
+// apart. This is why the highlight is an underline and a tint rather than a
+// bordered pill.
+function wordWithLetter(m){
+  const text = m.word || '';
+  const sr = m.subrule;
+  if(!sr || typeof sr.letterIndex !== 'number') return esc(text);
+  const span = letterSpanAt(text, sr.letterIndex);
+  if(!span) return esc(text);
+  const ch = [...text];
+  return esc(ch.slice(0, span[0]).join(''))
+       + '<span class="lt-hit">' + esc(ch.slice(span[0], span[1] + 1).join('')) + '</span>'
+       + esc(ch.slice(span[1] + 1).join(''));
+}
+
+
+// Severity for a MISTAKE, not for a correction id. Tajweed types carry no
+// intervention level, so they get their own treatment instead of falling
+// through to sev-0 and claiming the student recovered unaided.
+//
+// Gated on the type's CATEGORY, which now travels in typeConfig from the
+// teacher app. NOT gated merely on a null correction: sessions recorded before
+// this change contain hifz mistakes with no correction stored, and those must
+// keep reading as level 0.
+function isTajweedMistake(m, cfg){
+  const t = resolveType(cfg || m.typeConfig || null, m.type);
+  return !!(t && t.category === 'tajweed');
+}
+function sevForMistake(m, cfg){
+  return isTajweedMistake(m, cfg) ? SEVERITY.tajweed : sev(m.correction);
+}
+// What the level slot says. For tajweed that is the rule and, when the teacher
+// named one, the letter — the information the intervention level would
+// otherwise have occupied that space with.
+// ── TAJWEED REFERENCE ───────────────────────────────────────────────
+// Labels mirror the teacher app's TAJWEED_RULES. Kept as a separate copy rather
+// than serialised per session: a session stores the rule ID, so improving the
+// wording here improves every session ever recorded, including old ones.
+// Same seventeen rules as before — same ids, same names. Only the SHAPE
+// changed: each value is now {label, short} instead of a bare string, matching
+// the teacher app character for character so the two are diffable and so code
+// that reads this table can be written once. The old string form failed
+// silently under teacher-app code: ('Madd · obligatory'||{}).label is
+// undefined, so every rule name degraded to the generic word "Tajweed".
+// `short` is what makes the rule usable in a filter chip or a recurrence row,
+// where "Idghaam without ghunnah" does not fit.
+const TAJWEED_RULES = {
+  ham_wasl:            {label:'Hamzat al-wasl',   short:'Hamzat wasl'},
+  laam_shamsiyah:      {label:'Lam shamsiyyah',   short:'Lam shams.'},
+  slnt:                {label:'Silent letter',    short:'Silent'},
+  // The upstream annotation calls this "normal madd", but it does NOT mark
+  // natural madd in general. Sampled across four surahs, every single span it
+  // produces is an UNWRITTEN madd letter — superscript alef (the dagger alif,
+  // khara zabar), alef with wavy hamza, small waw, small yeh. Not one ordinary
+  // alif, waw or yaa. Which makes sense as a colouring convention: the schemes
+  // highlight what a reader might miss, and nobody misses the alif in قَالَ.
+  // (It also merges two classical rules — the dagger-alif cases are madd
+  // tabee'i written differently, while the small waw and yeh on the pronoun هـ
+  // are madd silah sughra. Both run to two counts, so the merge is harmless
+  // for our purposes, but the label should not claim more than it knows.)
+  // The short form carries a tatweel before the mark. A combining character
+  // with no base letter renders as a stray accent or a dotted circle depending
+  // on the font; ـٰ gives it something to sit on.
+  madda_normal:        {label:'Madd · unwritten', short:'Madd ـٰ'},
+  // Derived by us, not by the annotation — see harfMaddPositions(). This is
+  // madd asli / madd tabee'i proper: a madd letter carrying no vowel after its
+  // matching harakah. It is the commonest madd in the Quran and the annotation
+  // marks none of it, which left the commonest madd error impossible to record
+  // against the word it happened on.
+  madd_tabee:          {label:'Madd · natural',   short:'Madd 2'},
+  madda_permissible:   {label:'Madd · permissible', short:'Madd 2-6'},
+  madda_obligatory:    {label:'Madd · obligatory',  short:'Madd 4-5'},
+  madda_necessary:     {label:'Madd · lazim',     short:'Madd 6'},
+  ghunnah:             {label:'Ghunnah',          short:'Ghunnah'},
+  ikhafa:              {label:'Ikhfa',            short:'Ikhfa'},
+  ikhafa_shafawi:      {label:'Ikhfa shafawi',    short:'Ikhfa shaf.'},
+  idgham_ghunnah:      {label:'Idghaam with ghunnah',    short:'Idgh. +gh'},
+  idgham_wo_ghunnah:   {label:'Idghaam without ghunnah', short:'Idgh. −gh'},
+  idgham_shafawi:      {label:'Idghaam shafawi',  short:'Idgh. shaf.'},
+  idgham_mutajanisayn: {label:'Idghaam mutajanisayn', short:'Idgh. mutaj.'},
+  idgham_mutaqaribayn: {label:'Idghaam mutaqaribayn', short:'Idgh. mutaq.'},
+  iqlab:               {label:'Iqlab',            short:'Iqlab'},
+  qalaqah:             {label:'Qalqalah',         short:'Qalqalah'},
+};
+
+// One line per rule, written from the public-domain classical framework
+// (Ibn al-Jazari's Muqaddimah, Tuhfat al-Atfal) rather than copied from any
+// teaching site. Deliberately practical — what to DO — not definitional.
+// Rule to family. Byte-identical to the teacher app's copy; the viewer needs it
+// to group a rule with its added counterpart when reporting.
+const RULE_FAMILY = {
+  madda_normal:'madd', madda_obligatory:'madd', madda_permissible:'madd', madda_necessary:'madd',
+  madd_tabee:'madd',
+  ghunnah:'ghunnah',
+  qalaqah:'qalqalah',
+};
+// ── ADDED vs MISSED ─────────────────────────────────────────────────
+// Two different errors, and they need two different vocabularies.
+//
+// The whole reason the rule row is short is that the WORD narrows it: the
+// annotation says which rules fall here, so the teacher picks from three or
+// four rather than seventeen. That works only while the rule is genuinely
+// present. When a student APPLIES a rule where none belongs — lengthens a
+// letter that has no madd letter, nasalises a plain noon, bounces a letter
+// that is not qalqalah — the annotation is useless by definition. The rule is
+// not there; that is the error.
+//
+// So added mode builds from a fixed list instead. It is nine, not seventeen,
+// because most of the distinctions between the seventeen only exist when the
+// rule applies. The four madds are told apart by what FOLLOWS the madd letter
+// — a hamzah gives muttasil or munfasil, a sukoon gives lazim, neither gives
+// tabee'i. A student lengthening a letter with no madd letter at all has no
+// hamzah-after and no sukoon-after, because there is nothing to be after.
+// "Added madda_obligatory" would be a claim about a structure that is not in
+// the text. Four options collapse to one. Idgham and ikhfa likewise: which
+// variant applies is fixed by the letters present, so the letters decide it,
+// not the teacher.
+//
+// Note the last three. ham_wasl, slnt and laam_shamsiyah are DEMOTED in missed
+// mode as reading aids rather than errors — correct there, and backwards here.
+// Pronouncing a silent letter, or a lam that should have assimilated, is
+// exactly what a beginner does; and hamzat wasl is the commonest annotation in
+// the Quran at 13,251 occurrences, which is 13,251 chances to read it wrongly.
+// The ids are `add_*` and are deliberately NOT annotation rule ids.
+//
+// Reusing them was wrong twice over. `madda_normal` means madd tabee'i: a madd
+// letter with no hamzah and no sukoon after it. A madd the student ADDED has no
+// madd letter at all, so recording it under that id asserts a structure that is
+// not in the text. And it would make the recurrence panel aggregate "shortened
+// the natural madd" together with "lengthened something that was never a madd"
+// — opposite errors under one heading, which is the `c0` mistake again.
+//
+// `fam` does two jobs: it retags the type so the record is identical however
+// the teacher arrived, and it marks the three that auto-confirm when reached
+// from their own family type. It does NOT hide them from the general list —
+// all nine are offered under Tajweed, because that is the tab a teacher marking
+// tajweed is already sitting in.
+const ADDED_RULES = [
+  {rule:'add_madd',      fam:'madd',     short:'Madd',        label:'Madd added',              hint:'lengthened where there is no madd letter'},
+  {rule:'add_ghunnah',   fam:'ghunnah',  short:'Ghunnah',     label:'Ghunnah added',           hint:'nasalised where there is none'},
+  {rule:'add_qalqalah',  fam:'qalqalah', short:'Qalqalah',    label:'Qalqalah added',          hint:'bounced a letter that is not qalqalah'},
+  {rule:'add_ikhfa',     fam:null,       short:'Ikhfa',       label:'Ikhfa added',             hint:'hidden where it should be clear'},
+  {rule:'add_idgham',    fam:null,       short:'Idghaam',     label:'Idghaam added',           hint:'merged where it should be clear'},
+  {rule:'add_iqlab',     fam:null,       short:'Iqlab',       label:'Iqlab added',             hint:'changed where it should be clear'},
+  // Silent letter, lam shamsiyyah and hamzat wasl are omitted for now. All
+  // three are real added errors — pronouncing something that should not be
+  // sounded is exactly what a beginner does — but nine chips made the row long
+  // enough to scan rather than hit, which is the thing the row exists to avoid.
+  // Add them back if they turn out to be marked often enough to be worth the
+  // width; the ids are reserved and nothing else needs to change.
+];
+const ADDED_BY_FAMILY = {madd:'add_madd', ghunnah:'add_ghunnah', qalqalah:'add_qalqalah'};
+// One place that knows about both vocabularies. Every display site goes through
+// these rather than indexing TAJWEED_RULES directly — an `add_*` id is not in
+// that table, so a direct lookup falls through to the raw id and the reader
+// sees "add_madd".
+function ruleLabel(id){
+  const t = TAJWEED_RULES[id]; if(t) return t.label;
+  const a = ADDED_RULES.find(r => r.rule === id); return a ? a.label : id;
+}
+// Which family a rule belongs to, across BOTH vocabularies.
+//
+// This is what lets `ghunnah` and `add_ghunnah` be grouped as one subject while
+// staying two distinct errors: reporting groups on ruleFamily() and separates
+// on subrule.err. It is also why ADDED_RULES still carries `fam` even though
+// nothing retags the mistake type any more — the link lives in the data now
+// rather than in the type id.
+function ruleFamily(id){
+  if(RULE_FAMILY[id]) return RULE_FAMILY[id];
+  const a = ADDED_RULES.find(r => r.rule === id);
+  return (a && a.fam) || null;
+}
+// The family of a whole sub-rule record, including the family-level entries
+// that carry no `rule` at all. Reporting should call this rather than
+// ruleFamily(sr.rule), which returns null for those.
+function subruleFamily(sr){
+  if(!sr) return null;
+  if(sr.family) return sr.family;
+  return sr.rule ? ruleFamily(sr.rule) : null;
+}
+// For chips and pills. The added forms return their full label, because it is
+// already short and because "Madd" alone would be indistinguishable from the
+// natural madd sitting beside it in the same list.
+function ruleShort(id){
+  const t = TAJWEED_RULES[id]; if(t) return t.short;
+  const a = ADDED_RULES.find(r => r.rule === id); return a ? a.label : id;
+}
+
+const TAJWEED_GUIDE = {
+  madd_tabee:          'A madd letter carrying no vowel after its matching harakah — alif after fatha, waw after damma, yaa after kasra. Hold it two counts.',
+  madda_normal:        'The same two counts, but written as a small alef, waw or yaa above the line rather than as a full letter.',
+  madda_permissible:   'Held for two, four or six counts. Whichever you choose, keep it the same throughout.',
+  madda_obligatory:    'A madd letter followed by hamza in the same word. Hold it four to five counts.',
+  madda_necessary:     'A madd letter followed by a sukoon or shadda. Hold it a full six counts.',
+  ghunnah:             'A nasal sound held about two counts, on a noon or meem carrying shadda.',
+  ikhafa:              'Hide the noon saakin or tanween into the letter after it, with a light nasal sound.',
+  ikhafa_shafawi:      'Meem saakin before a baa: hide it lightly with ghunnah, lips barely meeting.',
+  idgham_ghunnah:      'Merge the noon saakin or tanween into the next letter and hold the ghunnah.',
+  idgham_wo_ghunnah:   'Merge the noon saakin or tanween into the laam or raa, with no nasal sound.',
+  idgham_shafawi:      'Meem saakin before another meem: merge the two and hold the ghunnah.',
+  idgham_mutajanisayn: 'Two letters from the same articulation point — the first merges into the second.',
+  idgham_mutaqaribayn: 'Two letters from neighbouring points — the first merges into the second.',
+  iqlab:               'Noon saakin or tanween before a baa becomes a hidden meem, with ghunnah.',
+  qalaqah:             'A slight bounce or echo on the letter when it carries a sukoon.',
+  laam_shamsiyah:      'The laam of al- is not pronounced; the letter after it is doubled instead.',
+  slnt:                'Written, but not pronounced.',
+  ham_wasl:            'Sounded only if you begin here. Joined to the word before, it drops away.',
+};
+
+// Where each letter is articulated. Per letter rather than per articulation
+// point, because letters that share a point still differ in what goes wrong —
+// baa, meem and waw all sit at the lips and are three different mistakes.
+// Articulation points, copied character for character from the teacher app.
+// MAKHRAJ_GUIDE (below) holds the prose a student reads; this holds the short
+// label and the region, which is what a report line and a per-letter
+// recurrence grouping need. `r` is the region (Halq, Lisan, …) — the level at
+// which "he cannot place anything on the tongue tip" becomes sayable.
+const MAKHRAJ_NORM = {'أ':'ء','إ':'ء','آ':'ء','ؤ':'ء','ئ':'ء','ى':'ي','ة':'ه','ٱ':'ا'};
+const MAKHRAJ = {
+  'ا':{p:'jawf',          r:'Jawf',    label:'Oral cavity'},
+  'ء':{p:'halq-aqsa',     r:'Halq',    label:'Deepest throat'},
+  'ه':{p:'halq-aqsa',     r:'Halq',    label:'Deepest throat'},
+  'ع':{p:'halq-wasat',    r:'Halq',    label:'Middle throat'},
+  'ح':{p:'halq-wasat',    r:'Halq',    label:'Middle throat'},
+  'غ':{p:'halq-adna',     r:'Halq',    label:'Nearest throat'},
+  'خ':{p:'halq-adna',     r:'Halq',    label:'Nearest throat'},
+  'ق':{p:'lisan-aqsa',    r:'Lisan',   label:'Deepest tongue · soft palate'},
+  'ك':{p:'lisan-aqsa-f',  r:'Lisan',   label:'Deepest tongue · hard palate'},
+  'ج':{p:'lisan-wasat',   r:'Lisan',   label:'Middle of tongue'},
+  'ش':{p:'lisan-wasat',   r:'Lisan',   label:'Middle of tongue'},
+  'ي':{p:'lisan-wasat',   r:'Lisan',   label:'Middle of tongue'},
+  'ض':{p:'lisan-hafah',   r:'Lisan',   label:'Edge of tongue · molars'},
+  'ل':{p:'lisan-lam',     r:'Lisan',   label:'Edge of tongue · front gums'},
+  'ن':{p:'lisan-noon',    r:'Lisan',   label:'Tip of tongue · gums'},
+  'ر':{p:'lisan-ra',      r:'Lisan',   label:'Tip of tongue · gums, curled'},
+  'ط':{p:'lisan-nita',    r:'Lisan',   label:'Tip of tongue · roots of upper teeth'},
+  'د':{p:'lisan-nita',    r:'Lisan',   label:'Tip of tongue · roots of upper teeth'},
+  'ت':{p:'lisan-nita',    r:'Lisan',   label:'Tip of tongue · roots of upper teeth'},
+  'ص':{p:'lisan-safir',   r:'Lisan',   label:'Tip of tongue · behind front teeth'},
+  'س':{p:'lisan-safir',   r:'Lisan',   label:'Tip of tongue · behind front teeth'},
+  'ز':{p:'lisan-safir',   r:'Lisan',   label:'Tip of tongue · behind front teeth'},
+  'ظ':{p:'lisan-lithawi', r:'Lisan',   label:'Tip of tongue · edges of upper teeth'},
+  'ذ':{p:'lisan-lithawi', r:'Lisan',   label:'Tip of tongue · edges of upper teeth'},
+  'ث':{p:'lisan-lithawi', r:'Lisan',   label:'Tip of tongue · edges of upper teeth'},
+  'ف':{p:'shafah-fa',     r:'Shafah',  label:'Inner lower lip · upper teeth'},
+  'ب':{p:'shafah-batn',   r:'Shafah',  label:'Both lips'},
+  'م':{p:'shafah-batn',   r:'Shafah',  label:'Both lips'},
+  'و':{p:'shafah-batn',   r:'Shafah',  label:'Both lips, rounded'},
+};
+function makhrajOf(letter){ return MAKHRAJ[MAKHRAJ_NORM[letter] || letter] || null; }
+
+const MAKHRAJ_GUIDE = {
+  'ا':'From the empty space of the mouth — no contact anywhere, the sound simply runs.',
+  'ء':'From the deepest part of the throat, a clean stop.',
+  'ه':'From the deepest part of the throat, breathed out softly.',
+  'ع':'From the middle of the throat, pressed.',
+  'ح':'From the middle of the throat, breathed and open.',
+  'غ':'From the nearest part of the throat, heavy.',
+  'خ':'From the nearest part of the throat, breathed and heavy.',
+  'ق':'Back of the tongue against the soft palate. Heavy, with a firm release.',
+  'ك':'Back of the tongue slightly forward of qaf, against the hard palate. Light.',
+  'ج':'Middle of the tongue pressed against the roof of the mouth.',
+  'ش':'Middle of the tongue against the roof, with the sound spreading out.',
+  'ي':'Middle of the tongue against the roof, without full contact.',
+  'ض':'One edge of the tongue against the upper molars. Held and heavy.',
+  'ل':'Edge of the tongue near the tip, against the gums of the upper front teeth.',
+  'ن':'Tip of the tongue against the gums just above the front teeth, with a nasal sound.',
+  'ر':'Tip of the tongue curled a little further back than for noon.',
+  'ط':'Tip of the tongue against the roots of the upper front teeth. Heavy.',
+  'د':'Tip of the tongue against the roots of the upper front teeth. Light.',
+  'ت':'Tip of the tongue against the roots of the upper front teeth. Light and breathed.',
+  'ص':'Tip of the tongue behind the front teeth, whistling. Heavy.',
+  'س':'Tip of the tongue behind the front teeth, whistling. Light.',
+  'ز':'Tip of the tongue behind the front teeth, whistling and voiced.',
+  'ظ':'Tip of the tongue touching the edges of the upper front teeth. Heavy.',
+  'ذ':'Tip of the tongue touching the edges of the upper front teeth. Light and voiced.',
+  'ث':'Tip of the tongue touching the edges of the upper front teeth. Light and breathed.',
+  'ف':'Inside of the lower lip against the edges of the upper front teeth.',
+  'ب':'Both lips closed firmly, then released.',
+  'م':'Both lips closed gently, with the sound through the nose.',
+  'و':'Both lips rounded, without touching.',
+};
+
+// The reminder shown under a tajweed mistake. Letter first when there is one —
+// it is the more specific answer to "what did I get wrong".
+function subruleGuide(m){
+  const sr = m && m.subrule;
+  if(!sr) return '';
+  if(sr.letter && MAKHRAJ_GUIDE[sr.letter]) return MAKHRAJ_GUIDE[sr.letter];
+  if(sr.rule && TAJWEED_GUIDE[sr.rule])     return TAJWEED_GUIDE[sr.rule];
+  return '';
+}
+
+function mLevelText(m, cfg){
+  if(!isTajweedMistake(m, cfg)) return mCorrLabel(m, cfg);
+  const sr = m.subrule;
+  if(sr && sr.letter) return `Tajweed · ${sr.letter}`;
+  if(sr && sr.rule)   return sr.label || ruleLabel(sr.rule) || 'Tajweed';
+  // Family-level: the teacher tapped Madd/Ghunnah/Qalqalah and committed
+  // without naming a rule. The family IS what they said, so it has to show;
+  // falling through to a bare 'Tajweed' threw it away.
+  if(sr && sr.family) return sr.label || (getType(sr.family)||{}).label || 'Tajweed';
+  return 'Tajweed';
+}
 // Worst (most alarming) intervention level among a set of mistakes on the same word
 // The correction id of the most severe mistake in a list. _worstSevClass()
 // answers the same question but returns a CSS class, which cannot be looked up
@@ -1545,10 +2136,18 @@ function _worstCorrOf(mList){
   return worst;
 }
 
+// Class for the word as marked on the mushaf. A tajweed mistake has no place
+// on the intervention ramp, so a word carrying only tajweed mistakes takes the
+// tajweed class rather than ranking as c0 and painting itself green — which
+// read as "recovered unaided", the claim the null correction exists to avoid.
+// A word carrying both keeps the hifz severity: the more serious signal wins
+// the single mark the word has to work with.
 function _worstSevClass(mList){
   const sevRank={c3:3,c2:2,c1:1,c0:0,c4:-1};
+  const hifz=(mList||[]).filter(m=>!isTajweedMistake(m, m.typeConfig||null));
+  if(!hifz.length) return (mList||[]).length ? SEVERITY.tajweed.cls : _sevClassForCorr(null);
   let worst=null, worstRank=-2;
-  mList.forEach(m=>{
+  hifz.forEach(m=>{
     const r=sevRank[m.correction]??0;
     if(r>worstRank){worstRank=r;worst=m.correction;}
   });
@@ -1558,8 +2157,36 @@ function migrateMistakes(mistakes){return(mistakes||[]).map(m=>({...m,type:migra
 // Resolve a full type object from a session's embedded typeConfig first,
 // falling back to the legacy/global default — a session's own snapshot
 // always wins so historical data keeps displaying exactly as it was logged.
-function resolveType(cfg,id){
-  if(cfg?.mistakeTypes){ const t=cfg.mistakeTypes.find(x=>x.id===id); if(t) return t; }
+// `category` only started being serialised into a session's typeConfig at
+// v4_252 / v1_129. Every earlier session therefore has entries that match by
+// id and then answer `undefined` when asked which category they belong to —
+// and resolveType returned them bare, so isTajweedMistake() was false for
+// every tajweed mistake in every historical session. Call sites that passed
+// NO cfg resolved correctly through the library, so correctness depended on
+// whether a cfg happened to be threaded: the opposite of a safe default.
+//
+// Fill only the gap, per DESIGN_tajweed_split.md §2.2:
+//   standard ids  -> the curated library, exact
+//   legacy m1-m6  -> LEGACY_TYPE_FALLBACK, exact
+//   custom ids    -> 'other', never 'tehfiz'. The category lived only in that
+//                    teacher's local catalog and is genuinely gone; guessing
+//                    'tehfiz' would fold someone's custom tajweed type into
+//                    the hifz score and change a stored number silently.
+function _backfillCategory(id){
+  const mid = migrateId(id);
+  const lib = MISTAKE_TYPE_LIBRARY.find(t => t.id === mid);
+  if(lib) return lib.category;
+  const leg = LEGACY_TYPE_FALLBACK[mid];
+  if(leg && leg.category) return leg.category;
+  return 'other';
+}
+function resolveType(cfg, id){
+  if(cfg?.mistakeTypes){
+    const t=cfg.mistakeTypes.find(x=>x.id===id);
+    // Only ever ADDS a missing category. Label, colour and everything else the
+    // session recorded still win, so historical data displays as it was logged.
+    if(t) return t.category ? t : {...t, category:_backfillCategory(id)};
+  }
   return getType(id);
 }
 function typeLabel(id){return getType(id).label;}
@@ -1600,6 +2227,10 @@ const SEVERITY = {
   c2:{cls:'sev-2',     color:'var(--lvl2-orange)', bg:'var(--lvl2-orange-bg)'},
   c3:{cls:'sev-3',     color:'var(--red)',         bg:'var(--red-bg)'},
   c4:{cls:'sev-other', color:'var(--ink3)',        bg:'var(--parchment2)'},
+  /* Not a level. Tajweed mistakes arrive with correction === null because
+     intervention does not apply to them; rendering that as sev-0 claimed the
+     student recovered unaided, which the teacher never said. */
+  tajweed:{cls:'sev-tajweed', color:'var(--tajweed)', bg:'var(--tajweed-bg)'},
 };
 // Unrecorded/absent correction reads as "no intervention".
 function sev(corr){ return SEVERITY[corr] || SEVERITY.c0; }
@@ -1644,12 +2275,22 @@ function mistakeTimeText(m){
 
 // Count mistakes per intervention level. `c0` deliberately absorbs mistakes
 // with no correction recorded at all.
+// Tajweed is held out: it carries correction === null because intervention
+// does not apply, and `|| !m.correction` swept it into c0 — reporting "no help
+// needed" for marks the teacher deliberately made without interrupting.
+// Returned as its own count so the parts still sum to the whole.
+// A LEGACY hifz mistake with no correction stored is still c0: a gap in old
+// data, not a tajweed mark.
 function corrTally(mistakes){
   const ml = mistakes || [];
-  const n = id => ml.filter(m=>m.correction===id).length;
+  const tj = ml.filter(m => isTajweedMistake(m));
+  const hz = ml.filter(m => !isTajweedMistake(m));
+  const n = id => hz.filter(m=>m.correction===id).length;
   return {
     total: ml.length,
-    c0: ml.filter(m=>m.correction==='c0' || !m.correction).length,
+    scored: hz.length,
+    tajweed: tj.length,
+    c0: hz.filter(m=>m.correction==='c0' || !m.correction).length,
     c1: n('c1'), c2: n('c2'), c3: n('c3'), c4: n('c4'),
   };
 }
@@ -1863,7 +2504,7 @@ function segPageLoads(segs, seg, mistakes){
       ? Math.max(0, Math.min(hi, bd.last) - Math.max(lo, bd.first) + 1) /
         (bd.last - bd.first + 1)
       : 1;
-    pages.push({page:p, load:0, count:0, worst:null, covered:+covered.toFixed(3)});
+    pages.push({page:p, load:0, count:0, tajweed:0, worst:null, covered:+covered.toFixed(3)});
   }
   const byPage = new Map(pages.map(p=>[p.page, p]));
 
@@ -1873,6 +2514,11 @@ function segPageLoads(segs, seg, mistakes){
   mistakesInSegment(segs, seg, mistakes).forEach(m=>{
     const rec = byPage.get(pageForVerse(m.surah, m.ayah));
     if(!rec) return;                       // outside the span; nothing to draw
+    /* Counted apart, never together. `load` is a sum of intervention weights
+       and a tajweed mark has no level to contribute; `worst` means most help
+       needed, and none was recorded. Ported from the teacher app so the same
+       page draws the same bar in both. */
+    if(isTajweedMistake(m, m && m.typeConfig || null)){ rec.tajweed++; return; }
     rec.count++;
     rec.load += mistakeWeight(m);
     const c = (m && m.correction) || 'c0';
@@ -1958,11 +2604,16 @@ function focusAyahs(mistakes, limit){
 // Longest unbroken stretch of mistake-free verses. Speaks to fluency rather
 // than accuracy — twelve slips spread evenly reads very differently from twelve
 // clustered in one passage, and a raw count can't tell them apart.
+/* Hifz mistakes only — shown under the strength score as "longest clean run",
+   so it reads as a statement about recall, and a verse recalled perfectly but
+   pronounced imperfectly did not fail to be recalled. */
 function longestCleanRun(segs, seg, mistakes){
   const o=segOrdered(seg);
   const n=segVerseCount(o);
   if(!n) return null;
-  const hit=new Set(mistakesInSegment(segs, seg, mistakes).map(m=>absVerse(m.surah,m.ayah)));
+  const hit=new Set(mistakesInSegment(segs, seg, mistakes)
+    .filter(m=>!isTajweedMistake(m, m && m.typeConfig || null))
+    .map(m=>absVerse(m.surah,m.ayah)));
   const from=keyAbs(o.startKey);
   let best=0, run=0;
   for(let v=from; v<from+n; v++){
@@ -1981,6 +2632,24 @@ function longestCleanRun(segs, seg, mistakes){
 // ═══════════════════════════════════════════════════════════════════
 
 function _sessDate(s){ return s?.isoDate ? new Date(s.isoDate) : (s?.dateYMD ? new Date(s.dateYMD+'T12:00:00Z') : null); }
+// Period filtering compares YMD strings, not Dates. dateYMD is the teacher's
+// LOCAL calendar day — converting it to a timestamp and back reintroduces the
+// off-by-one that made late-evening sessions land in the wrong day. Comparing
+// 'YYYY-MM-DD' lexicographically is exact and timezone-free.
+function _sessYMD(s){
+  if(s?.dateYMD) return s.dateYMD;
+  if(s?.isoDate){ const d=new Date(s.isoDate); if(!isNaN(d)) return _ymd(d); }
+  return null;
+}
+function _ymd(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+function _periodStartYMD(period){
+  const d=new Date(); d.setHours(0,0,0,0);
+  if(period==='week'){ d.setDate(d.getDate() - ((d.getDay()+6)%7)); return _ymd(d); }  // Monday
+  if(period==='month'){ return _ymd(new Date(d.getFullYear(), d.getMonth(), 1)); }
+  if(period==='year'){  return _ymd(new Date(d.getFullYear(), 0, 1)); }
+  return null;
+}
+const PERIOD_LABEL={week:'This week', month:'This month', year:'This year'};
 function sessionsChrono(sessions){
   return [...(sessions||[])].filter(Boolean).sort((a,b)=>(_sessDate(a)||0)-(_sessDate(b)||0));
 }
@@ -1995,7 +2664,12 @@ function scorableSegments(sessions){
     const d=_sessDate(s);
     (s.segments||[]).forEach(sg=>{
       if(!segmentScorable(sg)) return;
-      const inp = inputsWithPages(sg.strengthInputs, sg) || segmentStrengthInputs(s.segments, sg, s.mistakes||[]);
+      /* Recomputed rather than read when the session predates the current
+         model — this is the trend, so a stale point does not just read low, it
+         puts a visible step in the line at the deploy date. */
+      const inp = inputsAreCurrent(s)
+        ? (inputsWithPages(sg.strengthInputs, sg) || segmentStrengthInputs(s.segments, sg, s.mistakes||[]))
+        : segmentStrengthInputs(s.segments, sg, s.mistakes||[]);
       if(!inp || !inp.verses) return;
       out.push({session:s, seg:sg, date:d, stage:sg.type||'unassigned',
                 inputs:inp, score:strengthFromInputs(inp)});
@@ -2677,7 +3351,12 @@ function crossFocus(sessions, limit){
 //   3. Constants can be overridden at runtime (localStorage now, a backend
 //      later) so a recalibrated model can ship without a code release.
 const STRENGTH_MODEL_DEFAULT = {
-  id: 'strength-v2',
+  // v3 = v2's curve and weights with TAJWEED EXCLUDED. Must match the teacher
+  // app exactly: scorableSegments falls back to recomputing from raw mistakes
+  // when a segment has no stored inputs, and on that path a mismatch means the
+  // same session scores differently in the two apps with nothing to say which
+  // is right.
+  id: 'strength-v3',
   // Lvl 0 is deliberately NOT zero: at zero, a recitation full of
   // self-corrections scores identically to a flawless one.
   weights: {c0:0.25, c1:1, c2:2, c3:3, c4:1},
@@ -2839,7 +3518,11 @@ function mistakeWeight(m, model){
 // The recalibration payload: everything a future model needs, and nothing
 // derived. Keep this stable even if the formula changes completely.
 function strengthInputs(mistakes, verseCount, pageCount){
-  const ml = mistakes||[];
+  const all = mistakes||[];
+  // Held out of the hifz score, counted separately so the inputs still
+  // describe the whole session. See STRENGTH_MODEL_DEFAULT.
+  const ml = all.filter(m => !isTajweedMistake(m, m && m.typeConfig || null));
+  const tajweed = all.length - ml.length;
   const byLevel = {c0:0,c1:0,c2:0,c3:0,c4:0};
   ml.forEach(m=>{ const c = m?.correction && byLevel.hasOwnProperty(m.correction) ? m.correction : 'c0'; byLevel[c]++; });
   return {
@@ -2848,6 +3531,7 @@ function strengthInputs(mistakes, verseCount, pageCount){
     // store and a future model may want either, or both.
     pages: +(pageCount||0).toFixed(4),
     mistakes: ml.length,
+    tajweed,
     byLevel,
     weighted: +ml.reduce((n,m)=>n+mistakeWeight(m),0).toFixed(4),
   };
@@ -2857,6 +3541,22 @@ function strengthInputs(mistakes, verseCount, pageCount){
 // sessions unscoreable, derive it from the segment's verse keys — exactly the
 // same computation that produced it in the first place. The stored object is
 // not modified; a copy is returned.
+
+/* Stored inputs are a CACHE, and a cache computed under an older model is
+   stale, not merely old.
+   strength-v3 excludes tajweed mistakes; v2 counted them into `weighted` and
+   into `byLevel.c0`. So a segment scored under v2 reads lower than the same
+   segment scored today, and a trend line drawn from stored inputs steps upward
+   at the deploy date for a reason no reader can see.
+   The fix is not to approximate: `mistakes[]` travels in every payload, so the
+   inputs can be recomputed EXACTLY. This follows the pattern already used by
+   inputsWithPages() — adapt on read, never rewrite the stored record. */
+function inputsAreCurrent(sess){
+  const m = sess && sess.strength && sess.strength.model;
+  // Absent model = pre-versioning, which predates v2 and certainly v3.
+  return m === STRENGTH_MODEL.id;
+}
+
 function inputsWithPages(inp, sg){
   if(!inp) return inp;
   if(inp.pages) return inp;
@@ -2969,7 +3669,10 @@ let mistakeFilterCorr=new Set();    // empty = show all correction levels
 let mistakeFilterRepeatedOnly=false;
 let mistakeCollapsedGroups=new Set(); // group keys currently collapsed (incl. default-collapsed)
 let mistakeExpandedGroups=new Set();  // group keys the user has explicitly expanded — survives re-renders
-let mistakeFiltersExpanded=false; // whether the Type/Level filter rows are shown
+let mistakeFilterCat=new Set();     // 'tehfiz' | 'tajweed' | 'other'
+let mistakeFilterLetters=new Set(); // subrule.letter — tajweed makhraj only
+let mistakeFilterRules=new Set();   // subrule.rule  — tajweed rules only
+let mistakeFilterTime=null;         // null = all time | 'week' | 'month' | 'year'
 let currentPanelTab='mistakes',panelOpen=false,_navBusy=false,_resetScroll=false;
 let mushafZoomLevel=0;
 let _activeJuzs=[],_isFetchingJuz=false,_infiniteScrollObserver=null;
@@ -3387,7 +4090,7 @@ async function loadJuz(juzNum, appendMode='replace', scrollToPage=null){
       const results=await fetchPagesCached(pns);
       const pm={};
       const hizbByVerse={};
-      results.forEach(r=>{pm[r.page]=r.verses;Object.assign(hizbByVerse,r.hizbByVerse||{});r.verses.forEach(v=>{const w=(v.words||[]).filter(x=>x.char_type_name==='word');if(w.length)allVerseWords[v.verse_key]=w;});});
+      results.forEach(r=>{pm[r.page]=r.verses;Object.assign(hizbByVerse,r.hizbByVerse||{});r.verses.forEach(v=>{const w=(v.words||[]).filter(x=>x.char_type_name==='word');if(w.length)allVerseWords[v.verse_key]=w;if(v.ruku_number)rukuByVerse[v.verse_key]=v.ruku_number;});});
       const newVerses=results.flatMap(r=>r.verses);
       if(appendMode==='replace'){
         pageVerses = newVerses;
@@ -3435,8 +4138,8 @@ async function loadJuz(juzNum, appendMode='replace', scrollToPage=null){
   }
 
   try{
-    const res=await Promise.all(pns.map(p=>fetch(`https://api.quran.com/api/v4/verses/by_page/${p}?language=en&words=true&word_fields=text_uthmani,char_type_name&translations=20&per_page=50&fields=text_uthmani,juz_number,hizb_number,rub_el_hizb_number,page_number`).then(r=>r.json()).then(d=>({page:p,verses:d.verses||[]}))));
-    const pm={};res.forEach(r=>{pm[r.page]=r.verses;r.verses.forEach(v=>{const w=(v.words||[]).filter(x=>x.char_type_name==='word');if(w.length)allVerseWords[v.verse_key]=w;});});
+    const res=await Promise.all(pns.map(p=>fetch(`https://api.quran.com/api/v4/verses/by_page/${p}?language=en&words=true&word_fields=text_uthmani,char_type_name&translations=20&per_page=50&fields=text_uthmani,juz_number,hizb_number,rub_el_hizb_number,page_number,ruku_number`).then(r=>r.json()).then(d=>({page:p,verses:d.verses||[]}))));
+    const pm={};res.forEach(r=>{pm[r.page]=r.verses;r.verses.forEach(v=>{const w=(v.words||[]).filter(x=>x.char_type_name==='word');if(w.length)allVerseWords[v.verse_key]=w;if(v.ruku_number)rukuByVerse[v.verse_key]=v.ruku_number;});});
     pageVerses=res.flatMap(r=>r.verses);
   }catch{
     if(appendMode==='replace') document.getElementById('pageContent').innerHTML=`<div class="loading-msg" style="color:var(--red)">Could not load. Check internet.</div>`;
@@ -3540,7 +4243,7 @@ function _svScrollToPageWhenReady(pg){
 
 function hizbSpan(rub){const m=rub%4;if(m===1)return`<span class="hizb-marker full">حزب ${toAr(Math.ceil(rub/4))}</span>`;if(m===3)return`<span class="hizb-marker half">½ حزب</span>`;if(m===2)return`<span class="hizb-marker quarter">¼</span>`;if(m===0)return`<span class="hizb-marker quarter">¾</span>`;return'';}
 
-function cacheW(vv){vv.forEach(v=>{const w=(v.words||[]).filter(x=>x.char_type_name==='word');if(w.length)allVerseWords[v.verse_key]=w;});}
+function cacheW(vv){vv.forEach(v=>{const w=(v.words||[]).filter(x=>x.char_type_name==='word');if(w.length)allVerseWords[v.verse_key]=w;if(v.ruku_number)rukuByVerse[v.verse_key]=v.ruku_number;});}
 
 function scrollToAyah(){
   if(!currentSurah)return;
@@ -3572,8 +4275,108 @@ function wsHTML(text,sN,aN,pos){
 // ── QURAN PAGE CACHE (shared with teacher app logic) ──────────────
 // Shared with the teacher app — SAME origin, SAME database name. Both must open
 // at the same version, or whichever opens lower gets a VersionError and loses
+/* ── RUKU ─────────────────────────────────────────────────────────────
+   api.quran.com's `ruku_number` is GLOBAL — al-Baqarah begins at ruku 2, not
+   1 — and what a teacher says out loud is "the third ruku of al-Baqarah". So
+   the first global ruku of each surah is needed to convert, and it cannot be
+   derived from a loaded page: a page starting mid-surah never contains that
+   surah's first verse. Fetched once from the same API and embedded.
+   Checked: al-Baqarah 40 rukus, Al-Imran 20, 558 in total. */
+const RUKU_FIRST = [
+  1, 2, 42, 62, 86, 102, 122, 146, 156, 172, 183, 193, 205, 211, 218, 224, 240, 252, 264,
+  270, 278, 285, 295, 301, 310, 316, 327, 334, 343, 350, 356, 360, 363, 372, 378, 383, 388, 393,
+  398, 406, 415, 421, 426, 433, 436, 440, 444, 448, 452, 454, 457, 460, 462, 465, 468, 471, 474,
+  478, 481, 484, 486, 488, 490, 492, 494, 496, 498, 500, 502, 504, 506, 508, 510, 512, 514, 516,
+  518, 520, 522, 524, 525, 526, 527, 528, 529, 530, 531, 532, 533, 534, 535, 536, 537, 538, 539,
+  540, 541, 542, 543, 544, 545, 546, 547, 548, 549, 550, 551, 552, 553, 554, 555, 556, 557, 558,
+];
+// Page span of every surah, [start, end] flattened — 114 pairs. From the
+// chapters endpoint, which reports it directly.
+const SURAH_PAGES = [
+  1, 1, 2, 49, 50, 76, 77, 106, 106, 127, 128, 150, 151, 176, 177, 186, 187, 207, 208, 221, 221, 235,
+  235, 248, 249, 255, 255, 261, 262, 267, 267, 281, 282, 293, 293, 304, 305, 312, 312, 321, 322, 331, 332, 341,
+  342, 349, 350, 359, 359, 366, 367, 376, 377, 385, 385, 396, 396, 404, 404, 410, 411, 414, 415, 417, 418, 427,
+  428, 434, 434, 440, 440, 445, 446, 452, 453, 458, 458, 467, 467, 476, 477, 482, 483, 489, 489, 495, 496, 498,
+  499, 502, 502, 506, 507, 510, 511, 515, 515, 517, 518, 520, 520, 523, 523, 525, 526, 528, 528, 531, 531, 534,
+  534, 537, 537, 541, 542, 545, 545, 548, 549, 551, 551, 552, 553, 554, 554, 555, 556, 557, 558, 559, 560, 561,
+  562, 564, 564, 566, 566, 568, 568, 570, 570, 571, 572, 573, 574, 575, 575, 577, 577, 578, 578, 580, 580, 581,
+  582, 583, 583, 584, 585, 585, 586, 586, 587, 587, 587, 589, 589, 589, 590, 590, 591, 591, 591, 592, 592, 592,
+  593, 594, 594, 594, 595, 595, 595, 596, 596, 596, 596, 596, 597, 597, 597, 597, 598, 598, 598, 599, 599, 599,
+  599, 600, 600, 600, 600, 600, 601, 601, 601, 601, 601, 601, 602, 602, 602, 602, 602, 602, 603, 603, 603, 603,
+  603, 603, 604, 604, 604, 604, 604, 604,
+];
+// Page each juz starts and ends on, and the global ruku it starts at.
+// Boundaries can share a page: juz 3 ends on 62 and juz 4 begins on 62.
+const JUZ_PAGE_START = [1, 22, 42, 62, 82, 102, 121, 142, 162, 182, 201, 222, 242, 262, 282, 302, 322, 342, 362, 382, 402, 422, 442, 462, 482, 502, 522, 542, 562, 582];
+const JUZ_PAGE_END   = [21, 41, 62, 81, 101, 121, 141, 161, 181, 201, 221, 241, 261, 281, 301, 321, 341, 361, 381, 401, 421, 441, 461, 481, 502, 521, 541, 561, 581, 604];
+const JUZ_FIRST_RUKU = [1, 18, 34, 51, 65, 82, 96, 115, 132, 150, 167, 183, 199, 218, 240, 261, 278, 295, 312, 330, 347, 366, 384, 401, 420, 440, 458, 478, 498, 520];
+// Which surah a page belongs to: the last one that has begun by then. A page
+// can hold the end of one surah and the start of another, and the one the
+// reader is in when the page ends is the later one.
+function surahOfPage(pg){
+  for(let s = 114; s >= 1; s--) if(SURAH_PAGES[(s-1)*2] <= pg) return s;
+  return 1;
+}
+function juzOfPage(pg){
+  for(let j = 30; j >= 1; j--) if(JUZ_PAGE_START[j-1] <= pg) return j;
+  return 1;
+}
+function _ord(n){
+  const s = ['th','st','nd','rd'], v = n % 100;
+  return n + (s[(v-20)%10] || s[v] || s[0]);
+}
+
+// verseKey -> global ruku number, filled from the page fetch.
+const rukuByVerse = Object.create(null);
+function surahRuku(surah, globalRuku){
+  const base = RUKU_FIRST[surah - 1];
+  return (base && globalRuku) ? (globalRuku - base + 1) : null;
+}
+/* A verse ENDS a ruku when the next verse belongs to a different one — which is
+   where the ع sits in a printed mushaf. The last verse of a surah always ends
+   one, and that case is decided without needing the next verse loaded. */
+/* "1st of 40 in Al-Baqarah · 3rd of 12 in Juz 2".
+   The juz figure is approximate at the edges by nature: a ruku can straddle a
+   juz boundary, and this counts it in the juz it begins in. */
+function rukuInfo(surah, globalRuku){
+  const inSurah = surahRuku(surah, globalRuku);
+  const surahTotal = (surah < 114 ? RUKU_FIRST[surah] : 559) - RUKU_FIRST[surah-1];
+  let j = 30;
+  while(j > 1 && JUZ_FIRST_RUKU[j-1] > globalRuku) j--;
+  const inJuz    = globalRuku - JUZ_FIRST_RUKU[j-1] + 1;
+  const juzTotal = (j < 30 ? JUZ_FIRST_RUKU[j] : 559) - JUZ_FIRST_RUKU[j-1];
+  const name = (typeof SURAH_NAMES !== 'undefined' && SURAH_NAMES[surah-1]) || `Surah ${surah}`;
+  return `${_ord(inSurah)} of ${surahTotal} ruku in ${name} · ${_ord(inJuz)} of ${juzTotal} in Juz ${j}`;
+}
+
+/* keyAbs and keyFromAbs already exist here; this one did not, because in the
+   teacher app it lives with the verse-junction code that was not part of this
+   port. rukuEndAt called it regardless — a correct function referring to an
+   identifier that was never declared, which no parse check catches and which
+   only fails when a ruku actually ends on screen. */
+function _nextVerseKey(key){
+  const n = keyAbs(key);
+  return Number.isFinite(n) ? keyFromAbs(n + 1) : null;
+}
+
+function rukuEndAt(surah, ayah){
+  const g = rukuByVerse[`${surah}:${ayah}`];
+  if(!g) return null;
+  const nextKey = _nextVerseKey(`${surah}:${ayah}`);
+  if(!nextKey) return surahRuku(surah, g);
+  const [ns] = nextKey.split(':').map(Number);
+  if(ns !== surah) return surahRuku(surah, g);      // surah end
+  const gn = rukuByVerse[nextKey];
+  if(!gn) return null;                              // next verse not loaded yet
+  return gn !== g ? surahRuku(surah, g) : null;
+}
 // the cache entirely. QC_VERSION is the cached-payload version (unrelated).
-const QC_DB_NAME='tehfiz_quran_cache',QC_STORE='pages',QC_VERSION=1,QC_DB_VERSION=2;
+/* QC_VERSION 1 -> 2: the fetch now asks for ruku_number, and a cached page from
+   before this carries verses without it. Leaving the version alone would serve
+   those silently and every ruku marker would simply never appear — the same
+   failure that made every word report "not annotated" when the fetch gained
+   text_uthmani_tajweed and this was not bumped. */
+const QC_DB_NAME='tehfiz_quran_cache',QC_STORE='pages',QC_VERSION=2,QC_DB_VERSION=2;
 let _qcDb=null;
 
 // A version bump can BLOCK: if another tab still holds the database open at the
@@ -3611,7 +4414,7 @@ async function qcOpen(){
 }
 async function qcGet(p){try{const db=await qcOpen();return new Promise((res)=>{const req=db.transaction(QC_STORE,'readonly').objectStore(QC_STORE).get(p);req.onsuccess=()=>{const r=req.result;res(r&&r.cacheVersion===QC_VERSION?r:null);};req.onerror=()=>res(null);});}catch{return null;}}
 async function qcPut(p,verses,hizbByVerse){try{const db=await qcOpen();return new Promise(res=>{const tx=db.transaction(QC_STORE,'readwrite');tx.objectStore(QC_STORE).put({page:p,cacheVersion:QC_VERSION,fetchedAt:new Date().toISOString(),verses,hizbByVerse});tx.oncomplete=()=>res(true);tx.onerror=()=>res(false);});}catch{return false;}}
-const SV_PAGE_URL=p=>`https://api.quran.com/api/v4/verses/by_page/${p}?words=true&word_fields=text_uthmani,char_type_name,code_v2,line_number,v2_page,page_number&per_page=50&fields=text_uthmani,juz_number,page_number,rub_el_hizb_number`;
+const SV_PAGE_URL=p=>`https://api.quran.com/api/v4/verses/by_page/${p}?words=true&word_fields=text_uthmani,char_type_name,code_v2,line_number,v2_page,page_number&per_page=50&fields=text_uthmani,juz_number,page_number,rub_el_hizb_number,ruku_number`;
 // ── Persistent page → first-verse index ───────────────────────────
 // pageForVerse() is a linear approximation and _versePageMap only knows pages
 // fetched in THIS session, so page-based ranges were approximate far more often
@@ -3717,7 +4520,13 @@ const MUSHAF_REF_FONT=26;
 // marker's position relative to the margin drifts at the extremes.
 const MUSHAF_REF_INNER_PADDING=36;
 const MUSHAF_REF_GUTTER_MARGIN_L=48;
-const MUSHAF_REF_GUTTER_MARGIN_R=24; // student viewer: no spot-track gutter on the right
+/* Was 24 — half the left — because this app had no spot track to put there.
+   The ruku badge now hangs in that gutter at -hizbLeft, the same as the hizb
+   marker opposite, so the two sides have to be the same width or one of them
+   overlaps the page frame. This is why the badge looked clipped here and fine
+   in the teacher app: nothing to do with the markers, everything to do with a
+   gutter that was deliberately narrower. */
+const MUSHAF_REF_GUTTER_MARGIN_R=48;
 const MUSHAF_REF_HIZB_GAP=29; // hizb marker sits this far OUTSIDE the left margin, at ref scale (77-48)
 const MUSHAF_REF_HIZB_SIZE=34;
 const MUSHAF_REF_HIZB_FONT_FULL=12;
@@ -3788,6 +4597,8 @@ function computeMushafZoomMetrics(){
     footerOrnPad: Math.max(2,Math.round(MUSHAF_REF_FOOTER_ORN_PAD*scale)),
     footerOrnH:   Math.max(6,Math.round(MUSHAF_REF_FOOTER_ORN_H*scale)),
     footerNumFont: Math.max(6,Math.round(MUSHAF_REF_FOOTER_NUM_FONT*scale)),
+    // Slightly under the page number, which is the louder thing in the footer.
+    footerProgFont: Math.max(5,Math.round(10*scale)),
     footerNumPad: Math.max(4,Math.round(MUSHAF_REF_FOOTER_NUM_PAD*scale)),
   };
 }
@@ -4145,6 +4956,7 @@ function _applyMushafZoomToPages(pages, m){
     el.style.setProperty('--mz-footer-orn-pad', m.footerOrnPad+'px');
     el.style.setProperty('--mz-footer-orn-h', m.footerOrnH+'px');
     el.style.setProperty('--mz-footer-num-font', m.footerNumFont+'px');
+    el.style.setProperty('--mz-footer-prog', m.footerProgFont+'px');
     el.style.setProperty('--mz-footer-num-pad', m.footerNumPad+'px');
     const body=el.querySelector('.mushaf-page-body');
     if(body){
@@ -4163,9 +4975,13 @@ function _applyMushafZoomToPages(pages, m){
 // Hizb markers are purely cosmetic positioning within already-sized pages —
 // they don't affect page height, so they can lag behind the resize itself.
 function _applyHizbZoomToPages(pages, m){
+
   pages.forEach(pageEl=>{
+    /* The ruku badge is in this selector because it wears the .msl-hizb class:
+       it is the same object on the other side of the page. Anything NOT in here
+       keeps whatever size it was built at while everything around it rescales. */
     pageEl.querySelectorAll('.msl-hizb').forEach(el=>{
-      el.style.left=`-${m.hizbLeft}px`;
+      el.style[el.classList.contains('msl-ruku')?'right':'left']=`-${m.hizbLeft}px`;
       el.style.width=m.hizbSize+'px';
       el.style.height=m.hizbSize+'px';
       el.style.fontSize=(el.classList.contains('hizb-full')?m.hizbFontFull
@@ -4380,7 +5196,7 @@ function startAutoScroll(){
 // ═══════════════════════════════════════════════════════════════════
 // SETTINGS — currently just the auto-scroll on/off toggle
 // ═══════════════════════════════════════════════════════════════════
-let appSettings={autoscrollEnabled:true};
+let appSettings={autoscrollEnabled:true, showRuku:false, latinNumerals:false, showPageProgress:true};
 function loadSettings(){
   try{ const s=localStorage.getItem('qsv1_settings'); if(s) appSettings={...appSettings,...JSON.parse(s)}; }catch{}
 }
@@ -4419,8 +5235,32 @@ function _refreshStageLabels(){
     single.innerHTML = buildReviewHTML(reviewingSession);
 }
 
+/* Each rebuilds the page rather than restyling it: the markers are produced
+   during HTML construction, not by CSS. */
+function toggleMushafPref(key){
+  appSettings[key]=!appSettings[key];
+  try{ localStorage.setItem('qsv1_settings', JSON.stringify(appSettings)); }catch{}
+  _syncMushafPrefSwitches();
+  /* loadJuz re-fetches (from the IndexedDB cache) and rebuilds, which is what
+     these need: the markers are produced during HTML construction, not by CSS,
+     so restyling cannot show or hide them.
+     Not location.reload() — that would throw away the open Settings modal and
+     the scroll position for a change the reader is in the middle of making. */
+  if(typeof loadJuz==='function') loadJuz(currentJuz||1);
+}
+function _syncMushafPrefSwitches(){
+  [['showRuku','rukuSwitch','rukuThumb'],['latinNumerals','latinSwitch','latinThumb'],
+   ['showPageProgress','progSwitch','progThumb']].forEach(([k,s,t])=>{
+    const sw=document.getElementById(s), th=document.getElementById(t);
+    if(!sw||!th) return;
+    sw.style.background=appSettings[k]?'var(--gold)':'var(--parchment3)';
+    th.style.transform =appSettings[k]?'translateX(18px)':'none';
+  });
+}
+
 function openSettings(){
   renderTermChoice();
+  _syncMushafPrefSwitches();
   const asw=document.getElementById('asEnabledSwitch');
   const ath=document.getElementById('asEnabledThumb');
   if(asw) asw.style.background = appSettings.autoscrollEnabled ? 'var(--gold)' : 'var(--parchment3)';
@@ -4620,8 +5460,23 @@ function mushafPageHeader(pg,juzNum,vv){
   const en=s0===sL?`${s0}. ${SURAH_NAMES[s0-1]||''}`:`${s0}. ${SURAH_NAMES[s0-1]||''} – ${sL}. ${SURAH_NAMES[sL-1]||''}`;
   return`<div class="mushaf-page-header"><span class="mph-juz">Juz ${toAr(pageJuz)}</span><span class="mph-surah">${ar}<span class="mph-surah-en">${en}</span></span><span class="mph-right"></span></div>`;
 }
+function _pagesLeftText(pg){
+  if(appSettings.showPageProgress === false) return {left:'', right:''};
+  const s = surahOfPage(pg), sEnd = SURAH_PAGES[(s-1)*2 + 1], sStart = SURAH_PAGES[(s-1)*2];
+  const j = juzOfPage(pg), jEnd = JUZ_PAGE_END[j-1];
+  const name = (typeof SURAH_NAMES !== 'undefined' && SURAH_NAMES[s-1]) || `Surah ${s}`;
+  let left = '';
+  if(sEnd - sStart + 1 > 2){
+    const n = sEnd - pg;
+    left = n <= 0 ? `Last page of ${name}` : `${n} page${n===1?'':'s'} to end of ${name}`;
+  }
+  const n2 = jEnd - pg;
+  const right = n2 <= 0 ? `Last page of Juz ${j}` : `${n2} page${n2===1?'':'s'} to end of Juz ${j}`;
+  return {left, right};
+}
 function mushafPageFooter(pg){
-  return`<div class="mushaf-page-footer"><div class="mpf-ornament">${ornamentSVG(pg+'a')}</div><div class="mpf-divider"></div><div class="mpf-num">${pg}</div><div class="mpf-divider"></div><div class="mpf-ornament">${ornamentSVG(pg+'b')}</div></div>`;
+  const p=_pagesLeftText(pg);
+  return`<div class="mushaf-page-footer"><span class="mpf-prog mpf-prog-l">${p.left}</span><span class="mpf-prog mpf-prog-r">${p.right}</span><div class="mpf-ornament">${ornamentSVG(pg+'a')}</div><div class="mpf-divider"></div><div class="mpf-num">${pg}</div><div class="mpf-divider"></div><div class="mpf-ornament">${ornamentSVG(pg+'b')}</div></div>`;
 }
 
 // ── MUSHAF RENDERER ───────────────────────────────────────────────
@@ -4692,7 +5547,7 @@ function renderMushafFromQuranCom(juzNum,pageMap,startPage,endPage,hizbByVerse={
     const vvFake=surahNums.map(s=>({verse_key:`${s}:1`}));
 
     const _zm=computeMushafZoomMetrics();
-    html+=`<div class="mushaf-page mushaf-fixed" id="pg-${qpg}" data-surah-first="${surahNums[0]||''}" data-surah-last="${surahNums[surahNums.length-1]||''}" style="width:${_zm.width}px;--mz-header-pad-v:${_zm.headerPadV}px;--mz-header-pad-h:${_zm.headerPadH}px;--mz-header-gap:${_zm.headerGap}px;--mz-header-juz-font:${_zm.headerJuzFont}px;--mz-header-surah-font:${_zm.headerSurahFont}px;--mz-header-surahen-font:${_zm.headerSurahEnFont}px;--mz-header-minwidth:${_zm.headerMinWidth}px;--mz-footer-height:${_zm.footerHeight}px;--mz-footer-orn-pad:${_zm.footerOrnPad}px;--mz-footer-orn-h:${_zm.footerOrnH}px;--mz-footer-num-font:${_zm.footerNumFont}px;--mz-footer-num-pad:${_zm.footerNumPad}px;">`;
+    html+=`<div class="mushaf-page mushaf-fixed" id="pg-${qpg}" data-surah-first="${surahNums[0]||''}" data-surah-last="${surahNums[surahNums.length-1]||''}" style="width:${_zm.width}px;--mz-header-pad-v:${_zm.headerPadV}px;--mz-header-pad-h:${_zm.headerPadH}px;--mz-header-gap:${_zm.headerGap}px;--mz-header-juz-font:${_zm.headerJuzFont}px;--mz-header-surah-font:${_zm.headerSurahFont}px;--mz-header-surahen-font:${_zm.headerSurahEnFont}px;--mz-header-minwidth:${_zm.headerMinWidth}px;--mz-footer-height:${_zm.footerHeight}px;--mz-footer-orn-pad:${_zm.footerOrnPad}px;--mz-footer-orn-h:${_zm.footerOrnH}px;--mz-footer-num-font:${_zm.footerNumFont}px;--mz-footer-num-pad:${_zm.footerNumPad}px;--mz-footer-prog:${_zm.footerProgFont}px;">`;
     html+=mushafPageHeader(qpg,juzNum,vvFake);
     const _renderFontPx=_zm.font;
     const _renderMarginL=_zm.marginLeft;
@@ -4748,7 +5603,15 @@ function renderMushafFromQuranCom(juzNum,pageMap,startPage,endPage,hizbByVerse={
       prevSurah=lineSurah;
 
       const wordSpans=lineWords.map(w=>{
-        if(w.isEnd)return`<span class="qcf-end-marker" style="font-family:'UthmanicHafs','Scheherazade New',serif;">${w.code}</span>`;
+        if(w.isEnd){
+          const rk = appSettings.showRuku ? rukuEndAt(w.sNum, w.aNum) : null;
+          const ain = rk ? `<span class="qcf-ruku-ain" title="End of ruku ${rk}">ع</span>` : '';
+          const body = appSettings.latinNumerals
+            ? `<span class="qcf-end-latin"><svg class="ayah-rosette" viewBox="0 0 40 40" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1"><circle cx="31.50" cy="20.00" r="5.2"/><circle cx="28.13" cy="28.13" r="5.2"/><circle cx="20.00" cy="31.50" r="5.2"/><circle cx="11.87" cy="28.13" r="5.2"/><circle cx="8.50" cy="20.00" r="5.2"/><circle cx="11.87" cy="11.87" r="5.2"/><circle cx="20.00" cy="8.50" r="5.2"/><circle cx="28.13" cy="11.87" r="5.2"/></g><circle cx="20" cy="20" r="11.4" fill="var(--parchment)" stroke="currentColor" stroke-width="1.2"/></svg><i>${w.aNum}</i></span>`
+            : `<span style="font-family:'UthmanicHafs','Scheherazade New',serif;">${w.code}</span>`;
+          return `<span class="qcf-end-marker${rk?' has-ruku':''}" title="Tap to select whole verse" style="cursor:pointer;position:relative;" onclick="selectWholeVerse(${w.sNum},${w.aNum})">${ain}${body}</span>`;
+          return `<span class="qcf-end-marker${rk?' has-ruku':''}" style="position:relative;">${ain}${body}</span>`;
+        }
         // Get mistake info for this word
         const mList=activeMistakes.filter(m=>m.surah===w.sNum&&m.ayah===w.aNum&&
           (m.wordPos===w.position||(m.wordPosEnd&&w.position>=m.wordPos&&w.position<=m.wordPosEnd)));
@@ -4788,7 +5651,21 @@ function renderMushafFromQuranCom(juzNum,pageMap,startPage,endPage,hizbByVerse={
       }
       const isLastLine=lk===lineKeys[lineKeys.length-1];
       const centerLast=(qpg<=2&&isLastLine)?' msl-center':'';
-      html+=`<div class="msl msl-text${sc}${centerLast}" dir="rtl" style="position:relative;">${hizbMarker}${wordSpans}</div>`;
+      /* Right gutter, opposite the hizb marker. Built with the hizb marker's
+         own class and metrics so it is sized, positioned and RE-sized by
+         exactly the same code — see _applyHizbZoomToPages. */
+      let rukuMarker='';
+      if(appSettings.showRuku){
+        for(const w of lineWords){
+          if(!w.isEnd) continue;
+          const rk=rukuEndAt(w.sNum,w.aNum);
+          if(rk){
+            rukuMarker=`<span class="msl-hizb msl-ruku" style="right:-${_zm.hizbLeft}px;width:${_zm.hizbSize}px;height:${_zm.hizbSize}px;font-size:${_zm.hizbFontBase}px;" title="End of ruku — ${esc(rukuInfo(w.sNum, rukuByVerse[`${w.sNum}:${w.aNum}`]))}">‌<span class="mr-ain">ع</span><b>${rk}</b></span>`;
+            break;
+          }
+        }
+      }
+      html+=`<div class="msl msl-text${sc}${centerLast}" dir="rtl" style="position:relative;">${hizbMarker}${rukuMarker}${wordSpans}</div>`;
     });
 
     if(botBufferPx>0) html+=mushafBufferBlock(qpg+'-bot',botBufferPx,lineDeficit/2);
@@ -5200,7 +6077,14 @@ function showTT(event,el,enc){
   const mList=JSON.parse(decodeURIComponent(enc));
   const tt=document.getElementById('wordTooltip');
   const displayWord=mList[0]?.word||el.textContent;
-  let html=`<span class="tt-word">${displayWord}</span>`;
+  // Highlight only when every mistake on this word names the same letter —
+  // two mistakes on different letters would otherwise fight over the markup.
+  const _srIdx = mList.map(x => x.subrule && x.subrule.letterIndex)
+                      .filter(i => typeof i === 'number');
+  const _one = _srIdx.length === mList.length && new Set(_srIdx).size === 1;
+  let html = `<span class="tt-word">${_one
+    ? wordWithLetter({word: displayWord, subrule: {letterIndex: _srIdx[0]}})
+    : displayWord}</span>`;
   // Same ambiguity as the review: "in N sessions" sounds like "the last N".
   if(mList.length>1)html+=`<span class="tt-rep">⚠ Missed here on ${mList.length} separate occasions</span>`;
   mList.forEach((m,i)=>{
@@ -5209,7 +6093,7 @@ function showTT(event,el,enc){
     // which in the viewer is empty — every type fell back to "Other", whose
     // colour is '' so the badge label rendered invisible on a pale pill.
     const t=resolveType(cfg,m.type);
-    const sv=sev(m.correction);
+    const sv=sevForMistake(m,cfg);
     if(mList.length>1)html+=`<div class="tt-div"></div>`;
     // The surface is pale now, so the type pill can use the fill it was
     // designed with — bgColor + borderColor + colour on the text — instead of
@@ -5218,7 +6102,12 @@ function showTT(event,el,enc){
     const tb=t.bgColor||'var(--parchment2)';
     const tbd=t.borderColor||tc;
     html+=`<span class="tt-badge" style="color:${tc};border:1px solid ${tbd};background:${tb};">${esc(mTypeLabel(m,cfg))}</span><br>`;
-    html+=`<span class="tt-corr" style="color:${sv.color};">${mCorrLabel(m,cfg)}</span>`;
+    html+=`<span class="tt-corr" style="color:${sv.color};">${mLevelText(m,cfg)}</span>`;
+    // The reminder sits ABOVE the teacher's own note: it is general and always
+    // true, whereas the note is about this student on this day and should be
+    // the last word.
+    const guide = subruleGuide(m);
+    if(guide) html+=`<span class="tt-guide">${esc(guide)}</span>`;
     if(m.note)html+=`<span class="tt-note">"${esc(m.note)}"</span>`;
     // No student name: the viewer shows one student at a time, so it is
     // repetition — and it is the one identifying string this design avoids.
@@ -5229,7 +6118,11 @@ function showTT(event,el,enc){
   // The whole popup takes the WORST level present, so a word missed badly once
   // and lightly twice reads at its worst rather than averaging into calm.
   // Per-entry colour still distinguishes them inside.
-  const worst=sev(_worstCorrOf(mList));
+  // A tajweed mistake has no place on the intervention ramp, so a group with
+  // no hifz mistake in it takes the tajweed colour rather than defaulting to
+  // green — which would have read as "recovered unaided".
+  const _hifz = mList.filter(x=>!isTajweedMistake(x, x.typeConfig||null));
+  const worst = _hifz.length ? sev(_worstCorrOf(_hifz)) : SEVERITY.tajweed;
   tt.style.background=worst.bg;
   tt.style.borderColor=worst.color;
   tt.style.borderLeftColor=worst.color;
@@ -5305,7 +6198,7 @@ function saveSess(){
 }
 function recompute(){
   activeMistakes=[];const wkc={};
-  activeSessions.forEach((sess,si)=>{const col=SESSION_COLORS[si%SESSION_COLORS.length];const cfg=sess.typeConfig||null;(sess.mistakes||[]).forEach(m=>{activeMistakes.push({...m,sessionId:sess.id,sessionLabel:sessionDateText(sess),sessionRange:sessionNameOf(sess),sessionDate:sessionDateText(sess),sessionColor:col,typeConfig:cfg});const wk=`${m.surah}:${m.ayah}:${m.wordPos}`;wkc[wk]=(wkc[wk]||0)+1;});});
+  activeSessions.forEach((sess,si)=>{const col=SESSION_COLORS[si%SESSION_COLORS.length];const cfg=sess.typeConfig||null;(sess.mistakes||[]).forEach(m=>{activeMistakes.push({...m,sessionId:sess.id,sessionLabel:sessionDateText(sess),sessionRange:sessionNameOf(sess),sessionDate:sessionDateText(sess),sessionYMD:_sessYMD(sess),sessionColor:col,typeConfig:cfg});const wk=`${m.surah}:${m.ayah}:${m.wordPos}`;wkc[wk]=(wkc[wk]||0)+1;});});
   repeatWordKeys=new Set(Object.keys(wkc).filter(k=>wkc[k]>1));
 }
 function toggleSessionActive(id){
@@ -5342,13 +6235,44 @@ function updatePanel(){
   const b=document.getElementById('activeBanner');
   if(has){b.style.display='flex';document.getElementById('activeBannerText').textContent=`${activeSessions.length} session${activeSessions.length>1?'s':''} · ${activeMistakes.length} mistake${activeMistakes.length!==1?'s':''}`;}
   else b.style.display='none';
-  const t=corrTally(activeMistakes);
-  document.getElementById('st0').textContent=t.total;
-  document.getElementById('st1').textContent=t.c1;
-  document.getElementById('st2').textContent=t.c2;
-  document.getElementById('st3').textContent=t.c3;
+  renderStatBar();
   renderMistakesList();
 }
+
+// One row: total, proportional bar, per-band counts. The bar doubles as its
+// own legend — each band carries its number — and each band is a filter.
+//
+// The bands write to mistakeFilterCorr, the same Set the Level chips in the
+// filter sheet use, so the two controls are two views of one state and cannot
+// drift apart. 'tj' is a member of that Set alongside c0-c4: not a level, but
+// the same kind of thing to filter by, and tajweed had no filter at all before
+// (its correction is null, so it matched no level chip and any level filter
+// hid it silently).
+function renderStatBar(){
+  const el=document.getElementById('statBar');
+  if(!el) return;
+  const t=corrTally(activeMistakes);
+  const bands=[
+    {k:'c0', n:t.c0, c:sev('c0').color, lbl:'Lvl 0 · none'},
+    {k:'c1', n:t.c1, c:sev('c1').color, lbl:'Lvl 1 · repeat'},
+    {k:'c2', n:t.c2, c:sev('c2').color, lbl:'Lvl 2 · hint'},
+    {k:'c3', n:t.c3, c:sev('c3').color, lbl:'Lvl 3 · taught'},
+    {k:'c4', n:t.c4, c:'var(--ink3)',   lbl:'Other'},
+    // Its own band, never folded into a level. Without it the bar would total
+    // fewer than the mistake count and nothing would say why.
+    {k:'tj', n:t.tajweed, c:'var(--tajweed)', lbl:'Tajweed'},
+  ];
+  el.innerHTML=`
+    <span class="sb-total">${t.total}</span>
+    <div class="sb-bar">
+      ${bands.filter(b=>b.n).map(b=>`<button class="sb-seg${mistakeFilterCorr.has(b.k)?' on':''}"
+          style="flex:${b.n};background:${b.c};"
+          onclick="toggleMistakeCorrFilter('${b.k}')" title="${b.lbl} — ${b.n}">${b.n}</button>`).join('')
+        || '<span class="sb-empty">no mistakes yet</span>'}
+    </div>
+    ${mistakeFilterCorr.size?`<button class="sb-clear" onclick="clearCorrFilter()" title="Clear level filter">✕</button>`:''}`;
+}
+
 
 // ── SESSIONS LIST
 // The same single-session review the teacher sees — one session at a time,
@@ -5418,45 +6342,125 @@ function renderMlistControls(){
   if(!hasMistakes){ el.innerHTML=''; return; }
 
   const groupBtn=(mode,label)=>`<button class="mlist-chip${mistakeGroupMode===mode?' active':''}" onclick="setMistakeGroupMode('${mode}')">${label}</button>`;
-  // Filter chips reflect whatever types actually appear in the mistakes being
-  // viewed (resolved via each mistake's own embedded config), rather than a
-  // fixed global list — there is no fixed list anymore, types are teacher-
-  // editable and can vary session to session.
-  const uniqueTypeIds=[...new Set(activeMistakes.map(m=>m.type))];
-  const typeEntries=uniqueTypeIds.map(id=>{
-    const m=activeMistakes.find(x=>x.type===id);
-    return resolveType(m?.typeConfig||null,id);
-  });
-  const typeBtn=(t)=>`<button class="mlist-chip type-chip${mistakeFilterTypes.has(t.id)?' active':''}" style="--type-color:${t.color||'var(--ink3)'};" onclick="toggleMistakeTypeFilter('${t.id}')">${esc(t.label)}</button>`;
-  const corrBtn=(c)=>`<button class="mlist-chip${mistakeFilterCorr.has(c.id)?' active':''}" onclick="toggleMistakeCorrFilter('${c.id}')">${c.shortLabel}</button>`;
-  const activeFilterCount = mistakeFilterTypes.size + mistakeFilterCorr.size + (mistakeFilterRepeatedOnly?1:0);
-  const hasActiveFilters = activeFilterCount>0;
+  const pills=activeFilterPills();
 
+  // Group is a view mode, not a filter, so it stays in the visible row.
   el.innerHTML=`
     <div class="mlist-row">
       <span class="mlist-row-label">Group</span>
       ${groupBtn('juz','Juz')}${groupBtn('surah','Surah')}${groupBtn('none','None')}
-      <button class="mlist-chip${hasActiveFilters?' active':''}" onclick="toggleMlistFiltersExpanded()" style="margin-left:auto;">
-        ⚙ Filters${hasActiveFilters?` (${activeFilterCount})`:''} ${mistakeFiltersExpanded?'▴':'▾'}
+      <button class="mlist-chip${pills.length?' active':''}" onclick="openFilterSheet()" style="margin-left:auto;">
+        ⚙ Filters${pills.length?` (${pills.length})`:''}
       </button>
     </div>
-    ${mistakeFiltersExpanded?`
-    <div class="mlist-row">
-      <span class="mlist-row-label">Type</span>
-      ${typeEntries.map(typeBtn).join('')}
-    </div>
-    <div class="mlist-row">
-      <span class="mlist-row-label">Level</span>
-      ${CORRECTION_TYPES.filter(c=>c.id!=='c0').map(corrBtn).join('')}
-      <button class="mlist-chip${mistakeFilterRepeatedOnly?' active':''}" onclick="toggleRepeatedOnlyFilter()" style="margin-left:auto;">⚠ Repeated only</button>
-    </div>
-    ${hasActiveFilters?`<div class="mlist-row"><span class="mlist-reset" onclick="resetMistakeFilters()">Reset filters</span></div>`:''}
-    `:''}`;
+    ${pills.length?`<div class="mlist-row">
+      ${pills.map(p=>`<button class="mlist-pill" title="Remove this filter" onclick="${p.off}">${esc(p.label)}<span class="x">✕</span></button>`).join('')}
+      <span class="mlist-reset" onclick="resetMistakeFilters()">Clear all</span>
+    </div>`:''}`;
 }
 
-function toggleMlistFiltersExpanded(){
-  mistakeFiltersExpanded=!mistakeFiltersExpanded;
-  renderMlistControls();
+// Every active filter as one removable pill. This is the whole of the inline
+// filter UI now: its height scales with what you have SELECTED, not with what
+// exists, so adding a dimension later costs nothing here.
+function activeFilterPills(){
+  const out=[];
+  if(mistakeFilterTime) out.push({label:PERIOD_LABEL[mistakeFilterTime], off:`setMistakeTimeFilter(null)`});
+  mistakeFilterCat.forEach(c=>out.push({label:CAT_LABEL[c]||c, off:`toggleMistakeCatFilter('${c}')`}));
+  mistakeFilterTypes.forEach(id=>{
+    const m=activeMistakes.find(x=>x.type===id);
+    out.push({label:resolveType(m?.typeConfig||null,id).label||id, off:`toggleMistakeTypeFilter('${id}')`});
+  });
+  mistakeFilterCorr.forEach(k=>out.push({label:CORR_FILTER_LABEL[k]||k, off:`toggleMistakeCorrFilter('${k}')`}));
+  mistakeFilterLetters.forEach(l=>out.push({label:l, off:`toggleMistakeLetterFilter('${l}')`}));
+  mistakeFilterRules.forEach(r=>out.push({label:ruleShort(r), off:`toggleMistakeRuleFilter('${r}')`}));
+  if(mistakeFilterRepeatedOnly) out.push({label:'Repeated only', off:`toggleRepeatedOnlyFilter()`});
+  return out;
+}
+
+const CAT_LABEL={tehfiz:'Memorisation', tajweed:'Tajweed', other:'Other'};
+const CORR_FILTER_LABEL={c0:'Lvl 0',c1:'Lvl 1',c2:'Lvl 2',c3:'Lvl 3',c4:'Other',tj:'Tajweed'};
+
+function mistakeCategoryOf(m){
+  const t=resolveType(m.typeConfig||null, m.type);
+  return (t && t.category) || 'other';
+}
+
+function openFilterSheet(){
+  document.getElementById('filterSheet').classList.add('open');
+  renderFilterSheet();
+}
+
+// Counts are computed with the chip's OWN dimension released, so each number
+// answers "how many would I see if I picked this" rather than "how many are
+// showing" — which would read 0 on every unselected chip the moment anything
+// in the same row was selected.
+function _countWith(skip, pred){
+  return activeMistakes.reduce((n,m)=>n + (mistakePassesFilters(m,skip) && pred(m) ? 1 : 0), 0);
+}
+
+function renderFilterSheet(){
+  const body=document.getElementById('fsBody');
+  if(!body) return;
+  const chip=(on,label,n,onclick,attrs='',cls='')=>
+    `<button class="mlist-chip${cls?' '+cls:''}${on?' active':''}${n?'':' zero'}" ${attrs} onclick="${onclick}">${label}<span class="fs-n">${n}</span></button>`;
+
+  // ── when
+  const timeChips=['week','month','year'].map(p=>
+    chip(mistakeFilterTime===p, PERIOD_LABEL[p], _countWith('time', m=>m.sessionYMD && m.sessionYMD>=_periodStartYMD(p)), `setMistakeTimeFilter('${p}')`)
+  ).join('') + chip(!mistakeFilterTime,'All time',_countWith('time',()=>true),`setMistakeTimeFilter(null)`);
+
+  // ── category, with the tajweed sub-rules nested inside it
+  const cats=['tehfiz','tajweed','other'].filter(c=>activeMistakes.some(m=>mistakeCategoryOf(m)===c));
+  const catChips=cats.map(c=>
+    chip(mistakeFilterCat.has(c), esc(CAT_LABEL[c]), _countWith('cat', m=>mistakeCategoryOf(m)===c), `toggleMistakeCatFilter('${c}')`)
+  ).join('');
+
+  const letters=[...new Set(activeMistakes.filter(m=>m.subrule&&m.subrule.letter).map(m=>m.subrule.letter))];
+  const rules  =[...new Set(activeMistakes.filter(m=>m.subrule&&m.subrule.rule).map(m=>m.subrule.rule))];
+  const nest = (letters.length||rules.length) ? `
+    <div class="fs-nest">
+      ${letters.length?`<div class="fs-sec-h">Letter</div><div class="fs-chips" style="margin-bottom:7px;">${
+        letters.sort().map(l=>chip(mistakeFilterLetters.has(l), esc(l),
+          _countWith('letter', m=>m.subrule&&m.subrule.letter===l),
+          `toggleMistakeLetterFilter('${l}')`,
+          `title="${esc(MAKHRAJ_GUIDE[l]||'')}"`, 'fs-letter')
+        ).join('')}</div>`:''}
+      ${rules.length?`<div class="fs-sec-h">Rule</div><div class="fs-chips">${
+        rules.map(r=>chip(mistakeFilterRules.has(r), esc(ruleShort(r)),
+          _countWith('rule', m=>m.subrule&&m.subrule.rule===r),
+          `toggleMistakeRuleFilter('${r}')`,
+          `title="${esc(ruleLabel(r))}"`)).join('')}</div>`:''}
+    </div>` : '';
+
+  // ── type
+  const typeIds=[...new Set(activeMistakes.map(m=>m.type))];
+  const typeChips=typeIds.map(id=>{
+    const t=resolveType(activeMistakes.find(x=>x.type===id)?.typeConfig||null, id);
+    return chip(mistakeFilterTypes.has(id), esc(t.label||id), _countWith('type', m=>m.type===id), `toggleMistakeTypeFilter('${id}')`);
+  }).join('');
+
+  // ── level. Kept here as well as on the stat bar: the bar is not obviously a
+  // control, and both write to mistakeFilterCorr so they cannot disagree.
+  const lvlKeys=['c0','c1','c2','c3','c4','tj'];
+  const lvlChips=lvlKeys.map(k=>chip(mistakeFilterCorr.has(k), CORR_FILTER_LABEL[k],
+    _countWith('corr', m=>(isTajweedMistake(m,m.typeConfig||null)?'tj':(m.correction||'c0'))===k),
+    `toggleMistakeCorrFilter('${k}')`)).join('');
+
+  body.innerHTML=`
+    <div class="fs-sec"><div class="fs-sec-h">When</div><div class="fs-chips">${timeChips}</div></div>
+    <div class="fs-sec"><div class="fs-sec-h">Category</div><div class="fs-chips">${catChips}</div>${nest}</div>
+    <div class="fs-sec"><div class="fs-sec-h">Type</div><div class="fs-chips">${typeChips}</div></div>
+    <div class="fs-sec"><div class="fs-sec-h">Level</div><div class="fs-chips">${lvlChips}</div></div>
+    <div class="fs-sec"><div class="fs-sec-h">Repetition</div><div class="fs-chips">
+      ${chip(mistakeFilterRepeatedOnly,'⚠ Repeated only',_countWith('repeat',m=>repeatWordKeys.has(`${m.surah}:${m.ayah}:${m.wordPos}`)),`toggleRepeatedOnlyFilter()`)}
+    </div></div>`;
+
+  const shown=activeMistakes.filter(m=>mistakePassesFilters(m)).length;
+  document.getElementById('fsCount').textContent=`${shown} of ${activeMistakes.length} shown`;
+  // Naming the scope stops an empty result reading as a bug: the sheet narrows
+  // within the selected sessions, it does not reach past them.
+  document.getElementById('fsScope').textContent=
+    `Within ${activeSessions.length} selected session${activeSessions.length===1?'':'s'}`;
 }
 
 function setMistakeGroupMode(mode){
@@ -5465,21 +6469,58 @@ function setMistakeGroupMode(mode){
   mistakeExpandedGroups.clear();
   renderMistakesList(); // also re-renders controls
 }
+// Every toggle ends here, so the list, the bar and the sheet can never show
+// three different answers to the same filter state.
+function _afterFilterChange(){
+  renderStatBar();
+  renderMistakesList();
+  if(document.getElementById('filterSheet').classList.contains('open')) renderFilterSheet();
+}
 function toggleMistakeTypeFilter(id){
   if(mistakeFilterTypes.has(id)) mistakeFilterTypes.delete(id); else mistakeFilterTypes.add(id);
-  renderMistakesList();
+  _afterFilterChange();
+}
+function toggleMistakeCatFilter(c){
+  if(mistakeFilterCat.has(c)) mistakeFilterCat.delete(c); else mistakeFilterCat.add(c);
+  _afterFilterChange();
+}
+function toggleMistakeLetterFilter(l){
+  if(mistakeFilterLetters.has(l)) mistakeFilterLetters.delete(l); else mistakeFilterLetters.add(l);
+  _afterFilterChange();
+}
+function toggleMistakeRuleFilter(r){
+  if(mistakeFilterRules.has(r)) mistakeFilterRules.delete(r); else mistakeFilterRules.add(r);
+  _afterFilterChange();
+}
+function setMistakeTimeFilter(p){
+  mistakeFilterTime=p;
+  _afterFilterChange();
+}
+// Selects sessions rather than filtering mistakes. null = every saved session.
+function selectSessionsInPeriod(period){
+  const from=_periodStartYMD(period);
+  activeSessions = from
+    ? savedSessions.filter(s=>{const y=_sessYMD(s); return y && y>=from;})
+    : [...savedSessions];
+  recompute();updatePanel();rerender();renderSessionsList();
 }
 function toggleMistakeCorrFilter(id){
   if(mistakeFilterCorr.has(id)) mistakeFilterCorr.delete(id); else mistakeFilterCorr.add(id);
-  renderMistakesList();
+  _afterFilterChange();
 }
 function toggleRepeatedOnlyFilter(){
   mistakeFilterRepeatedOnly=!mistakeFilterRepeatedOnly;
-  renderMistakesList();
+  _afterFilterChange();
+}
+function clearCorrFilter(){
+  mistakeFilterCorr.clear();
+  _afterFilterChange();
 }
 function resetMistakeFilters(){
-  mistakeFilterTypes.clear();mistakeFilterCorr.clear();mistakeFilterRepeatedOnly=false;
-  renderMistakesList();
+  mistakeFilterTypes.clear();mistakeFilterCorr.clear();mistakeFilterCat.clear();
+  mistakeFilterLetters.clear();mistakeFilterRules.clear();
+  mistakeFilterRepeatedOnly=false;mistakeFilterTime=null;
+  _afterFilterChange();
 }
 function toggleMgroup(key){
   if(mistakeCollapsedGroups.has(key)){
@@ -5495,21 +6536,36 @@ function toggleMgroup(key){
   if(body) body.classList.toggle('collapsed');
 }
 
+// `skip` releases one dimension so the sheet can ask "what would this chip
+// give me". The list itself always passes nothing.
+function mistakePassesFilters(m, skip){
+  if(skip!=='time' && mistakeFilterTime){
+    const from=_periodStartYMD(mistakeFilterTime);
+    if(!(m.sessionYMD && m.sessionYMD>=from)) return false;
+  }
+  if(skip!=='cat' && mistakeFilterCat.size && !mistakeFilterCat.has(mistakeCategoryOf(m))) return false;
+  if(skip!=='type' && mistakeFilterTypes.size && !mistakeFilterTypes.has(m.type)) return false;
+  if(skip!=='corr' && mistakeFilterCorr.size){
+    // Bucket exactly as corrTally does, or the bar's counts and the list's
+    // contents disagree. Two departures from a bare m.correction lookup:
+    // tajweed answers 'tj' because its correction is null, and a hifz
+    // mistake saved with no correction at all (old data) answers 'c0',
+    // which is the bucket corrTally already counts it in.
+    const k = isTajweedMistake(m, m.typeConfig||null) ? 'tj' : (m.correction || 'c0');
+    if(!mistakeFilterCorr.has(k)) return false;
+  }
+  if(skip!=='letter' && mistakeFilterLetters.size && !(m.subrule && mistakeFilterLetters.has(m.subrule.letter))) return false;
+  if(skip!=='rule'   && mistakeFilterRules.size   && !(m.subrule && mistakeFilterRules.has(m.subrule.rule)))    return false;
+  if(skip!=='repeat' && mistakeFilterRepeatedOnly && !repeatWordKeys.has(`${m.surah}:${m.ayah}:${m.wordPos}`))  return false;
+  return true;
+}
+
 function renderMistakesList(){
   const list=document.getElementById('mistakesList');
   renderMlistControls();
   if(!activeMistakes.length){list.innerHTML=`<div class="empty-hint">No mistakes in selected session(s).</div>`;return;}
 
-  // Apply filters
-  let filtered=activeMistakes.filter(m=>{
-    if(mistakeFilterTypes.size && !mistakeFilterTypes.has(m.type)) return false;
-    if(mistakeFilterCorr.size && !mistakeFilterCorr.has(m.correction)) return false;
-    if(mistakeFilterRepeatedOnly){
-      const wk=`${m.surah}:${m.ayah}:${m.wordPos}`;
-      if(!repeatWordKeys.has(wk)) return false;
-    }
-    return true;
-  });
+  let filtered=activeMistakes.filter(m=>mistakePassesFilters(m));
 
   if(!filtered.length){
     list.innerHTML=`<div class="empty-hint">No mistakes match the current filters.<br><span class="mlist-reset" onclick="resetMistakeFilters()" style="cursor:pointer;">Reset filters</span></div>`;
@@ -5524,12 +6580,12 @@ function renderMistakesList(){
     const wk=`${m.surah}:${m.ayah}:${m.wordPos}`;const isR=wkm[wk].length>1;
     const refLabel=m.wordPosEnd&&m.wordPosEnd!==m.wordPos?`${m.surah}:${m.ayah} (words ${m.wordPos}–${m.wordPosEnd})`:`${m.surah}:${m.ayah}`;
     const sessInfo=[m.sessionRange,m.sessionDate].filter(Boolean).join(' · ');
-    return`<div class="mistake-item ${_sevClassForCorr(m.correction)}${isR?' repeated-mistake':''}" onclick="navigateToVerse(${m.surah},${m.ayah},${m.wordPos||0})">
+    return`<div class="mistake-item ${sevForMistake(m,cfg).cls}${isR?' repeated-mistake':''}" onclick="navigateToVerse(${m.surah},${m.ayah},${m.wordPos||0})">
       <span class="m-badge" style="${typeBadgeStyle(cfg,m.type)}">${mTypeLabel(m,cfg)}</span>
       <div class="m-body">
         <div class="m-ref"><span class="m-ref-verse">${refLabel}</span>${isR?`<span class="repeat-badge">×${wkm[wk].length}</span>`:''}${mistakeTimeText(m)?`<span class="m-ref-time" title="${mistakeTimeTitle(m)}">${mistakeTimeText(m)}</span>`:''}</div>
-        <span class="m-word">${m.word}</span>
-        <div class="m-corr ${corrClass2[m.correction]}">${mCorrLabel(m,cfg)}</div>
+        <span class="m-word">${wordWithLetter(m)}</span>
+        <div class="m-corr ${isTajweedMistake(m,cfg)?'c-tajweed':corrClass2[m.correction]}">${mLevelText(m,cfg)}</div>
         ${m.note?`<div class="m-note">${esc(m.note)}</div>`:''}
         ${sessInfo?`<div class="m-sess-tag">${esc(sessInfo)}</div>`:''}
       </div>
@@ -5639,6 +6695,13 @@ function buildMultiReviewHTML(sessions){
     if(by[st]?.length) tabs.push({k:st, label:sessionTypeLabel(st), n:by[st].length});
   });
   if(spots.length) tabs.push({k:'spot', label:'Spot tests', n:spots.length});
+  /* Top-level, NOT a sixth stage. A tajweed error in a sabaq segment and one in
+     a manzil segment are the same phenomenon — the stage tells you nothing
+     about it — so bucketing tajweed by stage would split one question into
+     five answers to nothing. */
+  const tjN = _tjMarks(S).length;
+  if (tjN) tabs.push({k:'tajweed', label:'Tajweed', n:tjN});
+  tabs.push({k:'log', label:'Log'});
   if(!tabs.some(t=>t.k===_msTab)) _msTab='overview';
 
   const rail=`<div class="ms-tabs">${tabs.map(t=>`<button class="ms-tab${_msTab===t.k?' on':''}" onclick="msSetTab('${t.k}')">
@@ -5648,9 +6711,391 @@ function buildMultiReviewHTML(sessions){
   let body;
   if(_msTab==='overview')      body = _msRotation(S, mem) + _msPersistence(S) + _msFocus(S) + _msSessions(S);
   else if(_msTab==='spot')     body = _msSpotTab(S);
+  else if(_msTab==='log')      body = _msLogTab(S);
+  else if(_msTab==='tajweed')  body = _msTajweedTab(S);
   else                         body = _msStageTab(S, _msTab);
 
   return _msHeader(S, mem) + rail + body;
+}
+
+/* ── TAJWEED ────────────────────────────────────────────────────────
+   Counts, not rates — for BOTH missed and added errors, deliberately.
+   A missed rule has a real denominator: how many times the passage offered it,
+   which the teacher app now counts at save time. An added rule has none — the
+   places a ghunnah could WRONGLY be applied is roughly every word — so rating
+   one and counting the other would put two numbers side by side that look
+   comparable and are not. That is the spot-v1 / strength-v2 problem, which
+   needed a tooltip to explain away.
+   Opportunities still appear, as context beside a count rather than under it:
+   "14 · of 212 madds recited" informs without inviting the division. */
+
+function _tjMarks(S){
+  const out = [];
+  S.forEach(s => {
+    const cfg = s.typeConfig || null;
+    (s.mistakes || []).forEach(m => {
+      if(!isTajweedMistake(m, cfg)) return;
+      const sr = m.subrule || null;
+      out.push({
+        s, ymd: _sessYMD(s), sr,
+        // The grouping key: a rule id, a letter, or a family when the teacher
+        // named no rule. Null only when nothing was specified at all.
+        key:  sr ? (sr.rule || sr.letter || sr.family || null) : null,
+        kind: sr && sr.letter ? 'letter' : 'rule',
+        added: !!(sr && sr.err === 'added'),
+        cond:  !!(sr && sr.cond),
+      });
+    });
+  });
+  return out;
+}
+
+/* Opportunities summed across the sessions in view. Absent on any session
+   recorded before the counter existed, and absent is not zero — a rule with no
+   opportunity data shows its count with no denominator rather than "of 0". */
+function _tjOpps(S){
+  const rules = {}, letters = {};
+  let have = 0;
+  S.forEach(s => {
+    const o = s.opportunities;
+    if(!o) return;
+    have++;
+    for(const k in (o.rules   || {})) rules[k]   = (rules[k]   || 0) + o.rules[k];
+    for(const k in (o.letters || {})) letters[k] = (letters[k] || 0) + o.letters[k];
+  });
+  return { rules, letters, have, total: S.length };
+}
+
+function _tjBar(label, n, max, color, note){
+  return `<div class="bar-row">
+    <div class="bar-label">${esc(label)}</div>
+    <div class="bar-track"><div class="bar-fill" style="width:${Math.round(n/max*100)}%;background:${color};"></div></div>
+    <div class="bar-count">${n}</div>
+    ${note ? `<div class="tj-of">${esc(note)}</div>` : '<div class="tj-of"></div>'}
+  </div>`;
+}
+
+/* Improving, flat or worsening — by comparing the first half of the window
+   with the second. Requires marks in at least three separate sessions: a
+   direction drawn from two points is a line through noise, and the same
+   discipline already governs minPointsForLine and the single-hearing dash. */
+function _tjTrend(marks, sessionYmds){
+  if(sessionYmds.length < 3) return null;
+  const cut  = sessionYmds[Math.floor(sessionYmds.length / 2)];
+  const early = marks.filter(m => m.ymd && m.ymd <  cut).length;
+  const late  = marks.filter(m => m.ymd && m.ymd >= cut).length;
+  if(early === 0 && late === 0) return null;
+  if(late < early) return {dir:'better', sym:'↓', txt:`${early} → ${late}`};
+  if(late > early) return {dir:'worse',  sym:'↑', txt:`${early} → ${late}`};
+  return {dir:'flat', sym:'→', txt:`${early} → ${late}`};
+}
+
+function _msTajweedTab(S){
+  const marks = _tjMarks(S);
+  const opps  = _tjOpps(S);
+  const ymds  = [...new Set(S.map(s => _sessYMD(s)).filter(Boolean))].sort();
+  const withTj = new Set(marks.map(m => m.s)).size;
+
+  const missed = marks.filter(m => !m.added);
+  const added  = marks.filter(m =>  m.added);
+  const conds  = marks.filter(m =>  m.cond).length;
+
+  const tally = (list, kind) => {
+    const t = {};
+    list.filter(m => m.kind === kind && m.key).forEach(m => { t[m.key] = (t[m.key] || 0) + 1; });
+    return Object.entries(t).sort((a,b) => b[1] - a[1]);
+  };
+
+  const missedRules   = tally(missed, 'rule');
+  const addedRules    = tally(added,  'rule');
+  const letters       = tally(marks,  'letter');
+  const unspecified   = marks.filter(m => !m.key).length;
+
+  const head = `<div class="ms-stats">
+    <div class="ms-stat"><div class="ms-stat-n">${marks.length}</div><div class="ms-stat-l">marks</div></div>
+    <div class="ms-stat"><div class="ms-stat-n">${withTj}<span class="tj-sub">/${S.length}</span></div><div class="ms-stat-l">sessions</div></div>
+    <div class="ms-stat"><div class="ms-stat-n">${missedRules.length + addedRules.length}</div><div class="ms-stat-l">rules</div></div>
+    <div class="ms-stat"><div class="ms-stat-n">${letters.length}</div><div class="ms-stat-l">letters</div></div>
+  </div>`;
+
+  /* Per session over time. Bars, not a line: a line implies a value between
+     the points, and there is no tajweed count for a day with no lesson. */
+  const perSession = ymds.map(y => ({ y, n: marks.filter(m => m.ymd === y).length }));
+  const maxN = Math.max(1, ...perSession.map(p => p.n));
+  const overTime = `<div class="ms-sec">
+    <div class="ms-sec-head"><span>Marks per session</span>
+      <span class="ms-sec-note">${ymds.length} session${ymds.length===1?'':'s'}</span></div>
+    <div class="tj-spark">${perSession.map(p =>
+      `<span class="tj-spark-b" style="height:${Math.max(2, Math.round(p.n/maxN*28))}px"
+         title="${esc(p.y)} — ${p.n} mark${p.n===1?'':'s'}"></span>`).join('')}</div>
+    <div class="ms-note">A session with none is a gap, not a zero: it may mean a clean
+      recitation or a day tajweed was not listened for, and the two are indistinguishable here.</div>
+  </div>`;
+
+  const ruleSec = (title, list, color, useOpps) => {
+    if(!list.length) return '';
+    const max = list[0][1];
+    return `<div class="ms-sec">
+      <div class="ms-sec-head"><span>${esc(title)}</span>
+        <span class="ms-sec-note">${list.length} distinct</span></div>
+      ${list.map(([k, n]) => {
+        const chances = useOpps ? opps.rules[k] : null;
+        const tr = _tjTrend(marks.filter(m => m.key === k && (useOpps ? !m.added : m.added)), ymds);
+        return _tjBar(ruleShort(k), n, max, color,
+          (chances ? `of ${chances}` : '') + (tr ? `  ${tr.sym}` : ''));
+      }).join('')}
+    </div>`;
+  };
+
+  const letterSec = letters.length ? `<div class="ms-sec">
+    <div class="ms-sec-head"><span>Letters by recurrence</span>
+      <span class="ms-sec-note">${letters.length} distinct</span></div>
+    ${letters.map(([l, n]) => {
+      const mk = makhrajOf(l);
+      const chances = opps.letters[l];
+      return `<div class="bar-row">
+        <div class="bar-label tj-letter">${esc(l)}</div>
+        <div class="bar-track"><div class="bar-fill" style="width:${Math.round(n/letters[0][1]*100)}%;background:var(--tajweed);"></div></div>
+        <div class="bar-count">${n}</div>
+        <div class="tj-of">${mk ? esc(mk.label) : ''}${chances ? ` · of ${chances}` : ''}</div>
+      </div>`;
+    }).join('')}
+    <div class="ms-note">Which letters will not sit in the right place — the most
+      directly actionable thing here, because it names what to drill.</div>
+  </div>` : '';
+
+  const caveats = [];
+  if(opps.have && opps.have < opps.total)
+    caveats.push(`Opportunity counts cover ${opps.have} of ${opps.total} sessions; the rest predate them.`);
+  if(!opps.have)
+    caveats.push('No opportunity counts in these sessions, so counts appear without a denominator.');
+  if(conds)
+    caveats.push(`${conds} mark${conds===1?'':'s'} applied only because a verse was joined to the next — the teacher's judgement, not the annotation's.`);
+  if(unspecified)
+    caveats.push(`${unspecified} mark${unspecified===1?'':'s'} named no rule or letter, so ${unspecified===1?'it is':'they are'} counted but not ranked.`);
+
+  return head + overTime +
+    ruleSec('Rules missed or mistimed', missedRules, 'var(--tajweed)', true) +
+    ruleSec('Rules added where they do not belong', addedRules, 'var(--amber)', false) +
+    letterSec +
+    (addedRules.length ? `<div class="ms-note">Added errors are counted, never rated: there is no
+      meaningful number of chances to wrongly apply a rule, so a percentage would be invented.</div>` : '') +
+    (caveats.length ? `<div class="ms-sec tj-caveats">${caveats.map(c => `<div>${esc(c)}</div>`).join('')}</div>` : '');
+}
+
+/* ── RECITATION LOG ─────────────────────────────────────────────────
+   One row per SEGMENT, not per session. The stage lives on the segment, and a
+   sitting can hold a sabaq and a manzil — collapsing those to one row would
+   make "filter by lesson type" meaningless.
+   Duration and notes are session-level and therefore repeat across a session's
+   rows. That is right for something you will sort and filter: every row has to
+   stand on its own. */
+/* `grouped` is the default: a session banner carrying the things that belong to
+   the SITTING — time, duration, notes — with its segments beneath it. Those
+   three repeated on every segment row, which read as three lessons of 1h 05m
+   rather than one sitting of 1h 05m containing three lessons.
+   `segments` is the flat view for when the segment is the unit of interest. It
+   drops duration and notes entirely rather than repeating them: a value that is
+   true of the session but printed against a segment is a claim about the
+   segment, and it is the wrong one. */
+let _logStage = 'all', _logKind = 'all', _logPeriod = 'all', _logNotesOnly = false;
+let _logView = 'grouped', _logFrom = '', _logTo = '';
+
+function _logRows(S){
+  const rows = [];
+  S.forEach(s => {
+    const d    = _sessDate(s);
+    const ymd  = _sessYMD(s);
+    const time = d && !isNaN(d) ? d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : '';
+    (s.segments || []).forEach(sg => {
+      const o    = segOrdered(sg);
+      const spot = sg.mode === 'spot';
+      // Counts only, per the brief — the by-verse list already carries detail.
+      const ml   = mistakesInSegment(s.segments, sg, s.mistakes || []);
+      const hifz = ml.filter(m => !isTajweedMistake(m, s.typeConfig || null)).length;
+      const taj  = ml.length - hifz;
+      let score = null, pages = null;
+      if(!spot && segmentScorable(sg)){
+        const inp = inputsAreCurrent(s)
+          ? (inputsWithPages(sg.strengthInputs, sg) || segmentStrengthInputs(s.segments, sg, s.mistakes||[]))
+          : segmentStrengthInputs(s.segments, sg, s.mistakes||[]);
+        if(inp && inp.verses){ score = strengthFromInputs(inp); pages = inp.pages; }
+      }
+      rows.push({
+        sid: s.id || (ymd + '|' + time), sessionName: sessionNameOf(s),
+        ymd, date: sessionDateText(s), time, duration: s.duration || '',
+        stage: spot ? 'spot' : (sg.type || 'unassigned'),
+        stageLabel: spot ? 'Spot test' : sessionTypeLabel(sg.type || 'unassigned'),
+        kind: spot ? 'spot' : 'recite',
+        range: sg.rangeLabel || describeRange(o.startKey, o.endKey) || sessionNameOf(s),
+        pages, hifz, taj, score,
+        notes: s.remarks || '',
+      });
+    });
+  });
+  return rows.reverse();          // newest first, which is how a log is read
+}
+
+function _logFiltered(S){
+  // Custom takes both ends, and either end may be left open.
+  const from = _logPeriod === 'custom' ? (_logFrom || null)
+             : _logPeriod === 'all'    ? null
+             : _periodStartYMD(_logPeriod);
+  const to   = _logPeriod === 'custom' ? (_logTo || null) : null;
+  return _logRows(S).filter(r =>
+       (_logStage === 'all' || r.stage === _logStage)
+    && (_logKind  === 'all' || r.kind  === _logKind)
+    && (!from || (r.ymd && r.ymd >= from))
+    && (!to   || (r.ymd && r.ymd <= to))
+    && (!_logNotesOnly || r.notes));
+}
+
+function msSetLogFilter(k, v){
+  if(k === 'stage') _logStage = v;
+  else if(k === 'kind') _logKind = v;
+  else if(k === 'period') _logPeriod = v;
+  else if(k === 'notes') _logNotesOnly = !_logNotesOnly;
+  else if(k === 'view')  _logView = v;
+  _msRerender();
+}
+function msSetLogRange(which, val){
+  if(which === 'from') _logFrom = val; else _logTo = val;
+  _logPeriod = 'custom';
+  _msRerender();
+}
+
+function _msLogTab(S){
+  const all  = _logRows(S);
+  const rows = _logFiltered(S);
+  const stages = [...new Set(all.map(r => r.stage))];
+  const chip = (k, v, label, on) =>
+    `<button class="ms-tab${on?' on':''}" onclick="msSetLogFilter('${k}','${v}')">${esc(label)}</button>`;
+
+  const filters = `
+    <div class="ms-tabs" style="margin-bottom:4px;">
+      ${chip('period','all','All time', _logPeriod==='all')}
+      ${['week','month','year'].map(p => chip('period',p,PERIOD_LABEL[p], _logPeriod===p)).join('')}
+      ${chip('period','custom','Custom', _logPeriod==='custom')}
+      ${_logPeriod==='custom' ? `<span class="lg-range-pick">
+        <input type="date" value="${_logFrom}" max="${_logTo||''}" onchange="msSetLogRange('from', this.value)" title="From">
+        <b>→</b>
+        <input type="date" value="${_logTo}" min="${_logFrom||''}" onchange="msSetLogRange('to', this.value)" title="To">
+      </span>` : ''}
+    </div>
+    <div class="ms-tabs" style="margin-bottom:4px;">
+      ${chip('stage','all','All lessons', _logStage==='all')}
+      ${stages.map(st => chip('stage', st,
+          st==='spot' ? 'Spot test' : sessionTypeLabel(st), _logStage===st)).join('')}
+    </div>
+    <div class="ms-tabs">
+      ${chip('kind','all','Recite + spot', _logKind==='all')}
+      ${chip('kind','recite','Recite only', _logKind==='recite')}
+      ${chip('kind','spot','Spot only', _logKind==='spot')}
+      <button class="ms-tab${_logNotesOnly?' on':''}" onclick="msSetLogFilter('notes','')">With notes</button>
+      <span style="flex:1"></span>
+      ${chip('view','grouped','By session', _logView==='grouped')}
+      ${chip('view','segments','By segment', _logView==='segments')}
+      <button class="ms-tab" onclick="exportLogCSV()" title="Opens in Excel">⭳ CSV</button>
+      <button class="ms-tab" onclick="printLog()" title="Use your system dialog's Save as PDF">⎙ PDF</button>
+    </div>`;
+
+  if(!rows.length){
+    return filters + `<div class="empty-hint">No sessions match these filters.</div>`;
+  }
+
+  const cells = r => `
+      <td>${esc(r.stageLabel)}</td>
+      <td class="lg-range">${esc(r.range)}</td>
+      <td class="lg-n">${r.pages != null ? r.pages.toFixed(1) : '—'}</td>
+      <td class="lg-n">${r.score != null ? r.score + '%' : '—'}</td>
+      <td class="lg-n">${r.hifz || '—'}</td>
+      <td class="lg-n">${r.taj || '—'}</td>`;
+
+  let head, body;
+  if(_logView === 'grouped'){
+    head = `<tr><th>Lesson</th><th>Range</th><th>Pages</th><th>Strength</th><th>Mistakes</th><th>Tajweed</th></tr>`;
+    // Rows are already newest-first and a session's segments are contiguous,
+    // so a running key groups them without sorting or bucketing.
+    let last = null; body = '';
+    rows.forEach(r => {
+      if(r.sid !== last){
+        last = r.sid;
+        const segs = rows.filter(x => x.sid === r.sid).length;
+        body += `<tr class="lg-sess"><td colspan="6">
+          <b>${esc(r.date)}</b> <span class="lg-sub-i">${esc(r.time)}</span>
+          ${r.duration ? `<span class="lg-dur">${esc(r.duration)}</span>` : ''}
+          <span class="lg-segn">${segs} segment${segs===1?'':'s'}</span>
+          ${r.notes ? `<div class="lg-note-line">${esc(r.notes)}</div>` : ''}
+        </td></tr>`;
+      }
+      body += `<tr class="lg-seg">${cells(r)}</tr>`;
+    });
+  } else {
+    head = `<tr><th>Date</th><th>Lesson</th><th>Range</th><th>Pages</th><th>Strength</th><th>Mistakes</th><th>Tajweed</th></tr>`;
+    body = rows.map(r => `<tr>
+      <td>${esc(r.date)}<div class="lg-sub">${esc(r.time)}</div></td>${cells(r)}
+    </tr>`).join('');
+  }
+
+  const sessN = new Set(rows.map(r => r.sid)).size;
+  return filters + `
+    <div class="ms-sec" id="logPrintArea">
+      <div class="ms-sec-head"><span>Recitation log</span><span class="ms-sec-note">${rows.length} of ${all.length} segments · ${sessN} session${sessN===1?'':'s'}</span></div>
+      <div class="lg-scroll"><table class="lg-table">
+        <thead>${head}</thead>
+        <tbody>${body}</tbody>
+      </table></div>
+    </div>`;
+}
+
+/* CSV rather than a real .xlsx. An xlsx is a zip container, so writing one
+   needs a zip implementation or a CDN library — and this viewer has no external
+   scripts at all, which is what lets a student open a .qrs with no network. A
+   dependency that fails silently offline is a worse trade than losing column
+   widths.
+   The BOM is not optional: without it Excel reads the file as its local
+   codepage and every Arabic range comes out as mojibake. */
+function exportLogCSV(){
+  const rows = _logFiltered(activeSessions ? sessionsChrono(activeSessions) : []);
+  /* Duration and notes are session-level, so in the grouped view they are
+     written against the FIRST segment of each session and left blank after —
+     the spreadsheet stays flat and sortable without asserting that every
+     segment lasted an hour. The segment view omits them entirely, matching
+     what is on screen. */
+  const grouped = _logView === 'grouped';
+  const head = grouped
+    ? ['Date','Time','Lesson','Range','Pages','Strength','Mistakes','Tajweed','Duration','Notes']
+    : ['Date','Time','Lesson','Range','Pages','Strength','Mistakes','Tajweed'];
+  let seen = null;
+  const esc2 = v => {
+    const s = String(v == null ? '' : v);
+    return /[",\n]/.test(s) ? `"${s.replace(/"/g,'""')}"` : s;
+  };
+  const lines = [head.join(',')].concat(rows.map(r => {
+    const first = r.sid !== seen; seen = r.sid;
+    const base = [r.date, r.time, r.stageLabel, r.range,
+      r.pages != null ? r.pages.toFixed(1) : '',
+      r.score != null ? r.score : '', r.hifz, r.taj];
+    return (grouped ? base.concat([first ? r.duration : '', first ? r.notes : '']) : base)
+      .map(esc2).join(',');
+  }));
+  const blob = new Blob(['\uFEFF' + lines.join('\r\n')], {type:'text/csv;charset=utf-8;'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `recitation-log-${_ymd(new Date())}.csv`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+
+/* window.print() rather than a PDF library. It gives Save as PDF on every
+   platform including iOS, and it renders the Arabic with the browser's own
+   text engine — jsPDF would need the fonts embedded and still breaks Arabic
+   shaping, which would turn every range label into disconnected letters. */
+function printLog(){
+  document.body.classList.add('printing-log');
+  const done = () => { document.body.classList.remove('printing-log'); window.removeEventListener('afterprint', done); };
+  window.addEventListener('afterprint', done);
+  setTimeout(() => { window.print(); setTimeout(done, 1000); }, 60);
 }
 
 function msSetPaceUnit(u){ _msPaceUnit=u; _msRerender(); }
@@ -6157,7 +7602,12 @@ function _mrvMistakeRow(m, cfg, sessions){
   const tBdr = mt.borderColor || mt.color || 'var(--border2)';
   const bef  = (m.context?.before||[]).join(' ');
   const aft  = (m.context?.after ||[]).join(' ');
-  const target = `<span class="rv-ctx-target ${sev(m.correction).cls}" style="color:${tCol};border-bottom-color:${tBdr};">${m.word}</span>`;
+  /* sevForMistake, not sev(m.correction). A tajweed mistake has no correction,
+     so sev() falls to SEVERITY.c0 — green, "recovered unaided" — which is a
+     claim no teacher made and the exact fall-through this whole feature exists
+     to remove. It survived here because the row reads the field directly
+     rather than going through the helper that knows better. */
+  const target = `<span class="rv-ctx-target ${sevForMistake(m,cfg).cls}" style="color:${tCol};border-bottom-color:${tBdr};">${m.word}</span>`;
   // dir=rtl: `before` is written first but renders rightmost.
   const ctx = `<div class="rv-ctx">`
     + (bef?`<span class="rv-ctx-side">${bef}</span> `:'')
@@ -6169,7 +7619,11 @@ function _mrvMistakeRow(m, cfg, sessions){
       <span class="m-badge" style="${typeBadgeStyle(cfg,m.type)}">${mTypeLabel(m,cfg)}</span>
       <span class="rv-ref">${m.surah}:${m.ayah}</span>
       ${mistakeTimeText(m)?`<span class="rv-time" title="${mistakeTimeTitle(m)}">${mistakeTimeText(m)}</span>`:''}
-      <span class="m-corr ${corrClass2[m.correction]}" style="font-size:9px;margin-left:auto;">${mCorrLabel(m,cfg)}</span>
+      <!-- mLevelText: the letter and its makhraj, or the rule name, in the slot
+           the intervention level occupies for memorisation. mCorrLabel here
+           printed "Lvl 0 · No intervention" against every tajweed mark and
+           threw away the specificity the teacher took the trouble to record. -->
+      <span class="m-corr ${isTajweedMistake(m,cfg) ? 'c-tajweed' : corrClass2[m.correction]}" style="font-size:9px;margin-left:auto;">${mLevelText(m,cfg)}</span>
       ${m.sessionLabel && sessions.length>1?`<span class="rv-session-tag">${esc(m.sessionLabel)}</span>`:''}
     </div>
     ${ctx}
@@ -6284,7 +7738,11 @@ function buildReviewHTML(s){
   // deleted custom type — it matched nothing and EVERY bar read zero, with no
   // hint that 25 mistakes had gone uncounted.
   const present = [...new Set(ml.map(m=>migrateId(m.type)).filter(Boolean))];
-  const catalog = (cfg?.mistakeTypes || mistakeTypesActive).map(t=>migrateId(t.id));
+  // `mistakeTypesActive` was named here and never defined in this file — a
+  // ReferenceError for any session with no typeConfig at all, which blanks
+  // the whole review modal. The library is the viewer's equivalent: a list of
+  // type objects with `.id`, so it drops straight in.
+  const catalog = (cfg?.mistakeTypes || MISTAKE_TYPE_LIBRARY).map(t=>migrateId(t.id));
   const ordered = catalog.filter(id=>present.includes(id));      // catalog order first
   const extras  = present.filter(id=>!catalog.includes(id));     // then anything unlisted
   const types = [...ordered, ...extras];
@@ -6299,35 +7757,63 @@ function buildReviewHTML(s){
           _rvStrength would rebuild every chart from one page's mistakes — the
           bars would all collapse to the bar just tapped, and the strength score
           beside them would silently change. */
-       + _rvVerses(_rvApplyPageFilter(segs, ml), cfg);
+       + _rvVersesSplit(_rvApplyPageFilter(segs, ml), cfg);
 }
 
 // ── Header: who/what/when, remarks, and the level badge strip ──────
 function _rvHeader(s, t){
   return `<div class="rv-head">
     <h2>${esc(s.student)}</h2>
-    <p class="rv-sub">${esc(sessionNameOf(s))} · ${sessionDateText(s)}${sessionTimeText(s)?` ${sessionTimeText(s)}`:''}${(s.duration&&s.duration!=='00:00')?` · ${s.duration}`:''}</p>
+    <p class="rv-sub">${esc(sessionNameOf(s))} · ${sessionDateText(s)}${sessionTimeText(s)?` ${sessionTimeText(s)}`:''}${(s.duration&&s.duration!=='00:00')?` · ${s.duration}`:''}${
+      /* Shown only when the teacher DECLARED it. The inferred value adds
+         nothing a reader cannot see from the mistakes below, and printing a
+         guess as a statement is how "no tajweed marked" becomes "tajweed was
+         fine". */
+      s.focus ? `<span class="rv-focus-tag" title="Set by your teacher">${esc(FOCUS_LABEL[s.focus])}</span>` : ''
+    }</p>
     ${s.remarks?`<p class="rv-remarks">${esc(s.remarks)}</p>`:''}
     <div class="rv-badges">
-      <span class="m-badge" style="background:var(--parchment3);color:var(--ink2);">${t.total} mistakes</span>
+      ${(t.scored || !t.tajweed)?`<span class="m-badge" style="background:var(--parchment3);color:var(--ink2);">${t.scored} mistake${t.scored!==1?'s':''}</span>`:''}
+      ${t.tajweed?`<span class="m-badge" style="background:var(--tajweed-bg);color:var(--tajweed);">${t.tajweed} tajweed</span>`:''}
+      ${/* The level badges describe hifz mistakes only, so they stand down
+            entirely when there are none. A tajweed-only session reading
+            "9 mistakes · Lvl 1 0 · Lvl 2 0 · Lvl 3 0" was a contradiction
+            printed for a student to puzzle over. */
+        t.scored ? `
       ${t.c0?`<span class="m-badge" style="background:var(--green-bg);color:var(--green);">Lvl 0 · ${t.c0}</span>`:''}
       <span class="m-badge" style="background:var(--lvl1-yellow-bg);color:var(--lvl1-yellow);">Lvl 1 · ${t.c1}</span>
       <span class="m-badge" style="background:var(--lvl2-orange-bg);color:var(--lvl2-orange);">Lvl 2 · ${t.c2}</span>
       <span class="m-badge" style="background:var(--red-bg);color:var(--red);">Lvl 3 · ${t.c3}</span>
-      <span class="m-badge" style="background:var(--parchment3);color:var(--ink2);">◌ ${t.c4} other</span>
+      <span class="m-badge" style="background:var(--parchment3);color:var(--ink2);">◌ ${t.c4} other</span>` : ''}
     </div>
   </div>`;
 }
 
 // ── Strength: the headline number, with per-segment detail underneath ──
+/* Absence is not perfection — the rule we wrote for tajweed and never applied
+   back to memorisation.
+   A tajweed-only session has no memorisation mistakes because none were being
+   listened for, and strength-v3 divides by what was recited, so it returns a
+   high score for a session that assessed nothing. That is the same invented
+   result as reporting a clean tajweed section for a teacher who was not
+   marking tajweed.
+   Keyed on the session's FOCUS, declared or inferred, never on "there happen to
+   be no hifz mistakes" — a genuinely flawless recitation must still score. */
 function _rvStrength(s, ml){
   const segs = s.segments || [];
-  const score = sessionStrength(segs, ml);
+  const hifzAssessed = sessionFocus(s) !== 'tajweed';
+  const score = hifzAssessed ? sessionStrength(segs, ml) : null;
   const scorable = segs.filter(segmentScorable);
   const verses = scorable.reduce((n,sg)=>n+segVerseCount(segOrdered(sg)),0);
-  const sub = scorable.length
-    ? `${verses} verses recited across ${scorable.length} segment${scorable.length>1?'s':''}`
-    : 'No fully-recited range recorded for this session';
+  /* Without this the dial falls to strengthBand(null) — "Not enough recited" —
+     which is the wrong reason. Plenty was recited; memorisation simply was not
+     what was being listened for, and a reader told the wrong reason will go
+     looking for a fault in the recording. */
+  const sub = !hifzAssessed
+    ? 'Tajweed session — memorisation was not assessed'
+    : scorable.length
+      ? `${verses} verses recited across ${scorable.length} segment${scorable.length>1?'s':''}`
+      : 'No fully-recited range recorded for this session';
 
   const segCards = segs.map(sg=>{
     const o = segOrdered(sg);
@@ -6370,15 +7856,35 @@ function _rvCharts(ml, cfg, types, t){
   // migrateId on both sides: a session can hold mistakes saved under an older
   // id than its own typeConfig lists, which made every bar read zero.
   const tc   = Object.fromEntries(types.map(id=>[id, ml.filter(m=>migrateId(m.type)===migrateId(id)).length]));
-  const maxT = Math.max(1, ...Object.values(tc));
   if(!types.length){
     return `<div class="charts-row"><div class="chart-box"><h4>Mistake types</h4>
       <div class="chart-note">No mistakes recorded</div></div>
       ${_rvDonut(t)}</div>`;
   }
+  // Split by category rather than one mixed ranking. A hifz count and a tajweed
+  // count are not the same measurement — tajweed errors scale with how many
+  // opportunities the passage offered, hifz errors with how much was recalled —
+  // so ranking them against each other in one list invites a comparison that
+  // isn't there (DECISIONS_metric_split.md, "same question, different subject").
+  const catOf = id => resolveType(cfg,id).category || 'other';
+  const tajIds  = types.filter(id=>catOf(id)==='tajweed');
+  const hifzIds = types.filter(id=>catOf(id)!=='tajweed');
+  // Headings appear only when both are present. With one category the chart is
+  // byte-for-byte what it was before, which is most sessions.
+  const split = tajIds.length>0 && hifzIds.length>0;
+  const group = (ids,label)=>{
+    if(!ids.length) return '';
+    // Normalised within the group: a full bar means "the most of this kind",
+    // not "the most overall". Across groups the lengths are not comparable,
+    // which is exactly why they are separated.
+    const mx = Math.max(1, ...ids.map(id=>tc[id]));
+    return (split?`<div class="bar-group-h">${label}</div>`:'') + ids.map(id=>
+      `<div class="bar-row"><div class="bar-label">${typeLabelFor(cfg,id)}</div><div class="bar-track"><div class="bar-fill" style="width:${Math.round(tc[id]/mx*100)}%;background:${resolveType(cfg,id).color||'var(--ink3)'};"></div></div><div class="bar-count">${tc[id]}</div></div>`
+    ).join('');
+  };
   return `<div class="charts-row">
     <div class="chart-box"><h4>Mistake types</h4><div class="bar-chart">
-      ${types.map(id=>`<div class="bar-row"><div class="bar-label">${typeLabelFor(cfg,id)}</div><div class="bar-track"><div class="bar-fill" style="width:${t.total?Math.round(tc[id]/maxT*100):0}%;background:${resolveType(cfg,id).color||'var(--ink3)'};"></div></div><div class="bar-count">${tc[id]}</div></div>`).join('')}
+      ${group(hifzIds,'Memorisation')}${group(tajIds,'Tajweed')}
     </div></div>
     ${_rvDonut(t)}
   </div>`;
@@ -6393,9 +7899,15 @@ function _rvDonut(t){
     {label:'Lvl 3 · Taught', val:t.c3, color:sev('c3').color},
     {label:'Other',          val:t.c4, color:'var(--ink2)'},
   ];
+  // The ring was drawn against t.total while the slices summed to t.scored, so
+  // a session with tajweed marks rendered a ring with an unexplained gap the
+  // size of the tajweed count, above a centre number the legend rows did not
+  // add up to. Both now count scored mistakes, and the tajweed count is stated
+  // beneath rather than being silently absent.
   return `<div class="chart-box"><h4>Teacher intervention</h4><div class="chart-note">How much help was needed per mistake</div>
-      <div class="donut-wrap">${donutSVG(corrData,t.total)}<div class="donut-center"><span class="big">${t.total}</span><span class="lbl">total</span></div></div>
+      <div class="donut-wrap">${donutSVG(corrData,t.scored)}<div class="donut-center"><span class="big">${t.scored}</span><span class="lbl">scored</span></div></div>
       <div class="donut-legend">${corrData.map(d=>`<div class="dl-row"><div class="dl-dot" style="background:${d.color};"></div><span>${d.label} — ${d.val}</span></div>`).join('')}</div>
+      ${t.tajweed?`<div class="dl-note">+ ${t.tajweed} tajweed — intervention level does not apply</div>`:''}
     </div>`;
 }
 
@@ -6415,7 +7927,8 @@ function _rvFilterBar(seg, shown, total){
 
 // ── Work on these next ────────────────────────────────────────────
 function _rvFocus(ml, cfg){
-  const top = focusAyahs(ml, 5);
+  // Hifz only: the ranking uses intervention weight, which tajweed has none of.
+  const top = focusAyahs((ml||[]).filter(m=>!isTajweedMistake(m, cfg)), 5);
   if(top.length < 2) return '';   // a "top 5" of one is just the mistake list
   return `<div class="rv-focus">
     <div class="rv-focus-title">Work on these next</div>
@@ -6474,7 +7987,40 @@ function _rvSpotTest(spotTest, ml, cfg){
 }
 
 // ── Mistakes grouped by verse, each with its RTL context strip ────
-function _rvVerses(ml, cfg){
+/* What the session was for.
+   `focus` is written by the teacher's app ONLY when they overrode the
+   inference; absent means "work it out from the mistakes", which stays correct
+   even if a mistake is later edited. The inference must match the teacher
+   app's exactly or a declared tajweed session reaches the student as something
+   else. */
+function inferSessionFocus(s){
+  const ml = (s && s.mistakes) || [];
+  const cfg = (s && s.typeConfig) || null;
+  let hifz = false, taj = false;
+  ml.forEach(m => { if(isTajweedMistake(m, cfg)) taj = true; else hifz = true; });
+  if(hifz && taj) return 'both';
+  if(taj) return 'tajweed';
+  if(hifz) return 'hifz';
+  return null;
+}
+function sessionFocus(s){ return (s && s.focus) || inferSessionFocus(s); }
+const FOCUS_LABEL = {hifz:'Memorisation', tajweed:'Tajweed', both:'Memorisation & tajweed'};
+
+/* Two lists, each rendered only when it has entries — the same shape as the
+   teacher's report, so a student and their teacher are reading the same
+   document. A student who is only ever marked for hifz sees one list and no
+   headings, exactly as before. */
+function _rvVersesSplit(ml, cfg){
+  const hifz = (ml||[]).filter(m=>!isTajweedMistake(m,cfg));
+  const taj  = (ml||[]).filter(m=>isTajweedMistake(m,cfg));
+  if(!hifz.length && !taj.length) return _rvVerses(ml, cfg);
+  let h = '';
+  if(hifz.length) h += _rvVerses(hifz, cfg, taj.length ? 'Memorisation — by verse' : null);
+  if(taj.length)  h += _rvVerses(taj,  cfg, 'Tajweed — by verse', true);
+  return h;
+}
+
+function _rvVerses(ml, cfg, heading, isTajweed){
   const byAyah={};
   ml.forEach(m=>{const k=`${m.surah}:${m.ayah}`;(byAyah[k]=byAyah[k]||[]).push(m);});
   const keys=Object.keys(byAyah).sort((a,b)=>{
@@ -6484,8 +8030,8 @@ function _rvVerses(ml, cfg){
   // Collapsed by default: past a handful of mistakes the full list dominates
   // the modal and buries the summary above it. <details> keeps it one tap away
   // with no state to manage and no JS to go stale.
-  let h=`<details class="rv-details"${_rvListOpen?' open':''} ontoggle="rvSetListOpen(this.open)"><summary class="rv-summary">
-      <span>Mistakes by verse</span>
+  let h=`<details class="rv-details${isTajweed?' tajweed':''}"${_rvListOpen?' open':''} ontoggle="rvSetListOpen(this.open)"><summary class="rv-summary">
+      <span>${esc(heading || 'Mistakes by verse')}</span>
       <span class="rv-summary-n">${ml.length}</span>
       <span class="rv-chev">▾</span>
     </summary><div class="rv-details-body">`;
@@ -6519,19 +8065,28 @@ function _rvMistakeRow(m, cfg){
   const tBdr = mt.borderColor || mt.color || 'var(--border2)';
   const bef  = (m.context?.before||[]).join(' ');
   const aft  = (m.context?.after ||[]).join(' ');
-  const target = `<span class="rv-ctx-target ${sev(m.correction).cls}" style="color:${tCol};border-bottom-color:${tBdr};">${m.word}</span>`;
+  /* sevForMistake, not sev(m.correction). A tajweed mistake has no correction,
+     so sev() falls to SEVERITY.c0 — green, "recovered unaided" — which is a
+     claim no teacher made and the exact fall-through this whole feature exists
+     to remove. It survived here because the row reads the field directly
+     rather than going through the helper that knows better. */
+  const target = `<span class="rv-ctx-target ${sevForMistake(m,cfg).cls}" style="color:${tCol};border-bottom-color:${tBdr};">${m.word}</span>`;
   // dir=rtl: `before` is written first but renders rightmost.
   const ctxHtml = `<div class="rv-ctx">`
     + (bef?`<span class="rv-ctx-side">${bef}</span> `:'')
     + target
     + (aft?` <span class="rv-ctx-side">${aft}</span>`:'')
     + `</div>`;
-  return `<div class="rv-mistake rml-item" style="border-left-color:${sev(m.correction).color};">
+  return `<div class="rv-mistake rml-item" style="border-left-color:${sevForMistake(m,cfg).color};">
     <div class="rv-mistake-top">
       <span class="m-badge" style="${typeBadgeStyle(cfg,m.type)}">${mTypeLabel(m,cfg)}</span>
       <span class="rv-ref">${m.surah}:${m.ayah}</span>
       ${mistakeTimeText(m)?`<span class="rv-time" title="${mistakeTimeTitle(m)}">${mistakeTimeText(m)}</span>`:''}
-      <span class="m-corr ${corrClass2[m.correction]}" style="font-size:9px;margin-left:auto;">${mCorrLabel(m,cfg)}</span>
+      <!-- mLevelText: the letter and its makhraj, or the rule name, in the slot
+           the intervention level occupies for memorisation. mCorrLabel here
+           printed "Lvl 0 · No intervention" against every tajweed mark and
+           threw away the specificity the teacher took the trouble to record. -->
+      <span class="m-corr ${isTajweedMistake(m,cfg) ? 'c-tajweed' : corrClass2[m.correction]}" style="font-size:9px;margin-left:auto;">${mLevelText(m,cfg)}</span>
     </div>
     ${ctxHtml}
     ${m.note?`<div class="rml-note" style="padding:0 4px;font-size:10px;">${esc(m.note)}</div>`:''}
@@ -6546,7 +8101,8 @@ function donutSVG(sl,total){if(!total)return`<svg viewBox="0 0 88 88"><circle cx
 
 // ── SHARE
 function buildReport(sessions,mistakes){
-  const {c1:sf,c2:sp,c3:st,c4:so}=corrTally(mistakes);
+  const _tl=corrTally(mistakes);
+  const {c1:sf,c2:sp,c3:st,c4:so}=_tl;
   let t='📖 *Quran Recitation Session Report*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
   if(sessions.length===1){
     t+=`👤 Student : ${sessions[0].student}\n📜 Session  : ${sessionNameOf(sessions[0])}\n📅 Date    : ${sessions[0].date}   ⏱ ${sessions[0].duration}\n`;
@@ -6555,7 +8111,12 @@ function buildReport(sessions,mistakes){
     t+=`👤 Student : ${sessions[0].student}\n📜 Sessions: ${sessions.length}\n`;
     sessions.forEach((s,i)=>{t+=`  ${i+1}. ${sessionNameOf(s)} (${sessionDateText(s)})`;if(s.remarks)t+=` — ${s.remarks}`;t+='\n';});
   }
-  t+=`📊 Summary : ${mistakes.length} mistakes  |  Lvl 1: ${sf}  |  Lvl 2: ${sp}  |  Lvl 3: ${st}${so?`  |  Other: ${so}`:''}\n`;
+  /* Two numbers, never one total. A session with 3 memorisation mistakes and
+     9 tajweed slips is not "12 mistakes" — the two are different measurements
+     and adding them states something nobody observed. The levels now sum to
+     the first number, which they did not when tajweed was folded in. */
+  t+=`📊 Summary : ${_tl.scored} mistake${_tl.scored===1?'':'s'}  |  Lvl 1: ${sf}  |  Lvl 2: ${sp}  |  Lvl 3: ${st}${so?`  |  Other: ${so}`:''}\n`;
+  if(_tl.tajweed) t+=`🔤 Tajweed : ${_tl.tajweed} slip${_tl.tajweed===1?'':'s'}  (intervention level does not apply)\n`;
   if(repeatWordKeys.size>0)t+=`⚠ Repeated: ${repeatWordKeys.size} words appear in multiple sessions\n`;
   t+='━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n';
   // Spot test section (single session only)
@@ -6573,13 +8134,56 @@ function buildReport(sessions,mistakes){
     });
     t+='\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n';
   }
-  [...mistakes].sort((a,b)=>a.surah-b.surah||a.ayah-b.ayah||a.wordPos-b.wordPos).forEach((m,i)=>{
+  /* Split to match buildTextReport in the teacher app. Each section renders
+     only when it has entries, so a teacher who never marks tajweed receives
+     exactly the report they received before — which is most sessions. */
+  const _bySurah=(a,b)=>a.surah-b.surah||a.ayah-b.ayah||a.wordPos-b.wordPos;
+  const _hifz=mistakes.filter(m=>!isTajweedMistake(m)).sort(_bySurah);
+  const _taj =mistakes.filter(m=> isTajweedMistake(m)).sort(_bySurah);
+
+  const _common=(m)=>{
     const cfg=m.typeConfig||null;
     const bef=(m.context?.before||[]).join(' '),aft=(m.context?.after||[]).join(' ');
     const ctx=bef||aft?`${bef} *${m.word}* ${aft}`:m.word;
-    t+=`▪️ *Mistake ${i+1}*\n   Type         : ${mTypeLabel(m,cfg)}\n   Verse        : ${m.surah}:${m.ayah}\n   Word         : ${ctx}\n   Intervention : ${mCorrLabel(m,cfg)}\n`;
-    if(m.note)t+=`   Note   : ${m.note}\n`;if(sessions.length>1&&m.sessionLabel)t+=`   Session: ${m.sessionLabel}\n`;t+='\n';
-  });return t;
+    return `   Type         : ${mTypeLabel(m,cfg)}\n   Verse        : ${m.surah}:${m.ayah}\n   Word         : ${ctx}\n`;
+  };
+  const _tail=(m)=>{
+    let x='';
+    if(m.note)x+=`   Note         : ${m.note}\n`;
+    if(sessions.length>1&&m.sessionLabel)x+=`   Session      : ${m.sessionLabel}\n`;
+    return x+'\n';
+  };
+
+  if(_hifz.length){
+    if(_taj.length) t+='📖 *Memorisation*\n\n';
+    _hifz.forEach((m,i)=>{
+      const cfg=m.typeConfig||null;
+      t+=`▪️ *Mistake ${i+1}*\n`+_common(m)+`   Intervention : ${mCorrLabel(m,cfg)}\n`+_tail(m);
+    });
+  }
+
+  if(_taj.length){
+    if(_hifz.length) t+='━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n';
+    t+='🔤 *Tajweed*\n\n';
+    _taj.forEach((m,i)=>{
+      const sr=m.subrule;
+      t+=`▪️ *Tajweed ${i+1}*\n`+_common(m);
+      /* No Intervention line: the field does not exist for tajweed, and
+         printing "Lvl 0 · No intervention" claimed the student recovered
+         unaided. The letter or the rule takes its place — the thing the
+         teacher actually recorded. */
+      if(sr && sr.letter){
+        const mk=makhrajOf(sr.letter);
+        t+=`   Letter       : ${sr.letter}${mk?`  — ${mk.label}`:''}\n`;
+      } else if(sr && sr.rule){
+        t+=`   Rule         : ${ruleLabel(sr.rule)}\n`;
+      } else if(sr && sr.family){
+        t+=`   Rule         : ${sr.label || sr.family}\n`;
+      }
+      t+=_tail(m);
+    });
+  }
+  return t;
 }
 function openShare(){if(!activeMistakes.length){showToast('No sessions loaded');return;}document.getElementById('shareOut').textContent=buildReport(activeSessions,activeMistakes);document.getElementById('shareModal').classList.add('open');}
 async function copyReport(){const text=document.getElementById('shareOut').textContent,btn=document.getElementById('copyBtn');try{await navigator.clipboard.writeText(text);}catch{const ta=document.createElement('textarea');ta.value=text;ta.style.cssText='position:fixed;opacity:0;';document.body.appendChild(ta);ta.focus();ta.select();document.execCommand('copy');document.body.removeChild(ta);}btn.textContent='✓ Copied!';setTimeout(()=>btn.textContent='Copy text',2000);}
@@ -6785,11 +8389,58 @@ function inReviewMode(){
 function toAr(n){return n.toString().replace(/[0-9]/g,d=>'٠١٢٣٤٥٦٧٨٩'[d]);}
 function closeModal(id){document.getElementById(id).classList.remove('open');}
 function switchSvTab(tab){
-  ['types','levels','keys','progress'].forEach(t=>{
+  if(tab === 'tajweed') renderTajweedGuide();
+  ['types','levels','keys','progress','tajweed'].forEach(t=>{
     document.getElementById(`svt-${t}`).classList.toggle('active', t===tab);
     document.getElementById(`svp-${t}`).style.display = t===tab ? '' : 'none';
   });
 }
+// Built on demand rather than written into the markup: 46 entries duplicated by
+// hand would be 46 chances for the reference to say one thing and the popup
+// another.
+let _tjGuideBuilt = false;
+function renderTajweedGuide(){
+  if(_tjGuideBuilt) return;
+  const body = document.getElementById('tjGuideBody');
+  if(!body) return;
+
+  // Grouped by region, in the classical order — throat outward to the lips —
+  // because that is how the makharij are taught and how a reader will look one
+  // up. The order of MAKHRAJ_GUIDE's keys already follows it.
+  const REGIONS = [
+    ['Oral cavity',  ['ا']],
+    ['Throat',       ['ء','ه','ع','ح','غ','خ']],
+    ['Tongue',       ['ق','ك','ج','ش','ي','ض','ل','ن','ر','ط','د','ت','ص','س','ز','ظ','ذ','ث']],
+    ['Lips',         ['ف','ب','م','و']],
+  ];
+
+  let h = '<div class="hlp-t"><h4>Where each letter comes from</h4>'
+        + '<p>Makhraj — the point in the mouth or throat a letter is produced at. '
+        + 'When a mistake is marked as a makhraj slip, this is the note you will see.</p></div>';
+
+  REGIONS.forEach(([name, letters]) => {
+    h += `<div class="tj-region">${esc(name)}</div><div class="tj-rows">`;
+    letters.forEach(c => {
+      if(!MAKHRAJ_GUIDE[c]) return;
+      h += `<div class="tj-row"><span class="tj-letter">${esc(c)}</span>`
+         + `<span class="tj-text">${esc(MAKHRAJ_GUIDE[c])}</span></div>`;
+    });
+    h += '</div>';
+  });
+
+  h += '<div class="hlp-t" style="margin-top:14px;"><h4>The rules</h4>'
+     + '<p>Each of these describes something to do with the sound rather than the letter itself. '
+     + 'They are listed commonest first.</p></div><div class="tj-rows">';
+  Object.keys(TAJWEED_GUIDE).forEach(id => {
+    h += `<div class="tj-row"><span class="tj-rule">${esc(ruleLabel(id))}</span>`
+       + `<span class="tj-text">${esc(TAJWEED_GUIDE[id])}</span></div>`;
+  });
+  h += '</div>';
+
+  body.innerHTML = h;
+  _tjGuideBuilt = true;
+}
+
 function openInterventionGuide(tab){
   document.getElementById('interventionModal').classList.add('open');
   switchSvTab(tab||'types');
