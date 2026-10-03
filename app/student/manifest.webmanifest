@@ -1,0 +1,33 @@
+{
+  "name": "Tehfīz for students",
+  "short_name": "Tehfīz",
+  "description": "Read the feedback your teacher sends after each lesson.",
+  "id": "/app/student/",
+  "start_url": "/app/student/",
+  "scope": "/app/student/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f5f5f3",
+  "theme_color": "#17191c",
+  "lang": "en",
+  "icons": [
+    {
+      "src": "/app/shared/icons/student-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/app/shared/icons/student-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/app/shared/icons/student-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

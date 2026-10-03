@@ -1,0 +1,12 @@
+# Files in this repo that are NOT part of the website.
+# Cloudflare uploads everything in the assets directory (".", the whole repo)
+# except what is listed here. Without this file, /.git/, /README.md and
+# /wrangler.jsonc were all publicly downloadable from tehfiz.com.
+.git
+.git/**
+.github
+.assetsignore
+.gitignore
+README.md
+wrangler.jsonc
+node_modules

@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-     Tehfiz privacy & terms — v0_3
+     Tehfiz privacy & terms — v0_6
      Deploys to privacy/index.html in the `tehfiz` repo.
      Two version strings, not three: filename and the line above. There is no
      APP_VERSION const because there is no script on this page.
@@ -9,6 +9,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#17191c">
 <title>Privacy &amp; Terms — Tehfīz</title>
 <meta name="description" content="What Tehfīz stores, what it deliberately does not store, and the terms of use.">
 <meta name="robots" content="index, follow">
@@ -32,23 +33,30 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&family=Amiri&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 :root{
-  --ink:#1a1612;--ink2:#5a5248;--ink3:#9a928a;
-  --parchment:#faf7f2;--parchment2:#f2ede4;--parchment3:#e8e0d4;
-  --gold:#b8841a;--gold-pale:#fdf5e0;
+  /* Graphite — the same palette as the apps (teacher v4_301, viewer v1_152).
+     Names kept from the parchment era so every rule below still resolves:
+       --gold        the accent on LIGHT surfaces (fills, borders, labels)
+       --gold-light  text on DARK surfaces (nav, hero, footer)
+       --gold-pale   a raised light surface (callouts, featured card)
+       --on-dark     the accent on DARK surfaces (hero button, nav button)
+     Mistake-level colours are data and are unchanged. */
+  --ink:#17191c;--ink2:#3f444b;--ink3:#626973;
+  --parchment:#f5f5f3;--parchment2:#ecece8;--parchment3:#dcdcd7;
+  --gold:#17191c;--gold-pale:#ffffff;
   --green:#2d6a4f;--green-bg:#d8f3dc;
   --amber:#7d4e00;--lvl1-yellow-bg:#fdf3d4;
-  --border:rgba(90,82,72,0.15);--border2:rgba(90,82,72,0.28);
+  --border:rgba(23,25,28,0.13);--border2:rgba(23,25,28,0.25);
 }
 html{scroll-behavior:smooth;}
-body{font-family:'Lora',Georgia,serif;background:var(--parchment);color:var(--ink);
+body{font-family:'IBM Plex Sans','Amiri',system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--parchment);color:var(--ink);
   font-size:16px;line-height:1.75;}
 .wrap{max-width:720px;margin:0 auto;padding:34px 22px 70px;}
 header{border-bottom:1px solid var(--border);padding-bottom:20px;margin-bottom:32px;}
-.brand{font-size:13px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);
+.brand{font-size:13px;letter-spacing:2px;text-transform:uppercase;color:var(--ink2);
   text-decoration:none;font-weight:600;}
 h1{font-size:30px;line-height:1.25;margin:14px 0 8px;font-weight:700;}
 .sub{color:var(--ink2);font-size:15px;}
@@ -59,9 +67,9 @@ p{margin-bottom:13px;color:var(--ink2);}
 ul{margin:0 0 13px 20px;color:var(--ink2);}
 li{margin-bottom:7px;}
 strong{color:var(--ink);}
-a{color:var(--gold);}
+a{color:var(--ink);text-underline-offset:2px;}
 code{font-family:'IBM Plex Mono',monospace;font-size:13px;background:var(--gold-pale);
-  border-radius:4px;padding:1px 5px;color:var(--amber);}
+  border:1px solid var(--border);border-radius:4px;padding:1px 5px;color:var(--ink);}
 .callout{background:var(--green-bg);border-left:3px solid var(--green);border-radius:0 8px 8px 0;
   padding:14px 18px;margin:20px 0;}
 .callout p{color:var(--ink);margin-bottom:0;}
@@ -156,8 +164,8 @@ code by their teacher and choose a 4-digit PIN.</p>
       of the database alone</td></tr>
   <tr><td>Recitation sessions</td><td>Which verses were recited, which words were mistaken, the type of
       mistake, how much help the teacher gave, and any notes the teacher wrote</td></tr>
-  <tr><td>Devices signed in</td><td>Stored as a one-way fingerprint so a teacher can sign a lost device out.
-      The actual sign-in token is never stored</td></tr>
+  <tr><td>Devices signed in</td><td>Stored as a one-way fingerprint, so that resetting a student's PIN
+      signs out every device they use. The actual sign-in token is never stored</td></tr>
 </table>
 
 <p><strong>What is deliberately absent:</strong> no name, no age, no school, no email

@@ -1,0 +1,287 @@
+/* tehfiz-shared.css — s2
+   Theme tokens, the theme picker and the one-row header, shared by both apps.
+   Loaded in <head> before each app's own <style>, from
+   /app/shared/tehfiz-shared.css?v=s2. Each app's own .topbar rules still
+   exist and load later, so header rules here are written one class stronger
+   (.topbar.tzh-bar) to win without !important. */
+/* ═══ THEMES ════════════════════════════════════════════════════════════
+   Shared verbatim between the teacher app and the viewer — diff them after
+   editing either. Selected by <html data-tz-theme>, set before first paint
+   by the bootstrap in <head> and changed by TehfizTheme (Settings → Display).
+
+   Bare :root is Graphite, the default, so a page whose bootstrap failed still
+   renders a complete palette.
+
+   Only the interface changes between themes. The mistake colours (levels,
+   types, tajweed, spot blue) are data and are defined once in :root above.
+
+   Roles — --gold keeps its name so 1,600 existing references keep working,
+   but it now means ONE thing: the accent used as a fill, border or outline.
+     --gold         accent fill / border / outline
+     --on-gold      text on an accent fill
+     --gold-ink     accent used as text on a light surface
+     --gold-light   light accent tint (borders, washes)
+     --gold-pale    selected / highlighted background
+     --chrome       dark surfaces: top bar, view bar, dark buttons, panel heads
+     --chrome-2/3   controls on chrome, and their hover
+     --chrome-input text inputs on chrome
+     --on-ink       text on chrome (was --gold-light used as text)
+     --chrome-accent  the accent where it sits ON chrome (brand, active tab,
+                      Import) — Graphite's black accent would vanish there
+     --chrome-rule  the rule under the top bar
+     --ornament     the mushaf page frame and surah band — decoration, so
+                    Graphite draws it grey rather than in its black accent
+     --ui-font      interface face; the mushaf keeps its QCF fonts          */
+:root{
+  --ink:#17191c;--ink2:#3f444b;--ink3:#626973;
+  --parchment:#f5f5f3;--parchment2:#ecece8;--parchment3:#dcdcd7;
+  --gold:#17191c;--on-gold:#ffffff;--gold-ink:#17191c;--gold-light:#d6d8dc;--gold-pale:#e9eaed;
+  --chrome:#17191c;--chrome-2:#26292e;--chrome-3:#32363c;--chrome-input:#0f1113;
+  --on-ink:#e8e9ea;--chrome-accent:#e8e9ea;--chrome-rule:#17191c;
+  --ornament:#a6abb2;
+  --border:rgba(23,25,28,0.13);--border2:rgba(23,25,28,0.25);
+  --ui-font:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+}
+/* Lapis, Mulberry and Classic share Graphite's neutral ground — page, panels,
+   top bar, text — and differ ONLY in accents: fills, selected outlines, accent
+   text, the active tab, the rule under the top bar and the mushaf frame. A
+   tinted ground made every surface read blue (or plum, or cream) and the
+   tinted near-white text sat poorly on it.
+   --gold-pale (selected / highlighted background) is the neutral one too; the
+   selected state shows its theme through its accent border instead. */
+:root[data-tz-theme="lapis"]{
+  --ink:#17191c;--ink2:#3f444b;--ink3:#626973;
+  --parchment:#f5f5f3;--parchment2:#ecece8;--parchment3:#dcdcd7;
+  --chrome:#17191c;--chrome-2:#26292e;--chrome-3:#32363c;--chrome-input:#0f1113;--on-ink:#e8e9ea;
+  --border:rgba(23,25,28,0.13);--border2:rgba(23,25,28,0.25);
+  --gold:#2a4fb8;--on-gold:#ffffff;--gold-ink:#2a4fb8;--gold-light:#c5d2f2;--gold-pale:#e9eaed;
+  --chrome-accent:#9db4f0;--chrome-rule:#2a4fb8;--ornament:#2a4fb8;
+  --ui-font:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+}
+:root[data-tz-theme="mulberry"]{
+  --ink:#17191c;--ink2:#3f444b;--ink3:#626973;
+  --parchment:#f5f5f3;--parchment2:#ecece8;--parchment3:#dcdcd7;
+  --chrome:#17191c;--chrome-2:#26292e;--chrome-3:#32363c;--chrome-input:#0f1113;--on-ink:#e8e9ea;
+  --border:rgba(23,25,28,0.13);--border2:rgba(23,25,28,0.25);
+  --gold:#7a2e62;--on-gold:#ffffff;--gold-ink:#7a2e62;--gold-light:#e2c6d8;--gold-pale:#e9eaed;
+  --chrome-accent:#e0a6cf;--chrome-rule:#7a2e62;--ornament:#7a2e62;
+  --ui-font:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+}
+/* Gold accents on the neutral ground, keeping the original Lora face. Stored
+   as 'classic' so existing choices carry over. Gold as TEXT is darkened
+   (#b8841a was 3.1:1 on a light ground); as a fill it stays the original gold. */
+:root[data-tz-theme="classic"]{
+  --ink:#17191c;--ink2:#3f444b;--ink3:#626973;
+  --parchment:#f5f5f3;--parchment2:#ecece8;--parchment3:#dcdcd7;
+  --chrome:#17191c;--chrome-2:#26292e;--chrome-3:#32363c;--chrome-input:#0f1113;--on-ink:#e8e9ea;
+  --border:rgba(23,25,28,0.13);--border2:rgba(23,25,28,0.25);
+  --gold:#b8841a;--on-gold:#17191c;--gold-ink:#8a6212;--gold-light:#f5e8c8;--gold-pale:#e9eaed;
+  --chrome-accent:#d9a53a;--chrome-rule:#b8841a;--ornament:#b8841a;
+  --ui-font:'Lora',Georgia,serif;
+}
+/* Theme picker (Settings → Display) */
+.tz-theme-choice{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;}
+.tz-theme-opt{display:flex;align-items:center;gap:8px;padding:7px 9px;border-radius:7px;cursor:pointer;
+  border:1px solid var(--border2);background:var(--parchment);color:var(--ink);font-family:var(--ui-font);
+  font-size:13px;text-align:left;min-height:40px;}
+.tz-theme-opt:hover{background:var(--parchment2);}
+.tz-theme-opt.on{border-color:var(--gold);box-shadow:inset 0 0 0 1px var(--gold);font-weight:600;}
+.tz-theme-opt:focus-visible{outline:2px solid var(--gold);outline-offset:2px;}
+.tz-theme-sw{display:inline-flex;flex:none;border-radius:4px;overflow:hidden;border:1px solid rgba(0,0,0,.15);}
+.tz-theme-sw i{display:block;width:10px;height:20px;}
+.tz-theme-name{display:flex;flex-direction:column;line-height:1.25;min-width:0;}
+.tz-theme-name small{font-size:12px;font-weight:400;color:var(--ink3);}
+
+/* ═══ HEADER — one row (TehfizHeader, h1) ═══════════════════════════════
+   Markup in each app; the menu, View popover and Go to sheet are built by
+   tehfiz-header.js. Every selector is prefixed .tzh-.
+   Wide screens: Menu · brand · inline position controls · … · auto-scroll ·
+   View · app buttons · timer · account.
+   Compact (body.compact-ui): Menu · position button · … · timer. App buttons
+   marked .tzh-roomy stay on tablets (>700px) and go into the menu on phones. */
+.topbar.tzh-bar{flex-direction:row;align-items:center;gap:8px;height:56px;padding:0 10px;
+  box-sizing:border-box;flex-wrap:nowrap;border-bottom:2px solid var(--chrome-rule);}
+.tzh-bar .tzh-btn{height:40px;display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  padding:0 12px;border:1px solid var(--chrome-3);border-radius:8px;background:var(--chrome-2);
+  color:var(--on-ink);font:500 14px var(--ui-font);cursor:pointer;white-space:nowrap;flex:none;}
+.tzh-bar .tzh-btn:hover{background:var(--chrome-3);}
+.tzh-bar .tzh-btn:focus-visible,.tzh-bar select:focus-visible,.tzh-bar input:focus-visible{
+  outline:2px solid var(--chrome-accent);outline-offset:1px;}
+.tzh-bar .tzh-btn[aria-expanded="true"]{background:var(--on-ink);color:var(--chrome);border-color:var(--on-ink);}
+.tzh-bar .tzh-icon-btn{width:40px;padding:0;}
+.tzh-bar .tzh-menu-btn{padding:0 12px 0 10px;}
+.tzh-brand{font:600 15px var(--ui-font);letter-spacing:.02em;color:var(--on-ink);margin:0 4px;white-space:nowrap;flex:none;}
+.tzh-brand span{color:var(--chrome-accent);font-weight:400;font-size:13px;margin-left:5px;}
+.tzh-spacer{flex:1 1 auto;min-width:4px;}
+.tzh-vsep{width:1px;height:26px;background:var(--chrome-3);flex:none;margin:0 2px;}
+
+/* Inline position controls (wide): one bordered group. */
+.tzh-bar .tzh-nav{display:flex;align-items:center;height:40px;flex:0 1 auto;justify-content:flex-start;border:1px solid var(--chrome-3);
+  border-radius:8px;background:var(--chrome-2);overflow:visible;flex-wrap:nowrap;gap:0;min-width:0;}
+.tzh-bar .tzh-nav .sel{height:38px;border:none;background:transparent;color:var(--on-ink);
+  font:400 14px var(--ui-font);padding:0 8px;max-width:200px;border-radius:8px 0 0 8px;}
+.tzh-bar .tzh-nav .sel option{color:var(--ink);background:var(--parchment);}
+.tzh-bar .tzh-nav .tzh-nav-sep{display:block;width:1px;height:38px;flex:none;background:var(--chrome-3);}
+.tzh-bar .tzh-nav .tzh-pgbtn{width:30px;height:38px;border:none;background:transparent;color:var(--on-ink);
+  cursor:pointer;font-size:16px;display:inline-flex;align-items:center;justify-content:center;}
+.tzh-bar .tzh-nav .tzh-pgbtn:hover{background:var(--chrome-3);}
+.tzh-bar .tzh-nav #jumpPageInput{width:46px!important;height:30px;text-align:center;background:transparent!important;
+  border:none!important;color:var(--on-ink)!important;font:500 14px 'IBM Plex Mono',monospace!important;padding:0!important;
+  -moz-appearance:textfield;appearance:textfield;}
+.tzh-bar .tzh-nav #jumpPageInput::-webkit-inner-spin-button,.tzh-bar .tzh-nav #jumpPageInput::-webkit-outer-spin-button{-webkit-appearance:none;margin:0;}
+.tzh-bar .tzh-nav .tzh-pglbl{font:400 12px var(--ui-font);color:rgba(255,255,255,.55);padding-left:4px;}
+.tzh-bar .tzh-nav .pos-nav{margin:0;}
+.tzh-bar .tzh-nav .pos-nav-label{border:none;background:transparent;height:38px;display:inline-flex;align-items:center;
+  padding:0 12px;font-size:14px;border-radius:0 8px 8px 0;}
+
+/* The viewer's sessions-panel toggle has id-level styles of its own. */
+.topbar.tzh-bar #panelToggleBtn{background:var(--chrome-2);border:1px solid var(--chrome-3);border-radius:8px;
+  padding:0 12px;height:40px;font:500 14px var(--ui-font);color:var(--on-ink);}
+.topbar.tzh-bar #panelToggleBtn:hover{background:var(--chrome-3);}
+/* Compact position button. */
+.tzh-bar .tzh-goto{display:none;flex:1 1 auto;min-width:0;max-width:320px;justify-content:space-between;
+  text-align:left;padding:0 10px;height:44px;}
+.tzh-goto-txt{display:flex;flex-direction:column;min-width:0;line-height:1.2;}
+.tzh-goto-main{font:600 15px var(--ui-font);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.tzh-goto-sub{font:400 12px var(--ui-font);color:rgba(255,255,255,.6);white-space:nowrap;}
+
+/* Timer: one pill — the time (tap to correct) and Start/Pause. Reset shows
+   only while the time is being corrected. */
+.tzh-bar .tzh-timer{display:flex;align-items:center;height:40px;border:1px solid var(--chrome-3);border-radius:8px;
+  background:var(--chrome-2);flex:none;gap:0;padding:0 2px 0 6px;}
+.tzh-bar .tzh-timer .tdisplay{font:500 15px 'IBM Plex Mono',monospace;padding:4px 6px;border-radius:6px;min-width:0;}
+.tzh-bar .tzh-timer .btn-t{height:34px;border:none;background:transparent;font:600 14px var(--ui-font);
+  display:inline-flex;align-items:center;gap:4px;padding:0 10px;border-radius:6px;color:var(--on-ink);}
+.tzh-bar .tzh-timer .btn-t:hover{background:var(--chrome-3);}
+.tzh-bar .tzh-timer .tzh-reset{display:none;}
+.tzh-bar .tzh-timer.editing .tzh-reset{display:inline-flex;}
+.tzh-bar .tzh-timer .tdisplay-input{height:30px;box-sizing:border-box;}
+
+/* Account (wide): initials with a status dot. */
+.tzh-who{display:flex;align-items:center;flex:none;}
+.tzh-who .tzh-av{width:36px;height:36px;border-radius:50%;background:var(--chrome-3);color:var(--on-ink);
+  display:inline-flex;align-items:center;justify-content:center;font:600 13px var(--ui-font);position:relative;
+  border:none;cursor:pointer;padding:0;}
+.tzh-who .tzh-av:hover{background:#41464d;}
+.tzh-who .tzh-av .tzh-dot{position:absolute;right:-1px;bottom:-1px;border:2px solid var(--chrome);}
+
+.tzh-dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:#8a9099;flex:none;}
+.tzh-dot.ok{background:#52b788;}
+.tzh-dot.warn{background:#e0a030;}
+
+/* Auto-scroll toggle on the bar (wide) — the app's own #asToggleBtn. */
+.tzh-bar #tzhAsWrap{display:flex;flex:none;}
+.tzh-bar #tzhAsWrap .vc-btn{width:40px;height:40px;border-radius:8px;border:1px solid var(--chrome-3);
+  background:var(--chrome-2);color:var(--on-ink);font-size:15px;padding:0;}
+.tzh-bar #tzhAsWrap .vc-btn.active-vc{background:var(--chrome-accent);color:var(--chrome);}
+
+/* View popover (wide): the app's zoom and speed controls, on chrome so their
+   existing chrome styling holds. */
+.tzh-viewpop{position:fixed;z-index:1100;background:var(--chrome);color:var(--on-ink);border:1px solid var(--chrome-3);
+  border-radius:10px;box-shadow:0 12px 32px rgba(0,0,0,.35);padding:10px 12px;display:flex;flex-direction:column;gap:8px;
+  font-family:var(--ui-font);}
+.tzh-viewpop[hidden]{display:none;}
+.tzh-viewpop .view-controls{display:flex!important;align-items:center;gap:6px;padding:2px 0;flex-wrap:nowrap;}
+.tzh-viewpop .tzh-vp-l{font-size:12px;letter-spacing:.06em;color:rgba(255,255,255,.55);min-width:84px;}
+.tzh-viewpop .vc-btn{min-width:32px;height:32px;}
+.tzh-viewpop .vc-label{color:rgba(255,255,255,.7);}
+
+/* Compact: the bar shrinks to Menu · position · timer. */
+body.compact-ui .topbar.tzh-bar{padding:0 6px;gap:6px;}
+body.compact-ui .tzh-bar .tzh-nav,
+body.compact-ui .tzh-bar .tzh-wide,
+body.compact-ui .tzh-bar #tzhViewBtn,
+body.compact-ui .tzh-bar #tzhAsWrap,
+body.compact-ui .tzh-bar .tzh-who,
+body.compact-ui .tzh-bar .tzh-vsep{display:none;}
+body.compact-ui .tzh-bar .tzh-goto{display:inline-flex;}
+body.compact-ui .tzh-bar .tzh-btn{height:44px;}
+body.compact-ui .tzh-bar .tzh-menu-btn{width:44px;padding:0;border-color:transparent;background:transparent;}
+body.compact-ui .tzh-bar .tzh-timer{height:44px;}
+body.compact-ui .tzh-bar .tzh-timer .btn-t-label{display:none;}
+@media (max-width:700px){ body.compact-ui .tzh-bar .tzh-roomy{display:none;} }
+/* Narrow desktop windows: drop the words before anything wraps. */
+@media (max-width:1180px){ body:not(.compact-ui) .tzh-bar .tzh-brand{display:none;} }
+@media (max-width:1040px){ body:not(.compact-ui) .tzh-bar .tzh-menu-btn .tzh-wide{display:none;} }
+
+/* ── menu ── */
+#tzhRoot{font-family:var(--ui-font);}
+.tzh-menu-wrap.is-pop .tzh-menu{position:fixed;z-index:1200;width:290px;max-height:calc(100vh - 80px);overflow:auto;
+  background:var(--parchment);color:var(--ink);border:1px solid var(--border2);border-radius:10px;
+  box-shadow:0 12px 32px rgba(23,25,28,.22);opacity:0;transform:translateY(-4px);transition:opacity .12s,transform .12s;}
+.tzh-menu-wrap.is-pop.on .tzh-menu{opacity:1;transform:none;}
+.tzh-menu-wrap.is-pop .tzh-mh{padding:12px 14px 10px;border-bottom:1px solid var(--border);}
+.tzh-menu-wrap.is-pop .tzh-mh-top{display:none;}
+.tzh-menu-wrap.is-drawer{position:fixed;inset:0;z-index:1200;pointer-events:none;}
+.tzh-menu-wrap.is-drawer.on{pointer-events:auto;}
+.tzh-scrim{position:absolute;inset:0;background:rgba(23,25,28,.45);opacity:0;transition:opacity .2s;}
+.on > .tzh-scrim{opacity:1;}
+.tzh-menu-wrap.is-drawer .tzh-menu{position:absolute;left:0;top:0;bottom:0;width:min(318px,86vw);display:flex;flex-direction:column;
+  background:var(--parchment);color:var(--ink);box-shadow:6px 0 24px rgba(23,25,28,.25);
+  transform:translateX(-102%);transition:transform .22s cubic-bezier(.4,0,.2,1);}
+.tzh-menu-wrap.is-drawer.on .tzh-menu{transform:none;}
+.tzh-menu-wrap.is-drawer .tzh-mh{background:var(--chrome);color:var(--on-ink);padding:10px 12px 14px 16px;
+  padding-top:max(10px, env(safe-area-inset-top));}
+.tzh-mh-top{display:flex;align-items:center;justify-content:space-between;}
+.tzh-mh-brand{font-weight:600;font-size:16px;letter-spacing:.02em;}
+.tzh-mh-name{font-size:14px;font-weight:600;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.tzh-mh-sub{font-size:12px;opacity:.75;display:flex;align-items:center;gap:6px;margin-top:2px;}
+.tzh-menu-wrap.is-pop .tzh-mh-sub{opacity:1;color:var(--ink3);}
+.tzh-mh-act{margin-top:8px;height:36px;padding:0 12px;border-radius:8px;border:1px solid currentColor;background:transparent;
+  color:inherit;font:500 13px var(--ui-font);cursor:pointer;}
+.tzh-x{width:40px;height:40px;border:none;border-radius:8px;background:transparent;color:inherit;cursor:pointer;
+  display:inline-flex;align-items:center;justify-content:center;}
+.tzh-x:hover{background:rgba(255,255,255,.1);}
+.tzh-mbody{flex:1 1 auto;overflow:auto;padding:6px;display:flex;flex-direction:column;}
+.tzh-mi{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:12px;min-height:44px;padding:0 12px;
+  border-radius:8px;font-size:15px;cursor:pointer;color:var(--ink);}
+.tzh-menu-wrap.is-pop .tzh-mi{min-height:40px;font-size:14px;}
+.tzh-mi:hover,.tzh-mi:focus-visible{background:var(--parchment3);}
+.tzh-mi:focus-visible{outline:2px solid var(--gold);outline-offset:-2px;}
+.tzh-mi .tzh-ic{flex:none;color:var(--ink2);}
+.tzh-mi-l{flex:1 1 auto;}
+.tzh-kbd{font:400 12px 'IBM Plex Mono',monospace;color:var(--ink3);background:none;border:none;}
+.tzh-sep-h{height:1px;background:var(--border);margin:6px 10px;}
+.tzh-mlabel{font-size:12px;font-weight:500;letter-spacing:.06em;color:var(--ink3);padding:6px 12px 2px;text-transform:uppercase;}
+.tzh-mrow{display:flex;align-items:center;gap:8px;padding:4px 12px;min-height:48px;font-size:14px;}
+.tzh-mrow > span:first-child{flex:1 1 auto;}
+.tzh-step{min-width:44px;height:40px;border:1px solid var(--border2);border-radius:8px;background:#fff;color:var(--ink);
+  font:500 18px var(--ui-font);cursor:pointer;}
+.tzh-step-w{font-size:13px;padding:0 10px;}
+.tzh-step:hover{background:var(--parchment2);}
+.tzh-speed{font:500 14px 'IBM Plex Mono',monospace;min-width:40px;text-align:center;}
+.tzh-mfoot{border-top:1px solid var(--border);padding:6px;display:flex;gap:4px;
+  padding-bottom:max(6px, env(safe-area-inset-bottom));}
+.tzh-mf{flex:1 1 0;min-height:44px;display:inline-flex;align-items:center;justify-content:center;gap:6px;border:none;
+  background:transparent;border-radius:8px;font:500 14px var(--ui-font);color:var(--ink2);text-decoration:none;cursor:pointer;}
+.tzh-mf:hover{background:var(--parchment3);color:var(--ink);}
+
+/* ── Go to sheet ── */
+.tzh-goto-wrap{position:fixed;inset:0;z-index:1200;pointer-events:none;}
+.tzh-goto-wrap.on{pointer-events:auto;}
+.tzh-sheet{position:absolute;left:0;right:0;bottom:0;max-height:88vh;overflow:auto;background:var(--parchment);color:var(--ink);
+  border-radius:16px 16px 0 0;padding:8px 16px 18px;padding-bottom:max(18px, env(safe-area-inset-bottom));
+  display:flex;flex-direction:column;gap:14px;box-shadow:0 -6px 24px rgba(23,25,28,.22);
+  transform:translateY(102%);transition:transform .22s cubic-bezier(.4,0,.2,1);max-width:560px;margin:0 auto;}
+.tzh-goto-wrap.on .tzh-sheet{transform:none;}
+.tzh-grab{width:40px;height:4px;border-radius:999px;background:var(--parchment3);align-self:center;}
+.tzh-sheet-head{display:flex;align-items:center;justify-content:space-between;}
+.tzh-sheet-head h2{margin:0;font-size:18px;font-weight:600;}
+.tzh-x-light{border:1px solid var(--border2);background:#fff;}
+.tzh-x-light:hover{background:var(--parchment2);}
+.tzh-f{display:flex;flex-direction:column;gap:6px;font-size:12px;font-weight:500;color:var(--ink3);letter-spacing:.04em;text-transform:uppercase;}
+.tzh-f2{display:grid;grid-template-columns:1fr 96px;gap:10px;}
+.tzh-f select,.tzh-f input{height:46px;box-sizing:border-box;padding:0 10px;border:1px solid var(--border2);border-radius:8px;
+  background:#fff;color:var(--ink);font:400 16px var(--ui-font);text-transform:none;letter-spacing:0;min-width:0;width:100%;}
+.tzh-f input{font-family:'IBM Plex Mono',monospace;font-weight:500;}
+.tzh-pager{display:flex;gap:8px;align-items:center;}
+.tzh-pager input{text-align:center;flex:1 1 auto;}
+.tzh-pg{width:52px;height:46px;flex:none;border:1px solid var(--border2);border-radius:8px;background:#fff;color:var(--ink);
+  display:inline-flex;align-items:center;justify-content:center;cursor:pointer;}
+.tzh-chips{display:flex;gap:8px;flex-wrap:wrap;}
+.tzh-chip{height:40px;padding:0 12px;border:1px solid var(--border2);border-radius:999px;background:#fff;color:var(--ink);
+  font:500 13px var(--ui-font);cursor:pointer;text-transform:none;letter-spacing:0;}
+.tzh-go{height:50px;border:none;border-radius:10px;background:var(--gold);color:var(--on-gold);font:600 16px var(--ui-font);cursor:pointer;}
+@media (prefers-reduced-motion:reduce){
+  .tzh-menu,.tzh-sheet,.tzh-scrim{transition:none!important;}
+}
