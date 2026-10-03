@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ═══════════════════════════════════════════════════════════════════
-     Tehfiz teacher app — v4_311
+     Tehfiz teacher app — v4_312
      Deployed from the `tehfiz` repo at app/teacher/index.html (the repo root
      is the web root). Locally, tehfiz-api/public/ is a clone of that repo:
      test with `npm run dev`, then commit and push from inside public/.
@@ -10,10 +10,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
-<script>/* Theme before first paint — see TehfizTheme. Unknown or missing → Graphite. */
-(function(){try{var t=localStorage.getItem('tehfiz_theme');if(t==='classic'||t==='lapis'||t==='mulberry')document.documentElement.setAttribute('data-tz-theme',t);}catch(e){}})();</script>
-<link rel="stylesheet" href="/app/shared/tehfiz-shared.css?v=s5">
-<script src="/app/shared/tehfiz-shared.js?v=s3"></script>
+<script>/* Theme and light/dark before first paint — see TehfizTheme and TehfizMode.
+   Unknown or missing → Graphite, light. */
+(function(){try{var d=document.documentElement,t=localStorage.getItem('tehfiz_theme'),m=localStorage.getItem('tehfiz_mode');
+if(t==='classic'||t==='lapis'||t==='mulberry')d.setAttribute('data-tz-theme',t);
+if(m==='dark'||(m==='device'&&window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches))d.setAttribute('data-tz-mode','dark');}catch(e){}})();</script>
+<link rel="stylesheet" href="/app/shared/tehfiz-shared.css?v=s6">
+<script src="/app/shared/tehfiz-shared.js?v=s4"></script>
+<script src="/app/shared/tehfiz-ornament.js?v=o1"></script>
 <script src="/app/shared/tehfiz-header.js?v=h3"></script>
 <script src="/app/shared/tehfiz-pwa.js?v=p2"></script>
 <!-- Installable app (v4_305): manifest, icons, and the service worker TehfizPWA registers. -->
@@ -828,9 +832,9 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
 .quick-form.hidden{display:none;}
 .qf-title{font-size:11px;font-weight:600;color:var(--gold-ink);letter-spacing:.06em;text-transform:uppercase;margin-bottom:7px;display:flex;justify-content:space-between;align-items:center;}
 .qf-ref{font-family:'IBM Plex Mono',monospace;color:var(--ink);font-weight:400;font-size:13px;text-transform:none;letter-spacing:0;}
-.word-display{font-family:'Scheherazade New','Amiri',serif;font-size:19px;direction:rtl;text-align:center;padding:5px;background:white;border-radius:5px;margin-bottom:7px;border:.5px solid var(--border);color:var(--ink);}
+.word-display{font-family:'Scheherazade New','Amiri',serif;font-size:19px;direction:rtl;text-align:center;padding:5px;background:var(--surface,#fff);border-radius:5px;margin-bottom:7px;border:.5px solid var(--border);color:var(--ink);}
 /* FIX: context RTL — reading order: words-after TARGET words-before */
-.context-display{direction:rtl;text-align:right;font-family:'Scheherazade New','Amiri',serif;font-size:14px;padding:3px 7px;background:white;border-radius:4px;margin-bottom:7px;border:.5px solid var(--border);line-height:2.2;unicode-bidi:embed;}
+.context-display{direction:rtl;text-align:right;font-family:'Scheherazade New','Amiri',serif;font-size:14px;padding:3px 7px;background:var(--surface,#fff);border-radius:4px;margin-bottom:7px;border:.5px solid var(--border);line-height:2.2;unicode-bidi:embed;}
 .ctx-before{color:var(--ink3);}
 .ctx-after{color:var(--ink3);}
 .ctx-target{color:var(--ink);font-weight:700;background:var(--gold-pale);padding:2px 5px;border-radius:3px;font-size:19px;}
@@ -1188,7 +1192,7 @@ body.seg-arming .word-btn:hover,body.seg-arming .qcf-word:hover{outline:2px soli
    browser smearing each glyph, which visibly distorts the ligatures. */
 .qcf-word.sev-3,.word-btn.sev-3{box-shadow:0 0 0 1px var(--red);}
 
-.mistake-item:hover{border-color:var(--border2);background:white;}
+.mistake-item:hover{border-color:var(--border2);background:var(--surface,#fff);}
 .mistake-item.sev-0:hover{filter:brightness(.97);}
 .mistake-item.sev-1:hover{filter:brightness(.97);}
 .mistake-item.sev-2:hover{filter:brightness(.97);}
@@ -2612,7 +2616,7 @@ body.compact-ui .quick-form::before{
    console as APP_VERSION, or grep the deployed HTML for it. Bumped on every
    saved build; vcheck.py asserts it matches the filename, so a forgotten bump
    fails the integrity check rather than shipping a lie. */
-const APP_VERSION = 'v4_311';
+const APP_VERSION = 'v4_312';
 window.APP_VERSION = APP_VERSION;
 console.info('Tehfiz teacher app ' + APP_VERSION);
 
@@ -4611,7 +4615,7 @@ function renderMushafFromQuranCom(juzNum, pageMap, startPage, endPage, hizbByVer
     const _renderFontPx = _zm.font;
     const _renderMarginL = _zm.marginLeft;
     const _renderMarginR = _zm.marginRight;
-    html += `<div class="mushaf-page-body${qpg <= 2 ? ' msb-opening' : ''}" style="font-family:'${defaultFont}','UthmanicHafs',serif;font-size:${_renderFontPx}px;margin:10px ${_renderMarginR}px 10px ${_renderMarginL}px;padding:10px ${_zm.innerPadding}px 8px;">`;
+    html += `<div class="mushaf-page-body${qpg <= 2 ? ' msb-opening' : ''}" style="font-family:'${defaultFont}','UthmanicHafs',serif;font-size:${_renderFontPx}px;margin:10px ${_renderMarginR}px 10px ${_renderMarginL}px;padding:10px ${_zm.innerPadding}px 8px;">${(window.TehfizOrnament?TehfizOrnament.frameSvg():'')}`;
 
     // Pages 1-2 of the Madinah mushaf (Al-Fatihah / opening of Al-Baqarah) have an
     // ornate, shorter layout — fewer real text lines than the standard 15. Restrict
@@ -4645,8 +4649,8 @@ function renderMushafFromQuranCom(juzNum, pageMap, startPage, endPage, hizbByVer
     // and scroll code find them as before.
     let _openingWrap = false;
     if(firstSurahStartsHere){
-      html += `<div class="msl msl-surah-header" data-surah="${firstSurahOnPage}"><div class="msl-surah-ornament"><span class="msl-surah-name">${AR_NAMES[firstSurahOnPage-1]||''}</span></div></div>`;
-      if(qpg <= 2){ html += `<div class="msl-opening">`; _openingWrap = true; }
+      html += `<div class="msl msl-surah-header" data-surah="${firstSurahOnPage}"><div class="msl-surah-ornament">${(window.TehfizOrnament?TehfizOrnament.cartSvg():'')}<span class="msl-surah-name">${AR_NAMES[firstSurahOnPage-1]||''}</span></div></div>`;
+      if(qpg <= 2){ html += `<div class="msl-opening">${(window.TehfizOrnament?TehfizOrnament.shamsaSvg():'')}`; _openingWrap = true; }
       if(firstSurahOnPage !== 9 && firstSurahOnPage !== 1){
         html += `<div class="msl msl-basmala"><span class="msl-basmala-text">بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ</span></div>`;
       }
@@ -4670,7 +4674,7 @@ function renderMushafFromQuranCom(juzNum, pageMap, startPage, endPage, hizbByVer
 
       // Insert surah header + basmala when surah changes mid-page
       if(lineSurah !== prevSurah){
-        html += `<div class="msl msl-surah-header" data-surah="${lineSurah}"><div class="msl-surah-ornament"><span class="msl-surah-name">${AR_NAMES[lineSurah-1]||''}</span></div></div>`;
+        html += `<div class="msl msl-surah-header" data-surah="${lineSurah}"><div class="msl-surah-ornament">${(window.TehfizOrnament?TehfizOrnament.cartSvg():'')}<span class="msl-surah-name">${AR_NAMES[lineSurah-1]||''}</span></div></div>`;
         if(lineSurah !== 9 && lineSurah !== 1){
           html += `<div class="msl msl-basmala"><span class="msl-basmala-text">بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ</span></div>`;
         }
@@ -12350,6 +12354,9 @@ document.querySelectorAll('.modal-bg').forEach(m=>m.addEventListener('click',e=>
         </div>
         <div id="stp-display" style="display:none;">
 <div class="edit-form-group" style="padding-top:2px;">
+      <label style="display:block;font-size:13px;color:var(--ink2);margin-bottom:6px;font-weight:600;">Appearance</label>
+      <div class="tz-mode-choice" id="modeChoice"></div>
+      <div style="font-size:12px;color:var(--ink3);margin:4px 0 12px;line-height:1.5;">Device follows your phone or computer's light/dark setting.</div>
       <label style="display:block;font-size:13px;color:var(--ink2);margin-bottom:6px;font-weight:600;">Theme</label>
       <div class="tz-theme-choice" id="themeChoice"></div>
       <div style="font-size:12px;color:var(--ink3);margin-top:4px;line-height:1.5;">Colours of the app around the page. Mistake colours stay the same in every theme.</div>
@@ -16505,8 +16512,8 @@ window.TehfizAdmin = { open, available };
   min-height:44px;display:inline-flex;align-items:center;}
 .tad-mini:hover{background:var(--parchment3);}
 .tad-danger{border-color:var(--red,#a4343a);color:var(--red,#a4343a);}
-.tad-danger:hover{background:#fbeaea;}
-.tad-danger-box{background:#fbeaea;border:1px solid var(--red,#a4343a);border-radius:8px;
+.tad-danger:hover{background:var(--red-bg,#fbeaea);}
+.tad-danger-box{background:var(--red-bg,#fbeaea);border:1px solid var(--red,#a4343a);border-radius:8px;
   padding:11px 13px;margin-top:8px;}
 .tad-danger-box strong{color:var(--red,#a4343a);}
 .tad-warn-note{font-size:12px;color:var(--amber);background:var(--lvl1-yellow-bg);
@@ -16623,7 +16630,7 @@ window.TehfizAdmin = { open, available };
 .bc-pv-tabs .on{background:var(--gold);color:var(--on-gold);border-color:var(--gold);}
 .bc-pv-frame{width:100%;flex:1 1 auto;min-height:0;border:none;border-radius:6px;background:#f5f5f3;}
 .bc-pv-text{white-space:pre-wrap;font:13px/1.55 'IBM Plex Mono',monospace;color:var(--ink);margin:0;flex:1 1 auto;min-height:0;overflow:auto;
-  background:#fff;border-radius:6px;padding:12px;}
+  background:var(--surface,#fff);border-radius:6px;padding:12px;}
 .bc-send{border-color:var(--gold)!important;color:var(--gold-ink)!important;}
 .bc-send[disabled]{opacity:.45;cursor:not-allowed;}
 .bc-busy{font-size:12px;color:var(--ink3);font-style:italic;}
@@ -17995,7 +18002,7 @@ span.seg-chip{display:flex;align-items:center;justify-content:center;box-sizing:
 })();
 </script>
 <script src="/app/teacher/sessions-sent.js?v=m3"></script>
-<script src="/app/teacher/finish-session.js?v=f2"></script>
-<script src="/app/teacher/invoices.js?v=i1"></script>
+<script src="/app/teacher/finish-session.js?v=f3"></script>
+<script src="/app/teacher/invoices.js?v=i2"></script>
 </body>
 </html>

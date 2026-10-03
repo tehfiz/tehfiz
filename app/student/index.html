@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ═══════════════════════════════════════════════════════════════════
-     Tehfiz student viewer — v1_160
+     Tehfiz student viewer — v1_161
      Deployed from the `tehfiz` repo (its root is the web root) at
      app/student/index.html. Locally that repo is cloned into tehfiz-api's
      public/ folder, which tehfiz-api ignores; the API Worker serves /api/* only.
@@ -9,10 +9,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<script>/* Theme before first paint — see TehfizTheme. Unknown or missing → Graphite. */
-(function(){try{var t=localStorage.getItem('tehfiz_theme');if(t==='classic'||t==='lapis'||t==='mulberry')document.documentElement.setAttribute('data-tz-theme',t);}catch(e){}})();</script>
-<link rel="stylesheet" href="/app/shared/tehfiz-shared.css?v=s5">
-<script src="/app/shared/tehfiz-shared.js?v=s3"></script>
+<script>/* Theme and light/dark before first paint — see TehfizTheme and TehfizMode.
+   Unknown or missing → Graphite, light. */
+(function(){try{var d=document.documentElement,t=localStorage.getItem('tehfiz_theme'),m=localStorage.getItem('tehfiz_mode');
+if(t==='classic'||t==='lapis'||t==='mulberry')d.setAttribute('data-tz-theme',t);
+if(m==='dark'||(m==='device'&&window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches))d.setAttribute('data-tz-mode','dark');}catch(e){}})();</script>
+<link rel="stylesheet" href="/app/shared/tehfiz-shared.css?v=s6">
+<script src="/app/shared/tehfiz-shared.js?v=s4"></script>
+<script src="/app/shared/tehfiz-ornament.js?v=o1"></script>
 <script src="/app/shared/tehfiz-header.js?v=h3"></script>
 <script src="/app/shared/tehfiz-pwa.js?v=p2"></script>
 <!-- Installable app (v1_156): manifest, icons, and the service worker TehfizPWA registers. -->
@@ -606,7 +610,7 @@ body.compact-ui .panel-footer{flex-shrink:0;}
 .sessions-toolbar-label{font-size:11px;font-weight:600;color:var(--ink3);letter-spacing:.06em;text-transform:uppercase;}
 .sess-list-inner{flex:1;overflow-y:auto;padding:6px 8px;min-height:0;}
 .sess-card{border:.5px solid var(--border);border-radius:6px;padding:8px 9px;margin-bottom:6px;background:var(--parchment);cursor:pointer;transition:border-color .12s,background .12s;}
-.sess-card:hover{border-color:var(--border2);background:white;}
+.sess-card:hover{border-color:var(--border2);background:var(--surface,#fff);}
 .sess-card.active-sess{border-color:var(--gold);background:var(--gold-pale);}
 .sess-card-head{display:flex;justify-content:space-between;align-items:flex-start;gap:4px;margin-bottom:3px;}
 .sess-name{font-weight:600;font-size:13px;color:var(--ink);}
@@ -1371,6 +1375,9 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
     </div>
 
     <div style="border-top:.5px solid var(--border);padding-top:10px;margin-top:10px;">
+      <label style="display:block;font-size:13px;color:var(--ink2);margin-bottom:6px;font-weight:600;">Appearance</label>
+      <div class="tz-mode-choice" id="modeChoice"></div>
+      <div style="font-size:12px;color:var(--ink3);margin:4px 0 12px;line-height:1.5;">Device follows your phone or computer's light/dark setting.</div>
       <label style="display:block;font-size:13px;color:var(--ink2);margin-bottom:6px;font-weight:600;">Theme</label>
       <div class="tz-theme-choice" id="themeChoice"></div>
       <div style="font-size:12px;color:var(--ink3);margin-top:4px;line-height:1.5;">Colours of the app around the page. Mistake colours stay the same in every theme.</div>
@@ -1685,7 +1692,7 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
    console as APP_VERSION, or grep the deployed HTML for it. Bumped on every
    saved build; vcheck.py asserts it matches the filename, so a forgotten bump
    fails the integrity check rather than shipping a lie. */
-const APP_VERSION = 'v1_160';
+const APP_VERSION = 'v1_161';
 window.APP_VERSION = APP_VERSION;
 console.info('Tehfiz student viewer ' + APP_VERSION);
 
@@ -3714,7 +3721,7 @@ function renderMushafFromQuranCom(juzNum,pageMap,startPage,endPage,hizbByVerse={
     const _renderFontPx=_zm.font;
     const _renderMarginL=_zm.marginLeft;
     const _renderMarginR=_zm.marginRight;
-    html+=`<div class="mushaf-page-body${qpg<=2?' msb-opening':''}" style="font-family:'${defaultFont}','UthmanicHafs',serif;font-size:${_renderFontPx}px;margin:10px ${_renderMarginR}px 10px ${_renderMarginL}px;padding:10px ${_zm.innerPadding}px 8px;">`;
+    html+=`<div class="mushaf-page-body${qpg<=2?' msb-opening':''}" style="font-family:'${defaultFont}','UthmanicHafs',serif;font-size:${_renderFontPx}px;margin:10px ${_renderMarginR}px 10px ${_renderMarginL}px;padding:10px ${_zm.innerPadding}px 8px;">${(window.TehfizOrnament?TehfizOrnament.frameSvg():'')}`;
 
     // Pages 1-2 of the Madinah mushaf (Al-Fatihah / opening of Al-Baqarah) have an
     // ornate, shorter layout — fewer real text lines than the standard 15. Restrict
@@ -3739,8 +3746,8 @@ function renderMushafFromQuranCom(juzNum,pageMap,startPage,endPage,hizbByVerse={
     // arch drawn by the page style (tehfiz-shared.css).
     let _openingWrap=false;
     if(firstSurahStartsHere){
-      html+=`<div class="msl msl-surah-header" data-surah="${firstSurahOnPage}"><div class="msl-surah-ornament"><span class="msl-surah-name">${AR_NAMES[firstSurahOnPage-1]||''}</span></div></div>`;
-      if(qpg<=2){ html+=`<div class="msl-opening">`; _openingWrap=true; }
+      html+=`<div class="msl msl-surah-header" data-surah="${firstSurahOnPage}"><div class="msl-surah-ornament">${(window.TehfizOrnament?TehfizOrnament.cartSvg():'')}<span class="msl-surah-name">${AR_NAMES[firstSurahOnPage-1]||''}</span></div></div>`;
+      if(qpg<=2){ html+=`<div class="msl-opening">${(window.TehfizOrnament?TehfizOrnament.shamsaSvg():'')}`; _openingWrap=true; }
       // Surah 1 (Al-Fatihah): basmala is encoded in the QCF page font — don't inject a second one.
       // Surah 9 (At-Tawbah): starts without basmala by Islamic tradition.
       if(firstSurahOnPage!==9&&firstSurahOnPage!==1)html+=`<div class="msl msl-basmala"><span class="msl-basmala-text">بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ</span></div>`;
@@ -3763,7 +3770,7 @@ function renderMushafFromQuranCom(juzNum,pageMap,startPage,endPage,hizbByVerse={
       const lineWords=lineGroups[lk];
       const lineSurah=lineWords[0].sNum;
       if(lineSurah!==prevSurah){
-        html+=`<div class="msl msl-surah-header" data-surah="${lineSurah}"><div class="msl-surah-ornament"><span class="msl-surah-name">${AR_NAMES[lineSurah-1]||''}</span></div></div>`;
+        html+=`<div class="msl msl-surah-header" data-surah="${lineSurah}"><div class="msl-surah-ornament">${(window.TehfizOrnament?TehfizOrnament.cartSvg():'')}<span class="msl-surah-name">${AR_NAMES[lineSurah-1]||''}</span></div></div>`;
         if(lineSurah!==9&&lineSurah!==1)html+=`<div class="msl msl-basmala"><span class="msl-basmala-text">بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ</span></div>`;
       }
       prevSurah=lineSurah;

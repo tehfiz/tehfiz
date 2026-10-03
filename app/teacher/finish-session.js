@@ -1,6 +1,6 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   finish-session.js — TehfizFinish — f2
-   Loaded by the teacher app only, from /app/teacher/finish-session.js?v=f2.
+   finish-session.js — TehfizFinish — f3
+   Loaded by the teacher app only, from /app/teacher/finish-session.js?v=f3.
 
    Replaces the five-button session footer (Save · Send · Report · Clear ·
    Save & Export) with one decision at the end of a lesson:
@@ -32,7 +32,7 @@
    ═══════════════════════════════════════════════════════════════════════ */
 (function () {
 'use strict';
-const TEHFIZ_FINISH_VERSION = 'f2';
+const TEHFIZ_FINISH_VERSION = 'f3';
 
 let open_ = false, view = 'form', moreOpen = false;
 let st = null;   // the sheet's working state, see begin()
@@ -65,14 +65,14 @@ function injectCss() {
   box-shadow:0 18px 48px rgba(23,25,28,.3);}
 body.compact-ui .tfs-wrap{padding:0;align-items:flex-end;}
 body.compact-ui .tfs-sheet{max-width:none;max-height:94vh;border-radius:16px 16px 0 0;border:none;}
-.tfs-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 18px;background:#fff;
+.tfs-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 18px;background:var(--surface,#fff);
   border-bottom:1px solid var(--border);}
 body.compact-ui .tfs-head{background:var(--parchment);border-bottom:none;padding:6px 16px 6px;}
 .tfs-head h2{margin:0;font-size:19px;font-weight:600;}
 .tfs-head.tfs-head-plain{background:transparent;border-bottom:none;padding:10px 12px 0;}
 .tfs-grab{display:none;width:40px;height:4px;border-radius:999px;background:var(--parchment3);margin:8px auto 0;}
 body.compact-ui .tfs-grab{display:block;}
-.tfs-x{width:40px;height:40px;flex:none;border:1px solid var(--border2);border-radius:8px;background:#fff;color:var(--ink);
+.tfs-x{width:40px;height:40px;flex:none;border:1px solid var(--border2);border-radius:8px;background:var(--surface,#fff);color:var(--ink);
   cursor:pointer;display:inline-flex;align-items:center;justify-content:center;}
 .tfs-x:hover{background:var(--parchment2);}
 .tfs-body{flex:1 1 auto;overflow:auto;padding:16px 18px;display:flex;flex-direction:column;gap:16px;}
@@ -80,17 +80,17 @@ body.compact-ui .tfs-body{padding:4px 16px 14px;gap:14px;}
 .tfs-l{font-size:12px;font-weight:500;letter-spacing:.05em;color:var(--ink3);text-transform:uppercase;display:block;margin-bottom:6px;}
 .tfs-l b{color:var(--red);font-weight:500;text-transform:none;letter-spacing:0;}
 .tfs-in{width:100%;box-sizing:border-box;height:46px;padding:0 12px;border:1px solid var(--border2);border-radius:8px;
-  background:#fff;color:var(--ink);font:400 16px var(--ui-font);}
+  background:var(--surface,#fff);color:var(--ink);font:400 16px var(--ui-font);}
 .tfs-in:focus,.tfs-ta:focus{outline:2px solid var(--gold);outline-offset:0;border-color:transparent;}
 .tfs-ta{width:100%;box-sizing:border-box;min-height:64px;padding:10px 12px;border:1px solid var(--border2);border-radius:8px;
-  background:#fff;color:var(--ink);font:400 15px var(--ui-font);resize:vertical;}
+  background:var(--surface,#fff);color:var(--ink);font:400 15px var(--ui-font);resize:vertical;}
 .tfs-stu{position:relative;}
 .tfs-bound{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:46px;padding:0 6px 0 12px;
-  border:1px solid var(--border2);border-radius:8px;background:#fff;font-size:16px;}
+  border:1px solid var(--border2);border-radius:8px;background:var(--surface,#fff);font-size:16px;}
 .tfs-code{font:400 12px 'IBM Plex Mono',monospace;background:var(--gold-pale);color:var(--ink2);padding:2px 7px;border-radius:4px;}
 .tfs-change{height:36px;padding:0 10px;border:none;background:transparent;color:var(--ink2);font:500 13px var(--ui-font);
   cursor:pointer;border-radius:6px;text-decoration:underline;}
-.tfs-ac{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:5;background:#fff;border:1px solid var(--border2);
+.tfs-ac{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:5;background:var(--surface,#fff);border:1px solid var(--border2);
   border-radius:8px;box-shadow:0 10px 24px rgba(23,25,28,.14);padding:4px;max-height:240px;overflow:auto;}
 .tfs-ac button{all:unset;box-sizing:border-box;display:flex;justify-content:space-between;align-items:center;width:100%;
   min-height:42px;padding:0 12px;border-radius:6px;font-size:15px;cursor:pointer;color:var(--ink);}
@@ -100,26 +100,26 @@ body.compact-ui .tfs-body{padding:4px 16px 14px;gap:14px;}
 .tfs-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
 .tfs-min{width:84px;flex:none;font:500 18px 'IBM Plex Mono',monospace;}
 .tfs-dim{font-size:13px;color:var(--ink3);}
-.tfs-warn{background:#fff3cd;border:1px solid #c9a227;border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:10px;}
-.tfs-warn-t{font-size:15px;font-weight:600;color:#5c3a00;}
-.tfs-warn .tfs-dim{color:#5c3a00;}
-.tfs-chip{height:40px;padding:0 14px;border:1px solid var(--border2);border-radius:999px;background:#fff;color:var(--ink);
+.tfs-warn{background:var(--amber-bg,#fff3cd);border:1px solid var(--lvl1-yellow,#c9a227);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:10px;}
+.tfs-warn-t{font-size:15px;font-weight:600;color:var(--amber,#5c3a00);}
+.tfs-warn .tfs-dim{color:var(--amber,#5c3a00);}
+.tfs-chip{height:40px;padding:0 14px;border:1px solid var(--border2);border-radius:999px;background:var(--surface,#fff);color:var(--ink);
   font:500 14px var(--ui-font);cursor:pointer;}
 .tfs-chip:hover{background:var(--parchment2);}
 .tfs-chk{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink2);cursor:pointer;}
 .tfs-chk input{width:18px;height:18px;accent-color:var(--gold);}
-.tfs-box{background:#fff;border:1px solid var(--border);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:8px;}
+.tfs-box{background:var(--surface,#fff);border:1px solid var(--border);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:8px;}
 .tfs-seg{display:flex;justify-content:space-between;gap:10px;font-size:14px;}
 .tfs-seg b{font-weight:600;}
 .tfs-seg .tfs-v{font:400 13px 'IBM Plex Mono',monospace;color:var(--ink3);white-space:nowrap;}
 .tfs-mk{font-size:13px;color:var(--ink2);}
 .tfs-date{display:flex;justify-content:space-between;align-items:center;font-size:14px;color:var(--ink2);}
-.tfs-foot{padding:14px 18px 18px;border-top:1px solid var(--border);background:#fff;display:flex;flex-direction:column;gap:10px;}
+.tfs-foot{padding:14px 18px 18px;border-top:1px solid var(--border);background:var(--surface,#fff);display:flex;flex-direction:column;gap:10px;}
 body.compact-ui .tfs-foot{padding:12px 16px;padding-bottom:max(16px, env(safe-area-inset-bottom));}
 .tfs-pri{height:52px;border:none;border-radius:10px;background:var(--gold);color:var(--on-gold);font:600 16px var(--ui-font);cursor:pointer;}
 .tfs-pri:disabled{background:var(--parchment3);color:var(--ink2);cursor:default;}
 .tfs-sec2{display:flex;gap:10px;}
-.tfs-sec{flex:1 1 0;min-height:44px;border:1px solid var(--border2);border-radius:8px;background:#fff;color:var(--ink);
+.tfs-sec{flex:1 1 0;min-height:44px;border:1px solid var(--border2);border-radius:8px;background:var(--surface,#fff);color:var(--ink);
   font:500 14px var(--ui-font);cursor:pointer;padding:0 8px;}
 .tfs-sec.strong{border-color:var(--ink);}
 .tfs-sec:hover{background:var(--parchment2);}
@@ -127,7 +127,7 @@ body.compact-ui .tfs-foot{padding:12px 16px;padding-bottom:max(16px, env(safe-ar
 .tfs-done-h{display:flex;align-items:center;gap:14px;}
 .tfs-ok{width:48px;height:48px;flex:none;border-radius:50%;background:var(--green-bg);color:var(--green);display:flex;
   align-items:center;justify-content:center;}
-.tfs-ok.q{background:#fff3cd;color:#8a5a00;}
+.tfs-ok.q{background:var(--amber-bg,#fff3cd);color:var(--amber,#8a5a00);}
 .tfs-done-h h2{margin:0;font-size:20px;}
 .tfs-done-h p{margin:2px 0 0;font-size:14px;color:var(--ink2);}
 .tfs-grid{background:var(--parchment2);border-radius:10px;padding:12px 14px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;}
@@ -143,7 +143,7 @@ body.compact-ui .tfs-foot{padding:12px 16px;padding-bottom:max(16px, env(safe-ar
 .tfs-footer .tfs-morebtn{flex:none;width:84px;height:48px;border:1px solid var(--ink);border-radius:8px;background:var(--gold-pale);
   color:var(--ink);font:500 14px var(--ui-font);cursor:pointer;}
 .tfs-footer .tfs-state{display:block;font:400 12px var(--ui-font);opacity:.8;}
-.tfs-more{position:fixed;z-index:1140;width:260px;background:#fff;border:1px solid var(--border2);border-radius:10px;
+.tfs-more{position:fixed;z-index:1140;width:260px;background:var(--surface,#fff);border:1px solid var(--border2);border-radius:10px;
   box-shadow:0 12px 30px rgba(23,25,28,.2);padding:6px;display:flex;flex-direction:column;font-family:var(--ui-font);}
 .tfs-more button{all:unset;box-sizing:border-box;cursor:pointer;padding:10px 12px;font-size:14px;border-radius:6px;color:var(--ink);
   display:flex;flex-direction:column;gap:2px;min-height:44px;justify-content:center;}

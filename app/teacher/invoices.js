@@ -1,6 +1,6 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   invoices.js — TehfizInvoices — i1
-   Loaded by the teacher app only, from /app/teacher/invoices.js?v=i1.
+   invoices.js — TehfizInvoices — i2
+   Loaded by the teacher app only, from /app/teacher/invoices.js?v=i2.
    Opened from the header menu (Menu → Invoices).
 
    One month, every student taught that month:
@@ -29,7 +29,7 @@
    ═══════════════════════════════════════════════════════════════════════ */
 (function () {
 'use strict';
-const TEHFIZ_INVOICES_VERSION = 'i1';
+const TEHFIZ_INVOICES_VERSION = 'i2';
 const K_BILLTO = 'tehfiz_inv_billto', K_STATUS = 'tehfiz_inv_status', K_PAY = 'tehfiz_inv_payment';
 
 let isOpen = false, month = '', loading = false, error = '';
@@ -165,32 +165,32 @@ function injectCss() {
 .tinv-top h2{margin:0;font-size:24px;font-weight:600;}
 .tinv-mon{display:flex;align-items:center;gap:4px;}
 .tinv-mon span{min-width:168px;text-align:center;font-size:17px;font-weight:600;}
-.tinv-ib{width:40px;height:40px;border:1px solid var(--border2);border-radius:8px;background:#fff;color:var(--ink);cursor:pointer;
+.tinv-ib{width:40px;height:40px;border:1px solid var(--border2);border-radius:8px;background:var(--surface,#fff);color:var(--ink);cursor:pointer;
   font-size:18px;display:inline-flex;align-items:center;justify-content:center;}
 .tinv-ib:hover{background:var(--parchment);}
 .tinv-acts{margin-left:auto;display:flex;gap:10px;flex-wrap:wrap;}
-.tinv-btn{height:44px;padding:0 16px;border:1px solid var(--border2);border-radius:8px;background:#fff;color:var(--ink);
+.tinv-btn{height:44px;padding:0 16px;border:1px solid var(--border2);border-radius:8px;background:var(--surface,#fff);color:var(--ink);
   font:500 14px var(--ui-font);cursor:pointer;}
 .tinv-btn:hover{background:var(--parchment);}
 .tinv-btn.pri{background:var(--gold);color:var(--on-gold);border-color:var(--gold);font-weight:600;}
 .tinv-btn.pri:hover{filter:brightness(1.1);}
 .tinv-btn:disabled{opacity:.5;cursor:default;}
-.tinv-sum{display:flex;gap:26px;flex-wrap:wrap;align-items:center;font-size:14px;color:var(--ink2);background:#fff;
+.tinv-sum{display:flex;gap:26px;flex-wrap:wrap;align-items:center;font-size:14px;color:var(--ink2);background:var(--surface,#fff);
   border:1px solid var(--border);border-radius:10px;padding:14px 18px;}
 .tinv-sum b{color:var(--ink);font-weight:600;}
 .tinv-sum .mono{font-family:'IBM Plex Mono',monospace;}
 .tinv-sum .def{margin-left:auto;font-size:13px;}
-.tinv-tbl{background:#fff;border:1px solid var(--border);border-radius:10px;overflow:hidden;}
+.tinv-tbl{background:var(--surface,#fff);border:1px solid var(--border);border-radius:10px;overflow:hidden;}
 .tinv-r{display:grid;grid-template-columns:2.1fr .7fr 1.15fr 1.15fr 1.05fr 1.1fr 1.25fr 2.6fr;align-items:center;gap:0 10px;
   padding:12px 18px;border-bottom:1px solid var(--border);font-size:14px;}
 .tinv-r:last-child{border-bottom:none;}
 .tinv-r.h{font-size:12px;font-weight:500;color:var(--ink3);letter-spacing:.04em;background:var(--parchment2);text-transform:uppercase;padding:10px 18px;}
-.tinv-r.warnrow{background:#fffaf0;}
+.tinv-r.warnrow{background:color-mix(in srgb,var(--amber-bg,#fff3cd) 40%,var(--surface,#fff));}
 .tinv-who{display:flex;flex-direction:column;min-width:0;}
 .tinv-who b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .tinv-code{font:400 12px 'IBM Plex Mono',monospace;color:var(--ink3);font-weight:400;margin-left:6px;}
 .tinv-sub{font-size:13px;color:var(--ink3);}
-.tinv-fix{font-size:12px;color:#8a3f06;background:none;border:none;padding:0;text-decoration:underline;cursor:pointer;text-align:left;
+.tinv-fix{font-size:12px;color:var(--coral,#8a3f06);background:none;border:none;padding:0;text-decoration:underline;cursor:pointer;text-align:left;
   font-family:var(--ui-font);min-height:24px;}
 .tinv-num{font-family:'IBM Plex Mono',monospace;}
 .tinv-r > .c-rec{display:flex;flex-direction:column;align-items:flex-start;}
@@ -200,7 +200,7 @@ function injectCss() {
 .tinv-chip.paid{background:var(--green-bg);color:var(--green);}
 .tinv-chip.none{background:none;color:var(--ink3);padding:3px 0;}
 .tinv-ra{display:flex;gap:6px;justify-content:flex-end;}
-.tinv-sb{height:36px;padding:0 12px;border:1px solid var(--border2);border-radius:6px;background:#fff;color:var(--ink);
+.tinv-sb{height:36px;padding:0 12px;border:1px solid var(--border2);border-radius:6px;background:var(--surface,#fff);color:var(--ink);
   font:500 13px var(--ui-font);cursor:pointer;}
 .tinv-sb.strong{border-color:var(--ink);}
 .tinv-sb:hover{background:var(--parchment);}
@@ -208,12 +208,12 @@ function injectCss() {
   border-radius:8px;}
 .tinv-f{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--ink3);font-weight:500;}
 .tinv-f input,.tinv-f textarea{height:40px;box-sizing:border-box;padding:0 10px;border:1px solid var(--border2);border-radius:6px;
-  background:#fff;color:var(--ink);font:400 14px var(--ui-font);}
+  background:var(--surface,#fff);color:var(--ink);font:400 14px var(--ui-font);}
 .tinv-f textarea{height:auto;min-height:84px;padding:8px 10px;resize:vertical;}
 .tinv-f .w1{width:220px;}.tinv-f .w2{width:110px;}.tinv-f .w3{width:80px;}
 .tinv-chk{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink2);height:40px;}
 .tinv-note{font-size:13px;color:var(--ink3);}
-.tinv-empty{padding:40px 20px;text-align:center;color:var(--ink3);font-size:14px;background:#fff;border:1px solid var(--border);border-radius:10px;}
+.tinv-empty{padding:40px 20px;text-align:center;color:var(--ink3);font-size:14px;background:var(--surface,#fff);border:1px solid var(--border);border-radius:10px;}
 .tinv-err{color:var(--red);font-size:14px;}
 /* phone: rows become cards */
 @media (max-width:900px){

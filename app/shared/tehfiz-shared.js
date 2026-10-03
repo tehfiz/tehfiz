@@ -1,7 +1,7 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   tehfiz-shared.js — s3
+   tehfiz-shared.js — s4
    Loaded by BOTH apps (teacher /app/teacher/, viewer /app/student/) before
-   their own scripts, from /app/shared/tehfiz-shared.js?v=s3.
+   their own scripts, from /app/shared/tehfiz-shared.js?v=s4.
 
    What is here: every top-level `function` and `const` that was identical
    (token for token) in the two apps — the tajweed tables and rule helpers,
@@ -18,7 +18,7 @@
    · Nothing here may run against the page at load time: this file runs in the
      <head>, before <body> exists. Declarations and pure tables only.
    ═══════════════════════════════════════════════════════════════════════ */
-const TEHFIZ_SHARED_VERSION = 's3';
+const TEHFIZ_SHARED_VERSION = 's4';
 
 // ── sessionName vs. the legacy `range` key ────────────────────────
 // v3 and earlier stored the (optional) session name under `range`, a leftover
@@ -2616,8 +2616,8 @@ function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace
   var KEY = 'tehfiz_theme';
   var THEMES = [
     { id:'graphite', name:'Graphite', note:'Default',  sw:['#17191c','#626973','#f5f5f3'] },
-    { id:'lapis',    name:'Lapis',    note:'Blue accents',  sw:['#17191c','#2a4fb8','#f5f5f3'] },
-    { id:'mulberry', name:'Mulberry', note:'Plum accents',  sw:['#17191c','#7a2e62','#f5f5f3'] },
+    { id:'lapis',    name:'Lapis',    note:'Blue accents',  sw:['#17191c','#3a5585','#f5f5f3'] },
+    { id:'mulberry', name:'Mulberry', note:'Plum accents',  sw:['#17191c','#6a3f5c','#f5f5f3'] },
     { id:'classic',  name:'Gold',     note:'Gold accents, serif type', sw:['#17191c','#b8841a','#f5f5f3'] }
   ];
   function valid(id){ return THEMES.some(function(t){ return t.id === id; }); }
@@ -2662,8 +2662,10 @@ function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace
 })();
 
 /* ═══ TehfizPageStyle ════════════════════════════════════════════════════
-   How the mushaf page is framed: 'madani' (default — illuminated band,
-   medallion opening pages) or 'quiet' (hairline frame, arch openings).
+   How the mushaf page is framed: 'islimi' (default — the arabesque
+   illumination drawn by tehfiz-ornament.js, with a shamsa medallion on the
+   opening pages) or 'quiet' (hairline frame, arch openings). 'madani', the
+   lattice style of s3, is read as 'islimi'.
    Storage key 'tehfiz_page_style', shared by both apps like the theme.
    Applied as <html data-tz-page>; everything it changes is CSS (see
    tehfiz-shared.css, MUSHAF PAGE STYLE), so switching needs no re-render.
@@ -2671,14 +2673,15 @@ function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace
 (function(){
   var KEY = 'tehfiz_page_style';
   var STYLES = [
-    { id:'madani', name:'Madani', note:'Illuminated frame' },
+    { id:'islimi', name:'Illuminated', note:'Arabesque border' },
     { id:'quiet',  name:'Quiet',  note:'Hairline frame' }
   ];
   function valid(id){ return STYLES.some(function(t){ return t.id === id; }); }
   function get(){
     var t = null;
     try { t = localStorage.getItem(KEY); } catch(e) {}
-    return valid(t) ? t : 'madani';
+    if (t === 'madani') t = 'islimi';
+    return valid(t) ? t : 'islimi';
   }
   function apply(id){ document.documentElement.setAttribute('data-tz-page', id); }
   function set(id){
@@ -2704,6 +2707,60 @@ function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace
   apply(get());
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', render); else render();
   window.TehfizPageStyle = { get:get, set:set, render:render };
+})();
+
+/* ═══ TehfizMode ═════════════════════════════════════════════════════════
+   Light (default), Dark, or Device (follow the system). Storage key
+   'tehfiz_mode', shared by both apps like the theme. Applied as
+   <html data-tz-mode="dark"> — absent means light. Each app's <head>
+   bootstrap applies it before first paint; this keeps it current and draws
+   the picker in #modeChoice. */
+(function(){
+  var KEY = 'tehfiz_mode';
+  var MODES = [
+    { id:'light',  name:'Light' },
+    { id:'dark',   name:'Dark' },
+    { id:'device', name:'Device' }
+  ];
+  var mq = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+  function valid(id){ return MODES.some(function(m){ return m.id === id; }); }
+  function get(){
+    var t = null;
+    try { t = localStorage.getItem(KEY); } catch(e) {}
+    return valid(t) ? t : 'light';
+  }
+  function isDark(){ var m = get(); return m === 'dark' || (m === 'device' && !!(mq && mq.matches)); }
+  function apply(){
+    if (isDark()) document.documentElement.setAttribute('data-tz-mode', 'dark');
+    else document.documentElement.removeAttribute('data-tz-mode');
+    var meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute('content', getComputedStyle(document.documentElement).getPropertyValue('--chrome').trim() || '#17191c');
+  }
+  function set(id){
+    if (!valid(id)) return;
+    try { localStorage.setItem(KEY, id); } catch(e) {}
+    apply(); render();
+  }
+  function render(){
+    var el = document.getElementById('modeChoice');
+    if (!el) return;
+    var cur = get();
+    el.innerHTML = MODES.map(function(m){
+      return '<button type="button" class="tz-theme-opt tz-mode-opt' + (m.id === cur ? ' on' : '') + '" data-tzm="' + m.id + '"' +
+        ' aria-pressed="' + (m.id === cur) + '"><span class="tz-mode-sw ' + m.id + '"></span>' +
+        '<span class="tz-theme-name">' + m.name + '</span></button>';
+    }).join('');
+  }
+  document.addEventListener('click', function(e){
+    var b = e.target.closest && e.target.closest('.tz-mode-opt');
+    if (b && b.dataset.tzm) set(b.dataset.tzm);
+  });
+  window.addEventListener('storage', function(e){ if (e.key === KEY) { apply(); render(); } });
+  if (mq) { var on = function(){ if (get() === 'device') apply(); };
+    if (mq.addEventListener) mq.addEventListener('change', on); else if (mq.addListener) mq.addListener(on); }
+  apply();
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', render); else render();
+  window.TehfizMode = { get:get, set:set, isDark:isDark, render:render };
 })();
 
 /* Pages 1-2 keep the height of every other page. Their spacer blocks were
