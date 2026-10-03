@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ═══════════════════════════════════════════════════════════════════
-     Tehfiz teacher app — v4_310
+     Tehfiz teacher app — v4_311
      Deployed from the `tehfiz` repo at app/teacher/index.html (the repo root
      is the web root). Locally, tehfiz-api/public/ is a clone of that repo:
      test with `npm run dev`, then commit and push from inside public/.
@@ -12,10 +12,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
 <script>/* Theme before first paint — see TehfizTheme. Unknown or missing → Graphite. */
 (function(){try{var t=localStorage.getItem('tehfiz_theme');if(t==='classic'||t==='lapis'||t==='mulberry')document.documentElement.setAttribute('data-tz-theme',t);}catch(e){}})();</script>
-<link rel="stylesheet" href="/app/shared/tehfiz-shared.css?v=s4">
+<link rel="stylesheet" href="/app/shared/tehfiz-shared.css?v=s5">
 <script src="/app/shared/tehfiz-shared.js?v=s3"></script>
-<script src="/app/shared/tehfiz-header.js?v=h2"></script>
-<script src="/app/shared/tehfiz-pwa.js?v=p1"></script>
+<script src="/app/shared/tehfiz-header.js?v=h3"></script>
+<script src="/app/shared/tehfiz-pwa.js?v=p2"></script>
 <!-- Installable app (v4_305): manifest, icons, and the service worker TehfizPWA registers. -->
 <link rel="manifest" href="/app/teacher/manifest.webmanifest">
 <meta name="theme-color" content="#17191c">
@@ -2612,7 +2612,7 @@ body.compact-ui .quick-form::before{
    console as APP_VERSION, or grep the deployed HTML for it. Bumped on every
    saved build; vcheck.py asserts it matches the filename, so a forgotten bump
    fails the integrity check rather than shipping a lie. */
-const APP_VERSION = 'v4_310';
+const APP_VERSION = 'v4_311';
 window.APP_VERSION = APP_VERSION;
 console.info('Tehfiz teacher app ' + APP_VERSION);
 
