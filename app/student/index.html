@@ -1,10 +1,9 @@
 <!DOCTYPE html>
 <!-- ═══════════════════════════════════════════════════════════════════
-     Tehfiz student viewer — v1_157
-     Deployed from the `tehfiz` repo at public/app/student/index.html.
-     NOTE: tehfiz-api also contains a public/app/ folder. That one is a local
-     staging copy, gitignored, and never served — its routes are /api/* only.
-     Editing it and deploying the Worker uploads the file but changes nothing.
+     Tehfiz student viewer — v1_159
+     Deployed from the `tehfiz` repo (its root is the web root) at
+     app/student/index.html. Locally that repo is cloned into tehfiz-api's
+     public/ folder, which tehfiz-api ignores; the API Worker serves /api/* only.
      ═══════════════════════════════════════════════════════════════════ -->
 <html lang="en">
 <head>
@@ -12,9 +11,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <script>/* Theme before first paint — see TehfizTheme. Unknown or missing → Graphite. */
 (function(){try{var t=localStorage.getItem('tehfiz_theme');if(t==='classic'||t==='lapis'||t==='mulberry')document.documentElement.setAttribute('data-tz-theme',t);}catch(e){}})();</script>
-<link rel="stylesheet" href="/app/shared/tehfiz-shared.css?v=s2">
-<script src="/app/shared/tehfiz-shared.js?v=s2"></script>
-<script src="/app/shared/tehfiz-header.js?v=h1"></script>
+<link rel="stylesheet" href="/app/shared/tehfiz-shared.css?v=s4">
+<script src="/app/shared/tehfiz-shared.js?v=s3"></script>
+<script src="/app/shared/tehfiz-header.js?v=h2"></script>
 <script src="/app/shared/tehfiz-pwa.js?v=p1"></script>
 <!-- Installable app (v1_156): manifest, icons, and the service worker TehfizPWA registers. -->
 <link rel="manifest" href="/app/student/manifest.webmanifest">
@@ -1378,6 +1377,12 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
     </div>
 
     <div style="border-top:.5px solid var(--border);padding-top:10px;margin-top:10px;">
+      <label style="display:block;font-size:13px;color:var(--ink2);margin-bottom:6px;font-weight:600;">Page style</label>
+      <div class="tz-theme-choice" id="pageStyleChoice"></div>
+      <div style="font-size:12px;color:var(--ink3);margin-top:4px;line-height:1.5;">How the mushaf page is framed. Drawn in your theme's colour; phones use a thinner frame.</div>
+    </div>
+
+    <div style="border-top:.5px solid var(--border);padding-top:10px;margin-top:10px;">
       <label style="display:flex;align-items:center;justify-content:space-between;user-select:none;">
         <span>ع Ruku markers</span>
         <span style="font-size:12px;color:var(--ink3);font-weight:400;margin-right:6px;font-family:var(--ui-font);">Mark where each ruku ends</span>
@@ -1389,8 +1394,8 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
 
     <div style="border-top:.5px solid var(--border);padding-top:10px;margin-top:10px;">
       <label style="display:flex;align-items:center;justify-content:space-between;user-select:none;">
-        <span>123 Latin verse numbers</span>
-        <span style="font-size:12px;color:var(--ink3);font-weight:400;margin-right:6px;font-family:var(--ui-font);">Instead of the Arabic-Indic glyph</span>
+        <span>123 Latin numbers</span>
+        <span style="font-size:12px;color:var(--ink3);font-weight:400;margin-right:6px;font-family:var(--ui-font);">Verse and page numbers, instead of Arabic-Indic</span>
         <button id="latinSwitch" onclick="toggleMushafPref('latinNumerals')" style="position:relative;width:40px;height:22px;border-radius:11px;border:none;cursor:pointer;transition:background .2s;background:var(--parchment3);flex-shrink:0;">
           <span id="latinThumb" style="position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:white;transition:transform .2s;display:block;box-shadow:0 1px 4px rgba(0,0,0,.2);"></span>
         </button>
@@ -1680,7 +1685,7 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
    console as APP_VERSION, or grep the deployed HTML for it. Bumped on every
    saved build; vcheck.py asserts it matches the filename, so a forgotten bump
    fails the integrity check rather than shipping a lie. */
-const APP_VERSION = 'v1_157';
+const APP_VERSION = 'v1_159';
 window.APP_VERSION = APP_VERSION;
 console.info('Tehfiz student viewer ' + APP_VERSION);
 
@@ -3709,7 +3714,7 @@ function renderMushafFromQuranCom(juzNum,pageMap,startPage,endPage,hizbByVerse={
     const _renderFontPx=_zm.font;
     const _renderMarginL=_zm.marginLeft;
     const _renderMarginR=_zm.marginRight;
-    html+=`<div class="mushaf-page-body" style="font-family:'${defaultFont}','UthmanicHafs',serif;font-size:${_renderFontPx}px;margin:10px ${_renderMarginR}px 10px ${_renderMarginL}px;padding:10px ${_zm.innerPadding}px 8px;">`;
+    html+=`<div class="mushaf-page-body${qpg<=2?' msb-opening':''}" style="font-family:'${defaultFont}','UthmanicHafs',serif;font-size:${_renderFontPx}px;margin:10px ${_renderMarginR}px 10px ${_renderMarginL}px;padding:10px ${_zm.innerPadding}px 8px;">`;
 
     // Pages 1-2 of the Madinah mushaf (Al-Fatihah / opening of Al-Baqarah) have an
     // ornate, shorter layout — fewer real text lines than the standard 15. Restrict
@@ -3730,8 +3735,12 @@ function renderMushafFromQuranCom(juzNum,pageMap,startPage,endPage,hizbByVerse={
     const firstSurahOnPage=pageTokens.length?pageTokens[0].sNum:null;
     const firstSurahStartsHere=firstSurahOnPage&&surahsStartingHere.has(firstSurahOnPage);
 
+    // Pages 1-2: the basmala and text go in .msl-opening — the medallion or
+    // arch drawn by the page style (tehfiz-shared.css).
+    let _openingWrap=false;
     if(firstSurahStartsHere){
       html+=`<div class="msl msl-surah-header" data-surah="${firstSurahOnPage}"><div class="msl-surah-ornament"><span class="msl-surah-name">${AR_NAMES[firstSurahOnPage-1]||''}</span></div></div>`;
+      if(qpg<=2){ html+=`<div class="msl-opening">`; _openingWrap=true; }
       // Surah 1 (Al-Fatihah): basmala is encoded in the QCF page font — don't inject a second one.
       // Surah 9 (At-Tawbah): starts without basmala by Islamic tradition.
       if(firstSurahOnPage!==9&&firstSurahOnPage!==1)html+=`<div class="msl msl-basmala"><span class="msl-basmala-text">بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ</span></div>`;
@@ -3827,6 +3836,7 @@ function renderMushafFromQuranCom(juzNum,pageMap,startPage,endPage,hizbByVerse={
       html+=`<div class="msl msl-text${sc}${centerLast}" dir="rtl" style="position:relative;">${hizbMarker}${rukuMarker}${wordSpans}</div>`;
     });
 
+    if(_openingWrap) html+=`</div>`;
     if(botBufferPx>0) html+=mushafBufferBlock(qpg+'-bot',botBufferPx,lineDeficit/2);
     html+=`</div>`;
     html+=mushafPageFooter(qpg);

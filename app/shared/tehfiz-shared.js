@@ -1,7 +1,7 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   tehfiz-shared.js — s2
+   tehfiz-shared.js — s3
    Loaded by BOTH apps (teacher /app/teacher/, viewer /app/student/) before
-   their own scripts, from /app/shared/tehfiz-shared.js?v=s2.
+   their own scripts, from /app/shared/tehfiz-shared.js?v=s3.
 
    What is here: every top-level `function` and `const` that was identical
    (token for token) in the two apps — the tajweed tables and rule helpers,
@@ -18,7 +18,7 @@
    · Nothing here may run against the page at load time: this file runs in the
      <head>, before <body> exists. Declarations and pure tables only.
    ═══════════════════════════════════════════════════════════════════════ */
-const TEHFIZ_SHARED_VERSION = 's2';
+const TEHFIZ_SHARED_VERSION = 's3';
 
 // ── sessionName vs. the legacy `range` key ────────────────────────
 // v3 and earlier stored the (optional) session name under `range`, a leftover
@@ -1542,7 +1542,8 @@ function mushafPageHeader(pg,juzNum,vv){
   const s0=sNums[0],sL=sNums[sNums.length-1];
   const ar=s0===sL?(AR_NAMES[s0-1]||''):(AR_NAMES[s0-1]||'')+' · '+(AR_NAMES[sL-1]||'');
   const en=s0===sL?`${s0}. ${SURAH_NAMES[s0-1]||''}`:`${s0}. ${SURAH_NAMES[s0-1]||''} – ${sL}. ${SURAH_NAMES[sL-1]||''}`;
-  return`<div class="mushaf-page-header"><span class="mph-juz">Juz ${toAr(pageJuz)}</span><span class="mph-surah">${ar}<span class="mph-surah-en">${en}</span></span><span class="mph-right"></span></div>`;
+  // Arabic running head with the Latin under it; the page style decides the layout.
+  return`<div class="mushaf-page-header"><span class="mph-juz"><span class="mph-ar">الجزء ${toAr(pageJuz)}</span><span class="mph-en">Juz ${pageJuz}</span></span><span class="mph-surah">${ar}<span class="mph-surah-en">${en}</span></span><span class="mph-right"></span></div>`;
 }
 
 /* Two readouts in the footer: how far to the end of this surah on the left,
@@ -1565,9 +1566,14 @@ function _pagesLeftText(pg){
   return {left, right};
 }
 
+/* Page numbers follow the verse-number toggle: Arabic-Indic by default, Latin
+   when "Latin verse & page numbers" is on — one choice for every numeral on
+   the page. */
+function _pageNumLatin(){ return typeof appSettings !== 'undefined' && !!appSettings.latinNumerals; }
+
 function mushafPageFooter(pg){
   const p = _pagesLeftText(pg);
-  return`<div class="mushaf-page-footer"><span class="mpf-prog mpf-prog-l">${p.left}</span><span class="mpf-prog mpf-prog-r">${p.right}</span><div class="mpf-ornament">${ornamentSVG(pg+'a')}</div><div class="mpf-divider"></div><div class="mpf-num">${pg}</div><div class="mpf-divider"></div><div class="mpf-ornament">${ornamentSVG(pg+'b')}</div></div>`;
+  return`<div class="mushaf-page-footer"><span class="mpf-prog mpf-prog-l">${p.left}</span><span class="mpf-prog mpf-prog-r">${p.right}</span><div class="mpf-ornament">${ornamentSVG(pg+'a')}</div><div class="mpf-divider"></div><div class="mpf-num${_pageNumLatin()?'':' ar'}">${_pageNumLatin()?pg:toAr(pg)}</div><div class="mpf-divider"></div><div class="mpf-ornament">${ornamentSVG(pg+'b')}</div></div>`;
 }
 
 // Applies the current zoom level's metrics to all rendered pages, and (re)registers
@@ -2653,4 +2659,85 @@ function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace
   apply(get());
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', render); else render();
   window.TehfizTheme = { get:get, set:set, render:render, list:function(){ return THEMES.map(function(t){ return t.id; }); } };
+})();
+
+/* ═══ TehfizPageStyle ════════════════════════════════════════════════════
+   How the mushaf page is framed: 'madani' (default — illuminated band,
+   medallion opening pages) or 'quiet' (hairline frame, arch openings).
+   Storage key 'tehfiz_page_style', shared by both apps like the theme.
+   Applied as <html data-tz-page>; everything it changes is CSS (see
+   tehfiz-shared.css, MUSHAF PAGE STYLE), so switching needs no re-render.
+   DOM container #pageStyleChoice. */
+(function(){
+  var KEY = 'tehfiz_page_style';
+  var STYLES = [
+    { id:'madani', name:'Madani', note:'Illuminated frame' },
+    { id:'quiet',  name:'Quiet',  note:'Hairline frame' }
+  ];
+  function valid(id){ return STYLES.some(function(t){ return t.id === id; }); }
+  function get(){
+    var t = null;
+    try { t = localStorage.getItem(KEY); } catch(e) {}
+    return valid(t) ? t : 'madani';
+  }
+  function apply(id){ document.documentElement.setAttribute('data-tz-page', id); }
+  function set(id){
+    if (!valid(id)) return;
+    try { localStorage.setItem(KEY, id); } catch(e) {}
+    apply(id); render();
+  }
+  function render(){
+    var el = document.getElementById('pageStyleChoice');
+    if (!el) return;
+    var cur = get();
+    el.innerHTML = STYLES.map(function(t){
+      return '<button type="button" class="tz-theme-opt tz-page-opt' + (t.id === cur ? ' on' : '') + '" data-tzp="' + t.id + '"' +
+        ' aria-pressed="' + (t.id === cur) + '"><span class="tz-page-sw ' + t.id + '"></span>' +
+        '<span class="tz-theme-name">' + t.name + '<small>' + t.note + '</small></span></button>';
+    }).join('');
+  }
+  document.addEventListener('click', function(e){
+    var b = e.target.closest && e.target.closest('.tz-page-opt');
+    if (b && b.dataset.tzp) set(b.dataset.tzp);
+  });
+  window.addEventListener('storage', function(e){ if (e.key === KEY) { apply(get()); render(); } });
+  apply(get());
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', render); else render();
+  window.TehfizPageStyle = { get:get, set:set, render:render };
+})();
+
+/* Pages 1-2 keep the height of every other page. Their spacer blocks were
+   sized from the line count alone, which left the opening pages taller than
+   the rest — more so once the medallion or arch took more room than the lines
+   it holds. Here the two spacers are resized to whatever makes the body's
+   content exactly 15 lines tall, measured, so it holds for either page style,
+   any zoom and the surah title above. A ResizeObserver re-fits after zoom or
+   font loading; only the spacers change, and only when off by a pixel, so it
+   settles at once. Works for every render path (normal, virtualised, upgrade)
+   because it watches for .msb-opening bodies rather than being called. */
+(function(){
+  if (typeof ResizeObserver === 'undefined' || typeof MutationObserver === 'undefined') return;
+  function fit(body){
+    var bufs = body.querySelectorAll(':scope > .msl-buffer');
+    if (!bufs.length || !body.isConnected) return;
+    var cs = getComputedStyle(body), font = parseFloat(cs.fontSize) || 26;
+    var used = 0;
+    for (var i = 0; i < bufs.length; i++) used += bufs[i].getBoundingClientRect().height;
+    var inner = body.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+    var spare = Math.max(0, STANDARD_LINES_PER_PAGE * MSL_LINE_HEIGHT_EM * font - (inner - used));
+    var top = Math.round(spare / 2), want = [top, Math.round(spare - top)];
+    for (var j = 0; j < bufs.length && j < 2; j++) {
+      if (Math.abs(bufs[j].getBoundingClientRect().height - want[j]) >= 1) bufs[j].style.height = want[j] + 'px';
+    }
+  }
+  var ro = new ResizeObserver(function(entries){ entries.forEach(function(e){ fit(e.target); }); });
+  var seen = new WeakSet();
+  function scan(root){
+    var list = root.querySelectorAll ? root.querySelectorAll('.msb-opening') : [];
+    for (var i = 0; i < list.length; i++) if (!seen.has(list[i])) { seen.add(list[i]); ro.observe(list[i]); fit(list[i]); }
+  }
+  new MutationObserver(function(muts){
+    muts.forEach(function(m){ m.addedNodes.forEach(function(n){ if (n.nodeType === 1) { if (n.classList.contains('msb-opening')) scan(n.parentNode); else scan(n); } }); });
+  }).observe(document.documentElement, { childList:true, subtree:true });
+  if (document.readyState !== 'loading') scan(document); else document.addEventListener('DOMContentLoaded', function(){ scan(document); });
 })();

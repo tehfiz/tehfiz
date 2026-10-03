@@ -1,7 +1,8 @@
-/* tehfiz-shared.css — s2
-   Theme tokens, the theme picker and the one-row header, shared by both apps.
+/* tehfiz-shared.css — s4
+   Theme tokens, the theme picker, the one-row header and the mushaf page
+   style (Madani / Quiet), shared by both apps.
    Loaded in <head> before each app's own <style>, from
-   /app/shared/tehfiz-shared.css?v=s2. Each app's own .topbar rules still
+   /app/shared/tehfiz-shared.css?v=s4. Each app's own .topbar rules still
    exist and load later, so header rules here are written one class stronger
    (.topbar.tzh-bar) to win without !important. */
 /* ═══ THEMES ════════════════════════════════════════════════════════════
@@ -275,6 +276,18 @@ body.compact-ui .tzh-bar .tzh-timer .btn-t-label{display:none;}
   background:#fff;color:var(--ink);font:400 16px var(--ui-font);text-transform:none;letter-spacing:0;min-width:0;width:100%;}
 .tzh-f input{font-family:'IBM Plex Mono',monospace;font-weight:500;}
 .tzh-pager{display:flex;gap:8px;align-items:center;}
+/* Surah search in the Go to sheet (h2) */
+.tzh-sp{display:flex;flex-direction:column;gap:6px;text-transform:none;letter-spacing:0;}
+.tzh-sp-list{max-height:min(260px,38vh);overflow:auto;background:#fff;border:1px solid var(--border2);border-radius:8px;
+  padding:4px;display:flex;flex-direction:column;}
+.tzh-sp-list[hidden]{display:none;}
+.tzh-sp-opt{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:10px;min-height:44px;padding:0 10px;border-radius:6px;
+  cursor:pointer;color:var(--ink);font:400 15px var(--ui-font);}
+.tzh-sp-opt.hi,.tzh-sp-opt:hover{background:var(--gold-pale);}
+.tzh-sp-n{font:500 12px 'IBM Plex Mono',monospace;color:var(--ink3);min-width:26px;}
+.tzh-sp-name{flex:1 1 auto;}
+.tzh-sp-v{font:400 12px 'IBM Plex Mono',monospace;color:var(--ink3);}
+.tzh-sp-empty{padding:10px;color:var(--ink3);font-size:14px;}
 .tzh-pager input{text-align:center;flex:1 1 auto;}
 .tzh-pg{width:52px;height:46px;flex:none;border:1px solid var(--border2);border-radius:8px;background:#fff;color:var(--ink);
   display:inline-flex;align-items:center;justify-content:center;cursor:pointer;}
@@ -285,3 +298,176 @@ body.compact-ui .tzh-bar .tzh-timer .btn-t-label{display:none;}
 @media (prefers-reduced-motion:reduce){
   .tzh-menu,.tzh-sheet,.tzh-scrim{transition:none!important;}
 }
+
+/* ═══ MUSHAF PAGE STYLE — Madani (default) / Quiet ══════════════════════
+   Chosen in Settings → Display (TehfizPageStyle) and set as
+   <html data-tz-page="madani|quiet"> by tehfiz-shared.js before first paint.
+   Every rule is prefixed :root[data-tz-page…] so it outranks each app's own
+   mushaf rules, which load later; the apps' rules remain the fallback.
+
+   Every colour comes from the four frame tokens below, set per theme — the
+   old page drew its header, footer and surah bands in --gold-pale (the same
+   grey in every theme) and the footer ornament in hardcoded gold.
+     --frame       rules, stars, medallions
+     --frame-tint  the lattice band, cartouche and full-hizb fill
+     --frame-ink   running heads and marker text
+   Sizes inside the page body are in em of the body's font size, which the
+   zoom code sets, so the frame scales with the text at every zoom.
+
+   Structure (unchanged markup apart from two classes):
+     .mushaf-page            the sheet — no border now, a soft shadow
+     .mushaf-page-header     running heads: juz left, surah right
+     .mushaf-page-body       the frame: outer rule (box-shadow), band
+                             (background), ::before = the text panel,
+                             ::after = corner stars
+     .msb-opening            pages 1–2: the panel takes the lattice and
+     .msl-opening            the text sits in a medallion (Madani) or arch (Quiet)
+     .mushaf-page-footer     progress text either side, page-number medallion
+   Phones (body.compact-ui): the band collapses to a thin double rule. */
+:root{
+  --frame:#4a5058;--frame-tint:#eceef1;--frame-ink:#3f444b;
+  --tz-lat:color-mix(in srgb,var(--frame) 18%,transparent);
+  --tz-star:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cpath fill-rule='evenodd' d='M20 3L24.98 7.98L32.02 7.98L32.02 15.02L37 20L32.02 24.98L32.02 32.02L24.98 32.02L20 37L15.02 32.02L7.98 32.02L7.98 24.98L3 20L7.98 15.02L7.98 7.98L15.02 7.98Z M20 14.5a5.5 5.5 0 1 0 0.01 0Z'/%3E%3C/svg%3E");
+  --tz-star-solid:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cpath d='M20 3L24.98 7.98L32.02 7.98L32.02 15.02L37 20L32.02 24.98L32.02 32.02L24.98 32.02L20 37L15.02 32.02L7.98 32.02L7.98 24.98L3 20L7.98 15.02L7.98 7.98L15.02 7.98Z'/%3E%3C/svg%3E");
+}
+:root[data-tz-theme="lapis"]{--frame:#2a4fb8;--frame-tint:#e8eefb;--frame-ink:#2f3f6e;}
+:root[data-tz-theme="mulberry"]{--frame:#7a2e62;--frame-tint:#f6eaf2;--frame-ink:#5e2a4d;}
+:root[data-tz-theme="classic"]{--frame:#a8781a;--frame-tint:#f7efdb;--frame-ink:#6e5212;}
+
+/* ── Both styles ── */
+:root[data-tz-page] .mushaf-page{border:none;border-radius:1px;background:var(--parchment);
+  box-shadow:0 2px 14px rgba(23,25,28,.09),0 0 0 1px rgba(23,25,28,.05);}
+:root[data-tz-page] .mushaf-page-header{background:transparent;border-bottom:none;align-items:flex-end;
+  padding:calc(var(--mz-header-pad-v,7px) * 1.6) calc(var(--mz-header-pad-h,18px) * 1.2) 2px;}
+:root[data-tz-page] .mph-juz{font-family:var(--ui-font);text-transform:none;letter-spacing:0;color:var(--frame-ink);
+  display:flex;flex-direction:column;align-items:flex-start;gap:1px;}
+:root[data-tz-page] .mph-ar{font-family:'Scheherazade New','Amiri',serif;font-size:var(--mz-header-surah-font,13px);
+  font-weight:600;line-height:1.15;color:var(--frame-ink);}
+:root[data-tz-page] .mph-en,
+:root[data-tz-page] .mph-surah-en{direction:ltr;unicode-bidi:isolate;font-family:var(--ui-font);font-size:var(--mz-header-surahen-font,9px);font-weight:400;
+  color:var(--ink3);letter-spacing:.05em;text-transform:uppercase;line-height:1.3;}
+:root[data-tz-page] .mph-surah{order:3;flex:none;text-align:right;font-weight:600;line-height:1.15;color:var(--frame-ink);}
+:root[data-tz-page] .mph-right{order:2;flex:1;min-width:0;}
+
+:root[data-tz-page] .mushaf-page-body{position:relative;isolation:isolate;border:1px solid var(--frame);border-radius:0;
+  padding-top:calc(var(--band) + .5em)!important;padding-bottom:calc(var(--band) + .45em)!important;}
+:root[data-tz-page] .mushaf-page-body::before{content:'';position:absolute;inset:var(--band);z-index:-1;
+  background:var(--parchment);pointer-events:none;}
+:root[data-tz-page] .mushaf-page-body::after{content:'';position:absolute;z-index:-1;pointer-events:none;
+  background:var(--frame);
+  -webkit-mask:var(--tz-star) top left/var(--star) no-repeat,var(--tz-star) top right/var(--star) no-repeat,
+               var(--tz-star) bottom left/var(--star) no-repeat,var(--tz-star) bottom right/var(--star) no-repeat;
+          mask:var(--tz-star) top left/var(--star) no-repeat,var(--tz-star) top right/var(--star) no-repeat,
+               var(--tz-star) bottom left/var(--star) no-repeat,var(--tz-star) bottom right/var(--star) no-repeat;}
+
+:root[data-tz-page] .msl-surah-name{color:var(--ink);}
+:root[data-tz-page] .qcf-ruku-ain{color:var(--frame);}
+
+/* Hizb and ruku discs in the margin */
+:root[data-tz-page] .msl-hizb{background:var(--parchment);color:var(--frame-ink);border:1.5px solid var(--frame);
+  box-shadow:0 0 0 2px var(--parchment),0 0 0 3px color-mix(in srgb,var(--frame) 45%,transparent);}
+:root[data-tz-page] .msl-hizb.hizb-full{background:var(--frame-tint);color:var(--frame-ink);}
+:root[data-tz-page] .msl-hizb.hizb-half,
+:root[data-tz-page] .msl-hizb.hizb-quarter{background:var(--parchment);color:var(--frame-ink);border-color:var(--frame);}
+
+/* Footer: progress either side, page number in the middle */
+:root[data-tz-page] .mushaf-page-footer{background:transparent;border-top:none;}
+:root[data-tz-page] .mpf-ornament{visibility:hidden;}
+:root[data-tz-page] .mpf-divider{display:none;}
+:root[data-tz-page] .mpf-prog{background:transparent;color:var(--ink3);}
+:root[data-tz-page] .mpf-num{position:relative;isolation:isolate;color:var(--ink);letter-spacing:0;}
+:root[data-tz-page] .mpf-num.ar{font-family:'Scheherazade New','Amiri',serif;font-size:calc(var(--mz-footer-num-font,11px) * 1.3);}
+
+/* ── Madani ── */
+:root[data-tz-page="madani"] .mushaf-page-body{--band:.52em;--star:.52em;
+  background-color:var(--frame-tint);
+  background-image:repeating-linear-gradient(45deg,var(--tz-lat) 0 1px,transparent 1px 7px),
+                   repeating-linear-gradient(-45deg,var(--tz-lat) 0 1px,transparent 1px 7px);
+  box-shadow:0 0 0 .1em var(--parchment),0 0 0 .19em var(--frame);}
+:root[data-tz-page="madani"] .mushaf-page-body::before{border:1px solid var(--frame);}
+:root[data-tz-page="madani"] .mushaf-page-body::after{inset:0;}
+
+:root[data-tz-page="madani"] .msl-surah-ornament{border:1.5px solid var(--frame);padding:.16em 1.4em;
+  background-color:var(--frame-tint);
+  background-image:repeating-linear-gradient(45deg,var(--tz-lat) 0 1px,transparent 1px 6px),
+                   repeating-linear-gradient(-45deg,var(--tz-lat) 0 1px,transparent 1px 6px);
+  box-shadow:inset 0 0 0 .1em var(--parchment),inset 0 0 0 .14em var(--frame);}
+:root[data-tz-page="madani"] .msl-surah-ornament::before,
+:root[data-tz-page="madani"] .msl-surah-ornament::after{width:.62em;height:.62em;border:none;border-radius:0;
+  background:var(--frame);-webkit-mask:var(--tz-star) center/contain no-repeat;mask:var(--tz-star) center/contain no-repeat;}
+:root[data-tz-page="madani"] .msl-surah-ornament::before{right:.45em;}
+:root[data-tz-page="madani"] .msl-surah-ornament::after{left:.45em;}
+:root[data-tz-page="madani"] .msl-surah-name{background:var(--parchment);border:1px solid var(--frame);border-radius:999px;
+  padding:.04em 1.3em .1em;line-height:1.5;}
+
+:root[data-tz-page="madani"] .mpf-num{width:var(--mz-footer-height,32px);height:var(--mz-footer-height,32px);
+  padding:0;margin:0 auto;align-self:center;}
+:root[data-tz-page="madani"] .mpf-num::before,
+:root[data-tz-page="madani"] .mpf-num::after{content:'';position:absolute;z-index:-1;
+  -webkit-mask:var(--tz-star-solid) center/contain no-repeat;mask:var(--tz-star-solid) center/contain no-repeat;}
+:root[data-tz-page="madani"] .mpf-num::before{inset:-12%;background:var(--frame);}
+:root[data-tz-page="madani"] .mpf-num::after{inset:-3%;background:var(--parchment);}
+:root[data-tz-page="madani"] .mushaf-page-footer{align-items:center;}
+:root[data-tz-page="madani"] .mpf-ornament{flex:1;}
+
+/* Opening pages: lattice behind, text in a round medallion */
+:root[data-tz-page="madani"] .msb-opening::before{border:1px solid var(--frame);background-color:var(--frame-tint);
+  background-image:repeating-linear-gradient(45deg,var(--tz-lat) 0 1px,transparent 1px 9px),
+                   repeating-linear-gradient(-45deg,var(--tz-lat) 0 1px,transparent 1px 9px);}
+:root[data-tz-page] .msl-opening{position:relative;align-self:center;flex-shrink:0;display:flex;flex-direction:column;
+  justify-content:center;align-items:center;box-sizing:border-box;}
+:root[data-tz-page] .msl-opening .msl{width:auto;justify-content:center;gap:.3em;}
+:root[data-tz-page="madani"] .msl-opening{width:19.5em;height:19.5em;margin:.7em 0 .5em;border-radius:50%;
+  background:var(--parchment);border:.07em solid var(--frame);
+  box-shadow:0 0 0 .18em var(--parchment),0 0 0 .22em var(--frame);}
+:root[data-tz-page="madani"] .msl-opening::before,
+:root[data-tz-page="madani"] .msl-opening::after{content:'';position:absolute;left:50%;width:.85em;height:.85em;
+  margin-left:-.425em;background:var(--frame);
+  -webkit-mask:var(--tz-star-solid) center/contain no-repeat;mask:var(--tz-star-solid) center/contain no-repeat;}
+:root[data-tz-page="madani"] .msl-opening::before{top:-.62em;}
+:root[data-tz-page="madani"] .msl-opening::after{bottom:-.62em;}
+
+/* ── Quiet ── */
+:root[data-tz-page="quiet"] .mushaf-page-body{--band:.2em;--star:.7em;background:var(--parchment);
+  border-width:1.5px;box-shadow:none;}
+:root[data-tz-page="quiet"] .mushaf-page-body::before{border:1px solid color-mix(in srgb,var(--frame) 40%,transparent);}
+:root[data-tz-page="quiet"] .mushaf-page-body::after{inset:-.37em;}
+
+:root[data-tz-page="quiet"] .msl-surah-ornament{border:none;border-radius:999px;background:var(--frame-tint);
+  padding:.14em 1.4em;box-shadow:none;}
+:root[data-tz-page="quiet"] .msl-surah-ornament::before,
+:root[data-tz-page="quiet"] .msl-surah-ornament::after{width:22%;height:1px;border:none;border-radius:0;
+  background:color-mix(in srgb,var(--frame) 45%,transparent);}
+:root[data-tz-page="quiet"] .msl-surah-ornament::before{right:.9em;}
+:root[data-tz-page="quiet"] .msl-surah-ornament::after{left:.9em;}
+
+:root[data-tz-page="quiet"] .mpf-num{font-family:var(--ui-font);gap:8px;}
+:root[data-tz-page="quiet"] .mpf-num::before,
+:root[data-tz-page="quiet"] .mpf-num::after{content:'';width:5px;height:5px;flex:none;transform:rotate(45deg);
+  border:1px solid var(--frame);}
+
+:root[data-tz-page="quiet"] .msl-opening{width:18.5em;padding:4.6em 0 1.1em;margin:.6em 0 .4em;
+  border-radius:9.25em 9.25em .45em .45em;background:var(--frame-tint);border:.06em solid var(--frame);
+  box-shadow:inset 0 0 0 .22em var(--parchment),inset 0 0 0 .26em color-mix(in srgb,var(--frame) 40%,transparent);}
+
+/* ── Phones: a thin double rule instead of the band ── */
+body.compact-ui .mushaf-page-body{--band:.16em!important;}
+:root[data-tz-page="madani"] body.compact-ui .mushaf-page-body{background:var(--parchment);
+  box-shadow:0 0 0 .08em var(--parchment),0 0 0 .14em var(--frame);}
+:root[data-tz-page="madani"] body.compact-ui .mushaf-page-body::after{display:none;}
+:root[data-tz-page="madani"] body.compact-ui .msb-opening::before{inset:var(--band);}
+
+/* Settings → Display: the page-style picker reuses .tz-theme-opt */
+.tz-page-sw{flex:none;width:22px;height:26px;box-sizing:border-box;border-radius:1px;background:var(--parchment);}
+.tz-page-sw.madani{border:1.5px solid var(--frame);box-shadow:inset 0 0 0 3px var(--frame-tint),inset 0 0 0 4px var(--frame);}
+.tz-page-sw.quiet{border:1px solid var(--frame);box-shadow:inset 0 0 0 2px var(--parchment),inset 0 0 0 3px color-mix(in srgb,var(--frame) 40%,transparent);}
+
+/* Opening pages: lines inside the medallion are centred, so a hizb or ruku
+   marker would land inside it — anchor them to the medallion instead, out in
+   the lattice either side. */
+:root[data-tz-page] .msl-opening .msl{position:static!important;}
+:root[data-tz-page] .msl-opening .msl-hizb{left:auto!important;right:calc(100% + 1.2em)!important;}
+:root[data-tz-page] .msl-opening .msl-hizb.msl-ruku{right:auto!important;left:calc(100% + 1.2em)!important;}
+:root[data-tz-page="quiet"] .msl-opening .msl-hizb{right:calc(100% + .55em)!important;}
+:root[data-tz-page="quiet"] .msl-opening .msl-hizb.msl-ruku{right:auto!important;left:calc(100% + .55em)!important;}
+:root[data-tz-page] .msl-buffer{flex-shrink:0;}

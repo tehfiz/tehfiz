@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ═══════════════════════════════════════════════════════════════════
-     Tehfiz teacher app — v4_308
+     Tehfiz teacher app — v4_310
      Deployed from the `tehfiz` repo at app/teacher/index.html (the repo root
      is the web root). Locally, tehfiz-api/public/ is a clone of that repo:
      test with `npm run dev`, then commit and push from inside public/.
@@ -12,9 +12,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
 <script>/* Theme before first paint — see TehfizTheme. Unknown or missing → Graphite. */
 (function(){try{var t=localStorage.getItem('tehfiz_theme');if(t==='classic'||t==='lapis'||t==='mulberry')document.documentElement.setAttribute('data-tz-theme',t);}catch(e){}})();</script>
-<link rel="stylesheet" href="/app/shared/tehfiz-shared.css?v=s2">
-<script src="/app/shared/tehfiz-shared.js?v=s2"></script>
-<script src="/app/shared/tehfiz-header.js?v=h1"></script>
+<link rel="stylesheet" href="/app/shared/tehfiz-shared.css?v=s4">
+<script src="/app/shared/tehfiz-shared.js?v=s3"></script>
+<script src="/app/shared/tehfiz-header.js?v=h2"></script>
 <script src="/app/shared/tehfiz-pwa.js?v=p1"></script>
 <!-- Installable app (v4_305): manifest, icons, and the service worker TehfizPWA registers. -->
 <link rel="manifest" href="/app/teacher/manifest.webmanifest">
@@ -2612,7 +2612,7 @@ body.compact-ui .quick-form::before{
    console as APP_VERSION, or grep the deployed HTML for it. Bumped on every
    saved build; vcheck.py asserts it matches the filename, so a forgotten bump
    fails the integrity check rather than shipping a lie. */
-const APP_VERSION = 'v4_308';
+const APP_VERSION = 'v4_310';
 window.APP_VERSION = APP_VERSION;
 console.info('Tehfiz teacher app ' + APP_VERSION);
 
@@ -4611,7 +4611,7 @@ function renderMushafFromQuranCom(juzNum, pageMap, startPage, endPage, hizbByVer
     const _renderFontPx = _zm.font;
     const _renderMarginL = _zm.marginLeft;
     const _renderMarginR = _zm.marginRight;
-    html += `<div class="mushaf-page-body" style="font-family:'${defaultFont}','UthmanicHafs',serif;font-size:${_renderFontPx}px;margin:10px ${_renderMarginR}px 10px ${_renderMarginL}px;padding:10px ${_zm.innerPadding}px 8px;">`;
+    html += `<div class="mushaf-page-body${qpg <= 2 ? ' msb-opening' : ''}" style="font-family:'${defaultFont}','UthmanicHafs',serif;font-size:${_renderFontPx}px;margin:10px ${_renderMarginR}px 10px ${_renderMarginL}px;padding:10px ${_zm.innerPadding}px 8px;">`;
 
     // Pages 1-2 of the Madinah mushaf (Al-Fatihah / opening of Al-Baqarah) have an
     // ornate, shorter layout — fewer real text lines than the standard 15. Restrict
@@ -4639,8 +4639,14 @@ function renderMushafFromQuranCom(juzNum, pageMap, startPage, endPage, hizbByVer
     const firstSurahStartsHere = firstSurahOnPage && surahsStartingHere.has(firstSurahOnPage);
 
     // Show header for the first surah if it starts here and it's not surah 1
+    // Pages 1-2: everything after the surah title — the basmala and the text —
+    // goes in .msl-opening, the medallion (Madani) or arch (Quiet) the page
+    // style draws. Lines inside keep their own classes, so selection, spot
+    // and scroll code find them as before.
+    let _openingWrap = false;
     if(firstSurahStartsHere){
       html += `<div class="msl msl-surah-header" data-surah="${firstSurahOnPage}"><div class="msl-surah-ornament"><span class="msl-surah-name">${AR_NAMES[firstSurahOnPage-1]||''}</span></div></div>`;
+      if(qpg <= 2){ html += `<div class="msl-opening">`; _openingWrap = true; }
       if(firstSurahOnPage !== 9 && firstSurahOnPage !== 1){
         html += `<div class="msl msl-basmala"><span class="msl-basmala-text">بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ</span></div>`;
       }
@@ -4742,6 +4748,7 @@ function renderMushafFromQuranCom(juzNum, pageMap, startPage, endPage, hizbByVer
       html += `<div class="msl msl-text${sc}${centerLast}" dir="rtl" style="position:relative;">${hizbMarker}${rukuMarker}${wordSpans}</div>`;
     });
 
+    if(_openingWrap) html += `</div>`;
     if(botBufferPx > 0) html += mushafBufferBlock(qpg + '-bot', botBufferPx, lineDeficit/2);
     html += `</div>`;
     html += mushafPageFooter(qpg);
@@ -12348,6 +12355,11 @@ document.querySelectorAll('.modal-bg').forEach(m=>m.addEventListener('click',e=>
       <div style="font-size:12px;color:var(--ink3);margin-top:4px;line-height:1.5;">Colours of the app around the page. Mistake colours stay the same in every theme.</div>
     </div>
 <div class="edit-form-group" style="border-top:.5px solid var(--border);padding-top:10px;margin-top:4px;">
+      <label style="display:block;font-size:13px;color:var(--ink2);margin-bottom:6px;font-weight:600;">Page style</label>
+      <div class="tz-theme-choice" id="pageStyleChoice"></div>
+      <div style="font-size:12px;color:var(--ink3);margin-top:4px;line-height:1.5;">How the mushaf page is framed. Drawn in your theme's colour; phones use a thinner frame.</div>
+    </div>
+<div class="edit-form-group" style="border-top:.5px solid var(--border);padding-top:10px;margin-top:4px;">
       <label style="display:block;font-size:13px;color:var(--ink2);margin-bottom:6px;font-weight:600;">⌨ Keyboard scroll speed</label>
       <div style="display:flex;align-items:center;gap:8px;">
         <span style="font-size:12px;color:var(--ink3);white-space:nowrap;">Slow</span>
@@ -12388,8 +12400,8 @@ document.querySelectorAll('.modal-bg').forEach(m=>m.addEventListener('click',e=>
     </div>
 <div class="edit-form-group" style="border-top:.5px solid var(--border);padding-top:10px;margin-top:4px;">
       <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;">
-        <span>123 Latin verse numbers</span>
-        <span style="font-size:12px;color:var(--ink3);font-weight:400;margin-right:6px;font-family:var(--ui-font);">Instead of the Arabic-Indic glyph</span>
+        <span>123 Latin numbers</span>
+        <span style="font-size:12px;color:var(--ink3);font-weight:400;margin-right:6px;font-family:var(--ui-font);">Verse and page numbers, instead of Arabic-Indic</span>
         <button id="latinSwitch" onclick="toggleMushafPref('latinNumerals')" style="position:relative;width:40px;height:22px;border-radius:11px;border:none;cursor:pointer;transition:background .2s;background:var(--border2);flex-shrink:0;">
           <span id="latinThumb" style="position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:white;transition:transform .2s;display:block;box-shadow:0 1px 4px rgba(0,0,0,.2);"></span>
         </button>
@@ -16470,6 +16482,12 @@ window.TehfizAdmin = { open, available };
   border-left:1px solid var(--border2);border-right:1px solid var(--border2);
   box-shadow:var(--shadow-lg);font-family:var(--ui-font);color:var(--ink);}
 @media(max-width:640px){.tad-panel{padding:12px 12px 14px;}}
+/* .tad-panel is also used for boxes INSIDE the list — the broadcast composer,
+   a teacher's profile. As the window's own class it made them full-height flex
+   columns, so with a long recipient list the message box was squeezed to a
+   sliver (v4_309). Inside the window they are ordinary blocks. */
+.tad-body .tad-panel{height:auto;display:block;flex:none;max-width:none;box-shadow:none;
+  border:1px solid var(--border2);border-radius:8px;margin:8px 0;padding:12px 14px;}
 .tad-row{padding:9px 0;border-bottom:.5px solid var(--border);}
 .tad-row-main{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
 .tad-row-sub{font-size:13px;color:var(--ink3);margin-top:2px;line-height:1.5;}
@@ -16581,7 +16599,7 @@ window.TehfizAdmin = { open, available };
 .bc-in{width:100%;box-sizing:border-box;font-family:var(--ui-font);font-size:13px;padding:6px 8px;
   margin-bottom:6px;border:.5px solid var(--border2);border-radius:5px;
   background:var(--parchment);color:var(--ink);}
-.bc-body{font-family:'IBM Plex Mono',monospace;font-size:13px;line-height:1.5;resize:vertical;}
+.bc-body{font-family:'IBM Plex Mono',monospace;font-size:13px;line-height:1.5;resize:vertical;min-height:240px;}
 .bc-who{border:.5px solid var(--border2);border-radius:6px;padding:7px 9px;margin-bottom:7px;
   background:var(--parchment);}
 .bc-who-h{display:flex;align-items:center;gap:6px;margin-bottom:5px;font-size:11px;
@@ -17977,7 +17995,7 @@ span.seg-chip{display:flex;align-items:center;justify-content:center;box-sizing:
 })();
 </script>
 <script src="/app/teacher/sessions-sent.js?v=m3"></script>
-<script src="/app/teacher/finish-session.js?v=f1"></script>
+<script src="/app/teacher/finish-session.js?v=f2"></script>
 <script src="/app/teacher/invoices.js?v=i1"></script>
 </body>
 </html>
