@@ -1,6 +1,6 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   finish-session.js — TehfizFinish — f1
-   Loaded by the teacher app only, from /app/teacher/finish-session.js?v=f1.
+   finish-session.js — TehfizFinish — f2
+   Loaded by the teacher app only, from /app/teacher/finish-session.js?v=f2.
 
    Replaces the five-button session footer (Save · Send · Report · Clear ·
    Save & Export) with one decision at the end of a lesson:
@@ -32,7 +32,7 @@
    ═══════════════════════════════════════════════════════════════════════ */
 (function () {
 'use strict';
-const TEHFIZ_FINISH_VERSION = 'f1';
+const TEHFIZ_FINISH_VERSION = 'f2';
 
 let open_ = false, view = 'form', moreOpen = false;
 let st = null;   // the sheet's working state, see begin()
@@ -564,6 +564,11 @@ function closeMore() {
 function toggleMore() { if (moreOpen) closeMore(); else openMore(); }
 
 function onMoreClick(e) {
+  /* Handled here, not passed on: "Discard…" redraws this menu as a confirm,
+     which detaches the button that was clicked, and the page-wide "click
+     outside closes the menu" check then saw a target in no menu at all and
+     closed it before the confirm could show (f2). */
+  e.stopPropagation();
   const t = e.target.closest('[data-tfsm]'); if (!t) return;
   const a = t.dataset.tfsm;
   if (a === 'discard') { confirmDiscard = true; openMore(); return; }

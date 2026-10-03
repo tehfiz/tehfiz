@@ -1,6 +1,6 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   tehfiz-header.js — TehfizHeader — h1
-   Loaded by both apps from /app/shared/tehfiz-header.js?v=h1, after
+   tehfiz-header.js — TehfizHeader — h2
+   Loaded by both apps from /app/shared/tehfiz-header.js?v=h2, after
    tehfiz-shared.js. Styles live in tehfiz-shared.css under .tzh-.
 
    The one-row header. The bar's own markup is in each app (it has to paint
@@ -26,7 +26,7 @@
    ═══════════════════════════════════════════════════════════════════════ */
 (function () {
 'use strict';
-const TEHFIZ_HEADER_VERSION = 'h1';
+const TEHFIZ_HEADER_VERSION = 'h2';
 
 let cfg = { items: () => [], who: () => null, shortcuts: () => [] };
 let menuOpen = false, viewOpen = false, gotoOpen = false;
@@ -274,8 +274,15 @@ function gotoHtml() {
     .filter((o) => o.value)
     .map((o) => '<option value="' + esc(o.value) + '"' + (+o.value === curJuz() ? ' selected' : '') + '>' +
       esc(o.textContent) + '</option>').join('');
-  const surOpts = SURAH_NAMES.map((n, i) =>
-    '<option value="' + (i + 1) + '"' + (i + 1 === surah ? ' selected' : '') + '>' + (i + 1) + ' · ' + esc(n) + '</option>').join('');
+  /* Surah is a search box, like the desktop position editor (h2): type a name,
+     a number, or a common spelling — surahMatches() in the shared file is the
+     same search. The chosen number lives in the hidden #tzhGtSurah. */
+  const surBox = '<div class="tzh-sp">' +
+    '<input id="tzhGtSurahQ" type="text" autocomplete="off" spellcheck="false" enterkeyhint="next" ' +
+      'role="combobox" aria-expanded="false" aria-controls="tzhGtList" aria-label="Surah" ' +
+      'placeholder="Type a name or number" value="' + esc(surahText(surah)) + '">' +
+    '<input type="hidden" id="tzhGtSurah" value="' + surah + '">' +
+    '<div class="tzh-sp-list" id="tzhGtList" role="listbox" hidden></div></div>';
   const sc = (cfg.shortcuts ? cfg.shortcuts() : []) || [];
   return '<div class="tzh-scrim" data-tzh="close"></div>' +
     '<div class="tzh-sheet" role="dialog" aria-modal="true" aria-labelledby="tzhGtTitle">' +
@@ -284,7 +291,7 @@ function gotoHtml() {
         '<button class="tzh-x tzh-x-light" type="button" data-tzh="close" aria-label="Close">' + icon('close', 16) + '</button></div>' +
       '<label class="tzh-f">Juz<select id="tzhGtJuz">' + juzOpts + '</select></label>' +
       '<div class="tzh-f2">' +
-        '<label class="tzh-f">Surah<select id="tzhGtSurah">' + surOpts + '</select></label>' +
+        '<div class="tzh-f"><span>Surah</span>' + surBox + '</div>' +
         '<label class="tzh-f">Ayah<input id="tzhGtAyah" type="number" inputmode="numeric" min="1" max="' +
           (AYAH_COUNTS[surah - 1] || 1) + '" value="' + ayah + '"></label>' +
       '</div>' +
@@ -314,6 +321,32 @@ function closeGoto() {
   const wrap = $('tzhGotoWrap');
   gotoOpen = false;
   if (wrap) { wrap.classList.remove('on'); setTimeout(() => { if (!gotoOpen) wrap.innerHTML = ''; }, 220); }
+}
+function surahText(n) { return n ? n + '. ' + (SURAH_NAMES[n - 1] || '') : ''; }
+let _spHi = 0;
+function spRender(q) {
+  const list = $('tzhGtList'); if (!list) return;
+  const hits = surahMatches(String(q || '').replace(/^\s*\d+\.\s*/, ''), 114);
+  _spHi = 0;
+  list.innerHTML = hits.length
+    ? hits.map((x, i) => '<button type="button" role="option" class="tzh-sp-opt' + (i === 0 ? ' hi' : '') +
+        '" data-tzh="sp-pick" data-num="' + x.num + '"><span class="tzh-sp-n">' + x.num + '</span>' +
+        '<span class="tzh-sp-name">' + esc(x.name) + '</span><span class="tzh-sp-v">' + AYAH_COUNTS[x.num - 1] + ' v</span></button>').join('')
+    : '<div class="tzh-sp-empty">No surah matches</div>';
+  list.hidden = false;
+  const q2 = $('tzhGtSurahQ'); if (q2) q2.setAttribute('aria-expanded', 'true');
+}
+function spClose() {
+  const list = $('tzhGtList'); if (list) list.hidden = true;
+  const q = $('tzhGtSurahQ'), h = $('tzhGtSurah');
+  if (q) { q.setAttribute('aria-expanded', 'false'); if (h) q.value = surahText(+h.value); }
+}
+function spPick(num) {
+  const h = $('tzhGtSurah'), a = $('tzhGtAyah');
+  if (h) h.value = num;
+  if (a) { a.max = AYAH_COUNTS[num - 1] || 1; a.value = 1; }
+  spClose(); gotoLabel();
+  if (a) { a.focus(); a.select(); }
 }
 function gotoLabel() {
   const s = +($('tzhGtSurah') || {}).value || 1;
@@ -353,6 +386,7 @@ function onRootClick(e) {
     return;
   }
   if (act === 'page') { stepPage(+t.dataset.d); return; }
+  if (act === 'sp-pick') { spPick(+t.dataset.num); return; }
   if (act === 'go') {
     const s = +$('tzhGtSurah').value || 1, a = +$('tzhGtAyah').value || 1;
     closeGoto(); goVerse(s, a); return;
@@ -366,11 +400,6 @@ function onRootClick(e) {
 function onRootChange(e) {
   const id = e.target.id;
   if (id === 'tzhGtJuz') { closeGoto(); if (typeof goToJuz === 'function') goToJuz(e.target.value); return; }
-  if (id === 'tzhGtSurah') {
-    const s = +e.target.value || 1, a = $('tzhGtAyah');
-    if (a) { a.max = AYAH_COUNTS[s - 1] || 1; a.value = 1; }
-    gotoLabel(); return;
-  }
   if (id === 'tzhGtAyah') { gotoLabel(); return; }
   if (id === 'tzhGtPage') {
     const v = Math.max(1, Math.min(604, parseInt(e.target.value, 10) || 1));
@@ -378,11 +407,43 @@ function onRootChange(e) {
   }
 }
 function onRootKey(e) {
+  if (e.target.id === 'tzhGtSurahQ') {
+    const opts = Array.from(document.querySelectorAll('#tzhGtList .tzh-sp-opt'));
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (!opts.length) return;
+      _spHi = Math.max(0, Math.min(opts.length - 1, _spHi + (e.key === 'ArrowDown' ? 1 : -1)));
+      opts.forEach((o, i) => o.classList.toggle('hi', i === _spHi));
+      opts[_spHi].scrollIntoView({ block: 'nearest' });
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (opts[_spHi]) spPick(+opts[_spHi].dataset.num);
+    }
+    return;
+  }
   if (e.key !== 'Enter') return;
   if (e.target.id === 'tzhGtAyah') { e.preventDefault(); $('tzhGtGo').click(); }
   if (e.target.id === 'tzhGtPage') { e.preventDefault(); e.target.blur(); }
 }
-document.addEventListener('input', (e) => { if (e.target && e.target.id === 'tzhGtAyah') gotoLabel(); });
+document.addEventListener('input', (e) => {
+  if (!e.target) return;
+  if (e.target.id === 'tzhGtAyah') gotoLabel();
+  if (e.target.id === 'tzhGtSurahQ') spRender(e.target.value);
+});
+/* Focusing the box empties it and drops the whole list open, so it reads as a
+   search rather than a value — the same choice the desktop editor made. */
+document.addEventListener('focusin', (e) => {
+  if (e.target && e.target.id === 'tzhGtSurahQ') { e.target.value = ''; spRender(''); }
+});
+/* Leaving without picking puts the current surah back in the box. An option
+   tap focuses the option first, so this waits a beat and checks. */
+document.addEventListener('focusout', (e) => {
+  if (e.target && e.target.id === 'tzhGtSurahQ') setTimeout(() => {
+    const a = document.activeElement;
+    if (a && a.closest && a.closest('#tzhGtList')) return;
+    spClose();
+  }, 150);
+});
 
 /* Crossing the compact boundary with something open would leave a drawer on
    a desktop or a popover on a phone. Close rather than morph. */
