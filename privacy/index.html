@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-     Tehfiz privacy & terms — v0_7
+     Tehfiz privacy & terms — v0_8
      Deploys to privacy/index.html in the `tehfiz` repo.
      Two version strings, not three: filename and the line above. There is no
      APP_VERSION const because there is no script on this page.
@@ -98,7 +98,7 @@ footer{margin-top:52px;padding-top:22px;border-top:1px solid var(--border);
   <h1>Privacy &amp; Terms</h1>
   <p class="sub">Tehfīz is used by children. This page explains what that means for the
   information we hold — and, more importantly, what we have deliberately arranged not to hold.</p>
-  <p class="updated">Last updated: 4 September 2026</p>
+  <p class="updated">Last updated: 4 October 2026</p>
 </header>
 
 <div class="toc">
@@ -123,13 +123,15 @@ footer{margin-top:52px;padding-top:22px;border-top:1px solid var(--border);
   <p><strong>We do not know your students' names.</strong> There is no name field in our
   database. A student is identified by a code we generate, like <code>HUDHUD-S6PX</code>.
   The name attached to that code is stored in the teacher's own browser and is never sent
-  to us.</p>
+  to us. A teacher who turns on name sync also keeps a copy in a private folder in their
+  own Google Drive; that copy goes from their browser to their Drive, not through us.</p>
 </div>
 
 <p>This is a deliberate design decision, not an oversight, and it shapes everything below.
 Because we never receive a child's name, we cannot disclose it, lose it in a breach, or be
 compelled to hand it over. We accepted a real cost for this: a teacher who clears their
-browser data loses their name list and has to rebuild it from their exported backup.</p>
+browser data loses their name list and has to rebuild it from their exported backup —
+or, if they have turned on name sync, from their own Google Drive.</p>
 
 <p>We also do not run advertising, do not sell or share data with anyone, and do not use
 analytics or tracking of any kind. There are no third-party scripts on the apps beyond
@@ -150,9 +152,35 @@ Google's sign-in for teachers and the Quran text and fonts described below.</p>
 someone new signs up. Those are the only automatic emails we send, and they
 contain nothing but the teacher's own name and email address.</p>
 
-<p>We request only your email address and basic profile from Google. We do not request
-access to your Gmail, Drive, contacts, or anything else, and we could not read them if we
-wanted to.</p>
+<p>To sign you in, we request only your email address and basic profile from Google. We do
+not request access to your Gmail, contacts, calendar or files.</p>
+
+<h3 id="name-sync">Optional: name sync with your Google Drive</h3>
+
+<p>If you turn on <strong>name sync</strong> in the Students panel, Tehfīz asks Google for one
+more permission: to store its own data in a private, hidden app folder in your Google
+Drive (Google calls this permission <code>drive.appdata</code>). Tehfīz keeps one small file
+there — your students' codes and the names you gave them — so they appear on every device
+you sign in on.</p>
+
+<ul>
+  <li>The file goes directly between your browser and Google. It does not pass through, and
+    is not stored on, Tehfīz's servers, so our "no names" promise still holds.</li>
+  <li>This permission lets Tehfīz see only the files it created in that hidden folder. It
+    cannot see, open or change anything else in your Drive.</li>
+  <li>The file counts towards your Drive storage, but it is a few kilobytes.</li>
+  <li>Turning sync off in the Students panel stops it, and you can choose to delete the
+    Drive copy at the same time. You can also remove Tehfīz's access at any time from your
+    Google Account, under Security → Third-party apps &amp; services; Tehfīz can then no
+    longer reach the folder.</li>
+  <li>It is off unless you turn it on, and it is per device: each device asks once.</li>
+</ul>
+
+<p>Tehfīz's use and transfer of information received from Google APIs adheres to the
+<a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener">Google API Services User Data Policy</a>,
+including the Limited Use requirements. Data from your Drive is used only to show your own
+students' names back to you in Tehfīz; it is not used for advertising, not sold, not
+transferred to anyone, and not read by people.</p>
 
 <h2 id="students">What we store about students</h2>
 
@@ -283,7 +311,8 @@ are hardest across everyone using Tehfīz, which is what lets the tools improve.
 <ul>
   <li><strong>Cloudflare</strong> — hosts the site, the application and the database.</li>
   <li><strong>Google</strong> — verifies teacher sign-ins. Google sees that you signed in
-    to Tehfīz; it does not receive any recitation data.</li>
+    to Tehfīz; it does not receive any recitation data. If you turn on name sync, Google
+    also stores your name list in your own Drive, as described above.</li>
   <li><strong>Resend</strong> — delivers the two account emails described above. It
     receives a teacher's name and email address and nothing else. No student
     code, no session and no recitation data ever passes through it — there is

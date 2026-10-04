@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ═══════════════════════════════════════════════════════════════════
-     Tehfiz teacher app — v4_312
+     Tehfiz teacher app — v4_313
      Deployed from the `tehfiz` repo at app/teacher/index.html (the repo root
      is the web root). Locally, tehfiz-api/public/ is a clone of that repo:
      test with `npm run dev`, then commit and push from inside public/.
@@ -2616,7 +2616,7 @@ body.compact-ui .quick-form::before{
    console as APP_VERSION, or grep the deployed HTML for it. Bumped on every
    saved build; vcheck.py asserts it matches the filename, so a forgotten bump
    fails the integrity check rather than shipping a lie. */
-const APP_VERSION = 'v4_312';
+const APP_VERSION = 'v4_313';
 window.APP_VERSION = APP_VERSION;
 console.info('Tehfiz teacher app ' + APP_VERSION);
 
@@ -7702,7 +7702,7 @@ function updateStats(){
     <span class="sb-total">${t.total}</span>
     <div class="sb-bar">
       ${bands.filter(b=>b.n).map(b=>`<button class="sb-seg${_listFilter===b.k?' on':''}"
-          style="flex:${b.n};background:${b.c};${/yellow/.test(b.c)?'color:var(--ink);':''}"
+          style="flex:${b.n};background:${b.c};${/yellow/.test(b.c)?'color:#17191c;':''}"
           onclick="setListFilter('${b.k}')" title="${b.lbl} — ${b.n}">${b.n}</button>`).join('')
         || '<span class="sb-empty">no mistakes yet</span>'}
     </div>
@@ -12735,10 +12735,28 @@ function loadGsi() {
 }
 
 let gsiInitialised = false;
+/* A signed one-time value from our API, passed to Google, which copies it
+   into the ID token; the API checks it at sign-in (see auth.js). Refetched
+   after 6 hours so a page left open still signs in — the API accepts 12. */
+let gsiNonce = null, gsiNonceAt = 0, gsiNonceP = null;
+function freshNonce() {
+  if (gsiNonce && Date.now() - gsiNonceAt < 6 * 3600 * 1000) return Promise.resolve(gsiNonce);
+  if (gsiNonceP) return gsiNonceP;           // the panel renders twice on open: one request
+  gsiNonceP = (async () => {
+    try {
+      const r = await fetch(apiBase() + '/api/auth/nonce');
+      const j = r.ok ? await r.json() : null;
+      if (j && j.nonce) { gsiNonce = j.nonce; gsiNonceAt = Date.now(); gsiInitialised = false; }
+    } catch {}
+    gsiNonceP = null;
+    return gsiNonce;
+  })();
+  return gsiNonceP;
+}
 async function mountGoogleButton() {
   const host = $('tsyGBtn');
   if (!host) return;
-  const ok = await loadGsi();
+  const [ok, nonce] = await Promise.all([loadGsi(), freshNonce()]);
   if (!ok || !window.google) {
     host.innerHTML = '<div class="tsy-note">Google sign-in could not load. ' +
       'Check the connection, or paste a token below.</div>';
@@ -12752,6 +12770,7 @@ async function mountGoogleButton() {
         client_id: GOOGLE_CLIENT_ID,
         callback: onGoogleCredential,
         use_fedcm_for_prompt: true,   // required by Chrome since mid-2025
+        ...(nonce ? { nonce } : {}),
       });
       gsiInitialised = true;
     }
@@ -12764,7 +12783,12 @@ async function mountGoogleButton() {
 
 /* ── roster ─────────────────────────────────────────────────────────────── */
 
-function saveRoster() { writeJSON(K.roster, roster); }
+function saveRoster() {
+  writeJSON(K.roster, roster);
+  /* TehfizNameSync (name-sync.js) listens, to copy name changes to the
+     teacher's own Google Drive when they have turned that on. */
+  try { window.dispatchEvent(new CustomEvent('tehfiz:names-changed')); } catch {}
+}
 
 /* Owner administration lives in TehfizAdmin — a different job for a different
    person, and not worth carrying in this module. All that belongs here is the
@@ -13500,7 +13524,7 @@ function render() {
         '<div class="tsy-row tsy-pickable" data-tsy="' + rowAction + '" data-id="' + esc(s.id) + '">' +
           '<div class="tsy-row-main">' +
             '<input class="tsy-name" data-tsy="rename" data-id="' + esc(s.id) + '" ' +
-              'value="' + esc(s.name || '') + '" placeholder="Name (this device only)">' +
+              'value="' + esc(s.name || '') + '" placeholder="Student name">' +
             /* Its own data-tsy: the row carries `userow`/`pickfor`, and
                closest() finds the innermost match first, so without this a tap
                on the code would select the student instead of copying. */
@@ -13544,6 +13568,7 @@ function render() {
       'children, and no identifiable record of them is kept anywhere but with you. ' +
       'The trade is that clearing site data or switching devices leaves you with ' +
       'codes and no names. <strong>Export the roster and keep it somewhere safe.</strong></div>' +
+    '<div id="tnsBox"></div>' +
     '<div class="tsy-tools">' +
       '<button class="tsy-btn" data-tsy="newstudent">＋ New student</button>' +
       '<button class="tsy-btn" data-tsy="refresh">↻ Refresh</button>' +
@@ -14445,6 +14470,19 @@ window.TehfizSync = {
      change it. */
   api: (path, opts) => api(path, opts),
   roster: () => roster.map((s) => ({ id: s.id, code: s.code, name: s.name || '' })),
+  /* For TehfizNameSync: names arriving from the teacher's own Google Drive.
+     {studentId: name}. Written straight to storage — not via saveRoster(),
+     whose event would send them straight back. */
+  applyNames(map) {
+    let n = 0;
+    Object.keys(map || {}).forEach((id) => {
+      const s = studentById(id);
+      if (s && (s.name || '') !== String(map[id] || '')) { s.name = String(map[id] || ''); n++; }
+    });
+    if (n) { writeJSON(K.roster, roster); rebind(); render(); }
+    return n;
+  },
+  googleClientId: GOOGLE_CLIENT_ID,
 
   /* For TehfizHeader (the menu's account block) and TehfizFinish (the Finish
      session sheet). Copies out, never live objects. */
@@ -18004,5 +18042,6 @@ span.seg-chip{display:flex;align-items:center;justify-content:center;box-sizing:
 <script src="/app/teacher/sessions-sent.js?v=m3"></script>
 <script src="/app/teacher/finish-session.js?v=f3"></script>
 <script src="/app/teacher/invoices.js?v=i2"></script>
+<script src="/app/teacher/name-sync.js?v=n1"></script>
 </body>
 </html>
