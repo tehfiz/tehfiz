@@ -1,6 +1,6 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   name-sync.js — TehfizNameSync — n1
-   Loaded by the teacher app from /app/teacher/name-sync.js?v=n1, after the
+   name-sync.js — TehfizNameSync — n2
+   Loaded by the teacher app from /app/teacher/name-sync.js?v=n2, after the
    TehfizSync module.
 
    Student names live only on the teacher's device; the Tehfiz server has no
@@ -18,6 +18,12 @@
    When it has expired, the panel shows "Sync now" — Google only allows the
    popup that renews it from a tap.
 
+   Account flag (n2): the server keeps a plain yes/no "name sync is on" for
+   the teacher (GET/PUT /api/profile/name-sync) — never any names. A device
+   that signs in while it is on offers "Connect this device" (one tap; Google
+   needs a tap to open its window). Turning off can be for this device only,
+   or for every device.
+
    Merge: each name carries the time it was last changed. Per student the
    newer one wins, on both sides. A name cleared on purpose is a change too.
    Students removed from this device are left alone in the Drive copy.
@@ -27,12 +33,13 @@
      localStorage   tehfiz_names_*
      CSS classes    .tns-*
      DOM            fills #tnsBox, which TehfizSync puts in the Students panel
-   Needs from TehfizSync: roster(), applyNames(), who(), googleClientId,
+   Needs from TehfizSync: roster(), applyNames(), who(), isActive(), api(),
+   googleClientId,
    and the 'tehfiz:names-changed' event it fires whenever it saves the roster.
    ═══════════════════════════════════════════════════════════════════════ */
 (function () {
 'use strict';
-const TEHFIZ_NAMESYNC_VERSION = 'n1';
+const TEHFIZ_NAMESYNC_VERSION = 'n2';
 
 const SCOPE = 'https://www.googleapis.com/auth/drive.appdata';
 const FILE_NAME = 'tehfiz-student-names.json';
@@ -46,7 +53,10 @@ const K = {
   last: 'tehfiz_names_last',    // {at, n} last successful sync
   dirty: 'tehfiz_names_dirty',  // '1' when local changes are waiting
   file: 'tehfiz_names_file',    // Drive file id
+  onAt: 'tehfiz_names_on_at',   // when this device last turned it on/off (ms)
+  optout: 'tehfiz_names_optout',// email: "not on this device", so no offer
 };
+const SS_LATER = 'tehfiz_names_later';   // sessionStorage: "Not now" until the tab closes
 
 /* ── helpers ────────────────────────────────────────────────────────── */
 const $ = (id) => document.getElementById(id);
@@ -116,7 +126,7 @@ function ensureClient() {
 
 /* Must run inside a tap: Google blocks the popup otherwise. Nothing async may
    come before requestAccessToken, which is why the library is loaded early. */
-function requestToken(firstTime, then) {
+function requestToken(then) {
   const c = ensureClient();
   if (!c) {
     loadGis().then(() => render());
@@ -126,7 +136,10 @@ function requestToken(firstTime, then) {
   const me = who();
   pendingState = randomState();
   afterToken = then || null;
-  c.requestAccessToken({ prompt: firstTime ? 'consent' : '', login_hint: me ? me.email : undefined, state: pendingState });
+  /* prompt '' : Google shows its permission screen only if this Google
+     account has not already allowed it (e.g. on another device). Otherwise a
+     quick account window opens and closes by itself. */
+  c.requestAccessToken({ prompt: '', login_hint: me ? me.email : undefined, state: pendingState });
 }
 
 function onToken(resp) {
@@ -140,7 +153,7 @@ function onToken(resp) {
   pendingState = null;
   if (resp.error) { setStatus('Google said: ' + resp.error, true); return; }
   if (!google.accounts.oauth2.hasGrantedAllScopes(resp, SCOPE)) {
-    put(K.on, null);
+    setLocal(false);
     setStatus('Drive access was not allowed, so names stay on this device only.', true);
     render();
     return;
@@ -290,6 +303,69 @@ async function removeFromDrive() {
   put(K.file, null);
 }
 
+/* ── account flag (server yes/no, never names) ─────────────────────── */
+let acct = null;            // {on, at} for acctFor
+let acctFor = null;         // email it was read for
+let acctLoading = false;
+
+function setLocal(on) {
+  put(K.on, on ? '1' : null);
+  put(K.onAt, Date.now());
+  if (on) put(K.optout, null);
+}
+function canAsk() { const s = sync(); return !!(s && s.api && s.isActive && s.isActive()); }
+
+async function pushFlag(on) {
+  if (!canAsk()) return;
+  try {
+    const r = await sync().api('/api/profile/name-sync', { method: 'PUT', body: { on: !!on } });
+    if (r && typeof r.on === 'boolean') { acct = r; const me = who(); acctFor = me ? me.email : null; }
+  } catch {}            // best effort: the next sign-in reconciles
+}
+
+/* Read the flag once per signed-in account, then reconcile this device. */
+async function checkAccount() {
+  const me = who();
+  if (!me || !me.email || !canAsk()) return;
+  if (acctFor === me.email || acctLoading) return;
+  acctLoading = true;
+  try {
+    const r = await sync().api('/api/profile/name-sync');
+    if (!r || typeof r.on !== 'boolean') return;
+    acct = r; acctFor = me.email;
+    const localAt = get(K.onAt, 0) || 0;
+    if (isOn() && !r.on) {
+      if (r.at && r.at > localAt) {
+        // Turned off on another device after this one turned it on.
+        put(K.on, null); put(K.onAt, r.at);
+        toast('Name sync was turned off on another device');
+      } else {
+        pushFlag(true);   // this device turned it on before the account flag existed
+      }
+    }
+  } catch {} finally { acctLoading = false; render(); }
+}
+
+function offerWanted() {
+  const me = who();
+  return !!(acct && acct.on && !isOn() && me && acctFor === me.email && get(K.optout, null) !== me.email);
+}
+
+/* A small bar at the bottom of the app, so a teacher on a new device sees the
+   offer without opening the Students panel. */
+function paintBar() {
+  let bar = $('tnsBar');
+  let later = false; try { later = sessionStorage.getItem(SS_LATER) === '1'; } catch {}
+  if (!offerWanted() || later) { if (bar) bar.remove(); return; }
+  if (bar) return;
+  bar = document.createElement('div');
+  bar.id = 'tnsBar'; bar.className = 'tns-bar'; bar.setAttribute('role', 'status');
+  bar.innerHTML = '<span class="tns-bar-t">Name sync is on for your account. Connect this device to get your student names.</span>' +
+    '<span class="tns-bar-b"><button type="button" class="tsy-btn tns-pri" data-tns="connect">Connect</button>' +
+    '<button type="button" class="tsy-chip-btn" data-tns="later">Not now</button></span>';
+  document.body.appendChild(bar);
+}
+
 /* ── UI (inside the Students panel) ─────────────────────────────────── */
 function setStatus(msg, err) { status = msg; statusErr = !!err; paintStatus(); }
 function paintStatus() {
@@ -301,16 +377,27 @@ function paintStatus() {
 }
 
 function render() {
+  paintBar();
   const box = $('tnsBox');
   if (!box) return;
   const s = sync();
   const signed = s && s.isSignedIn && s.isSignedIn();
   if (!signed) { box.innerHTML = ''; return; }
+  checkAccount();
   /* The panel's "names are on this device only" warning is untrue while
      syncing is on, so it steps aside. */
   const warn = document.querySelector('#tsyBody .tsy-warnbox');
   if (warn) warn.hidden = isOn();
-  if (!isOn()) {
+  if (!isOn() && acct && acct.on && acctFor === (who() || {}).email) {
+    box.innerHTML =
+      '<div class="tns-card">' +
+        '<div class="tns-h">Name sync is on for your account</div>' +
+        '<p class="tns-p">Your student names are kept in a private Tehfīz folder in <strong>your own Google Drive</strong>. ' +
+        'Connect this device to bring them here and keep it in step. Tehfīz’s server never receives them.</p>' +
+        '<div class="tns-row"><button type="button" class="tsy-btn tns-pri" data-tns="connect">Connect this device</button>' +
+        '<span class="tns-status" id="tnsStatus"></span></div>' +
+      '</div>';
+  } else if (!isOn()) {
     box.innerHTML =
       '<div class="tns-card">' +
         '<div class="tns-h">Keep names on all your devices</div>' +
@@ -330,9 +417,10 @@ function render() {
         '<span class="tns-sp"></span>' +
         '<button type="button" class="tsy-chip-btn" data-tns="off">Turn off</button></div>' +
         '<div class="tns-off" id="tnsOff" hidden>' +
-          '<p class="tns-p">Turn off sync on this device? Names stay here either way.</p>' +
-          '<div class="tns-row"><button type="button" class="tsy-btn" data-tns="off-keep">Turn off, keep the Drive copy</button>' +
-          '<button type="button" class="tsy-btn tns-danger" data-tns="off-delete">Turn off and delete the Drive copy</button>' +
+          '<p class="tns-p">Names already on a device stay there either way.</p>' +
+          '<div class="tns-row"><button type="button" class="tsy-btn" data-tns="off-here">Turn off on this device only</button>' +
+          '<button type="button" class="tsy-btn" data-tns="off-all">Turn off on all devices</button>' +
+          '<button type="button" class="tsy-btn tns-danger" data-tns="off-delete">Turn off everywhere and delete the Drive copy</button>' +
           '<button type="button" class="tsy-chip-btn" data-tns="off-cancel">Cancel</button></div>' +
         '</div>' +
       '</div>';
@@ -345,25 +433,31 @@ document.addEventListener('click', (e) => {
   const b = e.target.closest && e.target.closest('[data-tns]');
   if (!b) return;
   const act = b.dataset.tns;
-  if (act === 'on') {
-    requestToken(true, () => { put(K.on, '1'); put(K.snap, null); noteChanges(); render(); run(); });
+  if (act === 'on' || act === 'connect') {
+    requestToken(() => { setLocal(true); put(K.snap, null); noteChanges(); pushFlag(true); render(); run(); });
+  } else if (act === 'later') {
+    try { sessionStorage.setItem(SS_LATER, '1'); } catch {}
+    paintBar();
   } else if (act === 'now') {
-    if (token()) run(); else requestToken(false, run);
+    if (token()) run(); else requestToken(run);
   } else if (act === 'off') {
     const o = $('tnsOff'); if (o) o.hidden = false;
   } else if (act === 'off-cancel') {
     const o = $('tnsOff'); if (o) o.hidden = true;
-  } else if (act === 'off-keep') {
-    put(K.on, null); setStatus('', false); render(); toast('Name sync is off on this device');
+  } else if (act === 'off-here') {
+    setLocal(false); const me = who(); if (me) put(K.optout, me.email);
+    setStatus('', false); render(); toast('Name sync is off on this device');
+  } else if (act === 'off-all') {
+    setLocal(false); pushFlag(false); setStatus('', false); render(); toast('Name sync is off on all your devices');
   } else if (act === 'off-delete') {
     const finish = async () => {
       try { await removeFromDrive(); } catch (err) { setStatus('Could not delete the Drive copy: ' + err.message, true); return; }
       const t = token();
       if (t && google.accounts.oauth2.revoke) google.accounts.oauth2.revoke(t, () => {});
-      put(K.tok, null); put(K.on, null); put(K.last, null);
+      put(K.tok, null); setLocal(false); put(K.last, null); pushFlag(false);
       setStatus('', false); render(); toast('Name sync is off, and the Drive copy is deleted');
     };
-    if (token()) finish(); else requestToken(false, finish);
+    if (token()) finish(); else requestToken(finish);
   }
 });
 
@@ -381,6 +475,11 @@ function watch() {
 
 function boot() {
   watch();
+  /* Sign-in happens after boot, in another module; look for it briefly, then
+     again whenever the tab comes back into view. */
+  let tries = 0;
+  const t = setInterval(() => { if (who() || ++tries > 60) { clearInterval(t); if (who()) { checkAccount(); loadGis(); } } }, 1000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) { if (acctFor !== (who() || {}).email) checkAccount(); paintBar(); } });
   if (isOn()) {
     noteChanges();
     if (token()) run();
@@ -401,8 +500,14 @@ css.textContent =
   '.tns-status.tns-err{color:var(--red);}' +
   '.tns-pri{background:var(--gold);color:var(--on-gold);border-color:var(--gold);}' +
   '.tns-danger{color:var(--red);border-color:var(--red);}' +
-  '.tns-off{margin-top:8px;padding-top:8px;border-top:1px solid var(--border);}';
+  '.tns-off{margin-top:8px;padding-top:8px;border-top:1px solid var(--border);}' +
+  '.tns-bar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:9000;' +
+    'display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;max-width:min(560px,calc(100vw - 24px));box-sizing:border-box;' +
+    'padding:10px 12px;border-radius:10px;background:var(--surface,#fff);color:var(--ink);border:1px solid var(--border2);' +
+    'box-shadow:0 6px 24px rgba(0,0,0,.18);font-size:13px;line-height:1.45;}' +
+  '.tns-bar-t{flex:1 1 240px;}' +
+  '.tns-bar-b{display:flex;gap:8px;margin-left:auto;}';
 document.head.appendChild(css);
 
-window.TehfizNameSync = { run, isOn, render, version: TEHFIZ_NAMESYNC_VERSION };
+window.TehfizNameSync = { run, isOn, render, checkAccount, version: TEHFIZ_NAMESYNC_VERSION };
 })();
