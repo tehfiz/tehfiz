@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ═══════════════════════════════════════════════════════════════════
-     Tehfiz teacher app — v4_314
+     Tehfiz teacher app — v4_315
      Deployed from the `tehfiz` repo at app/teacher/index.html (the repo root
      is the web root). Locally, tehfiz-api/public/ is a clone of that repo:
      test with `npm run dev`, then commit and push from inside public/.
@@ -2442,11 +2442,11 @@ body.compact-ui .quick-form::before{
             waits fifteen minutes.
           </div>
           <div style="padding:8px 10px;background:var(--lvl1-yellow-bg);border-radius:6px;font-size:12px;color:var(--amber);line-height:1.6;">
-            &#9888; Student names live on this device only — the server never receives them. This protects
+            &#9888; Student names are kept on your device and never sent to the Tehfīz server. This protects
             your students' privacy: they are children, and no identifiable record of them is kept anywhere
-            but with you. The trade is that clearing your browser data or moving to a new device leaves you
-            with codes and no names.
-            <strong>Export the roster from the Students panel and keep it somewhere safe.</strong>
+            but with you. Unless you turn on <strong>name sync</strong> (Students panel), which keeps a copy in
+            your own Google Drive, clearing your browser data or moving to a new device leaves you with codes
+            and no names. <strong>Turn on name sync, or export the roster and keep it somewhere safe.</strong>
           </div>
         </div>
       </div>
@@ -2616,7 +2616,7 @@ body.compact-ui .quick-form::before{
    console as APP_VERSION, or grep the deployed HTML for it. Bumped on every
    saved build; vcheck.py asserts it matches the filename, so a forgotten bump
    fails the integrity check rather than shipping a lie. */
-const APP_VERSION = 'v4_314';
+const APP_VERSION = 'v4_315';
 window.APP_VERSION = APP_VERSION;
 console.info('Tehfiz teacher app ' + APP_VERSION);
 
@@ -13563,11 +13563,11 @@ function render() {
         : esc(teacher.email)) +
       ' <button class="tsy-chip-btn" data-tsy="profile-open">Edit profile</button>' +
       ' <button class="tsy-chip-btn" data-tsy="signout">Sign out</button></div>' +
-    '<div class="tsy-warnbox">Names are stored on this device only \u2014 the server ' +
-      'never receives them. This protects your students\u2019 privacy: they are ' +
-      'children, and no identifiable record of them is kept anywhere but with you. ' +
-      'The trade is that clearing site data or switching devices leaves you with ' +
-      'codes and no names. <strong>Export the roster and keep it somewhere safe.</strong></div>' +
+    '<div class="tsy-warnbox">Names are kept on this device and never sent to the Tehf\u012bz ' +
+      'server. This protects your students\u2019 privacy: they are children, and no ' +
+      'identifiable record of them is kept anywhere but with you. Unless name sync is on, ' +
+      'clearing site data or switching devices leaves you with codes and no names. ' +
+      '<strong>Turn on name sync below, or export the roster and keep it somewhere safe.</strong></div>' +
     '<div id="tnsBox"></div>' +
     '<div class="tsy-tools">' +
       '<button class="tsy-btn" data-tsy="newstudent">＋ New student</button>' +
@@ -17375,8 +17375,9 @@ const STEPS = [
     roster: true,
     before: () => { openRoster(); ensureDemo(); },
     find: () => pick(['#tsyBody .tsy-row']),
-    body: 'The name is yours alone \u2014 it is stored on this device and never ' +
-          'sent to the server. The dot tells you whether they have signed in ' +
+    body: 'The name is yours alone \u2014 it is stored on this device (and in your ' +
+          'own Google Drive if you turn on name sync) and never sent to the Tehf\u012bz ' +
+          'server. The dot tells you whether they have signed in ' +
           'with their code yet.' },
 
   { title: 'Tap the code to copy it',
