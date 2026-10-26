@@ -70,15 +70,19 @@
   --ui-font:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
 }
 /* Gold accents on the neutral ground, keeping the original Lora face. Stored
-   as 'classic' so existing choices carry over. Gold as TEXT is darkened
-   (#b8841a was 3.1:1 on a light ground); as a fill it stays the original gold. */
+   as 'classic' so existing choices carry over. Gold as TEXT is darker than gold
+   as a fill (5.1:1 on the page).
+   Muted in css s7 to match Lapis and Mulberry (3 Oct): the same treatment in
+   OKLCH — colourfulness about halved for accents and tints, about three
+   quarters kept for inks, lightness and hue unchanged. Was #b8841a / #8a6212 /
+   #f5e8c8 / #d9a53a. */
 :root[data-tz-theme="classic"]{
   --ink:#17191c;--ink2:#3f444b;--ink3:#626973;
   --parchment:#f5f5f3;--parchment2:#ecece8;--parchment3:#dcdcd7;
   --chrome:#17191c;--chrome-2:#26292e;--chrome-3:#32363c;--chrome-input:#0f1113;--on-ink:#e8e9ea;
   --border:rgba(23,25,28,0.13);--border2:rgba(23,25,28,0.25);
-  --gold:#b8841a;--on-gold:#17191c;--gold-ink:#8a6212;--gold-light:#f5e8c8;--gold-pale:#e9eaed;
-  --chrome-accent:#d9a53a;--chrome-rule:#b8841a;--ornament:#b8841a;
+  --gold:#a38759;--on-gold:#17191c;--gold-ink:#806434;--gold-light:#ece5d5;--gold-pale:#e9eaed;
+  --chrome-accent:#c6aa78;--chrome-rule:#a38759;--ornament:#a38759;
   --ui-font:'Lora',Georgia,serif;
 }
 /* Theme picker (Settings → Display) */
@@ -176,6 +180,12 @@
 .tzh-bar #tzhAsWrap .vc-btn{width:40px;height:40px;border-radius:8px;border:1px solid var(--chrome-3);
   background:var(--chrome-2);color:var(--on-ink);font-size:15px;padding:0;}
 .tzh-bar #tzhAsWrap .vc-btn.active-vc{background:var(--chrome-accent);color:var(--chrome);}
+/* The speed beside the icon (css s7), so s / d are visible without opening
+   View. Width grows with the text; tabular figures keep "0.95x" and "1x" from
+   shifting the bar. */
+.tzh-bar #tzhAsWrap .vc-btn{width:auto;min-width:40px;padding:0 9px 0 8px;gap:5px;
+  display:inline-flex;align-items:center;justify-content:center;}
+.as-bar-spd{font:600 12px var(--ui-font);font-variant-numeric:tabular-nums;letter-spacing:.01em;}
 
 /* View popover (wide): the app's zoom and speed controls, on chrome so their
    existing chrome styling holds. */
@@ -327,7 +337,7 @@ body.compact-ui .tzh-bar .tzh-timer .btn-t-label{display:none;}
 }
 :root[data-tz-theme="lapis"]{--frame:#3a5585;--frame-tint:#e9edf3;--frame-ink:#33476b;}
 :root[data-tz-theme="mulberry"]{--frame:#6a3f5c;--frame-tint:#f2eaef;--frame-ink:#583550;}
-:root[data-tz-theme="classic"]{--frame:#9c7424;--frame-tint:#f5eedd;--frame-ink:#6e5212;}
+:root[data-tz-theme="classic"]{--frame:#8b7550;--frame-tint:#f0ede4;--frame-ink:#6b572d;}
 
 /* Ornament paint (the sprite's classes) */
 .tzo-ground,.tzo-paper,.tzo-paperfill{fill:var(--parchment);}
@@ -437,13 +447,18 @@ body.compact-ui .mushaf-page-body{--band:.16em!important;}
           mask:var(--tz-star-solid) top left/var(--star) no-repeat,var(--tz-star-solid) top right/var(--star) no-repeat,
                var(--tz-star-solid) bottom left/var(--star) no-repeat,var(--tz-star-solid) bottom right/var(--star) no-repeat;}
 
-:root[data-tz-page="quiet"] .msl-surah-ornament{border:none;border-radius:999px;background:var(--frame-tint);
+:root[data-tz-page="quiet"] .msl-surah-ornament,
+:root[data-tz-page="continuous"] .msl-surah-ornament{border:none;border-radius:999px;background:var(--frame-tint);
   padding:.14em 1.4em;box-shadow:none;}
 :root[data-tz-page="quiet"] .msl-surah-ornament::before,
-:root[data-tz-page="quiet"] .msl-surah-ornament::after{width:22%;height:1px;border:none;border-radius:0;
+:root[data-tz-page="quiet"] .msl-surah-ornament::after,
+:root[data-tz-page="continuous"] .msl-surah-ornament::before,
+:root[data-tz-page="continuous"] .msl-surah-ornament::after{width:22%;height:1px;border:none;border-radius:0;
   background:color-mix(in srgb,var(--frame) 45%,transparent);}
-:root[data-tz-page="quiet"] .msl-surah-ornament::before{right:.9em;}
-:root[data-tz-page="quiet"] .msl-surah-ornament::after{left:.9em;}
+:root[data-tz-page="quiet"] .msl-surah-ornament::before,
+:root[data-tz-page="continuous"] .msl-surah-ornament::before{right:.9em;}
+:root[data-tz-page="quiet"] .msl-surah-ornament::after,
+:root[data-tz-page="continuous"] .msl-surah-ornament::after{left:.9em;}
 
 :root[data-tz-page="quiet"] .mpf-num{font-family:var(--ui-font);gap:8px;}
 :root[data-tz-page="quiet"] .mpf-num::before,
@@ -459,6 +474,12 @@ body.compact-ui .mushaf-page-body{--band:.16em!important;}
 /* Settings → Display: the page-style picker reuses .tz-theme-opt */
 .tz-page-sw{flex:none;width:22px;height:26px;box-sizing:border-box;border-radius:1px;background:var(--parchment);}
 .tz-page-sw.islimi{border:1.5px solid var(--frame);box-shadow:inset 0 0 0 3px var(--frame-tint),inset 0 0 0 4px var(--frame);}
+.tz-page-sw.continuous{border-left:1px solid color-mix(in srgb,var(--frame) 30%,transparent);border-right:1px solid color-mix(in srgb,var(--frame) 30%,transparent);
+  background:linear-gradient(var(--parchment) 0 46%,color-mix(in srgb,var(--frame) 55%,var(--parchment)) 46% 54%,var(--parchment) 54%);}
+.tz-lines-sw{flex:none;width:22px;height:26px;box-sizing:border-box;border-radius:1px;padding:3px 4px;
+  background-clip:content-box;background-color:var(--parchment);border:1px solid var(--border2);}
+.tz-lines-sw.printed{background-image:repeating-linear-gradient(var(--ink3) 0 1.5px,transparent 1.5px 6.5px);}
+.tz-lines-sw.compact{background-image:repeating-linear-gradient(var(--ink3) 0 1.5px,transparent 1.5px 4.5px);}
 .tz-page-sw.quiet{border:1px solid var(--frame);box-shadow:inset 0 0 0 2px var(--parchment),inset 0 0 0 3px color-mix(in srgb,var(--frame) 40%,transparent);}
 
 /* ═══ DARK MODE ═════════════════════════════════════════════════════════
@@ -504,10 +525,11 @@ body.compact-ui .mushaf-page-body{--band:.16em!important;}
   --chrome-accent:#d4b0c8;--chrome-rule:#6a3f5c;--ornament:#c49bb6;
   --frame:#c49bb6;--frame-tint:#2d2229;--frame-ink:#d4b0c8;}
 :root[data-tz-mode="dark"][data-tz-theme="classic"]{
-  --gold:#c9a35b;--on-gold:#17191c;--gold-ink:#d4b06a;--gold-light:#3a3020;
-  --chrome-accent:#d4b06a;--chrome-rule:#9c7424;--ornament:#c9a35b;
-  --frame:#c9a35b;--frame-tint:#2b251a;--frame-ink:#d4b06a;
-  --parchment:#1c1a16;}
+  --gold:#bca67e;--on-gold:#17191c;--gold-ink:#c6b390;--gold-light:#3a3020;
+  --chrome-accent:#c6b390;--chrome-rule:#8b7550;--ornament:#bca67e;
+  --frame:#bca67e;--frame-tint:#2b251a;--frame-ink:#c6b390;}
+/* (css s7: the warm --parchment:#1c1a16 is gone — Lapis and Mulberry keep the
+   neutral dark ground, and so does Gold now.) */
 :root[data-tz-mode="dark"] img.tz-invert-dark{filter:invert(1) hue-rotate(180deg);}
 /* Settings → Display: the appearance picker (Light / Dark / Device) */
 .tz-mode-choice{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;}
@@ -515,3 +537,56 @@ body.compact-ui .mushaf-page-body{--band:.16em!important;}
 .tz-mode-sw.light{background:#f5f5f3;}
 .tz-mode-sw.dark{background:#1a1b1e;}
 .tz-mode-sw.device{background:linear-gradient(135deg,#f5f5f3 50%,#1a1b1e 50%);}
+
+/* ═══ OFF-SCREEN MUSHAF PAGES (css s7, from teacher v4_316) ═══════════════
+   Measured 14 Oct: adding a juz froze the page for up to 3 s on a slower CPU,
+   mostly because registering the new pages' fonts made the browser re-measure
+   every word of EVERY loaded juz. With content-visibility the browser lays out
+   only pages near the screen; the rest keep a reserved box. --tz-pg-h is the
+   current page height (set after each render), and `auto` lets a page that
+   has been shown keep its real height. Placeholders of the virtualised path
+   are excluded: their height differs from a real page. Print clones live in
+   #printRoot, so this never reaches paper.
+   Only where the browser has scroll anchoring (Chrome, Edge, Firefox). Not
+   every page is the reserved height — a surah's opening page is ~50px taller —
+   so a page above the view can change size when it is first shown; anchoring
+   absorbs that unseen. Safari has none, so it keeps the old behaviour. */
+@supports (overflow-anchor:auto){
+  #pageContent .mushaf-page[id^="pg-"]:not([data-rendered="placeholder"]){
+    content-visibility:auto;
+    contain-intrinsic-block-size:auto var(--tz-pg-h,1100px);
+  }
+}
+
+/* ═══ LINE SPACING (css s8) ═══════════════════════════════════════════════
+   Every mushaf line is --msl-h tall (each app's .msl). As printed = 2.55em,
+   the printed page's proportions; Compact = 2.2em (TehfizLines). The Islimi
+   frame comes in two copies (ornament o2), one drawn for each page height,
+   so the shorter page is not a squashed border. */
+:root{--msl-h:2.55em;}
+:root[data-tz-lines="compact"]{--msl-h:2.2em;}
+:root:not([data-tz-lines="compact"]) .tzo-frame.tzo-frame-k{display:none!important;}
+:root[data-tz-lines="compact"] .tzo-frame:not(.tzo-frame-k){display:none!important;}
+
+/* ═══ CONTINUOUS PAGES (css s8) ═══════════════════════════════════════════
+   On screen only (#pageContent): no frame, running head or gap between
+   pages. Each page runs into the next under a hairline carrying its number
+   and juz, so the text reads (and autoscrolls) without a break. The page
+   boxes stay — selection, spot testing, page jumps and the 3-juz window all
+   work on them — only what is drawn between them goes. The zoom code sets
+   the body's margins, padding and the page's bottom margin inline, hence
+   !important. Paper never sees this: TehfizPrint prints it as Illuminated. */
+.mpf-juz{display:none;}
+:root[data-tz-page="continuous"] #pageContent .mushaf-page{margin-bottom:0!important;box-shadow:none;border-radius:0;}
+:root[data-tz-page="continuous"] #pageContent .mushaf-page-header{display:none;}
+:root[data-tz-page="continuous"] #pageContent .mushaf-page-body{margin-top:0!important;margin-bottom:0!important;
+  padding-top:.3em!important;padding-bottom:.15em!important;border:none!important;}
+:root[data-tz-page="continuous"] #pageContent .mushaf-page-footer{height:calc(var(--mz-footer-height,32px) * .7);
+  align-items:center;gap:.7em;padding:0 var(--mz-footer-num-pad,14px);}
+:root[data-tz-page="continuous"] #pageContent .mpf-prog,
+:root[data-tz-page="continuous"] #pageContent .mpf-ornament svg{display:none;}
+:root[data-tz-page="continuous"] #pageContent .mpf-ornament{visibility:visible;flex:1;height:1px;padding:0;
+  background:color-mix(in srgb,var(--frame) 32%,transparent);}
+:root[data-tz-page="continuous"] #pageContent .mpf-num{padding:0;color:var(--ink3);font-weight:500;}
+:root[data-tz-page="continuous"] #pageContent .mpf-juz{display:inline;font-family:var(--ui-font);
+  font-size:var(--mz-footer-prog,10px);color:var(--ink3);letter-spacing:.04em;white-space:nowrap;}

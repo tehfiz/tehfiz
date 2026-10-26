@@ -32,7 +32,7 @@
    ═══════════════════════════════════════════════════════════════════════ */
 (function () {
 'use strict';
-const TEHFIZ_FINISH_VERSION = 'f3';
+const TEHFIZ_FINISH_VERSION = 'f4';
 
 let open_ = false, view = 'form', moreOpen = false;
 let st = null;   // the sheet's working state, see begin()
@@ -133,6 +133,8 @@ body.compact-ui .tfs-foot{padding:12px 16px;padding-bottom:max(16px, env(safe-ar
 .tfs-grid{background:var(--parchment2);border-radius:10px;padding:12px 14px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;}
 .tfs-grid span{display:block;font-size:12px;color:var(--ink3);}
 .tfs-grid b{font-size:15px;font-weight:500;}
+.tfs-retry{display:flex;margin:12px 0 2px;}
+.tfs-retry .tfs-sec{flex:0 1 auto;padding:0 18px;}
 .tfs-link{align-self:center;background:none;border:none;color:var(--ink);text-decoration:underline;font:400 14px var(--ui-font);
   cursor:pointer;padding:8px;min-height:40px;}
 /* Footer: Finish · More */
@@ -181,7 +183,7 @@ function begin() {
     note: remEl ? remEl.value : '',
     query: '', acOpen: false, acHi: 0, picking: !bound(),
     typedName: ($('studentName') || {}).value || '',
-    error: '', busy: false,
+    error: '', busy: false, failed: false, retrying: false,
     result: null, report: '', sessId: null, studentAfter: null,
   };
   if (timerRunning) toggleTimer();     // the lesson is over; Resume comes back on ✕
@@ -323,7 +325,9 @@ function sendLabel() {
   const w = sync().who && sync().who();
   if (w && w.pending) return { text: 'Sending opens once your account is approved', disabled: true };
   if (!b) return { text: 'Send · choose a student first', disabled: true };
-  return { text: st.busy ? 'Sending…' : 'Send to ' + (b.name || b.code), disabled: st.busy };
+  return { text: st.busy ? 'Sending…'
+    : st.failed ? 'Try sending again'
+    : 'Send to ' + (b.name || b.code), disabled: st.busy };
 }
 
 function formHtml() {
@@ -358,7 +362,9 @@ function doneHtml() {
   const who = st.studentAfter;
   const nm = who ? (who.name || who.code) : '';
   const head = r === 'sent' ? { t: 'Sent to ' + nm, p: 'It is in their viewer now, with every mistake on the page.', q: false }
-    : r === 'queued' ? { t: 'Saved, will send when online', p: 'It goes to ' + nm + ' by itself once you are back online. Sessions shows it as Queued until then.', q: true }
+    : r === 'queued' ? { t: 'Not sent yet — saved on this device',
+        p: 'There is no connection right now. It sends to ' + nm + ' by itself as soon as the connection is back, ' +
+           'even if you close this or start the next student. Sessions shows it as Queued until then.', q: true }
     : { t: 'Saved on this device', p: nm ? 'Not sent. You can send it later from Sessions.' : 'Not sent — no student was linked.', q: true };
   const okIcon = head.q
     ? '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>'
@@ -371,6 +377,10 @@ function doneHtml() {
     '<div class="tfs-body" style="padding-top:0;">' +
       '<div class="tfs-done-h"><div class="tfs-ok' + (head.q ? ' q' : '') + '">' + okIcon + '</div>' +
         '<div><h2 id="tfsTitle">' + esc(head.t) + '</h2><p>' + esc(head.p) + '</p></div></div>' +
+      (r === 'queued'
+        ? '<div class="tfs-retry"><button class="tfs-sec strong" type="button" data-tfs="retry"' +
+            (st.retrying ? ' disabled' : '') + '>' + (st.retrying ? 'Trying…' : 'Try sending now') + '</button></div>'
+        : '') +
       '<div class="tfs-grid">' +
         '<div><span>Date</span><b>' + esc(st.doneDate || '') + '</b></div>' +
         '<div><span>Length</span><b>' + esc(st.doneSec ? minsText(st.doneSec) : 'untimed') + '</b></div>' +
@@ -398,6 +408,7 @@ function render() {
   root.innerHTML = '<div class="tfs-wrap"><div class="tfs-scrim" data-tfs="' + (view === 'done' ? 'close-done' : 'close') + '"></div>' +
     '<div class="tfs-sheet" role="dialog" aria-modal="true" aria-labelledby="tfsTitle">' +
     (view === 'done' ? doneHtml() : formHtml()) + '</div></div>';
+  watchQueued();
   if (focusId) {
     const el = $(focusId);
     if (el) { el.focus({ preventScroll: true }); if (caret != null && el.setSelectionRange) try { el.setSelectionRange(caret, caret); } catch {} }
@@ -471,12 +482,47 @@ async function doSend() {
   let r = 'error';
   try { r = await sync().sendSession(st.sessId); } catch (e) { r = 'error'; }
   st.busy = false;
-  if (r === 'sent' || r === 'queued') { st.result = r; view = 'done'; render(); return; }
+  if (r === 'sent' || r === 'queued') { st.result = r; st.failed = false; view = 'done'; render(); return; }
+  st.failed = r === 'error';
   st.error = r === 'inactive' ? 'Your account is waiting for approval. The session is saved on this device.'
     : r === 'nostudent' ? 'Choose a student first.'
-    : 'Could not send. The session is saved on this device — try again from Sessions.';
+    /* Said plainly because the worry is losing the lesson: it is already
+       saved, the screen can be left, and there are two ways to send later. */
+    : 'Could not send. The session is saved on this device, so nothing is lost and you can leave this screen. ' +
+      'Try again now, or send it later from Sessions.';
+  render();
+  // The message sits at the end of a scrolling body, below the fold on most
+  // screens; bring it into view so the outcome of the tap is seen.
+  const er = document.querySelector('#tfsRoot .tfs-err');
+  if (er) er.scrollIntoView({ block: 'nearest' });
+}
+/* The queued screen's "Try sending now". sendSession pushes directly (it does
+   not wait for the queue's next round) and dequeues on success. */
+async function doRetry() {
+  if (!st || st.retrying) return;
+  st.retrying = true; render();
+  let r = 'error';
+  try { r = await sync().sendSession(st.sessId); } catch (e) { r = 'error'; }
+  if (!st) return;
+  st.retrying = false;
+  if (r === 'sent') st.result = 'sent';
+  else toast('Still not sent — it keeps trying by itself');
   render();
 }
+
+/* While the queued screen is open, notice when the queue sends it in the
+   background (the minute timer, or the app coming back online) and say so. */
+let queuedWatch = null;
+function watchQueued() {
+  const want = open_ && view === 'done' && st && st.result === 'queued';
+  if (want && !queuedWatch) {
+    queuedWatch = setInterval(() => {
+      if (!open_ || view !== 'done' || !st || st.result !== 'queued') { clearInterval(queuedWatch); queuedWatch = null; return; }
+      if (sync() && sync().sendState && sync().sendState(st.sessId) === 'sent') { st.result = 'sent'; render(); }
+    }, 3000);
+  }
+}
+
 function doSave() {
   readForm();
   if (st.untimed && !st.leaveUntimed && !st.minutes) {
@@ -610,6 +656,7 @@ document.addEventListener('click', (e) => {
   if (a === 'create') return createFromQuery();
   if (a === 'mins') { st.minutes = +t.dataset.n; st.error = ''; render(); return; }
   if (a === 'send') return doSend();
+  if (a === 'retry') return doRetry();
   if (a === 'save') return doSave();
   if (a === 'copy') return doCopyForm();
   if (a === 'copy-done') return copyText(st.report);

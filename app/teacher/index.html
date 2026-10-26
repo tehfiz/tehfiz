@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ═══════════════════════════════════════════════════════════════════
-     Tehfiz teacher app — v4_315
+     Tehfiz teacher app — v4_318
      Deployed from the `tehfiz` repo at app/teacher/index.html (the repo root
      is the web root). Locally, tehfiz-api/public/ is a clone of that repo:
      test with `npm run dev`, then commit and push from inside public/.
@@ -15,10 +15,10 @@
 (function(){try{var d=document.documentElement,t=localStorage.getItem('tehfiz_theme'),m=localStorage.getItem('tehfiz_mode');
 if(t==='classic'||t==='lapis'||t==='mulberry')d.setAttribute('data-tz-theme',t);
 if(m==='dark'||(m==='device'&&window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches))d.setAttribute('data-tz-mode','dark');}catch(e){}})();</script>
-<link rel="stylesheet" href="/app/shared/tehfiz-shared.css?v=s6">
-<script src="/app/shared/tehfiz-shared.js?v=s4"></script>
-<script src="/app/shared/tehfiz-ornament.js?v=o1"></script>
-<script src="/app/shared/tehfiz-header.js?v=h3"></script>
+<link rel="stylesheet" href="/app/shared/tehfiz-shared.css?v=s8">
+<script src="/app/shared/tehfiz-shared.js?v=s7"></script>
+<script src="/app/shared/tehfiz-ornament.js?v=o2"></script>
+<script src="/app/shared/tehfiz-header.js?v=h4"></script>
 <script src="/app/shared/tehfiz-pwa.js?v=p2"></script>
 <!-- Installable app (v4_305): manifest, icons, and the service worker TehfizPWA registers. -->
 <link rel="manifest" href="/app/teacher/manifest.webmanifest">
@@ -566,7 +566,7 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
   display: flex;
   direction: rtl;
   width: 100%;
-  height: 2.55em;
+  height: var(--msl-h, 2.55em);   /* Line spacing: TehfizLines, shared css s8 */
   align-items: center;
   overflow: visible;
   white-space: nowrap;
@@ -1798,7 +1798,7 @@ body.compact-ui .quick-form::before{
     <span class="tzh-goto-txt"><span class="tzh-goto-main" id="tzhGotoMain">&mdash;</span><span class="tzh-goto-sub" id="tzhGotoSub"></span></span>
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
   <span class="tzh-spacer"></span>
-  <span id="tzhAsWrap"><button class="vc-btn" id="asToggleBtn" data-keep-icon="1" onclick="toggleAutoScroll()" title="Auto-scroll (a)" aria-label="Auto-scroll"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 11l5-5 5 5M7 18l5-5 5 5"/></svg></button></span>
+  <span id="tzhAsWrap"><button class="vc-btn" id="asToggleBtn" data-keep-icon="1" onclick="toggleAutoScroll()" title="Auto-scroll (a)" aria-label="Auto-scroll"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 11l5-5 5 5M7 18l5-5 5 5"/></svg><span class="as-bar-spd" id="asBarSpeed">1x</span></button></span>
   <button class="tzh-btn" id="tzhViewBtn" type="button" aria-haspopup="true" aria-expanded="false" onclick="TehfizHeader.toggleView()">View <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
   <span class="tzh-vsep"></span>
   <button class="tzh-btn tzh-roomy" type="button" data-tzh-bar="students" onclick="TehfizSync.open()" title="Students, codes and sending">Students</button>
@@ -2616,7 +2616,7 @@ body.compact-ui .quick-form::before{
    console as APP_VERSION, or grep the deployed HTML for it. Bumped on every
    saved build; vcheck.py asserts it matches the filename, so a forgotten bump
    fails the integrity check rather than shipping a lie. */
-const APP_VERSION = 'v4_315';
+const APP_VERSION = 'v4_318';
 window.APP_VERSION = APP_VERSION;
 console.info('Tehfiz teacher app ' + APP_VERSION);
 
@@ -3951,150 +3951,9 @@ let _mushafZoomBatchToken = 0;
   });
 })();
 
-   // px/sec at speed = 1.0
-const AUTOSCROLL_MIN = 0.1, AUTOSCROLL_MAX = 3.0, AUTOSCROLL_STEP = 0.05;
- // ms of quiet after manual scroll before resuming
-
-const autoScrollState = {
-  active:false,
-  speed:1.0,
-  rafId:null,
-  lastTs:null,
-  resumeTimer:null,
-  pausedManual:false,   // temporary — clears itself after a quiet period
-  pausedQuickForm:false, // temporary — clears when the mark-mistake form closes
-};
-let _autoScrollAdvancing=false;
-
-function _isAutoScrollSuspended(){
-  return autoScrollState.pausedManual || autoScrollState.pausedQuickForm;
-}
-
-function _autoScrollTick(ts){
-  if(!autoScrollState.active){ autoScrollState.rafId=null; return; }
-  const panel=document.getElementById('pageContent');
-  if(panel && autoScrollState.lastTs!=null){
-    const dt=(ts-autoScrollState.lastTs)/1000;
-    if(!_isAutoScrollSuspended()){
-      // scrollTop snaps to whole pixels, so adding a fractional amount each
-      // frame truncated to zero and the scroll simply stopped — which is why
-      // anything below ~1x appeared broken. Bank the remainder instead and
-      // apply only whole pixels, so arbitrarily slow speeds still advance.
-      autoScrollState._acc = (autoScrollState._acc||0) + AUTOSCROLL_BASE_PXPS*autoScrollState.speed*dt;
-      const _step = Math.trunc(autoScrollState._acc);
-      if(_step){ panel.scrollTop += _step; autoScrollState._acc -= _step; }
-      _maybeAutoScrollAdvance(panel);
-    }
-  }
-  autoScrollState.lastTs=ts;
-  autoScrollState.rafId=requestAnimationFrame(_autoScrollTick);
-}
-
-function startAutoScroll(){
-  if(autoScrollState.active) return;
-  if(!appSettings.autoscrollEnabled){ showToast('Auto-scroll is turned off in Settings'); return; }
-  autoScrollState.active=true;
-  autoScrollState.lastTs=null;
-  autoScrollState.pausedManual=false;
-  autoScrollState.pausedQuickForm=false;
-  _updateAutoScrollUI();
-  autoScrollState.rafId=requestAnimationFrame(_autoScrollTick);
-}
-function stopAutoScroll(){
-  autoScrollState.active=false;
-  if(autoScrollState.rafId) cancelAnimationFrame(autoScrollState.rafId);
-  autoScrollState.rafId=null;
-  clearTimeout(autoScrollState.resumeTimer);
-  autoScrollState.pausedManual=false;
-  autoScrollState.pausedQuickForm=false;
-  _updateAutoScrollUI();
-}
-function setAutoScrollSpeed(val){
-  autoScrollState.speed=Math.round(Math.max(AUTOSCROLL_MIN,Math.min(AUTOSCROLL_MAX,+val))*100)/100;
-  _updateAutoScrollUI();
-}
-function _updateAutoScrollUI(){
-  const on=autoScrollState.active;
-  [document.getElementById('asToggleBtn'), document.getElementById('autoscrollFabBtn')].forEach(btn=>{
-    if(!btn) return;
-    if(!btn.dataset.keepIcon) btn.textContent='⏫';   // the header's button draws its own icon
-    btn.classList.toggle('active-vc', on);
-  });
-  // On desktop the speed controls stay put whether or not scrolling is running —
-  // they're a setting, and having them appear/disappear made the toolbar jump.
-  // On mobile space is tight, so there they still follow the active state.
-  const keepVisible = !isMobile();
-  ['asSpeedLabel','asSlower','asSlider','asFaster'].forEach(id=>{
-    const el=document.getElementById(id);
-    if(el) el.style.display = (on||keepVisible) ? '' : 'none';
-  });
-  const fabSpeed=document.getElementById('autoscrollFabSpeed');
-  if(fabSpeed) fabSpeed.style.display=on?'flex':'none';
-  const label=`${autoScrollState.speed.toFixed(2).replace(/0$/,'')}x`;
-  const lbl=document.getElementById('asSpeedLabel'); if(lbl) lbl.textContent=label;
-  const fabLbl=document.getElementById('autoscrollFabLabel'); if(fabLbl) fabLbl.textContent=label;
-  const slider=document.getElementById('asSlider'); if(slider) slider.value=autoScrollState.speed;
-  _autoScrollFabTouch();
-}
-
-// ── Boundary auto-advance: continue into the next juz/page/surah instead of
-// just stopping dead at the bottom of whatever's currently loaded.
-async function _autoScrollAdvance(){
-  if(viewMode==='mushaf'){
-    // Mushaf mode already has its own infinite-scroll observer appending
-    // further juz as the user nears the bottom — it doesn't care whether the
-    // scroll was driven by us or a finger, so there's nothing to trigger here.
-    // We only need to know whether more content exists ahead, to decide
-    // whether reaching "the bottom" right now means "the end" or "wait for
-    // the observer to catch up".
-    const maxJuz=_activeJuzs.length?Math.max(..._activeJuzs):1;
-    return maxJuz<30;
-  }
-  if(viewMode==='surah'){
-    if((currentSurah||1)>=114) return false;
-    // eslint-disable-next-line no-undef -- 'surah' view mode no longer exists; branch is unreachable
-    changesurah(1);
-    return true;
-  }
-  // page/juz view
-  const sel=document.getElementById('juzSel');
-  const cur=sel?+sel.value||1:1;
-  if(cur>=30) return false;
-  changePage(1);
-  return true;
-}
-
-
-// ── Mobile floating button: fades out after a couple of seconds of no
-// interaction while active, so it stays out of the way without disappearing
-// entirely (a tap anywhere on it brings it back to full opacity).
-let _autoScrollFabIdleTimer=null;
-
-document.addEventListener('DOMContentLoaded', ()=>{
-  const panel=document.getElementById('pageContent');
-  if(panel){
-    panel.addEventListener('wheel', _onAutoScrollManualInput, {passive:true});
-    panel.addEventListener('touchmove', _onAutoScrollManualInput, {passive:true});
-  }
-  const fabWrap=document.getElementById('autoscrollFabWrap');
-  if(fabWrap){
-    fabWrap.addEventListener('click', _autoScrollFabTouch);
-  }
-  // Hard-stop on any modal/overlay open — these pull attention away for long
-  // enough that silently resuming afterwards risks the page having scrolled
-  // away from what the person's actually looking at. Watches every existing
-  // .modal-bg/.sessions-overlay generically, so new ones need no extra wiring.
-  const modalObserver=new MutationObserver(muts=>{
-    muts.forEach(m=>{
-      if(m.attributeName==='class' && m.target.classList.contains('open') && autoScrollState.active){
-        stopAutoScroll();
-      }
-    });
-  });
-  document.querySelectorAll('.modal-bg, .sessions-overlay').forEach(el=>{
-    modalObserver.observe(el, {attributes:true, attributeFilter:['class']});
-  });
-});
+/* Auto-scroll: the engine (state, tick, start/stop, speed, the manual-scroll
+   pause and its listeners) is in /app/shared/tehfiz-shared.js since s6. This
+   app only sets autoScrollState.pausedQuickForm around the mark-mistake form. */
 
 function fitMushafToScreen(){
   const panel=document.getElementById('pageContent');
@@ -4111,7 +3970,7 @@ function fitMushafToScreen(){
   const footerEl = document.querySelector('.mushaf-page-footer');
   const fixedChrome = (headerEl?.offsetHeight||34) + (footerEl?.offsetHeight||32) + 20 /*body padding*/ + 24 /*outer margin*/;
   const availableForLines = Math.max(50, viewportH - fixedChrome);
-  const targetFont = availableForLines / (STANDARD_LINES_PER_PAGE * MSL_LINE_HEIGHT_EM);
+  const targetFont = availableForLines / (STANDARD_LINES_PER_PAGE * mslLineEm());
   // Convert target font back to an equivalent width, then to a zoom level.
   const targetWidth = targetFont * MUSHAF_REF_WIDTH / MUSHAF_REF_FONT;
   const cs = getComputedStyle(panel);
@@ -4139,7 +3998,7 @@ function buildTopbarNav() {
   /* One bordered group in the one-row header: Juz · ‹ page › · Surah:Ayah.
      The ids are unchanged — updateLivePosition writes into them, and on a
      compact screen they stay in the DOM (hidden) for the Go to button to read. */
-  nav.innerHTML = `<select class="sel" id="juzSel" onchange="goToJuz(this.value)" aria-label="Juz">
+  nav.innerHTML = `<select class="sel" id="juzSel" onchange="goToJuz(this.value)" onfocus="_juzSelArm(this)" onblur="_juzSelDisarm(this)" aria-label="Juz">
       <option value="">— Jump to Juz —</option>
       ${JUZ_NAMES.map((n,i)=>`<option value="${i+1}">${n}</option>`).join('')}
     </select>
@@ -4176,7 +4035,28 @@ let _infiniteScrollObserver = null;
 // ═══════════════════════════════════════════════════════════════════
 function goToJuz(n) {
   if(!n) return;
-  loadJuz(+n);
+  n = +n;
+  const sel = document.getElementById('juzSel');
+  // Let go of the box, so the next pick arms it again (see _juzSelArm).
+  if(sel && document.activeElement === sel) sel.blur();
+  // Already loaded, which includes the juz being read: go to its first page
+  // rather than reloading it. jumpToPageFromInput skips the load for an active
+  // juz and scrolls once the page is there.
+  if(_activeJuzs.includes(n)) { jumpToPageFromInput(JUZ_PAGES[n-1]); return; }
+  loadJuz(n);
+}
+
+/* A <select> fires no change event when the option already shown is picked
+   again, so choosing the juz being read did nothing. While the box is open it
+   shows "— Jump to Juz —" instead, making every juz (the current one too) a
+   real change. On close without a pick, the current juz comes back. The live
+   position updater leaves the box alone while it has focus. */
+function _juzSelArm(sel){
+  sel.dataset.cur = sel.value;
+  sel.value = '';
+}
+function _juzSelDisarm(sel){
+  if(sel.value === '') sel.value = sel.dataset.cur || '';
 }
 
 async function loadJuz(juzNum, appendMode = 'replace') {
@@ -4626,7 +4506,7 @@ function renderMushafFromQuranCom(juzNum, pageMap, startPage, endPage, hizbByVer
     let topBufferPx = 0, botBufferPx = 0;
     if(lineDeficit > 0){
       const halfDeficitLines = lineDeficit / 2;
-      const deficitPx = lineDeficit * MSL_LINE_HEIGHT_EM * _zm.font;
+      const deficitPx = lineDeficit * mslLineEm() * _zm.font;
       topBufferPx = Math.round(deficitPx / 2);
       botBufferPx = Math.round(deficitPx - topBufferPx);
       html += mushafBufferBlock(qpg + '-top', topBufferPx, halfDeficitLines);
@@ -4795,7 +4675,8 @@ function renderMushafFromQuranCom(juzNum, pageMap, startPage, endPage, hizbByVer
       }
       attachMushafScaler();
       refreshSpotVisuals();
-      
+      _syncMushafPageBlockSize(contentEl);
+
       // Enforce max 3 juz limit
       _enforceMaxJuzLimit(contentEl, appendMode);
       // Update intersection triggers
@@ -4805,59 +4686,8 @@ function renderMushafFromQuranCom(juzNum, pageMap, startPage, endPage, hizbByVer
 }
 
 // ── INFINITE SCROLL LOGIC ──────────────────────────────────────
-function _enforceMaxJuzLimit(contentEl, appendMode) {
-  if (_activeJuzs.length > 3) {
-    // _activeJuzs is always ascending regardless of growth direction, so array
-    // shape can't tell us which end just grew — use appendMode instead.
-    if (appendMode === 'prepend') {
-      // We prepended, so the oldest (highest juz) is now at the far end
-      const juzToRemove = _activeJuzs.pop();
-      _removeJuzFromDOM(contentEl, juzToRemove, 'bottom');
-    } else if (appendMode === 'append') {
-      // We appended, so the oldest (lowest juz) is now at the front
-      const juzToRemove = _activeJuzs.shift();
-      _removeJuzFromDOM(contentEl, juzToRemove, 'top');
-    }
-  }
-}
-
-function _removeJuzFromDOM(contentEl, juzToRemove, position) {
-  const startPage = JUZ_PAGES[juzToRemove-1];
-  const endPage = juzToRemove < 30 ? JUZ_PAGES[juzToRemove]-1 : 604;
-  
-  // Find all page elements in this juz range
-  const pagesToRemove = [];
-  contentEl.querySelectorAll('.mushaf-page').forEach(el => {
-    // extract page number from id pg-123
-    const match = el.id.match(/^pg-(\d+)$/);
-    if (match) {
-      const pNum = parseInt(match[1]);
-      if (pNum >= startPage && pNum <= endPage) {
-        pagesToRemove.push(el);
-      }
-    }
-  });
-
-  if (position === 'top') {
-    // Must measure and adjust scrollTop
-    let removedHeight = 0;
-    pagesToRemove.forEach(el => {
-      removedHeight += el.getBoundingClientRect().height;
-      // also account for margin-bottom
-      const style = window.getComputedStyle(el);
-      removedHeight += parseInt(style.marginBottom || 0);
-      el.remove();
-    });
-    contentEl.scrollTop -= removedHeight;
-  } else {
-    pagesToRemove.forEach(el => el.remove());
-  }
-
-  // Keep pageVerses in sync with what's actually in the DOM — otherwise
-  // navigateToVerse's "already loaded" check can claim a verse is present
-  // when its page was just evicted, causing the scroll poll to spin forever.
-  pageVerses = pageVerses.filter(v => v.juz_number !== juzToRemove);
-}
+// _enforceMaxJuzLimit, _removeJuzFromDOM and _syncMushafPageBlockSize are in
+// the shared file (s6); the triggers below stay here.
 
 function _updateInfiniteScrollTriggers() {
   if (_infiniteScrollObserver) {
@@ -8812,6 +8642,11 @@ async function printReport(mode){
   closeModal('printModal');
   const s = reviewingSession;
   if(!s) return;
+  // Light while the report is BUILT, not only while it prints: charts and the
+  // cloned mushaf read their colours as they are made (see TehfizMode, s5).
+  // TehfizPrint (s7): light colours, framed pages, lines as printed — set
+  // before building, since the builder measures pages as it goes.
+  if(window.TehfizPrint) TehfizPrint.begin();
 
   const root = document.getElementById('printRoot');
   root.innerHTML = '';
@@ -8957,6 +8792,12 @@ async function printReport(mode){
     }
   }
 
+  /* Open every disclosure in the copy. The print CSS forced their children to
+     display:block, but current Chrome hides a closed <details> through its
+     ::details-content box, which that rule cannot reach — so "by verse" printed
+     as a bare heading with no mistakes under it (found 15 Oct, v4_317). */
+  root.querySelectorAll('details').forEach(d => { d.open = true; });
+
   document.body.classList.add('printing', 'print-' + mode);
 
   // The browser's PDF writer names the file after document.title. Swapping it
@@ -8968,6 +8809,7 @@ async function printReport(mode){
 
   _printCleanup = () => {
     document.title = _prevTitle;
+    if(window.TehfizPrint) TehfizPrint.end();
     document.body.classList.remove('printing','print-metrics','print-mistakes','print-full');
     document.getElementById('printRoot').innerHTML = '';
     // Full mode painted the reviewed session onto the live mushaf. Put the
@@ -9602,7 +9444,9 @@ function buildTextReport(s){
       } else if(sr && sr.family && !sr.rule){
       t += `   Rule   : ${sr.label || sr.family}\n`;
     } else if(sr && sr.rule){
-        t+=`   Rule   : ${(TAJWEED_RULES[sr.rule]||{}).label || sr.rule}\n`;
+        // ruleLabel, not TAJWEED_RULES: the "added" rules (add_madd …) live in
+        // ADDED_RULES, and the direct lookup sent parents "add_ghunnah" (v4_317).
+        t+=`   Rule   : ${ruleLabel(sr.rule)}\n`;
       }
       if(m.note) t+=`   Note   : ${m.note}\n`;
       t+='\n';
@@ -12364,7 +12208,12 @@ document.querySelectorAll('.modal-bg').forEach(m=>m.addEventListener('click',e=>
 <div class="edit-form-group" style="border-top:.5px solid var(--border);padding-top:10px;margin-top:4px;">
       <label style="display:block;font-size:13px;color:var(--ink2);margin-bottom:6px;font-weight:600;">Page style</label>
       <div class="tz-theme-choice" id="pageStyleChoice"></div>
-      <div style="font-size:12px;color:var(--ink3);margin-top:4px;line-height:1.5;">How the mushaf page is framed. Drawn in your theme's colour; phones use a thinner frame.</div>
+      <div style="font-size:12px;color:var(--ink3);margin-top:4px;line-height:1.5;">How the mushaf page is framed. Continuous drops the frame and the gap between pages, for unbroken reading and auto-scroll; printing always uses Illuminated.</div>
+    </div>
+<div class="edit-form-group" style="border-top:.5px solid var(--border);padding-top:10px;margin-top:4px;">
+      <label style="display:block;font-size:13px;color:var(--ink2);margin-bottom:6px;font-weight:600;">Line spacing</label>
+      <div class="tz-theme-choice" id="lineSpacingChoice"></div>
+      <div style="font-size:12px;color:var(--ink3);margin-top:4px;line-height:1.5;">Compact sets the lines closer, so more of the page fits on screen. The words on each line never change. Printing always uses As printed.</div>
     </div>
 <div class="edit-form-group" style="border-top:.5px solid var(--border);padding-top:10px;margin-top:4px;">
       <label style="display:block;font-size:13px;color:var(--ink2);margin-bottom:6px;font-weight:600;">⌨ Keyboard scroll speed</label>
@@ -13224,6 +13073,15 @@ async function flushQueue() {
   }
 }
 
+/* A person asking to retry means "try now", so the attempt count starts
+   again. Without this, a session past MAX_ATTEMPTS was skipped by flushQueue
+   and the Retry button did nothing at all for it. */
+function retryQueueNow() {
+  queue.forEach((q) => { q.attempts = 0; });
+  writeJSON(K.queue, queue);
+  return flushQueue();
+}
+
 /* ── session list decoration ────────────────────────────────────────────── */
 
 /**
@@ -13259,7 +13117,9 @@ function decorateSessionList() {
       btn.textContent = '☁ Sign in to send';
       btn.dataset.tsy = 'open';
     } else if (queued) {
-      btn.textContent = '⏳ Queued';
+      // The button already sends on tap (sendFromCard); the label says so.
+      btn.textContent = '⏳ Queued · Retry';
+      btn.title = 'Not sent yet — it sends by itself when the connection is back. Tap to try now.';
       btn.classList.add('tsy-queued');
     } else if (rec) {
       btn.textContent = '✓ Sent ' + fmtDate(rec.at);
@@ -14249,7 +14109,7 @@ document.addEventListener('click', async (e) => {
   if (act === 'pick')        { const s = studentById(id); if (s) pick(s); }
   if (act === 'newfromname') { e.preventDefault(); await newFromName(); }
   if (act === 'send')        { await sendFromCard(t.dataset.client); }
-  if (act === 'retry')       { flushQueue(); }
+  if (act === 'retry')       { retryQueueNow(); }
   if (act === 'tour'){ close(); if (window.TehfizTour) window.TehfizTour.start(); return; }
   if (act === 'exportroster'){ exportRoster(); }
   if (act === 'refresh')     {
@@ -14414,6 +14274,10 @@ function mount() {
 
   window.addEventListener('online', flushQueue);
   setInterval(flushQueue, RETRY_MS);
+  /* Returning to the app is the likeliest moment the connection is back (a
+     laptop lid, a phone in a pocket), and a teacher who comes back to check
+     should not wait out the minute. */
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) flushQueue(); });
 
   if (signedIn()) {
     api('/api/me')
@@ -14871,15 +14735,48 @@ let busyId = null;
 
 /* ── API ────────────────────────────────────────────────────────────────── */
 
+/* A request that never reached the server (fetch rejects with a TypeError:
+   DNS failure, connection dropped, offline). The app itself still opens in
+   that state, because the service worker serves it from cache, so the admin
+   panel is often the first thing to meet it. Seen 14 Oct as
+   net::ERR_NAME_NOT_RESOLVED on /api/admin/teachers while otherwise online. */
+const NET_RETRY_MS = [700, 2000];
+const NET_MSG = 'Could not reach Tehfiz — the connection dropped for a moment. ' +
+  'Nothing was changed.';
+/* Every load error carries its own way back; data-tad="refresh" reloads the
+   tab being looked at, the same as the ↻ in the panel's header. */
+function errHtml(msg) {
+  return '<div class="tad-err">' + esc(msg) +
+    ' <button class="tad-mini" data-tad="refresh" style="margin-left:6px;">Try again</button></div>';
+}
+function netError(err) {
+  const e = new Error('network');
+  e.network = true;
+  e.cause = err;
+  return e;
+}
+
 async function api(path, opts = {}) {
   const token = localStorage.getItem(K.token);
   const headers = {};
   if (opts.body !== undefined) headers['Content-Type'] = 'application/json';
   if (token) headers.Authorization = 'Bearer ' + token;
-  const res = await fetch(apiBase() + path, {
-    method: opts.method || 'GET', headers,
-    body: opts.body === undefined ? undefined : JSON.stringify(opts.body),
-  });
+  const method = opts.method || 'GET';
+  let res;
+  // Reads retry on their own; writes never do, since a write that failed to
+  // report back may still have happened.
+  for (let i = 0; ; i++) {
+    try {
+      res = await fetch(apiBase() + path, {
+        method, headers,
+        body: opts.body === undefined ? undefined : JSON.stringify(opts.body),
+      });
+      break;
+    } catch (err) {
+      if (method !== 'GET' || i >= NET_RETRY_MS.length) throw netError(err);
+      await new Promise((r) => setTimeout(r, NET_RETRY_MS[i]));
+    }
+  }
   let data = null;
   try { data = await res.json(); } catch {}
   if (!res.ok) {
@@ -14906,6 +14803,7 @@ async function load() {
   } catch (err) {
     errorMsg = err.status === 404
       ? 'This account is not an administrator.'
+      : err.network ? NET_MSG
       : 'Could not load teachers: ' + err.message;
   }
   loading = false;
@@ -15035,7 +14933,7 @@ function renderList() {
   const host = $('tadList');
   if (!host) return;
 
-  if (errorMsg) { host.innerHTML = '<div class="tad-err">' + esc(errorMsg) + '</div>'; return; }
+  if (errorMsg) { host.innerHTML = errHtml(errorMsg); return; }
   if (loading || teachers === null) { host.innerHTML = '<div class="tad-empty">Loading…</div>'; return; }
 
   const rows = visible();
@@ -15613,7 +15511,7 @@ async function loadView(key, path, render) {
     cache[key] = await fetchAdmin(path);
     if (tab === key) render(cache[key]);
   } catch (err) {
-    host.innerHTML = '<div class="tad-err">' + esc2(err.message || 'Could not load') + '</div>';
+    host.innerHTML = errHtml(err.network ? NET_MSG : (err.message || 'Could not load'));
   }
 }
 
@@ -16264,6 +16162,16 @@ function close() {
   if (tab === 'calib' && typeof window.calibEnd === 'function') window.calibEnd();
   $('tadOverlay').classList.remove('tad-on');
 }
+
+/* Coming back to the app (or the connection returning) retries a teacher
+   list that failed to load, so a blip while the panel sat open heals itself. */
+function retryIfFailed() {
+  const ov = $('tadOverlay');
+  if (!ov || !ov.classList.contains('tad-on') || loading) return;
+  if (tab === 'teachers' && errorMsg) load();
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden) retryIfFailed(); });
+window.addEventListener('online', retryIfFailed);
 
 /* ── events ─────────────────────────────────────────────────────────────── */
 
@@ -18041,7 +17949,7 @@ span.seg-chip{display:flex;align-items:center;justify-content:center;box-sizing:
 })();
 </script>
 <script src="/app/teacher/sessions-sent.js?v=m3"></script>
-<script src="/app/teacher/finish-session.js?v=f3"></script>
+<script src="/app/teacher/finish-session.js?v=f4"></script>
 <script src="/app/teacher/invoices.js?v=i2"></script>
 <script src="/app/teacher/name-sync.js?v=n2"></script>
 </body>

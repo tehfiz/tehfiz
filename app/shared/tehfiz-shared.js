@@ -18,7 +18,7 @@
    · Nothing here may run against the page at load time: this file runs in the
      <head>, before <body> exists. Declarations and pure tables only.
    ═══════════════════════════════════════════════════════════════════════ */
-const TEHFIZ_SHARED_VERSION = 's4';
+const TEHFIZ_SHARED_VERSION = 's7';
 
 // ── sessionName vs. the legacy `range` key ────────────────────────
 // v3 and earlier stored the (optional) session name under `range`, a leftover
@@ -1257,7 +1257,7 @@ function _applyMushafZoomToPages(pages, m){
     }
     el.querySelectorAll('.msl-buffer').forEach(bEl=>{
       const half = parseFloat(bEl.dataset.halfDeficit);
-      if(!isNaN(half)) bEl.style.height = Math.round(half * MSL_LINE_HEIGHT_EM * m.font) + 'px';
+      if(!isNaN(half)) bEl.style.height = Math.round(half * mslLineEm() * m.font) + 'px';
     });
     el.dataset.zoomApplied = '1'; // marks this page as caught up to the current zoom
   });
@@ -1300,6 +1300,11 @@ function applyMushafZoomToDOM(m){
   // from the writes above on its own schedule, not forced synchronously now).
   requestAnimationFrame(()=>{
     if(myToken !== _mushafZoomBatchToken) return; // superseded by a newer zoom change
+    // Off-screen pages that have never been shown reserve this height. Set
+    // BEFORE the restore: changing it resizes those pages, and the browser does
+    // not compensate for a change made on the scroller itself, so the restore
+    // has to measure the layout after it.
+    _syncMushafPageBlockSize(panel);
     restoreMushafScrollAnchor(_zoomAnchor);
     _applyHizbZoomToPages(visiblePages, m);
 
@@ -1342,14 +1347,27 @@ function updateMushafZoomIndicator(){
 }
 
 // Called directly by the slider's oninput — jumps straight to the dragged level.
+/* Buttons, keys and the slider set the level; the page is resized at most once
+   per frame, at the latest level. A slider drag fires far more often than a
+   slower device can lay the page out, and every skipped intermediate size is
+   work nobody would have seen. */
+let _zoomApplyRaf = 0;
+function _scheduleMushafZoomApply(){
+  updateMushafZoomIndicator();
+  if(_zoomApplyRaf) return;
+  _zoomApplyRaf = requestAnimationFrame(()=>{
+    _zoomApplyRaf = 0;
+    applyMushafZoomToDOM(computeMushafZoomMetrics());
+  });
+}
 function setMushafZoomLevel(level){
   mushafZoomLevel = parseInt(level, 10) || 0;
-  applyMushafZoomToDOM(computeMushafZoomMetrics());
+  _scheduleMushafZoomApply();
 }
 
 function changeMushafZoom(delta){
   mushafZoomLevel += delta;
-  applyMushafZoomToDOM(computeMushafZoomMetrics());
+  _scheduleMushafZoomApply();
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -1360,14 +1378,187 @@ function changeMushafZoom(delta){
 // words-per-minute model to stay accurate anyway.
 const AUTOSCROLL_BASE_PXPS = 24;
 
-const AUTOSCROLL_RESUME_DELAY = 1500;
+/* s6: the whole engine lives here now. Until v4_317 / v1_163 each app had its
+   own copy and they had drifted: the viewer still added fractional pixels
+   (which the browser truncates, so slow speeds stalled), had no frame cap, and
+   its speed steps differed. The apps keep only what is theirs: the markup, and
+   in the teacher app the quick-form pause (pausedQuickForm). */
+const AUTOSCROLL_MIN = 0.1, AUTOSCROLL_MAX = 3.0, AUTOSCROLL_STEP = 0.05;
+/* Capped: after the main thread stalls (adding a juz, a long render) the next
+   frame used to move by the whole stalled time at once — 30px on a fast
+   machine, 150px on a slow one, measured 14 Oct. A capped frame turns that
+   jump into a short pause and the scroll carries on evenly. */
+const AUTOSCROLL_MAX_FRAME_MS = 50;
+/* After a manual scroll: resume once the page has been STILL this long. Was
+   1500ms from the last wheel/touchmove event, which in practice was 2–4s —
+   trackpad momentum keeps sending wheel events, and a touch fling keeps moving
+   with no events at all, so the clock kept restarting (s6). */
+const AUTOSCROLL_RESUME_DELAY = 500;
+// Then speed eases back in over this long, so the restart is not a lurch.
+const AUTOSCROLL_RAMP_MS = 400;
+/* s7: line-paced across page breaks. Between the last line of one page and
+   the first of the next sits about 3.3 lines of footer, gap, header and border
+   (measured 26 Oct, desktop and phone alike): at 1x that was ~8 s per page of
+   scrolling past nothing. When the READING LINE (a third of the way down the
+   view, where the eye sits while reciting) has passed a page's last line, the
+   scroll glides, easing in and out, until the next page's first line reaches
+   it. Only gaps taller than a line glide, so Continuous pages simply scroll. */
+const AUTOSCROLL_READ_FRAC = 1/3;
+const AUTOSCROLL_GLIDE_MS = 500;
 
+const autoScrollState = {
+  active:false,
+  speed:1.0,
+  rafId:null,
+  lastTs:null,
+  resumeTimer:null,
+  pausedManual:false,    // temporary — clears once the page has been still a moment
+  pausedQuickForm:false, // teacher: clears when the mark-mistake form closes
+  touching:false,        // a finger is on the page: never resume under it
+  rampFrom:0,            // performance.now() of the last resume, for the ease-in
+  glide:null,            // {from, to, t0, last} while crossing a page break
+};
+let _autoScrollAdvancing=false;
+let _autoScrollFabIdleTimer=null;
+
+function _isAutoScrollSuspended(){
+  return autoScrollState.pausedManual || autoScrollState.pausedQuickForm;
+}
+
+function _autoScrollTick(ts){
+  if(!autoScrollState.active){ autoScrollState.rafId=null; return; }
+  const panel=document.getElementById('pageContent');
+  if(panel && autoScrollState.lastTs!=null){
+    const dt=Math.min(ts-autoScrollState.lastTs, AUTOSCROLL_MAX_FRAME_MS)/1000;
+    if(_isAutoScrollSuspended()){
+      autoScrollState.glide=null;                    // the reader took over
+    } else if(autoScrollState.glide){
+      _autoScrollGlideStep(panel, ts);
+      _maybeAutoScrollAdvance(panel);
+    } else {
+      const ramp=Math.min(1, Math.max(0, (ts-autoScrollState.rampFrom)/AUTOSCROLL_RAMP_MS));
+      // scrollTop snaps to whole pixels, so adding a fractional amount each
+      // frame truncated to zero and the scroll simply stopped — which is why
+      // anything below ~1x appeared broken. Bank the remainder instead and
+      // apply only whole pixels, so arbitrarily slow speeds still advance.
+      autoScrollState._acc = (autoScrollState._acc||0) + AUTOSCROLL_BASE_PXPS*autoScrollState.speed*ramp*dt;
+      const _step = Math.trunc(autoScrollState._acc);
+      if(_step){ panel.scrollTop += _step; autoScrollState._acc -= _step; }
+      _autoScrollMaybeGlide(panel, ts);
+      _maybeAutoScrollAdvance(panel);
+    }
+  }
+  autoScrollState.lastTs=ts;
+  autoScrollState.rafId=requestAnimationFrame(_autoScrollTick);
+}
+
+/* The page whose top is the last one at or above y (viewport px), by binary
+   search: page tops only ever increase down the panel. */
+function _autoScrollPageAt(pages, y){
+  let lo=0, hi=pages.length-1, ans=-1;
+  while(lo<=hi){
+    const mid=(lo+hi)>>1;
+    if(pages[mid].getBoundingClientRect().top <= y){ ans=mid; lo=mid+1; } else hi=mid-1;
+  }
+  return ans;
+}
+function _autoScrollMaybeGlide(panel, ts){
+  const pages=panel.querySelectorAll('.mushaf-page[id^="pg-"]');
+  if(pages.length<2) return;
+  const pr=panel.getBoundingClientRect();
+  const readY=pr.top + panel.clientHeight*AUTOSCROLL_READ_FRAC;
+  const i=_autoScrollPageAt(pages, readY);
+  if(i<0 || i>=pages.length-1) return;
+  const lines=pages[i].querySelectorAll('.msl');
+  const last=lines.length ? lines[lines.length-1] : null;
+  const first=pages[i+1].querySelector('.msl');
+  if(!last || !first) return;
+  const lr=last.getBoundingClientRect();
+  if(readY <= lr.bottom + 1) return;               // still on this page's text
+  const firstTop=first.getBoundingClientRect().top;
+  if(firstTop - lr.bottom < lr.height) return;     // no real gap (Continuous)
+  const dist=firstTop - readY;
+  if(dist <= 2) return;
+  const from=panel.scrollTop;
+  autoScrollState.glide={from, to: from + dist, t0: ts, last: from};
+}
+function _autoScrollGlideStep(panel, ts){
+  const g=autoScrollState.glide;
+  // Something else moved the page (a juz evicted above, a jump): stop gliding.
+  if(Math.abs(panel.scrollTop - g.last) > 4){ autoScrollState.glide=null; return; }
+  const t=Math.min(1, (ts - g.t0)/AUTOSCROLL_GLIDE_MS);
+  const e=t<.5 ? 2*t*t : 1 - Math.pow(-2*t + 2, 2)/2;
+  panel.scrollTop=Math.round(g.from + (g.to - g.from)*e);
+  g.last=panel.scrollTop;
+  if(t>=1){ autoScrollState.glide=null; autoScrollState._acc=0; }
+}
+
+function startAutoScroll(){
+  if(autoScrollState.active) return;
+  if(!appSettings.autoscrollEnabled){ showToast('Auto-scroll is turned off in Settings'); return; }
+  autoScrollState.active=true;
+  autoScrollState.lastTs=null;
+  autoScrollState.pausedManual=false;
+  autoScrollState.pausedQuickForm=false;
+  autoScrollState.rampFrom=performance.now();
+  autoScrollState.glide=null;
+  _updateAutoScrollUI();
+  autoScrollState.rafId=requestAnimationFrame(_autoScrollTick);
+}
+function stopAutoScroll(){
+  autoScrollState.active=false;
+  if(autoScrollState.rafId) cancelAnimationFrame(autoScrollState.rafId);
+  autoScrollState.rafId=null;
+  clearTimeout(autoScrollState.resumeTimer);
+  autoScrollState.pausedManual=false;
+  autoScrollState.pausedQuickForm=false;
+  autoScrollState.glide=null;
+  _updateAutoScrollUI();
+}
+function setAutoScrollSpeed(val){
+  autoScrollState.speed=Math.round(Math.max(AUTOSCROLL_MIN,Math.min(AUTOSCROLL_MAX,+val))*100)/100;
+  _updateAutoScrollUI();
+}
 function toggleAutoScroll(){
   if(autoScrollState.active) stopAutoScroll(); else startAutoScroll();
 }
-
 function changeAutoScrollSpeed(delta){
   setAutoScrollSpeed(autoScrollState.speed+delta);
+}
+
+function _updateAutoScrollUI(){
+  const on=autoScrollState.active;
+  [document.getElementById('asToggleBtn'), document.getElementById('autoscrollFabBtn')].forEach(btn=>{
+    if(!btn) return;
+    if(!btn.dataset.keepIcon) btn.textContent='⏫';   // the header's button draws its own icon
+    btn.classList.toggle('active-vc', on);
+  });
+  // On desktop the speed controls stay put whether or not scrolling is running —
+  // they're a setting, and having them appear/disappear made the toolbar jump.
+  // On compact screens space is tight, so there they still follow the active state.
+  const keepVisible = !document.body.classList.contains('compact-ui');
+  ['asSpeedLabel','asSlower','asSlider','asFaster'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.style.display = (on||keepVisible) ? '' : 'none';
+  });
+  const fabSpeed=document.getElementById('autoscrollFabSpeed');
+  if(fabSpeed) fabSpeed.style.display=on?'flex':'none';
+  const label=`${autoScrollState.speed.toFixed(2).replace(/0$/,'')}x`;
+  ['asSpeedLabel','autoscrollFabLabel','asBarSpeed'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.textContent=label;
+  });
+  const barBtn=document.getElementById('asToggleBtn');
+  if(barBtn) barBtn.title=`Auto-scroll · ${label} (a to start/stop, s slower, d faster)`;
+  const slider=document.getElementById('asSlider'); if(slider) slider.value=autoScrollState.speed;
+  _autoScrollFabTouch();
+}
+
+// ── Boundary auto-advance. The mushaf's own infinite-scroll observer appends
+// the next juz as the reader (or auto-scroll) nears the bottom; all this needs
+// to know is whether more exists, to tell "the end" from "wait a moment".
+function _autoScrollAdvance(){
+  const maxJuz=_activeJuzs.length?Math.max(..._activeJuzs):1;
+  return maxJuz<30;
 }
 
 function _maybeAutoScrollAdvance(panel){
@@ -1385,14 +1576,24 @@ function _maybeAutoScrollAdvance(panel){
   });
 }
 
-// ── Manual-scroll interrupt: pause immediately, resume on its own after a
-// short quiet period — easy enough to fully stop via the toggle if that's
-// what's actually wanted, so we don't require an explicit resume here.
+// ── Manual-scroll interrupt: pause at once, resume by itself once the page has
+// been still for AUTOSCROLL_RESUME_DELAY. "Still" is judged by the panel's own
+// scroll events while paused — auto-scroll is not moving it then, so any scroll
+// is the reader's, including momentum after the finger or trackpad lets go.
+function _armAutoScrollResume(){
+  clearTimeout(autoScrollState.resumeTimer);
+  if(autoScrollState.touching) return;            // re-armed on touchend
+  autoScrollState.resumeTimer=setTimeout(()=>{
+    if(!autoScrollState.pausedManual) return;
+    autoScrollState.pausedManual=false;
+    autoScrollState.rampFrom=performance.now();
+    autoScrollState._acc=0;
+  }, AUTOSCROLL_RESUME_DELAY);
+}
 function _onAutoScrollManualInput(){
   if(!autoScrollState.active) return;
   autoScrollState.pausedManual=true;
-  clearTimeout(autoScrollState.resumeTimer);
-  autoScrollState.resumeTimer=setTimeout(()=>{ autoScrollState.pausedManual=false; }, AUTOSCROLL_RESUME_DELAY);
+  _armAutoScrollResume();
 }
 
 function _autoScrollFabTouch(){
@@ -1402,6 +1603,104 @@ function _autoScrollFabTouch(){
   clearTimeout(_autoScrollFabIdleTimer);
   if(autoScrollState.active){
     _autoScrollFabIdleTimer=setTimeout(()=>wrap.classList.add('idle'), 2500);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', ()=>{
+  const panel=document.getElementById('pageContent');
+  if(panel){
+    panel.addEventListener('wheel', _onAutoScrollManualInput, {passive:true});
+    panel.addEventListener('touchmove', _onAutoScrollManualInput, {passive:true});
+    panel.addEventListener('touchstart', ()=>{ autoScrollState.touching=true; }, {passive:true});
+    const lift=()=>{ autoScrollState.touching=false; if(autoScrollState.pausedManual) _armAutoScrollResume(); };
+    panel.addEventListener('touchend', lift, {passive:true});
+    panel.addEventListener('touchcancel', lift, {passive:true});
+    // While paused nothing of ours moves the page, so a scroll is the reader's
+    // momentum: keep waiting until it settles.
+    panel.addEventListener('scroll', ()=>{ if(autoScrollState.active && autoScrollState.pausedManual) _armAutoScrollResume(); }, {passive:true});
+  }
+  const fabWrap=document.getElementById('autoscrollFabWrap');
+  if(fabWrap) fabWrap.addEventListener('click', _autoScrollFabTouch);
+  // Hard-stop on any modal/overlay open — these pull attention away for long
+  // enough that silently resuming afterwards risks the page having scrolled
+  // away from what the person's actually looking at. Watches every existing
+  // .modal-bg/.sessions-overlay generically, so new ones need no extra wiring.
+  const modalObserver=new MutationObserver(muts=>{
+    muts.forEach(m=>{
+      if(m.attributeName==='class' && m.target.classList.contains('open') && autoScrollState.active){
+        stopAutoScroll();
+      }
+    });
+  });
+  document.querySelectorAll('.modal-bg, .sessions-overlay').forEach(el=>{
+    modalObserver.observe(el, {attributes:true, attributeFilter:['class']});
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════
+// INFINITE SCROLL — the 3-juz window (s6, shared by both apps)
+// ═══════════════════════════════════════════════════════════════════
+function _enforceMaxJuzLimit(contentEl, appendMode) {
+  if (_activeJuzs.length > 3) {
+    // _activeJuzs is always ascending regardless of growth direction, so array
+    // shape can't tell us which end just grew — use appendMode instead.
+    if (appendMode === 'prepend') {
+      _removeJuzFromDOM(contentEl, _activeJuzs.pop(), 'bottom');
+    } else if (appendMode === 'append') {
+      _removeJuzFromDOM(contentEl, _activeJuzs.shift(), 'top');
+    }
+  }
+}
+
+function _removeJuzFromDOM(contentEl, juzToRemove, position) {
+  const startPage = JUZ_PAGES[juzToRemove-1];
+  const endPage = juzToRemove < 30 ? JUZ_PAGES[juzToRemove]-1 : 604;
+  const pagesToRemove = [];
+  contentEl.querySelectorAll('.mushaf-page').forEach(el => {
+    const match = el.id.match(/^pg-(\d+)$/);
+    if (match) {
+      const pNum = parseInt(match[1]);
+      if (pNum >= startPage && pNum <= endPage) pagesToRemove.push(el);
+    }
+  });
+  if (position === 'top') {
+    // Measured first, removed after, and the new position is SET, not
+    // subtracted. The old loop read a rect between removals, forcing a layout
+    // per page; Chrome's own scroll anchoring moved scrollTop at each of those,
+    // and `scrollTop -= removedHeight` then moved it again — the view flashed
+    // ~20 pages back for a frame (measured 14 Oct). An absolute position is
+    // right whether or not the browser has already corrected (Safari has no
+    // scroll anchoring), the same as the prepend path.
+    let removedHeight = 0;
+    pagesToRemove.forEach(el => {
+      removedHeight += el.getBoundingClientRect().height;
+      removedHeight += parseInt(window.getComputedStyle(el).marginBottom || 0);
+    });
+    const keepTop = contentEl.scrollTop - removedHeight;
+    pagesToRemove.forEach(el => el.remove());
+    contentEl.scrollTop = keepTop;
+  } else {
+    pagesToRemove.forEach(el => el.remove());
+  }
+  // Keep pageVerses in sync with what's actually in the DOM — otherwise
+  // navigateToVerse's "already loaded" check can claim a verse is present
+  // when its page was just evicted, causing the scroll poll to spin forever.
+  pageVerses = pageVerses.filter(v => v.juz_number !== juzToRemove);
+}
+
+/* The reserved height for off-screen pages (content-visibility, see the CSS
+   "OFF-SCREEN MUSHAF PAGES" in the shared stylesheet). Read from a page on
+   screen, which is rendered, so it is the real height at the current zoom. */
+function _syncMushafPageBlockSize(contentEl){
+  const panel = contentEl || document.getElementById('pageContent');
+  if(!panel) return;
+  const pr = panel.getBoundingClientRect();
+  const pages = panel.querySelectorAll('.mushaf-page[id^="pg-"]:not([data-rendered="placeholder"])');
+  for(const el of pages){
+    const r = el.getBoundingClientRect();
+    if(r.bottom < pr.top || r.top > pr.bottom) continue;
+    if(r.height > 100) panel.style.setProperty('--tz-pg-h', Math.round(r.height) + 'px');
+    return;
   }
 }
 
@@ -1532,8 +1831,15 @@ function mushafBufferBlock(pg, heightPx, halfDeficitLines){
 const STANDARD_LINES_PER_PAGE = 15;
 
 const MSL_LINE_HEIGHT_EM = 2.55;
-
- // matches .msl{height:2.55em} in CSS
+/* s7: Line spacing (TehfizLines). "As printed" keeps 2.55em, the proportions of
+   the printed Madinah page and what paper always uses; "Compact" sets 2.2em,
+   measured 26 Oct to leave about .45em between the tallest marks of adjacent
+   lines. CSS reads --msl-h; every height calculation asks mslLineEm(). */
+const MSL_LINE_HEIGHT_COMPACT_EM = 2.2;
+function mslLineEm(){
+  return document.documentElement.getAttribute('data-tz-lines') === 'compact'
+    ? MSL_LINE_HEIGHT_COMPACT_EM : MSL_LINE_HEIGHT_EM;
+}
 
 function mushafPageHeader(pg,juzNum,vv){
   let pageJuz=juzNum;
@@ -1573,7 +1879,7 @@ function _pageNumLatin(){ return typeof appSettings !== 'undefined' && !!appSett
 
 function mushafPageFooter(pg){
   const p = _pagesLeftText(pg);
-  return`<div class="mushaf-page-footer"><span class="mpf-prog mpf-prog-l">${p.left}</span><span class="mpf-prog mpf-prog-r">${p.right}</span><div class="mpf-ornament">${ornamentSVG(pg+'a')}</div><div class="mpf-divider"></div><div class="mpf-num${_pageNumLatin()?'':' ar'}">${_pageNumLatin()?pg:toAr(pg)}</div><div class="mpf-divider"></div><div class="mpf-ornament">${ornamentSVG(pg+'b')}</div></div>`;
+  return`<div class="mushaf-page-footer"><span class="mpf-prog mpf-prog-l">${p.left}</span><span class="mpf-prog mpf-prog-r">${p.right}</span><div class="mpf-ornament">${ornamentSVG(pg+'a')}</div><div class="mpf-divider"></div><div class="mpf-num${_pageNumLatin()?'':' ar'}">${_pageNumLatin()?pg:toAr(pg)}</div><span class="mpf-juz">Juz ${juzOfPage(pg)}</span><div class="mpf-divider"></div><div class="mpf-ornament">${ornamentSVG(pg+'b')}</div></div>`;
 }
 
 // Applies the current zoom level's metrics to all rendered pages, and (re)registers
@@ -2618,7 +2924,7 @@ function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace
     { id:'graphite', name:'Graphite', note:'Default',  sw:['#17191c','#626973','#f5f5f3'] },
     { id:'lapis',    name:'Lapis',    note:'Blue accents',  sw:['#17191c','#3a5585','#f5f5f3'] },
     { id:'mulberry', name:'Mulberry', note:'Plum accents',  sw:['#17191c','#6a3f5c','#f5f5f3'] },
-    { id:'classic',  name:'Gold',     note:'Gold accents, serif type', sw:['#17191c','#b8841a','#f5f5f3'] }
+    { id:'classic',  name:'Gold',     note:'Gold accents, serif type', sw:['#17191c','#a38759','#f5f5f3'] }
   ];
   function valid(id){ return THEMES.some(function(t){ return t.id === id; }); }
   function get(){
@@ -2664,7 +2970,10 @@ function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace
 /* ═══ TehfizPageStyle ════════════════════════════════════════════════════
    How the mushaf page is framed: 'islimi' (default — the arabesque
    illumination drawn by tehfiz-ornament.js, with a shamsa medallion on the
-   opening pages) or 'quiet' (hairline frame, arch openings). 'madani', the
+   opening pages), 'quiet' (hairline frame, arch openings) or, since s7,
+   'continuous' (no frame, header or gap on screen: each page runs into the
+   next under a thin rule with its number, for unbroken reading and
+   autoscroll). Paper never uses 'continuous' (TehfizPrint). 'madani', the
    lattice style of s3, is read as 'islimi'.
    Storage key 'tehfiz_page_style', shared by both apps like the theme.
    Applied as <html data-tz-page>; everything it changes is CSS (see
@@ -2674,8 +2983,10 @@ function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace
   var KEY = 'tehfiz_page_style';
   var STYLES = [
     { id:'islimi', name:'Illuminated', note:'Arabesque border' },
-    { id:'quiet',  name:'Quiet',  note:'Hairline frame' }
+    { id:'quiet',  name:'Quiet',  note:'Hairline frame' },
+    { id:'continuous', name:'Continuous', note:'No page breaks' }
   ];
+  var printing = false;
   function valid(id){ return STYLES.some(function(t){ return t.id === id; }); }
   function get(){
     var t = null;
@@ -2683,12 +2994,19 @@ function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace
     if (t === 'madani') t = 'islimi';
     return valid(t) ? t : 'islimi';
   }
-  function apply(id){ document.documentElement.setAttribute('data-tz-page', id); }
+  function apply(id){
+    document.documentElement.setAttribute('data-tz-page', printing && id === 'continuous' ? 'islimi' : id);
+  }
   function set(id){
     if (!valid(id)) return;
+    var a = _tzCaptureWordAnchor();
     try { localStorage.setItem(KEY, id); } catch(e) {}
     apply(id); render();
+    // Page heights change with the style (Continuous drops header, footer
+    // and gap), so re-measure and put the reader back on the same place.
+    _tzRelayoutMushaf(a);
   }
+  function forPrint(on){ printing = !!on; apply(get()); }
   function render(){
     var el = document.getElementById('pageStyleChoice');
     if (!el) return;
@@ -2706,7 +3024,7 @@ function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace
   window.addEventListener('storage', function(e){ if (e.key === KEY) { apply(get()); render(); } });
   apply(get());
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', render); else render();
-  window.TehfizPageStyle = { get:get, set:set, render:render };
+  window.TehfizPageStyle = { get:get, set:set, render:render, forPrint:forPrint };
 })();
 
 /* ═══ TehfizMode ═════════════════════════════════════════════════════════
@@ -2730,8 +3048,18 @@ function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace
     return valid(t) ? t : 'light';
   }
   function isDark(){ var m = get(); return m === 'dark' || (m === 'device' && !!(mq && mq.matches)); }
+  /* Paper is white. The print stylesheets force a white page, but everything
+     cloned onto it still took the dark tokens — pale text and dark cards on
+     white (s5). So for the length of a print the page is in light mode, and
+     goes back afterwards. Covers every print path in both apps, including
+     Ctrl+P: the report, the parent report, the viewer's log, invoices. */
+  var printing = false;
+  function printLight(on){
+    printing = !!on;
+    apply();
+  }
   function apply(){
-    if (isDark()) document.documentElement.setAttribute('data-tz-mode', 'dark');
+    if (isDark() && !printing) document.documentElement.setAttribute('data-tz-mode', 'dark');
     else document.documentElement.removeAttribute('data-tz-mode');
     var meta = document.querySelector('meta[name="theme-color"]');
     if (meta) meta.setAttribute('content', getComputedStyle(document.documentElement).getPropertyValue('--chrome').trim() || '#17191c');
@@ -2760,7 +3088,135 @@ function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace
     if (mq.addEventListener) mq.addEventListener('change', on); else if (mq.addListener) mq.addListener(on); }
   apply();
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', render); else render();
-  window.TehfizMode = { get:get, set:set, isDark:isDark, render:render };
+  window.addEventListener('beforeprint', function(){ printLight(true); });
+  window.addEventListener('afterprint', function(){ printLight(false); });
+  /* afterprint is skipped by some browsers when the dialog is cancelled; the
+     next touch or key on the page puts the mode back in that case. */
+  ['pointerdown', 'keydown'].forEach(function(t){
+    document.addEventListener(t, function(){ if (printing) printLight(false); }, true);
+  });
+  window.TehfizMode = { get:get, set:set, isDark:isDark, render:render, printLight:printLight };
+})();
+
+/* ═══ TehfizLines ═══════════════════════════════════════════════════════
+   Line spacing (s7): 'printed' (default — the printed page's proportions,
+   2.55em lines) or 'compact' (2.2em, about 13% shorter pages; measured to keep
+   the tallest marks of adjacent lines apart). Storage key
+   'tehfiz_line_spacing', shared by both apps. Applied as
+   <html data-tz-lines="compact"> (absent = as printed); CSS reads --msl-h and
+   the Islimi frame switches to the copy drawn for the shorter page (ornament
+   o2). Paper always prints as printed (TehfizPrint). DOM: #lineSpacingChoice. */
+(function(){
+  var KEY = 'tehfiz_line_spacing';
+  var OPTS = [
+    { id:'printed', name:'As printed', note:'The printed page' },
+    { id:'compact', name:'Compact',    note:'About 13% shorter pages' }
+  ];
+  var printing = false;
+  function valid(id){ return OPTS.some(function(o){ return o.id === id; }); }
+  function get(){
+    var v = null;
+    try { v = localStorage.getItem(KEY); } catch(e) {}
+    return valid(v) ? v : 'printed';
+  }
+  function apply(id){
+    if (id === 'compact' && !printing) document.documentElement.setAttribute('data-tz-lines', 'compact');
+    else document.documentElement.removeAttribute('data-tz-lines');
+  }
+  function set(id){
+    if (!valid(id)) return;
+    var a = _tzCaptureWordAnchor();
+    try { localStorage.setItem(KEY, id); } catch(e) {}
+    apply(id); render();
+    _tzRelayoutMushaf(a);
+  }
+  function render(){
+    var el = document.getElementById('lineSpacingChoice');
+    if (!el) return;
+    var cur = get();
+    el.innerHTML = OPTS.map(function(o){
+      return '<button type="button" class="tz-theme-opt tz-lines-opt' + (o.id === cur ? ' on' : '') + '" data-tzl="' + o.id + '"' +
+        ' aria-pressed="' + (o.id === cur) + '"><span class="tz-lines-sw ' + o.id + '"></span>' +
+        '<span class="tz-theme-name">' + o.name + '<small>' + o.note + '</small></span></button>';
+    }).join('');
+  }
+  function forPrint(on){ printing = !!on; apply(get()); }
+  document.addEventListener('click', function(e){
+    var b = e.target.closest && e.target.closest('.tz-lines-opt');
+    if (b && b.dataset.tzl) set(b.dataset.tzl);
+  });
+  window.addEventListener('storage', function(e){ if (e.key === KEY) { apply(get()); render(); _tzRelayoutMushaf(null); } });
+  apply(get());
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', render); else render();
+  window.TehfizLines = { get:get, set:set, render:render, forPrint:forPrint };
+})();
+
+/* After a setting changes the height of every page (page style, line
+   spacing): re-measure buffers, frames and the reserved off-screen height,
+   then put the reader back on the place captured BEFORE the change.
+   applyMushafZoomToDOM restores its own anchor a frame later, taken after the
+   change, so ours is applied after that. */
+function _tzRelayoutMushaf(anchor){
+  if (typeof applyMushafZoomToDOM !== 'function' || typeof computeMushafZoomMetrics !== 'function') return;
+  if (!document.getElementById('pageContent')) return;
+  applyMushafZoomToDOM(computeMushafZoomMetrics());
+  if (anchor) requestAnimationFrame(function(){ requestAnimationFrame(function(){ _tzRestoreWordAnchor(anchor); }); });
+}
+/* The reader's place as the first word whose top is in view, and how far
+   down the view it sits. Zoom anchors on a fraction of the page, which is
+   right when everything scales together; a setting that drops the page header
+   or changes line spacing moves text within the page, so that fraction landed
+   a line off (measured 26 Oct). A word is exact. */
+function _tzCaptureWordAnchor(){
+  var panel = document.getElementById('pageContent');
+  if (!panel) return null;
+  var pr = panel.getBoundingClientRect();
+  var words = panel.querySelectorAll('.qcf-word');
+  for (var i = 0; i < words.length; i++) {
+    var r = words[i].getBoundingClientRect();
+    if (r.height && r.top >= pr.top) return { el: words[i], off: r.top - pr.top };
+  }
+  return null;
+}
+function _tzRestoreWordAnchor(a){
+  var panel = document.getElementById('pageContent');
+  if (!panel || !a || !a.el || !a.el.isConnected) return;
+  var pr = panel.getBoundingClientRect();
+  panel.scrollTop += (a.el.getBoundingClientRect().top - pr.top) - a.off;
+}
+
+/* ═══ TehfizPrint ═══════════════════════════════════════════════════════
+   What paper always gets, whatever is chosen on screen (s7): light colours,
+   framed pages (Continuous prints as Illuminated), lines as printed.
+   begin()/end() wrap a print; the report builder calls them itself because
+   it measures pages while building, before the dialog opens. Ctrl+P is
+   covered by beforeprint/afterprint, and a cancelled dialog that skips
+   afterprint by the next key or touch, as in TehfizMode. */
+(function(){
+  var on = false, anchor = null;
+  function begin(){
+    if (on) return;
+    on = true;
+    anchor = _tzCaptureWordAnchor();
+    if (window.TehfizMode && TehfizMode.printLight) TehfizMode.printLight(true);
+    if (window.TehfizPageStyle) TehfizPageStyle.forPrint(true);
+    if (window.TehfizLines) TehfizLines.forPrint(true);
+  }
+  function end(){
+    if (!on) return;
+    on = false;
+    if (window.TehfizMode && TehfizMode.printLight) TehfizMode.printLight(false);
+    if (window.TehfizPageStyle) TehfizPageStyle.forPrint(false);
+    if (window.TehfizLines) TehfizLines.forPrint(false);
+    _tzRelayoutMushaf(anchor);
+    anchor = null;
+  }
+  window.addEventListener('beforeprint', begin);
+  window.addEventListener('afterprint', end);
+  ['pointerdown', 'keydown'].forEach(function(t){
+    document.addEventListener(t, function(){ if (on) end(); }, true);
+  });
+  window.TehfizPrint = { begin:begin, end:end, active:function(){ return on; } };
 })();
 
 /* Pages 1-2 keep the height of every other page. Their spacer blocks were
@@ -2781,7 +3237,7 @@ function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace
     var used = 0;
     for (var i = 0; i < bufs.length; i++) used += bufs[i].getBoundingClientRect().height;
     var inner = body.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
-    var spare = Math.max(0, STANDARD_LINES_PER_PAGE * MSL_LINE_HEIGHT_EM * font - (inner - used));
+    var spare = Math.max(0, STANDARD_LINES_PER_PAGE * mslLineEm() * font - (inner - used));
     var top = Math.round(spare / 2), want = [top, Math.round(spare - top)];
     for (var j = 0; j < bufs.length && j < 2; j++) {
       if (Math.abs(bufs[j].getBoundingClientRect().height - want[j]) >= 1) bufs[j].style.height = want[j] + 'px';

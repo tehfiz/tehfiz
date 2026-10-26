@@ -26,7 +26,7 @@
    ═══════════════════════════════════════════════════════════════════════ */
 (function () {
 'use strict';
-const TEHFIZ_HEADER_VERSION = 'h3';
+const TEHFIZ_HEADER_VERSION = 'h4';
 
 let cfg = { items: () => [], who: () => null, shortcuts: () => [] };
 let menuOpen = false, viewOpen = false, gotoOpen = false;
@@ -290,7 +290,12 @@ function gotoHtml() {
       '<div class="tzh-grab"></div>' +
       '<div class="tzh-sheet-head"><h2 id="tzhGtTitle">Go to</h2>' +
         '<button class="tzh-x tzh-x-light" type="button" data-tzh="close" aria-label="Close">' + icon('close', 16) + '</button></div>' +
-      '<label class="tzh-f">Juz<select id="tzhGtJuz">' + juzOpts + '</select></label>' +
+      /* h4: picking the juz already shown in a <select> fires no change, so
+         the start of the current juz gets its own button. */
+      '<div class="tzh-f"><span>Juz</span><div style="display:flex;gap:8px;align-items:center;">' +
+        '<select id="tzhGtJuz" aria-label="Juz" style="flex:1;min-width:0;">' + juzOpts + '</select>' +
+        '<button class="tzh-chip" type="button" data-tzh="juzstart" style="flex:none;">Start of Juz ' + curJuz() + '</button>' +
+      '</div></div>' +
       '<div class="tzh-f2">' +
         '<div class="tzh-f"><span>Surah</span>' + surBox + '</div>' +
         '<label class="tzh-f">Ayah<input id="tzhGtAyah" type="number" inputmode="numeric" min="1" max="' +
@@ -400,6 +405,12 @@ function onRootClick(e) {
     if (_gtMode === 'page') { const pg = gtPageVal(); closeGoto(); jumpToPageFromInput(pg); return; }
     const s = +$('tzhGtSurah').value || 1, a = +$('tzhGtAyah').value || 1;
     closeGoto(); goVerse(s, a); return;
+  }
+  if (act === 'juzstart') {
+    const j = curJuz();
+    closeGoto();
+    if (typeof goToJuz === 'function') goToJuz(j);
+    return;
   }
   if (act === 'sc') {
     const x = _shortcuts[+t.dataset.i];
