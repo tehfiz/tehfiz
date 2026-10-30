@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ═══════════════════════════════════════════════════════════════════
-     Tehfiz teacher app — v4_321
+     Tehfiz teacher app — v4_322
      Deployed from the `tehfiz` repo at app/teacher/index.html (the repo root
      is the web root). Locally, tehfiz-api/public/ is a clone of that repo:
      test with `npm run dev`, then commit and push from inside public/.
@@ -2620,7 +2620,7 @@ body.compact-ui .quick-form::before{
    console as APP_VERSION, or grep the deployed HTML for it. Bumped on every
    saved build; vcheck.py asserts it matches the filename, so a forgotten bump
    fails the integrity check rather than shipping a lie. */
-const APP_VERSION = 'v4_321';
+const APP_VERSION = 'v4_322';
 window.APP_VERSION = APP_VERSION;
 console.info('Tehfiz teacher app ' + APP_VERSION);
 
@@ -13985,7 +13985,9 @@ function hoursPanel(s) {
  */
 function managePanel(s) {
   if (managingAct === 'hours') return hoursPanel(s);
-  const claimed = !!s.claimed_at;
+  // The roster carries `claimed` (a boolean from GET /api/students), not
+  // claimed_at — reading claimed_at left Reset PIN disabled for everyone.
+  const claimed = !!s.claimed;
   if (managingAct === 'pin') {
     return '<div class="tsy-manage"><div class="tsy-danger">' +
       '<strong>Reset the PIN for ' + esc(s.name || s.code) + '?</strong>' +
@@ -14150,7 +14152,7 @@ document.addEventListener('click', async (e) => {
     try {
       await api('/api/students/' + encodeURIComponent(id) + '/reset-pin', { method: 'POST' });
       const s = studentById(id);
-      if (s) s.claimed_at = null;
+      if (s) s.claimed = false;
       saveRoster(); managingAct = null; render();
       toast('PIN reset — they set a new one next time they log in');
     } catch (err) { showError('Could not reset the PIN: ' + err.message); }
@@ -14160,7 +14162,7 @@ document.addEventListener('click', async (e) => {
     try {
       const r = await api('/api/students/' + encodeURIComponent(id) + '/rotate', { method: 'POST' });
       const s = studentById(id);
-      if (s) { s.code = r.code; s.claimed_at = null; }
+      if (s) { s.code = r.code; s.claimed = false; }
       saveRoster(); rebind(); managingAct = null; render();
       toast('New code: ' + r.code + ' — PIN cleared, old code no longer works');
     } catch (err) { showError('Could not change the code: ' + err.message); }
