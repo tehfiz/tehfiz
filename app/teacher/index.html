@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ═══════════════════════════════════════════════════════════════════
-     Tehfiz teacher app — v4_318
+     Tehfiz teacher app — v4_321
      Deployed from the `tehfiz` repo at app/teacher/index.html (the repo root
      is the web root). Locally, tehfiz-api/public/ is a clone of that repo:
      test with `npm run dev`, then commit and push from inside public/.
@@ -15,8 +15,8 @@
 (function(){try{var d=document.documentElement,t=localStorage.getItem('tehfiz_theme'),m=localStorage.getItem('tehfiz_mode');
 if(t==='classic'||t==='lapis'||t==='mulberry')d.setAttribute('data-tz-theme',t);
 if(m==='dark'||(m==='device'&&window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches))d.setAttribute('data-tz-mode','dark');}catch(e){}})();</script>
-<link rel="stylesheet" href="/app/shared/tehfiz-shared.css?v=s8">
-<script src="/app/shared/tehfiz-shared.js?v=s7"></script>
+<link rel="stylesheet" href="/app/shared/tehfiz-shared.css?v=s10">
+<script src="/app/shared/tehfiz-shared.js?v=s9"></script>
 <script src="/app/shared/tehfiz-ornament.js?v=o2"></script>
 <script src="/app/shared/tehfiz-header.js?v=h4"></script>
 <script src="/app/shared/tehfiz-pwa.js?v=p2"></script>
@@ -1832,7 +1832,11 @@ body.compact-ui .quick-form::before{
       title="Drag to resize the page"
       style="width:110px;accent-color:var(--chrome-accent);vertical-align:middle;cursor:pointer;">
     <button class="vc-btn vc-zoom-btn" onclick="changeMushafZoom(1)" title="Enlarge page">+</button>
-    <button class="vc-btn vc-zoom-btn" onclick="fitMushafToScreen()" title="Fit entire page to screen height">Fit</button>
+    <button class="vc-btn vc-zoom-btn" onclick="fitMushafToScreen()" title="Fit the page to the full width">Fit</button>
+  </div>
+  <div class="view-controls" id="pagesControls">
+    <span class="tzh-vp-l">PAGES</span>
+    <div id="viewPagesChoice" class="tz-vseg-row" role="group" aria-label="Page layout"></div>
   </div>
   <div class="view-controls" id="autoscrollControls">
     <span class="tzh-vp-l">AUTO-SCROLL</span>
@@ -2616,7 +2620,7 @@ body.compact-ui .quick-form::before{
    console as APP_VERSION, or grep the deployed HTML for it. Bumped on every
    saved build; vcheck.py asserts it matches the filename, so a forgotten bump
    fails the integrity check rather than shipping a lie. */
-const APP_VERSION = 'v4_318';
+const APP_VERSION = 'v4_321';
 window.APP_VERSION = APP_VERSION;
 console.info('Tehfiz teacher app ' + APP_VERSION);
 
@@ -3955,32 +3959,7 @@ let _mushafZoomBatchToken = 0;
    pause and its listeners) is in /app/shared/tehfiz-shared.js since s6. This
    app only sets autoScrollState.pausedQuickForm around the mark-mistake form. */
 
-function fitMushafToScreen(){
-  const panel=document.getElementById('pageContent');
-  if(!panel){ return; }
-  if(!document.querySelector('.mushaf-page.mushaf-fixed')){ showToast('Load the Mushaf first'); return; }
-  // Height renders reliably from known constants (15 lines × line-height + fixed
-  // chrome), so we can solve directly for the font size that fits panel.clientHeight,
-  // then convert that back to a zoom level — no DOM sampling, no proportional
-  // guessing from a potentially-unrepresentative page.
-  const viewportH = panel.clientHeight;
-  // Fixed (non-scaling) chrome: header + footer + page-body top/bottom padding/border.
-  // Measured from a real rendered header/footer; conservative estimate otherwise.
-  const headerEl = document.querySelector('.mushaf-page-header');
-  const footerEl = document.querySelector('.mushaf-page-footer');
-  const fixedChrome = (headerEl?.offsetHeight||34) + (footerEl?.offsetHeight||32) + 20 /*body padding*/ + 24 /*outer margin*/;
-  const availableForLines = Math.max(50, viewportH - fixedChrome);
-  const targetFont = availableForLines / (STANDARD_LINES_PER_PAGE * mslLineEm());
-  // Convert target font back to an equivalent width, then to a zoom level.
-  const targetWidth = targetFont * MUSHAF_REF_WIDTH / MUSHAF_REF_FONT;
-  const cs = getComputedStyle(panel);
-  const viewportW = Math.max(100, panel.clientWidth - (parseFloat(cs.paddingLeft)||0) - (parseFloat(cs.paddingRight)||0));
-  const targetWidthPct = Math.max(MUSHAF_ZOOM_MIN_PCT, Math.min(MUSHAF_ZOOM_MAX_PCT, targetWidth / viewportW * 100));
-  const targetLevel = Math.round((targetWidthPct - MUSHAF_ZOOM_BASE_PCT) / MUSHAF_ZOOM_STEP_PCT);
-  mushafZoomLevel = targetLevel;
-  applyMushafZoomToDOM(computeMushafZoomMetrics());
-  showToast('Fit to screen ✓');
-}
+/* fitMushafToScreen (Fit to width) is in the shared file since s9. */
 
 function rerender() {
   {

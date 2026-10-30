@@ -581,12 +581,33 @@ body.compact-ui .mushaf-page-body{--band:.16em!important;}
 :root[data-tz-page="continuous"] #pageContent .mushaf-page-header{display:none;}
 :root[data-tz-page="continuous"] #pageContent .mushaf-page-body{margin-top:0!important;margin-bottom:0!important;
   padding-top:.3em!important;padding-bottom:.15em!important;border:none!important;}
-:root[data-tz-page="continuous"] #pageContent .mushaf-page-footer{height:calc(var(--mz-footer-height,32px) * .7);
+:root[data-tz-page="continuous"] #pageContent .mushaf-page-footer{height:calc(var(--mz-footer-height,32px) * .8);
   align-items:center;gap:.7em;padding:0 var(--mz-footer-num-pad,14px);}
-:root[data-tz-page="continuous"] #pageContent .mpf-prog,
 :root[data-tz-page="continuous"] #pageContent .mpf-ornament svg{display:none;}
+/* css s10: the page-progress texts ride the hairline, in line at either end
+   (pages to the end of the surah / of the juz), instead of sitting over the
+   ornaments. "Juz N" only shows when progress is off (Settings) or empty. */
+:root[data-tz-page="continuous"] #pageContent .mpf-prog{position:static;transform:none;background:none;padding:0;
+  flex:0 1 auto;min-width:0;max-width:38%;color:var(--ink3);}
+:root[data-tz-page="continuous"] #pageContent .mpf-prog:empty{display:none;}
+:root[data-tz-page="continuous"] #pageContent .mpf-prog-l{order:0;}
+:root[data-tz-page="continuous"] #pageContent .mpf-ornament{order:1;}
+:root[data-tz-page="continuous"] #pageContent .mpf-num,
+:root[data-tz-page="continuous"] #pageContent .mpf-divider{order:2;}
+:root[data-tz-page="continuous"] #pageContent .mpf-juz{order:3;}
+:root[data-tz-page="continuous"] #pageContent .mpf-ornament:last-child{order:4;}
+:root[data-tz-page="continuous"] #pageContent .mpf-prog-r{order:5;}
+:root[data-tz-page="continuous"] #pageContent .mushaf-page-footer:has(.mpf-prog:not(:empty)) .mpf-juz{display:none;}
 :root[data-tz-page="continuous"] #pageContent .mpf-ornament{visibility:visible;flex:1;height:1px;padding:0;
   background:color-mix(in srgb,var(--frame) 32%,transparent);}
 :root[data-tz-page="continuous"] #pageContent .mpf-num{padding:0;color:var(--ink3);font-weight:500;}
 :root[data-tz-page="continuous"] #pageContent .mpf-juz{display:inline;font-family:var(--ui-font);
   font-size:var(--mz-footer-prog,10px);color:var(--ink3);letter-spacing:.04em;white-space:nowrap;}
+
+/* View popover (css s9): PAGES — Framed / Continuous, a two-button switch on
+   the chrome, the same setting as Settings → Display → Page style. */
+.tzh-viewpop .tz-vseg-row{display:flex;gap:0;}
+.tzh-viewpop .tz-vseg{padding:0 12px;border-radius:0;}
+.tzh-viewpop .tz-vseg:first-child{border-radius:6px 0 0 6px;}
+.tzh-viewpop .tz-vseg:last-child{border-radius:0 6px 6px 0;margin-left:-1px;}
+.tzh-viewpop .tz-vseg[aria-pressed="true"]{background:var(--chrome-accent);color:var(--chrome);border-color:var(--chrome-accent);font-weight:600;}
