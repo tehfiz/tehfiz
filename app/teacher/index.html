@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ═══════════════════════════════════════════════════════════════════
-     Tehfiz teacher app — v4_322
+     Tehfiz teacher app — v4_325
      Deployed from the `tehfiz` repo at app/teacher/index.html (the repo root
      is the web root). Locally, tehfiz-api/public/ is a clone of that repo:
      test with `npm run dev`, then commit and push from inside public/.
@@ -15,8 +15,8 @@
 (function(){try{var d=document.documentElement,t=localStorage.getItem('tehfiz_theme'),m=localStorage.getItem('tehfiz_mode');
 if(t==='classic'||t==='lapis'||t==='mulberry')d.setAttribute('data-tz-theme',t);
 if(m==='dark'||(m==='device'&&window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches))d.setAttribute('data-tz-mode','dark');}catch(e){}})();</script>
-<link rel="stylesheet" href="/app/shared/tehfiz-shared.css?v=s10">
-<script src="/app/shared/tehfiz-shared.js?v=s9"></script>
+<link rel="stylesheet" href="/app/shared/tehfiz-shared.css?v=s12">
+<script src="/app/shared/tehfiz-shared.js?v=s12"></script>
 <script src="/app/shared/tehfiz-ornament.js?v=o2"></script>
 <script src="/app/shared/tehfiz-header.js?v=h4"></script>
 <script src="/app/shared/tehfiz-pwa.js?v=p2"></script>
@@ -1628,6 +1628,33 @@ body.seg-arming .word-btn:hover,body.seg-arming .qcf-word:hover{outline:2px soli
 .spot-outcome-btn.sel-partial{background:var(--amber-bg);color:var(--amber);border-color:var(--amber);font-weight:600;}
 .spot-outcome-btn.sel-fail{background:var(--red-bg);color:var(--red);border-color:var(--red);font-weight:600;}
 .spot-mistake-count{font-size:11px;color:var(--ink3);font-family:'IBM Plex Mono',monospace;margin-top:2px;}
+/* v4_325 spot panel: surah heading per run, range on the card's top line,
+   Pass/Partial/Fail as one joined control whose choice fills solid, quieter
+   finished cards, plain-case labels, no keyboard hints on phones. */
+.spot-group{display:flex;align-items:baseline;gap:8px;margin:12px 2px 6px;font:600 13px var(--ui-font);color:var(--ink);}
+.spot-group:first-child{margin-top:2px;}
+.spot-group span{font-weight:400;color:var(--ink3);font-size:12px;}
+.spot-card{padding:9px 10px;border-radius:10px;}
+.spot-card-head{gap:6px;margin-bottom:7px;flex-wrap:wrap;}
+.spot-card-head .spot-num{font:600 12px 'IBM Plex Mono',monospace;background:var(--parchment3);color:var(--ink2);border-radius:5px;padding:1px 6px;}
+.spot-card.active-spot .spot-num{background:var(--spot-blue);color:#fff;}
+.spot-card-head .spot-range-start{font:500 14px var(--ui-font);}
+.spot-outcome-row{gap:0;}
+.spot-outcome-btn{border-radius:0;padding:7px 0;font-size:13px;background:var(--parchment);margin-left:-1px;}
+.spot-outcome-btn:first-child{border-radius:7px 0 0 7px;margin-left:0;}
+.spot-outcome-btn:last-child{border-radius:0 7px 7px 0;}
+.spot-outcome-btn.sel-pass{background:var(--green);color:#fff;border-color:var(--green);position:relative;z-index:1;}
+.spot-outcome-btn.sel-partial{background:var(--amber);color:#fff;border-color:var(--amber);position:relative;z-index:1;}
+.spot-outcome-btn.sel-fail{background:var(--red);color:#fff;border-color:var(--red);position:relative;z-index:1;}
+.spot-outcome-btn.rec{position:relative;z-index:1;}
+.spot-card.outcome-pass,.spot-card.outcome-partial,.spot-card.outcome-fail{border-left-width:.5px;}
+.spot-card.outcome-pass:not(.active-spot),.spot-card.outcome-partial:not(.active-spot),.spot-card.outcome-fail:not(.active-spot){opacity:.78;}
+.spot-mistake-count{font:12px var(--ui-font);color:var(--red);margin-top:6px;}
+.spot-cfg-label{text-transform:none;letter-spacing:0;}
+body.compact-ui .kbd-hint{display:none;}
+/* v4_325 session panel: a little more air in the segment box. */
+.seg-row{padding-top:8px;padding-bottom:8px;}
+.seg-row-line{gap:7px;}
 /* Spot nav strip — bottom of panel */
 .spot-nav{flex-shrink:0;padding:7px 10px;border-top:1px solid var(--border2);background:var(--parchment);display:flex;align-items:center;gap:5px;}
 .spot-nav-btn{flex:0 0 auto;white-space:nowrap;padding:5px 8px;border-radius:5px;border:.5px solid var(--border2);font-family:var(--ui-font);font-size:12px;cursor:pointer;background:var(--parchment2);color:var(--ink2);text-align:center;transition:background .12s;white-space:nowrap;}
@@ -1798,7 +1825,7 @@ body.compact-ui .quick-form::before{
     <span class="tzh-goto-txt"><span class="tzh-goto-main" id="tzhGotoMain">&mdash;</span><span class="tzh-goto-sub" id="tzhGotoSub"></span></span>
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
   <span class="tzh-spacer"></span>
-  <span id="tzhAsWrap"><button class="vc-btn" id="asToggleBtn" data-keep-icon="1" onclick="toggleAutoScroll()" title="Auto-scroll (a)" aria-label="Auto-scroll"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 11l5-5 5 5M7 18l5-5 5 5"/></svg><span class="as-bar-spd" id="asBarSpeed">1x</span></button></span>
+  <span id="tzhAsWrap"><button class="vc-btn" id="asToggleBtn" data-keep-icon="1" onclick="toggleAutoScroll()" title="Auto-scroll (a)" aria-label="Auto-scroll"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 11l5-5 5 5M7 18l5-5 5 5"/></svg><span class="as-bar-spd" id="asBarSpeed">1.00x</span></button></span>
   <button class="tzh-btn" id="tzhViewBtn" type="button" aria-haspopup="true" aria-expanded="false" onclick="TehfizHeader.toggleView()">View <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
   <span class="tzh-vsep"></span>
   <button class="tzh-btn tzh-roomy" type="button" data-tzh-bar="students" onclick="TehfizSync.open()" title="Students, codes and sending">Students</button>
@@ -1847,7 +1874,7 @@ body.compact-ui .quick-form::before{
       title="Drag to change auto-scroll speed"
       style="width:110px;accent-color:var(--chrome-accent);vertical-align:middle;cursor:pointer;">
     <button class="vc-btn" id="asFaster" onclick="changeAutoScrollSpeed(AUTOSCROLL_STEP)" title="Faster (d)">+</button>
-    <span class="vc-label" id="asSpeedLabel">1x</span>
+    <span class="vc-label" id="asSpeedLabel">1.00x</span>
   </div>
 </div>
 <!-- The hint bar is gone: TehfizTour covers "tap any Arabic word to mark a
@@ -1859,7 +1886,7 @@ body.compact-ui .quick-form::before{
   <!-- SPOT TESTING LEFT PANEL -->
   <div class="spot-panel collapsed" id="spotPanel">
     <div class="spot-panel-head">
-      <span class="spot-panel-title">🎲 Spot Testing</span>
+      <span class="spot-panel-title">Spot testing</span>
       <div style="display:flex;gap:4px;align-items:center;">
         <button class="spot-panel-close" onclick="collapseSpotPanel()" title="Minimise to bar">−</button>
         <button class="spot-panel-close" onclick="closeSpotTesting()" title="End spot testing">✕</button>
@@ -1906,12 +1933,12 @@ body.compact-ui .quick-form::before{
       <div class="spot-list" id="spotList"></div>
       <!-- Bottom nav strip -->
       <div class="spot-nav" id="spotNav">
-        <button class="spot-nav-btn" id="spotPrevBtn" onclick="goToSpot(spotState.currentIndex - 1)" disabled title="Previous spot [ ]">[ ← Spot</button>
+        <button class="spot-nav-btn" id="spotPrevBtn" onclick="goToSpot(spotState.currentIndex - 1)" disabled title="Previous spot [ ]"><span class="kbd-hint">[ </span>← Spot</button>
         <div class="spot-nav-info">
           <span id="spotNavLabel">—</span>
           <span class="spot-score" id="spotNavScore"></span>
         </div>
-        <button class="spot-nav-btn" id="spotNextBtn" onclick="goToSpot(spotState.currentIndex + 1)" title="Next spot ] ">Spot → ]</button>
+        <button class="spot-nav-btn" id="spotNextBtn" onclick="goToSpot(spotState.currentIndex + 1)" title="Next spot ] ">Spot →<span class="kbd-hint"> ]</span></button>
       </div>
     </div>
   </div>
@@ -2291,7 +2318,7 @@ body.compact-ui .quick-form::before{
         <div id="interventionGuide" style="display:flex;flex-direction:column;gap:7px;font-size:13px;">
           <div style="display:flex;gap:9px;align-items:flex-start;padding:7px 10px;background:var(--green-bg);border-radius:6px;border-left:3px solid var(--green);">
             <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:700;color:var(--green);flex-shrink:0;padding-top:2px;white-space:nowrap;">Level 0</span>
-            <div><strong style="color:var(--green);">No intervention</strong> — No help was given. The student either self-corrected, moved past it, or the teacher chose not to step in. (Leave intervention blank to log Level 0.)</div>
+            <div><strong style="color:var(--green);">None</strong> — No help was given. The student either self-corrected, moved past it, or the teacher chose not to step in. (Leave intervention blank to log Level 0.)</div>
           </div>
           <div style="display:flex;gap:9px;align-items:flex-start;padding:7px 10px;background:var(--lvl1-yellow-bg);border-radius:6px;border-left:3px solid var(--lvl1-yellow);">
             <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:700;color:var(--lvl1-ink);flex-shrink:0;padding-top:2px;white-space:nowrap;">Level 1</span>
@@ -2620,7 +2647,7 @@ body.compact-ui .quick-form::before{
    console as APP_VERSION, or grep the deployed HTML for it. Bumped on every
    saved build; vcheck.py asserts it matches the filename, so a forgotten bump
    fails the integrity check rather than shipping a lie. */
-const APP_VERSION = 'v4_322';
+const APP_VERSION = 'v4_325';
 window.APP_VERSION = APP_VERSION;
 console.info('Tehfiz teacher app ' + APP_VERSION);
 
@@ -3669,8 +3696,8 @@ function renderMistakeTypesGuide(){
       ? 'Any mistake that doesn\'t fit the active types — type a short label in the text field.'
       : 'Custom mistake type — added in Settings.');
     const badgeStyle=typeBadgeStyle(null,t.id);
-    const borderColor=t.id==='other' ? 'var(--border2)' : t.color;
-    return `<div style="display:flex;gap:9px;align-items:flex-start;padding:7px 10px;border-radius:6px;background:${t.id==='other'?'var(--parchment3)':t.bgColor};border-left:3px solid ${borderColor};"><span class="m-badge" style="${badgeStyle}flex-shrink:0;margin-top:1px;">${esc(t.label)}</span><span style="color:var(--ink2);">${esc(desc)}</span></div>`;
+    // s11: types are told apart by category in ink, not by colour.
+    return `<div style="display:flex;gap:9px;align-items:flex-start;padding:7px 10px;border-radius:6px;background:var(--parchment2);border-left:3px solid var(--border2);"><span class="m-badge" style="${badgeStyle}flex-shrink:0;margin-top:1px;">${esc(t.label)}</span><span style="color:var(--ink2);">${esc(desc)}</span></div>`;
   };
   let html='';
   ['tehfiz','tajweed'].forEach(cat=>{
@@ -5890,7 +5917,7 @@ function renderSegments(){
       return `<div class="seg-row collapsed${spot?' spot':''}" onclick="setActiveSegment('${raw.id}')"
                    title="Tap to make this the active segment">
         <span class="seg-ord">${i+1}</span>
-        <span class="seg-mode ${spot?'spot':'recite'}">${spot?'🎲':'📖'}</span>
+        <span class="seg-mode ${spot?'spot':'recite'}">${spot?'Spot':'Recite'}</span>
         <span class="seg-collapsed-label">${esc(label)}</span>
         <span class="seg-collapsed-meta">${n?`${n}v`:''}${spot&&raw.spotsData?.length?` · ${raw.spotsData.length} spots`:''}</span>
       </div>`;
@@ -5901,7 +5928,7 @@ function renderSegments(){
       <div class="seg-row-line">
         ${multi?`<span class="seg-ord">${i+1}</span>`:''}
         ${isActive&&multi?`<span class="seg-live" title="Active">●</span>`:''}
-        <span class="seg-mode ${spot?'spot':'recite'}">${spot?'🎲 Spot':'📖 Recite'}</span>
+        <span class="seg-mode ${spot?'spot':'recite'}">${spot?'Spot':'Recite'}</span>
         <label class="seg-lbl">Stage</label>
         <select class="seg-type" onclick="event.stopPropagation()" onchange="setSegmentType('${raw.id}',this.value)">
           ${types.map(t=>`<option value="${t.id}"${t.id===raw.type?' selected':''}>${t.label}</option>`).join('')}
@@ -6375,7 +6402,7 @@ function renderTypeButtons(){
     const alt = others[i];
     return `<button class="type-btn${qfPeek?' type-btn-peek':''}" data-t="${t.id}"` +
       (alt ? ` data-alt="${alt.id}"` : '') +
-      ` style="--type-color:${t.color};--type-bg:${t.bgColor};" onclick="selType(this)">` +
+      ` style="--type-color:var(--ink);--type-bg:var(--parchment3);" onclick="selType(this)">` +
       `${i+1}. ${t.label}` +
       (alt ? `<span class="type-btn-alt">${alt.label}</span>` : '') +
       `</button>`;
@@ -7431,6 +7458,10 @@ function setListFilter(k){
 }
 
 function renderMistakesList(){
+  // The phone's panel button carries the mistake count (s10), so the teacher
+  // sees it without opening the panel. Empty → the badge hides itself.
+  const _fb=document.getElementById('panelFabBadge');
+  if(_fb) _fb.textContent=mistakes.length?String(mistakes.length):'';
   const list=document.getElementById('mistakesList');
   if(!mistakes.length){list.innerHTML=`<div class="empty-hint"><span class="arrow">↑</span>Tap any Arabic word to log a mistake</div>`;return;}
   const shown = _listFilter
@@ -7553,7 +7584,7 @@ function renderEditTypeButtons(selectedId){
     const list=mistakeTypesActive.filter(t=>t.category===cat && (_isCustomType(t.id)?t.active!==false:true));
     if(!list.length) return;
     html+=`<div class="edit-type-cat-label">${TYPE_CATEGORY_LABELS[cat]}</div>`;
-    html+=list.map((t,i)=>`<button class="edit-type-btn${t.id===selectedId?' sel':''}" data-t="${t.id}" data-cat="${cat}" style="--type-color:${t.color};--type-bg:${t.bgColor};" onclick="editSelType(this)"><span class="etb-key">${cat==='tajweed'?'⇧':''}${i+1}</span>${t.label}</button>`).join('');
+    html+=list.map((t,i)=>`<button class="edit-type-btn${t.id===selectedId?' sel':''}" data-t="${t.id}" data-cat="${cat}" style="--type-color:var(--ink);--type-bg:var(--parchment3);" onclick="editSelType(this)"><span class="etb-key">${cat==='tajweed'?'⇧':''}${i+1}</span>${t.label}</button>`).join('');
   });
   html+=`<div class="edit-type-cat-label">Other</div>`;
   html+=`<button class="edit-type-btn${selectedId==='other'?' sel':''}" data-t="other" data-cat="other" onclick="editSelType(this)">Other</button>`;
@@ -9498,7 +9529,6 @@ function toggleMobilePanel(){
     // FAB: hide when open (CSS .panel-open class handles it), show text when toggled
     const fab=document.getElementById('panelToggleBtn');
     fab.classList.toggle('panel-open',open);
-    fab.textContent='📋';
   }
 }
 function closeMobilePanel(){
@@ -9507,7 +9537,6 @@ function closeMobilePanel(){
   document.getElementById('panelBackdrop').classList.remove('open');
   const fab=document.getElementById('panelToggleBtn');
   fab.classList.remove('panel-open');
-  fab.textContent='📋';
 }
 function openMobilePanel(){
   if(!isMobile()) return;
@@ -10096,13 +10125,13 @@ function syncBottomBar(){
   const nextBtn = document.getElementById('spotBarNext');
   if(idx >= 0 && idx < total){
     const s = spotState.spots[idx];
-    labelEl.textContent = `🎲 Spot ${idx+1}/${total} — ${s.surahName} ${s.surah}:${s.ayah}`;
+    labelEl.textContent = `Spot ${idx+1}/${total} — ${s.surahName} ${s.surah}:${s.ayah}`;
     // Sync outcome button states
     ['pass','partial','fail'].forEach(o=>{
       document.getElementById(`sbb-${o}`)?.classList.toggle(`sel-${o}`, s.outcome===o);
     });
   } else {
-    labelEl.textContent = `🎲 Spot Testing — ${total} spots`;
+    labelEl.textContent = `Spot testing — ${total} spots`;
   }
   const {pass,partial,fail} = spotTally(spotState.spots);
   scoreEl.textContent = `✓${pass} ~${partial} ✗${fail} of ${total}`;
@@ -10674,9 +10703,14 @@ function reconfigureSpots(){
 function renderSpotList(){
   const list = document.getElementById('spotList');
   if(!spotState.spots.length){ list.innerHTML='<div class="empty-hint">No spots yet.</div>'; return; }
-  const outcomeLabel = {pass:'✓ Pass', partial:'~ Partial', fail:'✗ Fail'};
+  const outcomeLabel = {pass:'Pass', partial:'Partial', fail:'Fail'};
   const outcomeSelClass = {pass:'sel-pass', partial:'sel-partial', fail:'sel-fail'};
+  // v4_325: one heading per run of spots in the same surah, instead of the
+  // surah name repeated on every card.
+  const runCount = (i) => { let n=0; for(let k=i;k<spotState.spots.length && spotState.spots[k].surahName===spotState.spots[i].surahName;k++) n++; return n; };
   list.innerHTML = spotState.spots.map((s,i) => {
+    const groupHead = (i===0 || spotState.spots[i-1].surahName!==s.surahName)
+      ? `<div class="spot-group">${s.surahName} <span>${runCount(i)} spot${runCount(i)===1?'':'s'}</span></div>` : '';
     const isActive = i === spotState.currentIndex;
     const oClass = s.outcome ? `outcome-${s.outcome}` : '';
     // Only the spot being recited gets a live reading. Scoring the others from
@@ -10684,22 +10718,18 @@ function renderSpotList(){
     const live = (isActive && !s.outcome) ? spotLiveStrength(i) : null;
     const rec  = live ? spotRecommendedOutcome(live.score) : null;
     const recCls = o => (rec === o && !s.outcome) ? ' rec' : '';
-    return `<div class="spot-card${isActive?' active-spot':''} ${oClass}" id="spot-card-${i}" onclick="goToSpot(${i})">
+    return `${groupHead}<div class="spot-card${isActive?' active-spot':''} ${oClass}" id="spot-card-${i}" onclick="goToSpot(${i})">
       <div class="spot-card-head">
         <span class="spot-num">#${i+1}</span>
-        <span class="spot-name">${s.surahName}</span>
-      </div>
-      <div class="spot-range-row">
-        <span class="spot-range-cap">Recited range</span>
         <span class="spot-range-start">${s.surah}:${s.ayah}</span>
         <span class="spot-range-arrow">→</span>
         ${spotEndChipHTML(s,i)}
         ${s.regenerated?'<span class="spot-regen">·regenerated</span>':''}
       </div>
       <div class="spot-outcome-row">
-        <button class="spot-outcome-btn${s.outcome==='pass'?' sel-pass':''}${recCls('pass')}" onclick="event.stopPropagation();setSpotOutcome(${i},'pass')">✓ Pass</button>
-        <button class="spot-outcome-btn${s.outcome==='partial'?' sel-partial':''}${recCls('partial')}" onclick="event.stopPropagation();setSpotOutcome(${i},'partial')">~ Partial</button>
-        <button class="spot-outcome-btn${s.outcome==='fail'?' sel-fail':''}${recCls('fail')}" onclick="event.stopPropagation();setSpotOutcome(${i},'fail')">✗ Fail</button>
+        <button class="spot-outcome-btn${s.outcome==='pass'?' sel-pass':''}${recCls('pass')}" onclick="event.stopPropagation();setSpotOutcome(${i},'pass')">Pass</button>
+        <button class="spot-outcome-btn${s.outcome==='partial'?' sel-partial':''}${recCls('partial')}" onclick="event.stopPropagation();setSpotOutcome(${i},'partial')">Partial</button>
+        <button class="spot-outcome-btn${s.outcome==='fail'?' sel-fail':''}${recCls('fail')}" onclick="event.stopPropagation();setSpotOutcome(${i},'fail')">Fail</button>
       </div>
       ${live ? `<div class="spot-live" title="Provisional — recalculated as you mark mistakes and follow along. Firms up when you set the outcome.">
         <span class="spot-live-dot"></span>
@@ -10707,7 +10737,7 @@ function renderSpotList(){
         <span class="spot-live-band">${strengthBand(live.score).label}</span>
         <span class="spot-live-rec">suggests ${rec}</span>
       </div>` : ''}
-      <div class="spot-mistake-count">Mistakes: ${s.mistakeCount||0}</div>
+      ${s.mistakeCount?`<div class="spot-mistake-count">${s.mistakeCount} mistake${s.mistakeCount===1?'':'s'}</div>`:''}
       ${spotScoreRowHTML(s)}
     </div>`;
   }).join('');
@@ -10803,10 +10833,11 @@ function updateSpotNav(){
   if(prev) prev.disabled = idx <= 0;
   if(next) next.disabled = idx >= total-1;
   // Update nav button labels to preview destination
-  if(prev && idx > 0){ const ps=spotState.spots[idx-1]; prev.textContent=`[ ← ${ps.surah}:${ps.ayah}`; }
-  else if(prev) prev.textContent='[ ← Spot';
-  if(next && idx < total-1){ const ns=spotState.spots[idx+1]; next.textContent=`${ns.surah}:${ns.ayah} → ]`; }
-  else if(next) next.textContent='Spot → ]';
+  // The [ and ] are keyboard hints; .kbd-hint hides them on phones.
+  if(prev && idx > 0){ const ps=spotState.spots[idx-1]; prev.innerHTML=`<span class="kbd-hint">[ </span>← ${ps.surah}:${ps.ayah}`; }
+  else if(prev) prev.innerHTML='<span class="kbd-hint">[ </span>← Spot';
+  if(next && idx < total-1){ const ns=spotState.spots[idx+1]; next.innerHTML=`${ns.surah}:${ns.ayah} →<span class="kbd-hint"> ]</span>`; }
+  else if(next) next.innerHTML='Spot →<span class="kbd-hint"> ]</span>';
   // Keep bottom bar in sync
   syncBottomBar();
 }
@@ -12324,7 +12355,7 @@ document.querySelectorAll('.modal-bg').forEach(m=>m.addEventListener('click',e=>
 <div class="spot-bottom-bar" id="spotBottomBar">
   <button class="spot-bar-btn" id="spotBarPrev" onclick="goToSpot(spotState.currentIndex-1)" disabled title="[ Previous spot">[ ←</button>
   <div class="spot-bar-info">
-    <span class="spot-bar-label" id="spotBarLabel">🎲 Spot Testing</span>
+    <span class="spot-bar-label" id="spotBarLabel">Spot testing</span>
     <span class="spot-bar-score" id="spotBarScore"></span>
   </div>
   <div class="spot-bar-outcome">
@@ -12339,15 +12370,15 @@ document.querySelectorAll('.modal-bg').forEach(m=>m.addEventListener('click',e=>
 
 <div class="panel-backdrop" id="panelBackdrop" onclick="closeMobilePanel()"></div>
 <input type="file" id="importFile" accept=".qrs" style="display:none;" onchange="importSession(event)">
-<button class="panel-toggle-btn" id="panelToggleBtn" onclick="toggleMobilePanel()" title="Toggle session panel">📋</button>
+<button class="panel-toggle-btn" id="panelToggleBtn" onclick="toggleMobilePanel()" title="Session panel" aria-label="Session panel"><svg class="tz-fab-ic" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 9h6M9 13h6M9 17h3"/></svg><span class="tz-fab-badge" id="panelFabBadge"></span></button>
 
 <!-- Mobile-only floating auto-scroll control — bottom-left, so it never
      competes with the session FAB / spot bottom bar (both bottom-right/full-width) -->
 <div class="autoscroll-fab-wrap" id="autoscrollFabWrap">
-  <button class="autoscroll-fab" id="autoscrollFabBtn" onclick="toggleAutoScroll()" title="Auto-scroll (a)">⏫</button>
+  <button class="autoscroll-fab" id="autoscrollFabBtn" onclick="toggleAutoScroll()" title="Auto-scroll (a)" aria-label="Auto-scroll"><svg class="tz-fab-ic" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 11l5-5 5 5M7 18l5-5 5 5"/></svg></button>
   <div class="autoscroll-fab-speed" id="autoscrollFabSpeed" style="display:none;">
     <button class="autoscroll-fab-mini" onclick="changeAutoScrollSpeed(-AUTOSCROLL_STEP)" title="Slower">−</button>
-    <span id="autoscrollFabLabel">1.0x</span>
+    <span id="autoscrollFabLabel">1.00x</span>
     <button class="autoscroll-fab-mini" onclick="changeAutoScrollSpeed(AUTOSCROLL_STEP)" title="Faster">+</button>
   </div>
 </div>
@@ -17055,13 +17086,13 @@ const DEMO_FORM =
 const DEMO_MISTAKE =
   '<div class="mistake-item sev-2 ttr-demo ttr-demo-mistake" id="ttrDemoMistake">' +
     '<span class="ttr-demo-pill">Example</span>' +
-    '<span class="m-badge" style="background:var(--purple-bg);color:var(--purple);">Makhraj</span>' +
+    '<span class="m-badge" style="' + typeBadgeStyle(null, 'hesitation') + '">Hesitation</span>' +
     '<div class="m-body">' +
       '<div class="m-ref"><span class="m-ref-verse">2:5</span>' +
         '<span class="m-ref-time">10:42</span></div>' +
       '<div class="m-ctx"><span class="m-ctx-side">\u0635\u0650\u0631\u064e\u0627\u0637\u064e</span> ' +
         '<span class="m-ctx-word">\u0627\u0644\u0645\u064f\u0633\u0652\u062a\u064e\u0642\u0650\u064a\u0645\u064e</span></div>' +
-      '<div class="m-corr">Lvl 2 \u00b7 Hint</div>' +
+      '<div class="m-corr c2">Lvl 2 \u00b7 Hint</div>' +
     '</div>' +
     '<div class="m-actions">' +
       '<span class="m-edit">\u270e</span><span class="m-del">\u2715</span>' +

@@ -611,3 +611,84 @@ body.compact-ui .mushaf-page-body{--band:.16em!important;}
 .tzh-viewpop .tz-vseg:first-child{border-radius:6px 0 0 6px;}
 .tzh-viewpop .tz-vseg:last-child{border-radius:0 6px 6px 0;margin-left:-1px;}
 .tzh-viewpop .tz-vseg[aria-pressed="true"]{background:var(--chrome-accent);color:var(--chrome);border-color:var(--chrome-accent);font-weight:600;}
+
+/* ═══ FLOATING BUTTONS (css s11) ══════════════════════════════════════════
+   Auto-scroll (both apps) and the session panel (teacher, phone). They are
+   app chrome, not part of the page: dark like the top bar in every theme, a
+   thin light ring so they still separate from a dark page, line icons instead
+   of emoji. Running auto-scroll inverts the button. `body` raises these over
+   each app's older rules. */
+body .autoscroll-fab,
+body .panel-toggle-btn{width:48px;height:48px;font-size:0;background:var(--chrome);color:var(--on-ink);
+  border:1px solid color-mix(in srgb,var(--on-ink) 20%,transparent);box-shadow:0 3px 12px rgba(0,0,0,.28);}
+body .autoscroll-fab.active-vc{background:var(--on-ink);color:var(--chrome);border-color:var(--on-ink);}
+body .panel-toggle-btn{position:fixed;}
+.tz-fab-ic{display:block;flex:none;}
+.tz-fab-badge{position:absolute;top:-4px;right:-4px;min-width:19px;height:19px;padding:0 5px;box-sizing:border-box;
+  border-radius:10px;background:var(--on-ink);color:var(--chrome);box-shadow:0 0 0 2px var(--chrome);
+  font:600 11px/19px 'IBM Plex Mono',monospace;text-align:center;font-variant-numeric:tabular-nums;}
+.tz-fab-badge:empty{display:none;}
+body .autoscroll-fab-speed{font-variant-numeric:tabular-nums;border:1px solid color-mix(in srgb,var(--on-ink) 20%,transparent);}
+#asBarSpeed,#asSpeedLabel,#autoscrollFabLabel{font-variant-numeric:tabular-nums;}
+/* Fade when unused (the class is set by shared JS) */
+.autoscroll-fab-wrap,.panel-toggle-btn{transition:opacity .45s ease,transform .15s;}
+.autoscroll-fab-wrap.tz-fab-idle,.panel-toggle-btn.tz-fab-idle{opacity:.38;}
+/* Never over an open side panel */
+body:has(#trackerPanel.panel-open) .autoscroll-fab-wrap,
+body:has(#spotPanel.panel-open) .autoscroll-fab-wrap,
+body:has(#spotPanel.panel-open) .panel-toggle-btn,
+body:has(.session-panel.panel-open) .autoscroll-fab-wrap{display:none!important;}
+/* Touch screens keep :hover after a tap, which left the button zoomed and
+   pushed against the speed pill — no hover zoom without a real pointer. */
+@media (hover:none){
+  body .autoscroll-fab:hover,body .panel-toggle-btn:hover{transform:none;}
+}
+
+/* ═══ MISTAKE CARDS (css s12) ═════════════════════════════════════════════
+   Both apps' mistake lists. Colour means one thing only: the intervention
+   level, and its emphasis rises with the level — thicker edge, deeper tint,
+   a filled tag with pips (○○○ ●○○ ●●○ ●●●, so the level reads without
+   colour too), Lvl 0 an outline only, Lvl 3 ringed. The mistake TYPE is
+   ink, by category (typeBadgeStyle): Hifz outlined, Tajweed solid.
+   Tajweed has no level: petrol, dashed when a rule was left out or done
+   wrong, solid with a filled "+" tag when one was ADDED. `body` lifts these
+   over each app's older .sev-N fills, which are what went muddy in dark. */
+body .mistake-item[class]{--mk-c:var(--ink3);--mk-w:3px;--mk-t:0%;
+  background:color-mix(in srgb,var(--mk-c) var(--mk-t),var(--parchment));
+  border:.5px solid var(--border);border-left:var(--mk-w) solid var(--mk-c);
+  border-radius:8px;box-shadow:none;padding:9px 10px;}
+body .mistake-item[class]:hover{filter:none;border-color:var(--border2);border-left-color:var(--mk-c);
+  background:color-mix(in srgb,var(--mk-c) calc(var(--mk-t) + 4%),var(--parchment));}
+body .mistake-item[class].sev-0{--mk-c:var(--green);--mk-w:3px;--mk-t:0%;}
+body .mistake-item[class].sev-1{--mk-c:var(--lvl1-yellow);--mk-w:5px;--mk-t:6%;}
+body .mistake-item[class].sev-2{--mk-c:var(--lvl2-orange);--mk-w:7px;--mk-t:11%;}
+body .mistake-item[class].sev-3{--mk-c:var(--red);--mk-w:9px;--mk-t:18%;box-shadow:0 0 0 1.5px var(--red);border-color:var(--red);}
+body .mistake-item[class].sev-other{--mk-c:var(--ink3);--mk-w:3px;--mk-t:0%;}
+body .mistake-item[class].sev-tajweed{--mk-c:var(--tajweed);--mk-w:3px;--mk-t:0%;border-left-style:dashed;}
+body .mistake-item[class].sev-tajweed.tj-added{--mk-t:9%;border-left-style:solid;}
+:root[data-tz-mode="dark"] body .mistake-item[class].sev-tajweed.tj-added{--mk-t:4%;}
+body .mistake-item .m-badge{font:600 12px var(--ui-font);padding:2px 9px;border-radius:999px;}
+body .mistake-item .m-corr{display:inline-flex;align-items:center;gap:6px;margin-top:6px;padding:2px 9px;
+  border-radius:5px;font:600 12px var(--ui-font);font-style:normal;line-height:1.5;}
+body .mistake-item .m-corr::before{font-size:9px;letter-spacing:1px;}
+body .mistake-item .m-corr.c0{background:transparent;color:var(--green);box-shadow:inset 0 0 0 1.5px var(--green);}
+body .mistake-item .m-corr.c0::before{content:'○○○';}
+body .mistake-item .m-corr.c1{background:var(--lvl1-yellow);color:#1d1a0c;}
+body .mistake-item .m-corr.c1::before{content:'●○○';}
+body .mistake-item .m-corr.c2{background:var(--lvl2-orange);color:#fff;}
+body .mistake-item .m-corr.c2::before{content:'●●○';}
+body .mistake-item .m-corr.c3{background:var(--red);color:#fff;font-size:13px;padding:3px 10px;}
+body .mistake-item .m-corr.c3::before{content:'●●●';}
+body .mistake-item .m-corr.c4{background:transparent;color:var(--ink2);box-shadow:inset 0 0 0 1.5px var(--border2);}
+body .mistake-item .m-corr.c-tajweed{background:transparent;color:var(--tajweed);border:1.5px dashed var(--tajweed);padding:1px 8px;}
+body .mistake-item.tj-added .m-corr.c-tajweed{background:var(--tajweed);color:var(--parchment);border-style:solid;}
+body .mistake-item.tj-added .m-corr.c-tajweed::before{content:'+';font-size:13px;letter-spacing:0;}
+/* The same split on the page: an added rule's word gets a solid underline
+   and a slightly deeper wash than one left out (dashed). */
+.qcf-word.sev-tajweed.tj-added,.word-btn.sev-tajweed.tj-added,.word-span.sev-tajweed.tj-added{
+  border-bottom-style:solid;background:color-mix(in srgb,var(--tajweed) 16%,transparent);}
+:root[data-tz-mode="dark"] .qcf-word.sev-tajweed.tj-added,:root[data-tz-mode="dark"] .word-span.sev-tajweed.tj-added{
+  background:color-mix(in srgb,var(--tajweed) 12%,transparent);}
+/* v4_324: on phones the toast sat over the floating buttons (and over the
+   spot panel's last card) — lift it above them. */
+body.compact-ui #toast,body.compact-ui #_t{bottom:136px!important;}

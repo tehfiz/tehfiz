@@ -18,7 +18,7 @@
    · Nothing here may run against the page at load time: this file runs in the
      <head>, before <body> exists. Declarations and pure tables only.
    ═══════════════════════════════════════════════════════════════════════ */
-const TEHFIZ_SHARED_VERSION = 's9';
+const TEHFIZ_SHARED_VERSION = 's12';
 
 // ── sessionName vs. the legacy `range` key ────────────────────────
 // v3 and earlier stored the (optional) session name under `range`, a leftover
@@ -86,7 +86,7 @@ const LEGACY_TYPE_FALLBACK = {
 };
 
 const CORRECTION_TYPES = [
-  {id:'c0', label:'Lvl 0 · No intervention', shortLabel:'Lvl 0', cssClass:'c0'},
+  {id:'c0', label:'Lvl 0 · None',           shortLabel:'Lvl 0', cssClass:'c0'},   // s11: "None", as on the level buttons; the guides explain it
   {id:'c1', label:'Lvl 1 · Repeat',          shortLabel:'Lvl 1', cssClass:'c1'},
   {id:'c2', label:'Lvl 2 · Hint',            shortLabel:'Lvl 2', cssClass:'c2'},
   {id:'c3', label:'Lvl 3 · Taught',          shortLabel:'Lvl 3', cssClass:'c3'},
@@ -151,7 +151,17 @@ function resolveType(cfg, id){
 // Resolve labels from a session's embedded typeConfig, falling back to global defaults
 function typeLabelFor(cfg, id){ return resolveType(cfg, id).label; }
 
-function corrLabelFor(cfg, id){ if(cfg?.correctionTypes){const c=cfg.correctionTypes.find(c=>c.id===id);if(c)return c.label;} return getCorr(id).label; }
+/* The levels are fixed, not teacher-editable (a custom "Other" label rides on
+   the mistake as m.corrLabel), so a known level always takes today's wording.
+   Saved sessions carry a snapshot of the labels, and reading it kept sessions
+   from before s11 saying "Lvl 0 · No intervention". The snapshot is still the
+   fallback for an id this build does not know. */
+function corrLabelFor(cfg, id){
+  const live = CORRECTION_TYPES.find(c=>c.id===id);
+  if(live) return live.label;
+  if(cfg?.correctionTypes){const c=cfg.correctionTypes.find(c=>c.id===id);if(c)return c.label;}
+  return getCorr(id).label;
+}
 
 // Use per-mistake overrides (from "Other" text inputs) if present
 function mTypeLabel(m, cfg){ return m.typeLabel || typeLabelFor(cfg||m.typeConfig||null, m.type); }
@@ -164,19 +174,50 @@ function typeLabel(id){return getType(id).label;}
 // variable, teacher-editable list rather than a fixed set with hardcoded
 // per-id CSS rules, so color is applied per-instance from the resolved type
 // (live or from a session's own embedded config) instead of through a CSS class.
+/* s11: mistake types carry no colour. Colour belongs to the intervention
+   level, a scale that rises in urgency; type colours were arbitrary, half of
+   them sat on that same green→red ramp (a red "Wrong word" on a red Lvl 3
+   read as one signal), and they were dealt out by list position, so they
+   repeated and changed when a teacher reordered types. What a type still
+   shows is its CATEGORY, in ink: Hifz outlined, Tajweed solid, Other dashed.
+   t.color / t.bgColor stay in the data (saved sessions carry them) but
+   nothing draws them any more. */
+function typeCategory(cfg, id){
+  const t = resolveType(cfg, id);
+  return t.id==='other' ? 'other' : (t.category==='tajweed' ? 'tajweed' : 'hifz');
+}
 function typeBadgeStyle(cfg, id){
-  const t = resolveType(cfg, id);
-  return t.id==='other' ? `background:var(--parchment3);color:var(--ink2);` : `background:${t.bgColor};color:${t.color};`;
+  const c = typeCategory(cfg, id);
+  return c==='tajweed' ? `background:var(--ink);color:var(--parchment);box-shadow:inset 0 0 0 1.5px var(--ink);`
+       : c==='other'   ? `background:transparent;color:var(--ink2);box-shadow:inset 0 0 0 1.5px var(--border2);`
+       :                 `background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--ink);`;
 }
-
-function typeWordStyle(cfg, id){
-  const t = resolveType(cfg, id);
-  return t.id==='other' ? `border-bottom:2px solid var(--ink3);` : `color:${t.color};border-bottom:2px solid ${t.color};`;
+// A chart bar or legend dot for a type: Tajweed solid ink, Hifz a lighter ink.
+function typeFill(cfg, id){
+  const c = typeCategory(cfg, id);
+  return c==='tajweed' ? 'var(--ink)' : c==='other' ? 'var(--parchment3)' : 'var(--ink3)';
 }
-
+// Kept for callers that still pass a type: the word is now coloured by its
+// LEVEL (levelWordStyle), so this draws nothing of its own.
+function typeWordStyle(cfg, id){ return ''; }
+// A marked word, coloured the way its card is: the level colour, solid; a
+// Tajweed mark dashed in the Tajweed colour (solid when the rule was ADDED).
+function levelWordStyle(m, cfg){
+  const sv = sevForMistake(m, cfg);
+  const st = isTajweedMistake(m, cfg) && !isAddedTajweed(m) ? 'dashed' : 'solid';
+  return `color:${sv.color};border-bottom:2px ${st} ${sv.color};`;
+}
 function typeDotStyle(cfg, id){
-  const t = resolveType(cfg, id);
-  return t.id==='other' ? `background:var(--ink3);` : `background:${t.color};`;
+  const c = typeCategory(cfg, id);
+  return c==='tajweed' ? `background:var(--ink);color:var(--parchment);`
+       : `background:var(--parchment);color:var(--ink);box-shadow:inset 0 0 0 1.5px ${c==='other'?'var(--border2)':'var(--ink2)'};`;
+}
+/* A tajweed rule the student ADDED (lengthened where there is no madd, a
+   bounce on a non-qalqalah letter…) rather than left out or got wrong. Saved
+   as an `add_*` rule id in the subrule. */
+function isAddedTajweed(m){
+  const r = m && m.subrule && m.subrule.rule;
+  return typeof r === 'string' && r.indexOf('add_') === 0;
 }
 
 const corrClass2    = Object.fromEntries(CORRECTION_TYPES.map(c=>[c.id, c.cssClass]));
@@ -1470,7 +1511,8 @@ function _updateAutoScrollUI(){
   const on=autoScrollState.active;
   [document.getElementById('asToggleBtn'), document.getElementById('autoscrollFabBtn')].forEach(btn=>{
     if(!btn) return;
-    if(!btn.dataset.keepIcon) btn.textContent='⏫';   // the header's button draws its own icon
+    // The header's button draws its own icon; the floating one (s10) carries
+    // the line icon from its markup, so neither is rewritten here any more.
     btn.classList.toggle('active-vc', on);
   });
   // On desktop the speed controls stay put whether or not scrolling is running —
@@ -1483,7 +1525,9 @@ function _updateAutoScrollUI(){
   });
   const fabSpeed=document.getElementById('autoscrollFabSpeed');
   if(fabSpeed) fabSpeed.style.display=on?'flex':'none';
-  const label=`${autoScrollState.speed.toFixed(2).replace(/0$/,'')}x`;
+  // Always two decimals (s10): 1.20x → 1.25x keeps the same number of
+  // characters, so the label and everything beside it stop shifting.
+  const label=`${autoScrollState.speed.toFixed(2)}x`;
   ['asSpeedLabel','autoscrollFabLabel','asBarSpeed'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.textContent=label;
   });
@@ -1536,15 +1580,24 @@ function _onAutoScrollManualInput(){
   _armAutoScrollResume();
 }
 
-function _autoScrollFabTouch(){
-  const wrap=document.getElementById('autoscrollFabWrap');
-  if(!wrap) return;
-  wrap.classList.remove('idle');
-  clearTimeout(_autoScrollFabIdleTimer);
-  if(autoScrollState.active){
-    _autoScrollFabIdleTimer=setTimeout(()=>wrap.classList.add('idle'), 2500);
-  }
+/* Floating buttons (s10): the auto-scroll button and the teacher's panel
+   button fade back after TZ_FAB_IDLE_MS without the reader touching, scrolling
+   or typing, and come back at full strength on the next one. Faded, they
+   still work on the first tap. Auto-scroll moving the page is not "use". */
+const TZ_FAB_IDLE_MS=3000;
+function _tzFabEls(){
+  return [document.getElementById('autoscrollFabWrap'), document.getElementById('panelToggleBtn')].filter(Boolean);
 }
+function _autoScrollFabTouch(){
+  const els=_tzFabEls();
+  if(!els.length) return;
+  els.forEach(el=>el.classList.remove('tz-fab-idle'));
+  clearTimeout(_autoScrollFabIdleTimer);
+  _autoScrollFabIdleTimer=setTimeout(()=>_tzFabEls().forEach(el=>el.classList.add('tz-fab-idle')), TZ_FAB_IDLE_MS);
+}
+['pointerdown','keydown','wheel','touchstart'].forEach(ev=>
+  document.addEventListener(ev, _autoScrollFabTouch, {passive:true, capture:true}));
+document.addEventListener('DOMContentLoaded', _autoScrollFabTouch);
 
 document.addEventListener('DOMContentLoaded', ()=>{
   const panel=document.getElementById('pageContent');
@@ -2253,8 +2306,12 @@ function isTajweedMistake(m, cfg){
 }
 
 function sevForMistake(m, cfg){
-  return isTajweedMistake(m, cfg) ? SEVERITY.tajweed : sev(m.correction);
+  if(!isTajweedMistake(m, cfg)) return sev(m.correction);
+  // s11: an ADDED rule carries a second class, so every place that draws a
+  // tajweed mark (card, mushaf word, review) can tell it from one left out.
+  return isAddedTajweed(m) ? SEVERITY_TAJWEED_ADDED : SEVERITY.tajweed;
 }
+const SEVERITY_TAJWEED_ADDED = {...SEVERITY.tajweed, cls:'sev-tajweed tj-added'};
 
 // What the level slot should say. For tajweed that is the rule and, when the
 // teacher named one, the letter — which is the information intervention would
@@ -2397,7 +2454,7 @@ function _rvCharts(ml, cfg, types, t){
     // which is exactly why they are separated.
     const mx = Math.max(1, ...ids.map(id=>tc[id]));
     return (split?`<div class="bar-group-h">${label}</div>`:'') + ids.map(id=>
-      `<div class="bar-row"><div class="bar-label">${typeLabelFor(cfg,id)}</div><div class="bar-track"><div class="bar-fill" style="width:${Math.round(tc[id]/mx*100)}%;background:${resolveType(cfg,id).color||'var(--ink3)'};"></div></div><div class="bar-count">${tc[id]}</div></div>`
+      `<div class="bar-row"><div class="bar-label">${typeLabelFor(cfg,id)}</div><div class="bar-track"><div class="bar-fill" style="width:${Math.round(tc[id]/mx*100)}%;background:${typeFill(cfg,id)};"></div></div><div class="bar-count">${tc[id]}</div></div>`
     ).join('');
   };
   return `<div class="charts-row">
@@ -2491,7 +2548,7 @@ function _rvVerses(ml, cfg, heading, isTajweed){
     let wordHtml='', lastPos=0;
     ayahM.forEach(m=>{
       if(m.wordPos>lastPos+1) wordHtml+=`<span class="rv-gap">…</span>`;
-      wordHtml+=`<span class="rw-type-tag ${sev(m.correction).cls}" style="font-size:1.1em;font-weight:700;${typeWordStyle(cfg,m.type)}">${m.word}</span> `;
+      wordHtml+=`<span class="rw-type-tag ${sevForMistake(m,cfg).cls}" style="font-size:1.1em;font-weight:700;${levelWordStyle(m,cfg)}">${m.word}</span> `;
       lastPos=m.wordPos;
     });
     h+=`<div class="review-verse">
@@ -2509,9 +2566,9 @@ function _rvVerses(ml, cfg, heading, isTajweed){
 // secondary signal. Unlike the mushaf, there's no clash here — this is
 // serif text on parchment, not a QCF glyph on a coloured wash.
 function _rvMistakeRow(m, cfg){
-  const mt   = resolveType(cfg, m.type);
-  const tCol = mt.color || 'var(--ink2)';
-  const tBdr = mt.borderColor || mt.color || 'var(--border2)';
+  // s11: the word in context takes its level colour, like the card's edge.
+  const tCol = sevForMistake(m,cfg).color;
+  const tBdr = tCol;
   const bef  = (m.context?.before||[]).join(' ');
   const aft  = (m.context?.after ||[]).join(' ');
   /* sevForMistake, not sev(m.correction). A tajweed mistake has no correction,

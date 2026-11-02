@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ═══════════════════════════════════════════════════════════════════
-     Tehfiz student viewer — v1_167
+     Tehfiz student viewer — v1_170
      Deployed from the `tehfiz` repo (its root is the web root) at
      app/student/index.html. Locally that repo is cloned into tehfiz-api's
      public/ folder, which tehfiz-api ignores; the API Worker serves /api/* only.
@@ -14,8 +14,8 @@
 (function(){try{var d=document.documentElement,t=localStorage.getItem('tehfiz_theme'),m=localStorage.getItem('tehfiz_mode');
 if(t==='classic'||t==='lapis'||t==='mulberry')d.setAttribute('data-tz-theme',t);
 if(m==='dark'||(m==='device'&&window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches))d.setAttribute('data-tz-mode','dark');}catch(e){}})();</script>
-<link rel="stylesheet" href="/app/shared/tehfiz-shared.css?v=s10">
-<script src="/app/shared/tehfiz-shared.js?v=s9"></script>
+<link rel="stylesheet" href="/app/shared/tehfiz-shared.css?v=s12">
+<script src="/app/shared/tehfiz-shared.js?v=s12"></script>
 <script src="/app/shared/tehfiz-ornament.js?v=o2"></script>
 <script src="/app/shared/tehfiz-header.js?v=h4"></script>
 <script src="/app/shared/tehfiz-pwa.js?v=p2"></script>
@@ -1234,7 +1234,7 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
     <span class="tzh-goto-txt"><span class="tzh-goto-main" id="tzhGotoMain">&mdash;</span><span class="tzh-goto-sub" id="tzhGotoSub"></span></span>
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
   <span class="tzh-spacer"></span>
-  <span id="tzhAsWrap"><button class="vc-btn" id="asToggleBtn" data-keep-icon="1" onclick="toggleAutoScroll()" title="Auto-scroll (a)" aria-label="Auto-scroll"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 11l5-5 5 5M7 18l5-5 5 5"/></svg><span class="as-bar-spd" id="asBarSpeed">1x</span></button></span>
+  <span id="tzhAsWrap"><button class="vc-btn" id="asToggleBtn" data-keep-icon="1" onclick="toggleAutoScroll()" title="Auto-scroll (a)" aria-label="Auto-scroll"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 11l5-5 5 5M7 18l5-5 5 5"/></svg><span class="as-bar-spd" id="asBarSpeed">1.00x</span></button></span>
   <button class="tzh-btn" id="tzhViewBtn" type="button" aria-haspopup="true" aria-expanded="false" onclick="TehfizHeader.toggleView()">View <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
   <span class="tzh-vsep"></span>
   <!-- Desktop sidebar toggle — hidden on compact screens, where the panel FAB is used -->
@@ -1268,7 +1268,7 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
       title="Drag to change auto-scroll speed"
       style="width:110px;accent-color:var(--chrome-accent);vertical-align:middle;cursor:pointer;">
     <button class="vc-btn" id="asFaster" onclick="changeAutoScrollSpeed(AUTOSCROLL_STEP)" title="Faster (d)">+</button>
-    <span class="vc-label" id="asSpeedLabel">1.0x</span>
+    <span class="vc-label" id="asSpeedLabel">1.00x</span>
   </div>
 </div>
 <input type="file" id="viewerImportFile" accept=".qrs" multiple style="display:none;" onchange="importSession(event)">
@@ -1605,7 +1605,7 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
         <div style="display:flex;flex-direction:column;gap:6px;font-size:13px;">
           <div style="display:flex;gap:8px;align-items:flex-start;padding:7px 10px;background:var(--green-bg);border-radius:6px;border-left:3px solid var(--green);">
             <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:700;color:var(--green);flex-shrink:0;padding-top:2px;white-space:nowrap;">Level 0</span>
-            <div><strong style="color:var(--green);">No intervention</strong> — You made a mistake but your teacher did not step in. You either self-corrected, moved past it, or your teacher chose to observe silently.</div>
+            <div><strong style="color:var(--green);">None</strong> — You made a mistake but your teacher did not step in. You either self-corrected, moved past it, or your teacher chose to observe silently.</div>
           </div>
           <div style="display:flex;gap:8px;align-items:flex-start;padding:7px 10px;background:var(--lvl1-yellow-bg);border-radius:6px;border-left:3px solid var(--lvl1-yellow);">
             <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:700;color:var(--lvl1-ink);flex-shrink:0;padding-top:2px;white-space:nowrap;">Level 1</span>
@@ -1702,7 +1702,7 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
    console as APP_VERSION, or grep the deployed HTML for it. Bumped on every
    saved build; vcheck.py asserts it matches the filename, so a forgotten bump
    fails the integrity check rather than shipping a lie. */
-const APP_VERSION = 'v1_167';
+const APP_VERSION = 'v1_170';
 window.APP_VERSION = APP_VERSION;
 console.info('Tehfiz student viewer ' + APP_VERSION);
 
@@ -4091,10 +4091,7 @@ function showTT(event,el,enc){
     // The surface is pale now, so the type pill can use the fill it was
     // designed with — bgColor + borderColor + colour on the text — instead of
     // the outline-only fallback the dark tooltip forced.
-    const tc=t.color||'var(--ink2)';
-    const tb=t.bgColor||'var(--parchment2)';
-    const tbd=t.borderColor||tc;
-    html+=`<span class="tt-badge" style="color:${tc};border:1px solid ${tbd};background:${tb};">${esc(mTypeLabel(m,cfg))}</span><br>`;
+    html+=`<span class="tt-badge" style="${typeBadgeStyle(cfg,m.type)}border:none;">${esc(mTypeLabel(m,cfg))}</span><br>`;
     html+=`<span class="tt-corr" style="color:${sv.color};">${mLevelText(m,cfg)}</span>`;
     // The reminder sits ABOVE the teacher's own note: it is general and always
     // true, whereas the note is about this student on this day and should be
@@ -5484,7 +5481,7 @@ function _mrvCharts(ml, sessionCfg, getCfg, types, t){
   ];
   return `<div class="charts-row">
     <div class="chart-box"><h4>Mistake types</h4><div class="bar-chart">
-      ${types.map(id=>`<div class="bar-row"><div class="bar-label">${typeLabelFor(cfgForType(id),id)}</div><div class="bar-track"><div class="bar-fill" style="width:${t.total?Math.round(tc[id]/maxT*100):0}%;background:${resolveType(cfgForType(id),id).color||'var(--ink3)'};"></div></div><div class="bar-count">${tc[id]}</div></div>`).join('')}
+      ${types.map(id=>`<div class="bar-row"><div class="bar-label">${typeLabelFor(cfgForType(id),id)}</div><div class="bar-track"><div class="bar-fill" style="width:${t.total?Math.round(tc[id]/maxT*100):0}%;background:${typeFill(cfgForType(id),id)};"></div></div><div class="bar-count">${tc[id]}</div></div>`).join('')}
     </div></div>
     <div class="chart-box"><h4>Teacher intervention</h4><div class="chart-note">How much help was needed per mistake</div>
       <div class="donut-wrap">${donutSVG(cD,t.total)}<div class="donut-center"><span class="big">${t.total}</span><span class="lbl">total</span></div></div>
@@ -5506,7 +5503,7 @@ function _mrvTimeline(ml, sessionCfg, getCfg, types){
   const sorted=[...ml].sort((a,b)=>a.surah-b.surah||a.ayah-b.ayah||a.wordPos-b.wordPos);
   return `<div class="chart-box" style="margin-bottom:10px;">
     <h4>Mistake map</h4>
-    <div class="legend-row">${types.map(id=>`<div class="leg-item"><div class="leg-dot" style="background:${resolveType(cfgForType(id),id).color||'var(--ink3)'};"></div>${typeLabelFor(cfgForType(id),id)}</div>`).join('')}</div>
+    <div class="legend-row">${types.map(id=>`<div class="leg-item"><div class="leg-dot" style="${typeDotStyle(cfgForType(id),id)}"></div>${typeLabelFor(cfgForType(id),id)}</div>`).join('')}</div>
     <div class="timeline">${sorted.map((m,i)=>`<div class="tl-dot" style="${typeDotStyle(getCfg(m),m.type)}" title="${m.surah}:${m.ayah} — ${typeLabelFor(getCfg(m),m.type)}\n${corrLabelFor(getCfg(m),m.correction)}${m.note?'\n'+m.note:''}">${i+1}</div>`).join('')}</div>
   </div>`;
 }
@@ -5579,7 +5576,7 @@ function _mrvVerses(ml, getCfg, repeats, sessions){
     ayahM.forEach(m=>{
       if(m.wordPos>lp+1) wH+=`<span class="rv-gap">…</span>`;
       const isRep=repeats.has(`${sn}:${an}:${m.wordPos}`);
-      wH+=`<span class="rw-type-tag ${sev(m.correction).cls}${isRep?' rw-repeated':''}" style="font-size:1.1em;font-weight:700;${typeWordStyle(getCfg(m),m.type)}">${m.word}</span> `;
+      wH+=`<span class="rw-type-tag ${sevForMistake(m,getCfg(m)).cls}${isRep?' rw-repeated':''}" style="font-size:1.1em;font-weight:700;${levelWordStyle(m,getCfg(m))}">${m.word}</span> `;
       lp=m.wordPos;
     });
     h+=`<div class="review-verse">
@@ -5597,9 +5594,9 @@ function _mrvVerses(ml, getCfg, repeats, sessions){
 // secondary signal. Unlike the mushaf, there's no clash here — this is
 // serif text on parchment, not a QCF glyph on a coloured wash.
 function _mrvMistakeRow(m, cfg, sessions){
-  const mt   = resolveType(cfg, m.type);
-  const tCol = mt.color || 'var(--ink2)';
-  const tBdr = mt.borderColor || mt.color || 'var(--border2)';
+  // s11: the word in context takes its level colour, like the card's edge.
+  const tCol = sevForMistake(m,cfg).color;
+  const tBdr = tCol;
   const bef  = (m.context?.before||[]).join(' ');
   const aft  = (m.context?.after ||[]).join(' ');
   /* sevForMistake, not sev(m.correction). A tajweed mistake has no correction,
@@ -6385,10 +6382,10 @@ function buildSpotTrendChart(sessions, activeIdx){
 <!-- Mobile-only floating auto-scroll control — bottom-left, so it never
      competes with the sessions-panel FAB (bottom-right) -->
 <div class="autoscroll-fab-wrap" id="autoscrollFabWrap">
-  <button class="autoscroll-fab" id="autoscrollFabBtn" onclick="toggleAutoScroll()" title="Auto-scroll (a)">⏫</button>
+  <button class="autoscroll-fab" id="autoscrollFabBtn" onclick="toggleAutoScroll()" title="Auto-scroll (a)" aria-label="Auto-scroll"><svg class="tz-fab-ic" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 11l5-5 5 5M7 18l5-5 5 5"/></svg></button>
   <div class="autoscroll-fab-speed" id="autoscrollFabSpeed" style="display:none;">
     <button class="autoscroll-fab-mini" onclick="changeAutoScrollSpeed(-AUTOSCROLL_STEP)" title="Slower">−</button>
-    <span id="autoscrollFabLabel">1.0x</span>
+    <span id="autoscrollFabLabel">1.00x</span>
     <button class="autoscroll-fab-mini" onclick="changeAutoScrollSpeed(AUTOSCROLL_STEP)" title="Faster">+</button>
   </div>
 </div>
