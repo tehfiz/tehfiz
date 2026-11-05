@@ -29,7 +29,7 @@
    ═══════════════════════════════════════════════════════════════════════ */
 (function () {
 'use strict';
-const TEHFIZ_INVOICES_VERSION = 'i2';
+const TEHFIZ_INVOICES_VERSION = 'i3';
 const K_BILLTO = 'tehfiz_inv_billto', K_STATUS = 'tehfiz_inv_status', K_PAY = 'tehfiz_inv_payment';
 
 let isOpen = false, month = '', loading = false, error = '';
@@ -499,8 +499,15 @@ function printLines(lines) {
   if (!pr) { pr = document.createElement('div'); pr.id = 'tinvPrint'; document.body.appendChild(pr); }
   pr.innerHTML = lines.map(docHtml).join('');
   document.body.classList.add('tinv-printing');
+  /* i3: the browser names the saved PDF after document.title, so set it to the
+     month and the student ("October 2026 - Yusuf"). Set here, on this device
+     only, so the name never travels anywhere; restored once printing ends. */
+  const prevTitle = document.title;
+  const who = lines.length === 1 ? (lines[0].s.name || lines[0].s.code) : (lines.length + ' students');
+  document.title = (monthLabel(month) + ' - ' + who).replace(/[\\/:*?"<>|]+/g, ' ').trim();
   const done = () => {
     document.body.classList.remove('tinv-printing');
+    document.title = prevTitle;
     window.removeEventListener('afterprint', done);
   };
   window.addEventListener('afterprint', done);

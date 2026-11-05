@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ═══════════════════════════════════════════════════════════════════
-     Tehfiz teacher app — v4_325
+     Tehfiz teacher app — v4_326
      Deployed from the `tehfiz` repo at app/teacher/index.html (the repo root
      is the web root). Locally, tehfiz-api/public/ is a clone of that repo:
      test with `npm run dev`, then commit and push from inside public/.
@@ -1005,6 +1005,8 @@ input.corr-btn.sel-c4{background:var(--parchment3);color:var(--ink2);border-colo
 .setup-summary{display:flex;align-items:center;gap:6px;width:100%;text-align:left;background:var(--parchment2);border:.5px solid var(--border);border-radius:5px;padding:6px 8px;cursor:pointer;font-family:var(--ui-font);font-size:13px;color:var(--ink);}
 .setup-summary:hover{border-color:var(--gold);background:var(--gold-pale);}
 .ss-chev{color:var(--ink3);font-size:12px;}
+.setup-hide{display:block;margin:0 0 4px auto;background:none;border:none;padding:2px 2px;font:12px var(--ui-font);color:var(--ink3);cursor:pointer;}
+.setup-hide:hover{color:var(--ink);}
 .ss-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .ss-edit{margin-left:auto;color:var(--ink3);font-size:13px;}
 .seg-panel{margin-top:5px;padding:6px 7px;background:var(--parchment2);border-radius:5px;border:.5px solid var(--border);}
@@ -1628,7 +1630,7 @@ body.seg-arming .word-btn:hover,body.seg-arming .qcf-word:hover{outline:2px soli
 .spot-outcome-btn.sel-partial{background:var(--amber-bg);color:var(--amber);border-color:var(--amber);font-weight:600;}
 .spot-outcome-btn.sel-fail{background:var(--red-bg);color:var(--red);border-color:var(--red);font-weight:600;}
 .spot-mistake-count{font-size:11px;color:var(--ink3);font-family:'IBM Plex Mono',monospace;margin-top:2px;}
-/* v4_325 spot panel: surah heading per run, range on the card's top line,
+/* v4_324 spot panel: surah heading per run, range on the card's top line,
    Pass/Partial/Fail as one joined control whose choice fills solid, quieter
    finished cards, plain-case labels, no keyboard hints on phones. */
 .spot-group{display:flex;align-items:baseline;gap:8px;margin:12px 2px 6px;font:600 13px var(--ui-font);color:var(--ink);}
@@ -1652,7 +1654,7 @@ body.seg-arming .word-btn:hover,body.seg-arming .qcf-word:hover{outline:2px soli
 .spot-mistake-count{font:12px var(--ui-font);color:var(--red);margin-top:6px;}
 .spot-cfg-label{text-transform:none;letter-spacing:0;}
 body.compact-ui .kbd-hint{display:none;}
-/* v4_325 session panel: a little more air in the segment box. */
+/* v4_324 session panel: a little more air in the segment box. */
 .seg-row{padding-top:8px;padding-bottom:8px;}
 .seg-row-line{gap:7px;}
 /* Spot nav strip — bottom of panel */
@@ -1977,6 +1979,8 @@ body.compact-ui .quick-form::before{
            the session. The summary line replaces them, and reopens on tap. -->
       <button class="setup-summary" id="setupSummary" onclick="toggleSetup()" style="display:none;"></button>
       <div id="setupBody">
+        <!-- v4_326: fold it away by hand too, not only on the first mark. -->
+        <button class="setup-hide" type="button" onclick="toggleSetup()" title="Fold away the student and session details">▴ Hide details</button>
         <div class="student-row">
           <input class="tinput" id="studentName" placeholder="Student name" oninput="renderSetupSummary()" />
           <input class="tinput" id="sessionName" placeholder="Session name (optional)" style="width:105px;flex:none;" oninput="renderSetupSummary()" title="Left blank, the session is named from the ranges recited" />
@@ -2647,7 +2651,7 @@ body.compact-ui .quick-form::before{
    console as APP_VERSION, or grep the deployed HTML for it. Bumped on every
    saved build; vcheck.py asserts it matches the filename, so a forgotten bump
    fails the integrity check rather than shipping a lie. */
-const APP_VERSION = 'v4_325';
+const APP_VERSION = 'v4_326';
 window.APP_VERSION = APP_VERSION;
 console.info('Tehfiz teacher app ' + APP_VERSION);
 
@@ -7465,7 +7469,10 @@ function renderMistakesList(){
   const list=document.getElementById('mistakesList');
   if(!mistakes.length){list.innerHTML=`<div class="empty-hint"><span class="arrow">↑</span>Tap any Arabic word to log a mistake</div>`;return;}
   const shown = _listFilter
-    ? mistakes.filter(m=>(m.correction||'c0')===_listFilter)
+    // Tajweed first: it has no level (correction is null), so the old
+    // `correction||'c0'` filed every tajweed mark under Lvl 0 and the
+    // Tajweed band matched nothing. Same split as corrTally's.
+    ? mistakes.filter(m=>(isTajweedMistake(m)?'tj':(m.correction||'c0'))===_listFilter)
     : mistakes;
   if(!shown.length){list.innerHTML=`<div class="empty-hint">No mistakes at this level</div>`;return;}
   list.innerHTML=[...shown].sort((a,b)=>a.surah-b.surah||a.ayah-b.ayah||a.wordPos-b.wordPos).map(m=>`
@@ -10705,7 +10712,7 @@ function renderSpotList(){
   if(!spotState.spots.length){ list.innerHTML='<div class="empty-hint">No spots yet.</div>'; return; }
   const outcomeLabel = {pass:'Pass', partial:'Partial', fail:'Fail'};
   const outcomeSelClass = {pass:'sel-pass', partial:'sel-partial', fail:'sel-fail'};
-  // v4_325: one heading per run of spots in the same surah, instead of the
+  // v4_324: one heading per run of spots in the same surah, instead of the
   // surah name repeated on every card.
   const runCount = (i) => { let n=0; for(let k=i;k<spotState.spots.length && spotState.spots[k].surahName===spotState.spots[i].surahName;k++) n++; return n; };
   list.innerHTML = spotState.spots.map((s,i) => {
@@ -17962,7 +17969,7 @@ span.seg-chip{display:flex;align-items:center;justify-content:center;box-sizing:
 </script>
 <script src="/app/teacher/sessions-sent.js?v=m3"></script>
 <script src="/app/teacher/finish-session.js?v=f4"></script>
-<script src="/app/teacher/invoices.js?v=i2"></script>
+<script src="/app/teacher/invoices.js?v=i3"></script>
 <script src="/app/teacher/name-sync.js?v=n2"></script>
 </body>
 </html>
