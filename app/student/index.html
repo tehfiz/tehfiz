@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ═══════════════════════════════════════════════════════════════════
-     Tehfiz student viewer — v1_170
+     Tehfiz student viewer — v1_171
      Deployed from the `tehfiz` repo (its root is the web root) at
      app/student/index.html. Locally that repo is cloned into tehfiz-api's
      public/ folder, which tehfiz-api ignores; the API Worker serves /api/* only.
@@ -14,7 +14,7 @@
 (function(){try{var d=document.documentElement,t=localStorage.getItem('tehfiz_theme'),m=localStorage.getItem('tehfiz_mode');
 if(t==='classic'||t==='lapis'||t==='mulberry')d.setAttribute('data-tz-theme',t);
 if(m==='dark'||(m==='device'&&window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches))d.setAttribute('data-tz-mode','dark');}catch(e){}})();</script>
-<link rel="stylesheet" href="/app/shared/tehfiz-shared.css?v=s12">
+<link rel="stylesheet" href="/app/shared/tehfiz-shared.css?v=s13">
 <script src="/app/shared/tehfiz-shared.js?v=s12"></script>
 <script src="/app/shared/tehfiz-ornament.js?v=o2"></script>
 <script src="/app/shared/tehfiz-header.js?v=h4"></script>
@@ -1702,7 +1702,7 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
    console as APP_VERSION, or grep the deployed HTML for it. Bumped on every
    saved build; vcheck.py asserts it matches the filename, so a forgotten bump
    fails the integrity check rather than shipping a lie. */
-const APP_VERSION = 'v1_170';
+const APP_VERSION = 'v1_171';
 window.APP_VERSION = APP_VERSION;
 console.info('Tehfiz student viewer ' + APP_VERSION);
 

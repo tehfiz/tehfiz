@@ -670,15 +670,10 @@ body .mistake-item[class].sev-tajweed.tj-added{--mk-t:9%;border-left-style:solid
 body .mistake-item .m-badge{font:600 12px var(--ui-font);padding:2px 9px;border-radius:999px;}
 body .mistake-item .m-corr{display:inline-flex;align-items:center;gap:6px;margin-top:6px;padding:2px 9px;
   border-radius:5px;font:600 12px var(--ui-font);font-style:normal;line-height:1.5;}
-body .mistake-item .m-corr::before{font-size:9px;letter-spacing:1px;}
 body .mistake-item .m-corr.c0{background:transparent;color:var(--green);box-shadow:inset 0 0 0 1.5px var(--green);}
-body .mistake-item .m-corr.c0::before{content:'○○○';}
 body .mistake-item .m-corr.c1{background:var(--lvl1-yellow);color:#1d1a0c;}
-body .mistake-item .m-corr.c1::before{content:'●○○';}
 body .mistake-item .m-corr.c2{background:var(--lvl2-orange);color:#fff;}
-body .mistake-item .m-corr.c2::before{content:'●●○';}
 body .mistake-item .m-corr.c3{background:var(--red);color:#fff;font-size:13px;padding:3px 10px;}
-body .mistake-item .m-corr.c3::before{content:'●●●';}
 body .mistake-item .m-corr.c4{background:transparent;color:var(--ink2);box-shadow:inset 0 0 0 1.5px var(--border2);}
 body .mistake-item .m-corr.c-tajweed{background:transparent;color:var(--tajweed);border:1.5px dashed var(--tajweed);padding:1px 8px;}
 body .mistake-item.tj-added .m-corr.c-tajweed{background:var(--tajweed);color:var(--parchment);border-style:solid;}
@@ -692,3 +687,17 @@ body .mistake-item.tj-added .m-corr.c-tajweed::before{content:'+';font-size:13px
 /* v4_324: on phones the toast sat over the floating buttons (and over the
    spot panel's last card) — lift it above them. */
 body.compact-ui #toast,body.compact-ui #_t{bottom:136px!important;}
+
+/* css s13: the level pips are drawn, not typed. ● and ○ come from different
+   fallback fonts with different baselines, so the filled dots sat lower than
+   the hollow ones. Three 6px dots in currentColor: filled, or a ring. */
+body .mistake-item .m-corr.c0::before,body .mistake-item .m-corr.c1::before,
+body .mistake-item .m-corr.c2::before,body .mistake-item .m-corr.c3::before{
+  content:'';flex:none;width:20px;height:6px;
+  --pf:radial-gradient(circle at 3px 3px,currentColor 2.6px,transparent 3px);
+  --pr:radial-gradient(circle at 3px 3px,transparent 1.5px,currentColor 1.7px,currentColor 2.6px,transparent 3px);
+  background-repeat:no-repeat;background-size:6px 6px;background-position:0 0,7px 0,14px 0;}
+body .mistake-item .m-corr.c0::before{background-image:var(--pr),var(--pr),var(--pr);}
+body .mistake-item .m-corr.c1::before{background-image:var(--pf),var(--pr),var(--pr);}
+body .mistake-item .m-corr.c2::before{background-image:var(--pf),var(--pf),var(--pr);}
+body .mistake-item .m-corr.c3::before{background-image:var(--pf),var(--pf),var(--pf);}

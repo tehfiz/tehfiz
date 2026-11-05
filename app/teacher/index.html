@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ═══════════════════════════════════════════════════════════════════
-     Tehfiz teacher app — v4_326
+     Tehfiz teacher app — v4_327
      Deployed from the `tehfiz` repo at app/teacher/index.html (the repo root
      is the web root). Locally, tehfiz-api/public/ is a clone of that repo:
      test with `npm run dev`, then commit and push from inside public/.
@@ -15,7 +15,7 @@
 (function(){try{var d=document.documentElement,t=localStorage.getItem('tehfiz_theme'),m=localStorage.getItem('tehfiz_mode');
 if(t==='classic'||t==='lapis'||t==='mulberry')d.setAttribute('data-tz-theme',t);
 if(m==='dark'||(m==='device'&&window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches))d.setAttribute('data-tz-mode','dark');}catch(e){}})();</script>
-<link rel="stylesheet" href="/app/shared/tehfiz-shared.css?v=s12">
+<link rel="stylesheet" href="/app/shared/tehfiz-shared.css?v=s13">
 <script src="/app/shared/tehfiz-shared.js?v=s12"></script>
 <script src="/app/shared/tehfiz-ornament.js?v=o2"></script>
 <script src="/app/shared/tehfiz-header.js?v=h4"></script>
@@ -777,6 +777,7 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
 .tracker-panel{width:308px;flex-shrink:0;display:flex;flex-direction:column;background:var(--parchment2);overflow:hidden;position:relative;}
 .tracker-head{padding:10px 12px;border-bottom:1px solid var(--border2);background:var(--parchment);flex-shrink:0;}
 .tracker-head-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;}
+.tracker-head-row>h2{margin-right:auto;}
 .tracker-head h2{font-size:13px;font-weight:600;color:var(--ink2);letter-spacing:.04em;}
 /* Session date: text until tapped. Negative margin keeps the hover target
    comfortable without the resting state looking like a button. */
@@ -1005,8 +1006,8 @@ input.corr-btn.sel-c4{background:var(--parchment3);color:var(--ink2);border-colo
 .setup-summary{display:flex;align-items:center;gap:6px;width:100%;text-align:left;background:var(--parchment2);border:.5px solid var(--border);border-radius:5px;padding:6px 8px;cursor:pointer;font-family:var(--ui-font);font-size:13px;color:var(--ink);}
 .setup-summary:hover{border-color:var(--gold);background:var(--gold-pale);}
 .ss-chev{color:var(--ink3);font-size:12px;}
-.setup-hide{display:block;margin:0 0 4px auto;background:none;border:none;padding:2px 2px;font:12px var(--ui-font);color:var(--ink3);cursor:pointer;}
-.setup-hide:hover{color:var(--ink);}
+.setup-hide{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;margin:-3px -4px -3px 2px;background:none;border:none;border-radius:5px;padding:0;color:var(--ink3);cursor:pointer;flex:none;}
+.setup-hide:hover{color:var(--ink);background:var(--parchment2);}
 .ss-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .ss-edit{margin-left:auto;color:var(--ink3);font-size:13px;}
 .seg-panel{margin-top:5px;padding:6px 7px;background:var(--parchment2);border-radius:5px;border:.5px solid var(--border);}
@@ -1973,14 +1974,17 @@ body.compact-ui .quick-form::before{
                onchange="onSessionDateChange()"
                onblur="closeSessionDateEditor()"
                onkeydown="if(event.key==='Escape'||event.key==='Enter'){event.preventDefault();closeSessionDateEditor();}" />
+        <!-- v4_327: fold the details away by hand, as an icon beside the date
+             rather than a line of its own. Hidden while folded: the summary
+             line is what opens them again. -->
+        <button type="button" class="setup-hide" id="setupHideBtn" onclick="toggleSetup()"
+                title="Hide the student and session details" aria-label="Hide details"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg></button>
       </div>
       <!-- Setup collapses once logging begins: these fields are used for
            thirty seconds and then occupy a third of the panel for the rest of
            the session. The summary line replaces them, and reopens on tap. -->
       <button class="setup-summary" id="setupSummary" onclick="toggleSetup()" style="display:none;"></button>
       <div id="setupBody">
-        <!-- v4_326: fold it away by hand too, not only on the first mark. -->
-        <button class="setup-hide" type="button" onclick="toggleSetup()" title="Fold away the student and session details">▴ Hide details</button>
         <div class="student-row">
           <input class="tinput" id="studentName" placeholder="Student name" oninput="renderSetupSummary()" />
           <input class="tinput" id="sessionName" placeholder="Session name (optional)" style="width:105px;flex:none;" oninput="renderSetupSummary()" title="Left blank, the session is named from the ranges recited" />
@@ -2651,7 +2655,7 @@ body.compact-ui .quick-form::before{
    console as APP_VERSION, or grep the deployed HTML for it. Bumped on every
    saved build; vcheck.py asserts it matches the filename, so a forgotten bump
    fails the integrity check rather than shipping a lie. */
-const APP_VERSION = 'v4_326';
+const APP_VERSION = 'v4_327';
 window.APP_VERSION = APP_VERSION;
 console.info('Tehfiz teacher app ' + APP_VERSION);
 
@@ -5824,6 +5828,7 @@ function applySetupCollapse(){
   if(!body||!sum) return;
   body.style.display = _setupOpen ? '' : 'none';
   sum.style.display  = _setupOpen ? 'none' : '';
+  const hb=document.getElementById('setupHideBtn'); if(hb) hb.style.visibility = _setupOpen ? '' : 'hidden';
   renderSetupSummary();
 }
 function renderSetupSummary(){
