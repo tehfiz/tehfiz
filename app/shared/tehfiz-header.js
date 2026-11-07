@@ -1,6 +1,6 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   tehfiz-header.js — TehfizHeader — h3
-   Loaded by both apps from /app/shared/tehfiz-header.js?v=h3, after
+   tehfiz-header.js — TehfizHeader — h6
+   Loaded by both apps from /app/shared/tehfiz-header.js?v=h6, after
    tehfiz-shared.js. Styles live in tehfiz-shared.css under .tzh-.
 
    The one-row header. The bar's own markup is in each app (it has to paint
@@ -26,7 +26,7 @@
    ═══════════════════════════════════════════════════════════════════════ */
 (function () {
 'use strict';
-const TEHFIZ_HEADER_VERSION = 'h5';
+const TEHFIZ_HEADER_VERSION = 'h6';
 
 let cfg = { items: () => [], who: () => null, shortcuts: () => [] };
 let menuOpen = false, viewOpen = false, gotoOpen = false;
@@ -43,6 +43,7 @@ function compact() { return document.body.classList.contains('compact-ui'); }
 const ICONS = {
   students: '<circle cx="9" cy="8" r="4"/><path d="M2 21v-1a6 6 0 0 1 6-6h2a6 6 0 0 1 6 6v1M17 4a4 4 0 0 1 0 8M22 21v-1a5 5 0 0 0-3-4.6"/>',
   sessions: '<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',
+  admin:    '<path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6z"/><path d="M9 12l2 2 4-4"/>',
   invoices: '<path d="M6 2h12v20l-3-2-3 2-3-2-3 2z"/><path d="M9 7h6M9 11h6M9 15h4"/>',
   calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
   journey:  '<path d="M4 19c4 0 4-6 8-6s4-6 8-6"/><circle cx="4" cy="19" r="1.5"/><circle cx="20" cy="7" r="1.5"/>',

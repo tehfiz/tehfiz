@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ═══════════════════════════════════════════════════════════════════
-     Tehfiz teacher app — v4_341
+     Tehfiz teacher app — v4_342
      Deployed from the `tehfiz` repo at app/teacher/index.html (the repo root
      is the web root). Locally, tehfiz-api/public/ is a clone of that repo:
      test with `npm run dev`, then commit and push from inside public/.
@@ -18,7 +18,7 @@ if(m==='dark'||(m==='device'&&window.matchMedia&&matchMedia('(prefers-color-sche
 <link rel="stylesheet" href="/app/shared/tehfiz-shared.css?v=s13">
 <script src="/app/shared/tehfiz-shared.js?v=s14"></script>
 <script src="/app/shared/tehfiz-ornament.js?v=o2"></script>
-<script src="/app/shared/tehfiz-header.js?v=h5"></script>
+<script src="/app/shared/tehfiz-header.js?v=h6"></script>
 <script src="/app/shared/tehfiz-pwa.js?v=p2"></script>
 <!-- Installable app (v4_305): manifest, icons, and the service worker TehfizPWA registers. -->
 <link rel="manifest" href="/app/teacher/manifest.webmanifest">
@@ -2678,7 +2678,7 @@ body.compact-ui .quick-form::before{
    console as APP_VERSION, or grep the deployed HTML for it. Bumped on every
    saved build; vcheck.py asserts it matches the filename, so a forgotten bump
    fails the integrity check rather than shipping a lie. */
-const APP_VERSION = 'v4_341';
+const APP_VERSION = 'v4_342';
 window.APP_VERSION = APP_VERSION;
 console.info('Tehfiz teacher app ' + APP_VERSION);
 
@@ -10110,6 +10110,8 @@ function calibEnd(){
 function calibRender(){
   renderCalibrationControls();
   renderStrengthCalibration();
+  // v4_342: the admin's grade comparison follows the weights being tried.
+  if(typeof window.tadGradesRefresh === 'function') window.tadGradesRefresh();
 }
 
 // ── CONTROL SETTERS ───────────────────────────────────────────────────────
@@ -15033,7 +15035,8 @@ let sessionStudentQuery = '';  // narrows the student picker, not the results
 let pickerStudents = null;     // students available under the current teacher
 let teachers = null;      // null = not loaded yet, [] = loaded and empty
 let query = '';
-let filter = 'pending';   // opens on what needs attention, not on everything
+let filter = 'auto';      // v4_342: Pending when someone is waiting, else Active
+let addOpen = false;      // the "Add teacher" form, shown only when asked for
 let loading = false;
 let errorMsg = '';
 let busyId = null;
@@ -15100,11 +15103,15 @@ function available() {
 }
 
 async function load() {
-  if (tab !== 'teachers') return;
+  /* v4_342: no longer Teachers-only — Sessions, Insights and Email all need
+     the list, and the old early return left their pickers empty on a cold
+     open. renderList paints only where its host exists. */
   loading = true; errorMsg = ''; renderList();
   try {
     const data = await api('/api/admin/teachers');
     teachers = data.teachers || [];
+    // Opens on whoever is waiting, or on Active when nobody is.
+    if (filter === 'auto') filter = teachers.some((t) => t.status === 'pending') ? 'pending' : 'active';
   } catch (err) {
     errorMsg = err.status === 404
       ? 'This account is not an administrator.'
@@ -15150,7 +15157,7 @@ function counts() {
 function visible() {
   const q = query.trim().toLowerCase();
   return (teachers || [])
-    .filter((t) => filter === 'all' || t.status === filter)
+    .filter((t) => filter === 'all' || t.status === (filter === 'auto' ? 'pending' : filter))
     .filter((t) => !q ||
       String(t.email || '').toLowerCase().includes(q) ||
       String(t.name || '').toLowerCase().includes(q))
@@ -15197,9 +15204,18 @@ function renderShell() {
       '/api/admin/stats' + (ex ? '?excludeTeacher=' + encodeURIComponent(ex) : ''),
       renderOverview);
   }
-  if (tab === 'integrity') return loadView('integrity', '/api/admin/integrity', renderIntegrity);
+  if (tab === 'integrity') return loadView('integrity', '/api/admin/integrity', renderIntegrity).then(() => { if (bk) bkPaint(); bkLoad(); });
+  if (tab === 'email') {
+    // v4_342: Email is a page of its own (it was a box under the teacher list).
+    bcOpen = true;
+    if (!teachers) load();
+    if (!bcAudience) bcLoadAudience();
+    $('tadBody').innerHTML = '<div class="tad-list tad-scroll" id="tadList"></div>';
+    renderList();
+    return;
+  }
   $('tadBody').innerHTML =
-    '<div class="tad-filters">' +
+    (addOpen ? '<div class="tad-filters">' : '<div class="tad-filters" hidden>') +
       '<div class="tad-frow">' +
         '<label class="tad-flab">Add</label>' +
         '<input class="tad-sel" id="tadPreEmail" type="email" autocomplete="off" ' +
@@ -15223,11 +15239,14 @@ function renderShell() {
 }
 
 function renderCounts() {
+  // The sidebar's Teachers item carries the number waiting for approval.
+  const nb = $('tadPendBadge'), cc = counts();
+  if (nb) { nb.textContent = cc.pending || ''; nb.hidden = !cc.pending; }
   const host = $('tadChips');
   if (!host) return;
-  const c = counts();
+  const c = cc;
   host.innerHTML = ['pending', 'active', 'suspended', 'all'].map((k) => (
-    '<button class="tad-chip' + (filter === k ? ' on' : '') + '" data-tad="filter" data-k="' + k + '">' +
+    '<button class="tad-chip' + ((filter === 'auto' ? 'pending' : filter) === k ? ' on' : '') + '" data-tad="filter" data-k="' + k + '">' +
       k.charAt(0).toUpperCase() + k.slice(1) +
       '<span class="tad-n">' + c[k] + '</span>' +
     '</button>'
@@ -15237,6 +15256,7 @@ function renderCounts() {
 function renderList() {
   const host = $('tadList');
   if (!host) return;
+  if (tab === 'email') { host.innerHTML = bcPage(); return; }
 
   if (errorMsg) { host.innerHTML = errHtml(errorMsg); return; }
   if (loading || teachers === null) { host.innerHTML = '<div class="tad-empty">Loading…</div>'; return; }
@@ -15245,16 +15265,16 @@ function renderList() {
   if (!rows.length) {
     /* Also prefixed here: filtering to a status with nobody in it would
        otherwise make the open composer vanish mid-compose. */
-    host.innerHTML = bcPanel() + '<div class="tad-empty">' +
+    host.innerHTML = '<div class="tad-empty">' +
       (query ? 'No teacher matches “' + esc(query) + '”.'
-             : filter === 'pending' ? 'Nobody is waiting for approval.'
+             : (filter === 'pending' || filter === 'auto') ? 'Nobody is waiting for approval.'
              : 'Nothing here.') + '</div>';
     return;
   }
 
   // bcPanel() first: `rows` is the array of teachers, and the composer is
   // markup that belongs above their list.
-  host.innerHTML = bcPanel() + rows.map((t) => {
+  host.innerHTML = rows.map((t) => {
     const busy = busyId === t.id;
     /* Never signed in. A genuine signup writes last_seen_at in the same INSERT
        as created_at, so the two are only ever both set or both absent — which
@@ -15322,7 +15342,7 @@ let bcExcluded = new Set();
 let bcExtra = '';
 /* v4_341: the footer (empty = the standard one), who unsubscribed, the send in
    progress (so a stopped one can resume), and the log of past broadcasts. */
-let bcFooter = '', bcOptOut = new Set(), bcRun = null, bcHist = null, bcHistOpen = false;
+let bcFooter = '', bcOptOut = new Set(), bcRun = null, bcHist = null, bcHistOpen = true;
 // The list stays open across re-renders once opened.
 document.addEventListener('toggle', (e) => { if (e.target && e.target.classList && e.target.classList.contains('bc-hist')) bcHistOpen = e.target.open; }, true);
 const BC_DEFAULT_FOOTER = 'You are receiving this because you have a Teh\u012bz teacher account.';
@@ -15375,8 +15395,7 @@ function bcPanel() {
   const a = bcAudience;
   const ready = a && a.configured;
   return '<div class="tad-panel bc-panel">' +
-    '<div class="bc-head"><strong>Broadcast to teachers</strong>' +
-      '<button class="tad-mini" data-tad="bcclose">Close</button></div>' +
+    '<div class="bc-head"><strong>New message</strong></div>' +
     (!a ? '<p class="tad-note">Checking\u2026</p>'
       : !ready ? '<p class="tad-note bc-warn">Mail is not configured on the server \u2014 ' +
                  'RESEND_API_KEY and MAIL_FROM must be set before anything can be sent.</p>'
@@ -15424,9 +15443,14 @@ function bcPanel() {
     (bcLog.length ? '<div class="bc-log">' + bcLog.map(esc).join('<br>') + '</div>' : '') +
     (bcRun && bcRun.cursor != null && !bcBusy ? '<div class="bc-actions" style="margin-top:6px;"><button class="tad-mini bc-send" data-tad="bcresume" data-id="' + esc(bcRun.id) + '">' +
       'Resume from #' + (bcRun.cursor + 1) + ' of ' + bcRun.total + '</button></div>' : '') +
-    bcHistoryHtml() +
-    bcPreviewHtml() +
   '</div>';
+}
+/* v4_342: the Email page — the composer, and the past broadcasts beside it
+   on a wide screen (below it on a phone). */
+function bcPage() {
+  return '<div class="bc-page"><div class="bc-main">' + bcPanel() + '</div>' +
+    '<aside class="bc-side">' + (bcHist ? bcHistoryHtml() : '<p class="tad-note">Loading past broadcasts\u2026</p>') + '</aside></div>' +
+    bcPreviewHtml();
 }
 
 /* v4_341: past broadcasts, newest first, from the server's log. One that
@@ -15874,12 +15898,23 @@ function renderCalib() {
     host.innerHTML = '<div class="tad-err">Calibration is unavailable in this build.</div>';
     return;
   }
+  /* v4_342: Grades & calibration. The calibration sits in a box marked as
+     this device's own: nothing in it is sent to the server or to other
+     teachers — deliberately, so testing weights can never change anyone
+     else's scores. The server-wide grade comparison goes above it. */
   host.innerHTML =
     '<div class="tad-scroll">' +
-      '<div id="calibControls"></div>' +
-      '<div id="calibBody"></div>' +
+      '<div id="tadGrades"></div>' +
+      '<section class="tad-local" aria-labelledby="tadLocalH">' +
+        '<div class="tad-local-h" id="tadLocalH">Calibration \u00b7 this device only</div>' +
+        '<p class="tad-note" style="margin:0 0 8px;">Changes here stay on this device. They are never sent to the server or to other teachers. The comparison just below uses every teacher\u2019s graded sessions; the list under the controls is this device\u2019s own.</p>' +
+        '<div id="tadGradesPreview"></div>' +
+        '<div id="calibControls"></div>' +
+        '<div id="calibBody"></div>' +
+      '</section>' +
     '</div>';
   window.calibBegin();
+  if (typeof window.tadGradesMount === 'function') window.tadGradesMount($('tadGrades'));
 }
 
 /* ── data views ───────────────────────────────────────────────────────────
@@ -16460,11 +16495,52 @@ function renderOverview(data) {
     '</div>';
 }
 
+/* ── BACKUPS (v4_342, migration 0012) ─────────────────────────────────────
+   The nightly backup runs on the owner's computer and reports here at the
+   end of every run. Stale (no good run for 26 hours) or failed = a warning on
+   the System item in the sidebar, so a quiet failure cannot hide again. */
+let bk = null;
+function bkState(d) {
+  if (!d || !d.runs) return null;
+  const last = d.runs[0];
+  if (!last) return { warn: true, text: 'No backup has reported yet.' };
+  if (!last.ok) return { warn: true, text: 'The last backup failed.' };
+  if (last.uploaded === 0) return { warn: true, text: 'The last backup was not copied off this computer.' };
+  if (Date.now() - last.at > 26 * 3600e3) return { warn: true, text: 'No backup for over a day.' };
+  return { warn: false, text: '' };
+}
+async function bkLoad() {
+  try { bk = await api('/api/admin/backups'); } catch (err) { bk = { error: (err && err.message) || 'Could not load' }; }
+  const st = bkState(bk), dot = $('tadSysDot');
+  if (dot) dot.hidden = !(st && st.warn);
+  bkPaint();
+}
+function bkPaint() {
+  const host = $('tadBackups');
+  if (!host) return;
+  if (!bk) { host.innerHTML = '<p class="tad-note">Loading\u2026</p>'; return; }
+  if (bk.error) { host.innerHTML = errHtml(bk.error); return; }
+  const st = bkState(bk);
+  const mb = (n) => n == null ? '' : (n / 1048576).toFixed(2) + ' MB';
+  const when2 = (ms) => { try { return new Date(ms).toLocaleString(undefined, { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }); } catch { return ''; } };
+  host.innerHTML = (!bk.configured ? '<p class="tad-warn-note">Reports are switched off: the server has no BACKUP_REPORT_KEY yet.</p>' : '') +
+    (st && st.warn ? '<p class="tad-warn-note">' + esc(st.text) + '</p>' : '') +
+    (bk.runs.length ? '<div class="bk-list">' + bk.runs.slice(0, 14).map((r) => {
+      const good = r.ok && r.uploaded !== 0;
+      const label = !r.ok ? 'Failed' : r.uploaded === 0 ? 'Not uploaded' : r.uploaded == null ? 'OK, this computer only' : 'OK';
+      const bits = [mb(r.bytes), r.uploaded === 1 ? 'copied off-site and checked' : '', r.sessions != null ? r.sessions + ' sessions' : '', r.host || ''].filter(Boolean);
+      return '<div class="bk-row"><span class="bk-pill ' + (good ? 'ok' : 'bad') + '">' + esc(label) + '</span><b>' + esc(when2(r.at)) + '</b>' +
+        '<span class="tad-dim">' + esc(bits.concat(r.message && !good ? [r.message] : []).join(' \u00b7 ')) + '</span></div>';
+    }).join('') + '</div>'
+    : '<p class="tad-note">No reports yet. They start with the next backup once the script has its key.</p>');
+}
 function renderIntegrity(data) {
   const c = data.counts || {};
   const orphans = data.orphanPayloads || [];
   const tombs = data.tombstones || [];
   $('tadBody').innerHTML =
+    '<div class="tad-scroll" style="flex:none;min-height:0;overflow:visible;"><div class="tad-sub-h">Backups</div><div id="tadBackups"><p class="tad-note">Loading\u2026</p></div>' +
+      '<div class="tad-sub-h" style="margin-top:14px;">Integrity</div></div>' +
     '<div class="tad-stats">' +
       '<div class="tad-stat"><b>' + (c.orphan_payloads || 0) + '</b><span>orphan payloads</span></div>' +
       '<div class="tad-stat"><b>' + (c.orphan_students || 0) + '</b><span>orphan students</span></div>' +
@@ -16529,31 +16605,43 @@ const TAB_META = {
   sessions: ['Sessions',
     'Every session across every teacher. Deleted ones are kept as markers with ' +
     'their content erased, and are the only place tombstones are visible.'],
-  overview: ['Overview',
+  overview: ['Insights',
     'Aggregated from sessions as they were sent. Strength scores are not averaged ' +
     'here — a v1 and a v2 score are on different scales.'],
-  integrity: ['Integrity',
-    'The things no list can show: recitation data with no session row, and ' +
+  integrity: ['System',
+    'The nightly backups, and the things no list can show: recitation data with no session row, and ' +
     'deleted sessions. Both are invisible everywhere else in both apps.'],
-  calib: ['Strength calibration',
-    'Scored against the sessions saved on this device. Changing these numbers ' +
-    're-reads every session already recorded — it does not only affect new ones.'],
+  calib: ['Grades & calibration',
+    'How teachers\u2019 own grades compare with the computed strength, and the weights behind it. ' +
+    'Changing a weight re-reads every session on this device \u2014 it does not only affect new ones.'],
+  email: ['Email',
+    'One message to each teacher \u2014 nobody sees anyone else\u2019s address. ' +
+    'Teachers who unsubscribed are left out automatically.'],
 };
 
 function renderShellChrome() {
   const meta = TAB_META[tab] || TAB_META.teachers;
   $('tadTitle').textContent = meta[0];
   // Calibration has no server data to refresh; the rest do.
-  $('tadRefresh').style.display = tab === 'calib' ? 'none' : '';
+  $('tadRefresh').style.display = '';
+  /* v4_342: a section's own buttons sit beside its title, not in the tabs. */
+  const acts = $('tadActs');
+  if (acts) acts.innerHTML = tab === 'teachers'
+    ? '<button class="tad-mini" data-tad="addtoggle" aria-expanded="' + addOpen + '">' + (addOpen ? 'Close' : '+ Add teacher') + '</button>' +
+      '<button class="tad-mini" data-tad="texport" title="Every teacher and their details, as a spreadsheet">\u2b07 Export CSV</button>'
+    : '';
   $('tadNote').innerHTML = meta[1];
   Array.prototype.forEach.call(document.querySelectorAll('.tad-tab'), (b) => {
     b.classList.toggle('on', b.dataset.t === tab);
+    if (b.dataset.t === tab) { b.setAttribute('aria-current', 'page'); try { b.scrollIntoView({ block: 'nearest', inline: 'nearest' }); } catch {} }
+    else b.removeAttribute('aria-current');
   });
 }
 
 function open() {
   $('tadOverlay').classList.add('tad-on');
-  query = ''; filter = 'pending'; errorMsg = ''; tab = 'teachers';
+  document.documentElement.classList.add('tad-lock');
+  query = ''; filter = 'auto'; addOpen = false; errorMsg = ''; tab = 'teachers';
   studentFilter = 'all'; sessionFilter = 'live';
   // Caches are per-open. Leaving them would show a database state from
   // whenever the panel was last used, which for an admin tool is worse than
@@ -16561,11 +16649,13 @@ function open() {
   Object.keys(cache).forEach((k) => delete cache[k]);
   renderShell();
   load();
+  bkLoad();   // for the warning on System
 }
 
 function close() {
   if (tab === 'calib' && typeof window.calibEnd === 'function') window.calibEnd();
   $('tadOverlay').classList.remove('tad-on');
+  document.documentElement.classList.remove('tad-lock');
 }
 
 /* Coming back to the app (or the connection returning) retries a teacher
@@ -16590,6 +16680,7 @@ document.addEventListener('click', async (e) => {
     // Only the visible tab: refetching all five would issue four whole-table
     // scans nobody is looking at.
     delete cache[tab];
+    if (tab === 'calib') { gr.rows = null; }
     return tab === 'teachers' ? load() : renderShell();
   }
   if (act === 'tab') {
@@ -16607,8 +16698,22 @@ document.addEventListener('click', async (e) => {
   if (act === 'pre')      return addPreapproval();
   if (act === 'tedit')    return toggleTeacherManage(t.dataset.id, t.dataset.email);
   if (act === 'texport')  return exportTeachersCSV();
-  if (act === 'bcopen')   { bcOpen = true; bcTested = false; bcLog = []; bcLoadAudience(); return renderList(); }
-  if (act === 'bcclose')  { bcOpen = false; return renderList(); }
+  if (act === 'bcopen')   { bcTested = false; bcLog = []; bcAudience = null; return setTab('email'); }
+  if (act === 'grbackfill') return grBackfill();
+  if (act === 'grsess') {
+    sessionScopeId = t.dataset.id; sessionScopeLabel = t.dataset.code || '';
+    sessionFilter = 'live'; sessionTeacherId = ''; sessionStudentQuery = ''; pickerStudents = null;
+    delete cache.sessions;
+    return setTab('sessions');
+  }
+  if (act === 'addtoggle') {
+    addOpen = !addOpen;
+    const f = document.querySelector('#tadBody .tad-filters');
+    if (f) f.hidden = !addOpen;
+    renderShellChrome();
+    if (addOpen) { const i = $('tadPreEmail'); if (i) i.focus(); }
+    return;
+  }
   if (act === 'bcall')    return bcSetAll(true);
   if (act === 'bcnone')   return bcSetAll(false);
   if (act === 'bcone')    return bcToggleOne(t.dataset.id);
@@ -16717,28 +16822,30 @@ function mount() {
        this holds five views of the whole database and a session list that is
        ten columns wide. A sheet at 88vh would spend its height on chrome. */
     '<div class="tad-overlay" id="tadOverlay">' +
-      '<div class="tad-panel">' +
-        '<div class="tad-head">' +
-          '<span class="tad-title" id="tadTitle">Admin</span>' +
+      '<div class="tad-panel tad-full" role="dialog" aria-modal="true" aria-labelledby="tadTitle">' +
+        /* v4_342: one full-screen page — a bar across the top, the sections
+           down the side on a wide screen (one row that scrolls sideways on a
+           phone), and the section itself. CSV and Broadcast used to sit among
+           the tabs as buttons; they now live in their sections. */
+        '<div class="tad-top"><span class="tad-brand">TEH\u012aZ</span><span class="tad-crumb">Admin</span>' +
+          '<span class="tad-sp"></span>' +
           '<button class="tad-chip-btn" data-tad="refresh" id="tadRefresh">Refresh</button>' +
-          '<button class="tad-x" data-tad="close">✕</button>' +
+          '<button class="tad-back" data-tad="close" aria-label="Close admin">\u2715<span> Back to the app</span></button>' +
         '</div>' +
-        /* Peer tabs, deliberately not a drill-down. Students and Sessions are
-           siblings because an orphaned student has no teacher to nest under,
-           and a shared student would appear once per teacher with nothing
-           saying it is the same child. */
-        '<div class="tad-tabs">' +
-          '<button class="tad-tab on" data-tad="tab" data-t="teachers">Teachers</button>' +
-          '<button class="tad-mini" data-tad="texport" title="Download every teacher and their details">\u2b07 CSV</button>' +
-          '<button class="tad-mini" data-tad="bcopen" title="Email every active teacher">\u2709 Broadcast</button>' +
-          '<button class="tad-tab" data-tad="tab" data-t="students">Students</button>' +
-          '<button class="tad-tab" data-tad="tab" data-t="sessions">Sessions</button>' +
-          '<button class="tad-tab" data-tad="tab" data-t="overview">Overview</button>' +
-          '<button class="tad-tab" data-tad="tab" data-t="integrity">Integrity</button>' +
-          '<button class="tad-tab" data-tad="tab" data-t="calib">Calibration</button>' +
+        '<div class="tad-main">' +
+          '<nav class="tad-nav" aria-label="Admin sections">' +
+            [['teachers', 'Teachers'], ['students', 'Students'], ['sessions', 'Sessions'],
+             ['calib', 'Grades & calibration'], ['email', 'Email'], ['overview', 'Insights'], ['integrity', 'System']]
+              .map(([k, l]) => '<button class="tad-tab' + (k === 'teachers' ? ' on' : '') + '" data-tad="tab" data-t="' + k + '">' + l +
+                (k === 'teachers' ? '<span class="tad-badge" id="tadPendBadge" hidden></span>' : '') +
+                (k === 'integrity' ? '<span class="tad-badge" id="tadSysDot" hidden title="Backups need a look">!</span>' : '') + '</button>').join('') +
+          '</nav>' +
+          '<div class="tad-content">' +
+            '<div class="tad-head"><span class="tad-title" id="tadTitle">Teachers</span><span class="tad-acts" id="tadActs"></span></div>' +
+            '<p class="tad-note" id="tadNote"></p>' +
+            '<div class="tad-body" id="tadBody"></div>' +
+          '</div>' +
         '</div>' +
-        '<p class="tad-note" id="tadNote"></p>' +
-        '<div class="tad-body" id="tadBody"></div>' +
       '</div>' +
     '</div>';
   /* No stopPropagation on the panel — every control is bound through the
@@ -16828,6 +16935,204 @@ function mount() {
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mount);
 else mount();
 
+/* ── GRADES (v4_342, migration 0011) ───────────────────────────────────────
+   Teachers' own grades beside the computed strength, from every teacher.
+   The server sends each graded part with the computed score's INPUTS; the
+   score is worked out here, with the saved weights — or, while calibration
+   is being tried below, with those weights. Nothing here writes anything:
+   the calibration stays on this device, as it always has. */
+let gr = { rows: null, err: '', busy: '', teacher: '', stage: '', period: '90', part: 'parts', allModels: false };
+let grHost = null;
+
+function grSavedModel() {
+  // CALIB_BASE: the committed model while Calibration is open (main script).
+  if (typeof CALIB_BASE !== 'undefined' && CALIB_BASE) return CALIB_BASE;
+  return { ...STRENGTH_MODEL_DEFAULT, ...((loadCalibration() || {}).strength || {}) };
+}
+function grScore(r, model) {
+  if (!r.inputs) return null;
+  let inp = r.inputs;
+  if (!inp.pages && r.start_key && r.end_key) {
+    try { inp = { ...inp, pages: segPageExtent({ startKey: r.start_key, endKey: r.end_key }) }; } catch { /* no extent */ }
+  }
+  return strengthFromInputs(inp, model);
+}
+function grTeacher(r) { return teacherPct({ pct: r.teacher_pct, band: r.teacher_band }); }
+function grFiltered() {
+  const since = gr.period === 'all' ? 0 : Date.now() - Number(gr.period) * 864e5;
+  return (gr.rows || []).filter((r) =>
+    (gr.part === 'parts' ? r.part >= 0 : r.part === -1) &&
+    (!gr.teacher || r.teacher_id === gr.teacher) &&
+    (!gr.stage || r.stage === gr.stage) &&
+    (!since || (r.started_at || 0) >= since) &&
+    (gr.allModels || r.inputs_model === STRENGTH_MODEL.id));
+}
+/* Every graded part scored with one model. */
+function grPoints(rows, model) {
+  const out = [];
+  for (const r of rows) {
+    const c = grScore(r, model), t = grTeacher(r);
+    if (c == null || t == null) continue;
+    out.push({ r, c, t, cb: strengthBand(c, model).key, tb: r.teacher_band || strengthBand(t, model).key });
+  }
+  return out;
+}
+function grSummary(pts) {
+  if (!pts.length) return { n: 0, same: null, gap: null, far: 0 };
+  const same = pts.filter((p) => p.cb === p.tb).length;
+  const gap = pts.reduce((a, p) => a + (p.t - p.c), 0) / pts.length;
+  return { n: pts.length, same: Math.round(100 * same / pts.length), gap: Math.round(gap), far: pts.filter((p) => Math.abs(p.t - p.c) >= 15).length };
+}
+const grSigned = (n) => (n == null ? '—' : (n > 0 ? '+' : n < 0 ? '−' : '') + Math.abs(n));
+
+async function grLoad() {
+  gr.err = ''; gr.busy = 'Loading grades…'; grPaint();
+  try { gr.rows = (await api('/api/admin/grades')).rows || []; }
+  catch (err) { gr.err = (err && err.message) || 'Could not load grades'; }
+  gr.busy = ''; grPaint();
+}
+/* Sessions sent before 0011 have their grades only inside the stored
+   session; the stats rebuild reads them out (and is safe to repeat). */
+async function grBackfill() {
+  if (gr.busy) return;
+  let after = '', n = 0;
+  try {
+    do {
+      gr.busy = 'Reading past sessions… ' + n; grPaint();
+      const r = await api('/api/admin/backfill-stats', { method: 'POST', body: { after, limit: 25 } });
+      n += r.scanned || 0; after = r.cursor;
+    } while (after);
+  } catch (err) { gr.err = 'Stopped: ' + ((err && err.message) || 'unknown') + '. Running it again carries on safely.'; }
+  gr.busy = ''; await grLoad();
+}
+
+function grScatter(pts) {
+  const W = 380, H = 250, P = 30, w = W - P - 8, h = H - P - 8;
+  const x = (v) => P + v / 100 * w, y = (v) => 8 + h - v / 100 * h;
+  let g = '';
+  [0, 35, 55, 75, 90, 100].forEach((v) => {
+    g += '<line x1="' + x(v) + '" y1="8" x2="' + x(v) + '" y2="' + (8 + h) + '" stroke="var(--border)"/>' +
+      '<line x1="' + P + '" y1="' + y(v) + '" x2="' + (P + w) + '" y2="' + y(v) + '" stroke="var(--border)"/>' +
+      '<text x="' + x(v) + '" y="' + (H - 14) + '" font-size="9" fill="var(--ink3)" text-anchor="middle">' + v + '</text>' +
+      // 100 is left off the side: the axis name sits there.
+      (v < 100 ? '<text x="' + (P - 4) + '" y="' + (y(v) + 3) + '" font-size="9" fill="var(--ink3)" text-anchor="end">' + v + '</text>' : '');
+  });
+  const dots = pts.map((p) => {
+    const far = Math.abs(p.t - p.c) >= 15;
+    return '<circle cx="' + x(p.c).toFixed(1) + '" cy="' + y(p.t).toFixed(1) + '" r="3.4" fill="' + (far ? 'var(--amber)' : 'var(--ink2)') +
+      '" fill-opacity="' + (far ? 0.9 : 0.45) + '"><title>computed ' + p.c + ' · teacher ' + p.t + '</title></circle>';
+  }).join('');
+  return '<svg class="gr-svg" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Computed score against the teacher’s grade">' + g +
+    '<line x1="' + x(0) + '" y1="' + y(0) + '" x2="' + x(100) + '" y2="' + y(100) + '" stroke="var(--gold)" stroke-width="1.5" stroke-dasharray="4 3"/>' + dots +
+    '<text x="' + (P + w) + '" y="' + (H - 2) + '" font-size="9.5" fill="var(--ink3)" text-anchor="end">computed →</text>' +
+    '<text x="2" y="9" font-size="9.5" fill="var(--ink3)">teacher</text></svg>';
+}
+function grMatrix(pts, model) {
+  const bands = model.bands.slice().sort((a, b) => b.min - a.min);
+  const m = {}; let max = 1;
+  for (const p of pts) { const k = p.cb + '|' + p.tb; m[k] = (m[k] || 0) + 1; max = Math.max(max, m[k]); }
+  return '<div class="gr-scroll"><table class="gr-mx"><tr><th></th>' + bands.map((b) => '<th>' + esc(b.label) + '</th>').join('') + '</tr>' +
+    bands.map((rb) => '<tr><th class="r">' + esc(rb.label) + '</th>' + bands.map((cb) => {
+      const v = m[rb.key + '|' + cb.key] || 0, same = rb.key === cb.key;
+      return '<td style="background:color-mix(in srgb,' + (same ? 'var(--green)' : 'var(--amber)') + ' ' + Math.round(v / max * 65) + '%,transparent)' + (same ? ';font-weight:600' : '') + '">' + (v || '') + '</td>';
+    }).join('') + '</tr>').join('') + '</table></div>' +
+    '<p class="tad-note" style="margin:6px 0 0;">Rows: computed band. Columns: the teacher’s band. The diagonal is where they agree.</p>';
+}
+function grBreakdown(pts, keyOf, labelOf, head) {
+  const groups = {};
+  for (const p of pts) { const k = keyOf(p); (groups[k] = groups[k] || []).push(p); }
+  const rows = Object.keys(groups).map((k) => ({ k, s: grSummary(groups[k]), label: labelOf(k, groups[k][0]) }))
+    .sort((a, b) => b.s.n - a.s.n);
+  return '<table class="gr-t"><tr><th>' + head + '</th><th class="n">Graded</th><th class="n">Same band</th><th class="n">Average gap</th></tr>' +
+    rows.map((x) => '<tr><td>' + esc(x.label) + '</td><td class="n">' + x.s.n + '</td><td class="n">' + x.s.same + '%</td>' +
+      '<td class="n' + (Math.abs(x.s.gap) >= 8 ? ' warn' : '') + '">' + grSigned(x.s.gap) + '</td></tr>').join('') + '</table>';
+}
+function grStageLabel(k) { return k === 'session' ? 'Whole session' : (typeof sessionTypeLabel === 'function' ? sessionTypeLabel(k) : k); }
+
+function grPaint() {
+  if (!grHost || !document.body.contains(grHost)) return;
+  const model = STRENGTH_MODEL, saved = grSavedModel();
+  const trying = JSON.stringify(saved) !== JSON.stringify(model);
+  const rows = grFiltered(), pts = grPoints(rows, model), s = grSummary(pts);
+  const all = gr.rows || [];
+  const teachersSeen = {};
+  all.forEach((r) => { teachersSeen[r.teacher_id] = r.teacher_name || r.teacher_email || r.teacher_id; });
+  const stages = [...new Set(all.map((r) => r.stage).filter((x) => x && x !== 'session'))];
+  const older = all.filter((r) => r.inputs_model !== model.id).length;
+  const opt = (v, l, cur) => '<option value="' + esc(v) + '"' + (v === cur ? ' selected' : '') + '>' + esc(l) + '</option>';
+
+  let h = '<div class="gr-filters">' +
+    '<select class="tad-sel" data-gr="teacher" aria-label="Teacher">' + opt('', 'All teachers', gr.teacher) +
+      Object.keys(teachersSeen).map((id) => opt(id, teachersSeen[id], gr.teacher)).join('') + '</select>' +
+    '<select class="tad-sel" data-gr="part" aria-label="Parts or whole sessions">' + opt('parts', 'Recited parts', gr.part) + opt('session', 'Whole sessions', gr.part) + '</select>' +
+    (gr.part === 'parts' ? '<select class="tad-sel" data-gr="stage" aria-label="Stage">' + opt('', 'All stages', gr.stage) + stages.map((k) => opt(k, grStageLabel(k), gr.stage)).join('') + '</select>' : '') +
+    '<select class="tad-sel" data-gr="period" aria-label="Period">' + opt('30', 'Last 30 days', gr.period) + opt('90', 'Last 90 days', gr.period) + opt('365', 'Last year', gr.period) + opt('all', 'All time', gr.period) + '</select>' +
+    (older ? '<label class="gr-chk"><input type="checkbox" data-gr="allModels"' + (gr.allModels ? ' checked' : '') + '> Include ' + older + ' scored under an older model</label>' : '') +
+  '</div>';
+  if (gr.err) h += errHtml(gr.err);
+  if (gr.busy) h += '<p class="tad-note">' + esc(gr.busy) + '</p>';
+  if (gr.rows && !all.length && !gr.busy) {
+    h += '<div class="gr-card"><b>No teacher grades on the server yet.</b><p class="tad-note" style="margin:6px 0 10px;">Grades arrive as teachers send sessions. ' +
+      'Sessions sent before this update keep their grades inside the stored session; this reads them out (safe to run again).</p>' +
+      '<button class="tad-mini" data-tad="grbackfill">Read grades from past sessions</button></div>';
+  } else if (gr.rows) {
+    h += (trying ? '<p class="gr-trying">Showing the weights you are trying below, not the saved ones.</p>' : '') +
+      '<div class="gr-kpis">' +
+        '<div class="gr-kpi"><b>' + s.n + '</b><span>graded ' + (gr.part === 'parts' ? 'parts' : 'sessions') + ', ' + new Set(pts.map((p) => p.r.teacher_id)).size + ' teacher' + (new Set(pts.map((p) => p.r.teacher_id)).size === 1 ? '' : 's') + '</span></div>' +
+        '<div class="gr-kpi"><b>' + (s.same == null ? '—' : s.same + '%') + '</b><span>same band as computed</span></div>' +
+        '<div class="gr-kpi"><b>' + grSigned(s.gap) + '</b><span>teacher vs computed, average points</span></div>' +
+        '<div class="gr-kpi' + (s.far ? ' warn' : '') + '"><b>' + s.far + '</b><span>15+ points apart</span></div>' +
+      '</div>';
+    if (pts.length) {
+      const far = pts.slice().sort((a, b) => Math.abs(b.t - b.c) - Math.abs(a.t - a.c)).filter((p) => Math.abs(p.t - p.c) >= 10).slice(0, 8);
+      h += '<div class="gr-two"><div class="gr-card"><h4>Computed score against the teacher’s grade</h4>' + grScatter(pts) +
+          '<p class="tad-note" style="margin:4px 0 0;">One dot per graded ' + (gr.part === 'parts' ? 'part' : 'session') + '. On the dashed line they agree; below it the teacher graded lower. Amber: 15 or more points apart.</p></div>' +
+        '<div class="gr-card"><h4>Bands</h4>' + grMatrix(pts, model) + '</div></div>' +
+        '<div class="gr-two"><div class="gr-card"><h4>By teacher</h4>' + grBreakdown(pts, (p) => p.r.teacher_id, (k, p) => p.r.teacher_name || p.r.teacher_email || k, 'Teacher') + '</div>' +
+          '<div class="gr-card"><h4>By stage</h4>' + grBreakdown(pts, (p) => p.r.stage, (k) => grStageLabel(k), 'Stage') + '</div></div>' +
+        '<div class="gr-card"><h4>Biggest disagreements</h4>' + (far.length ? far.map((p) => {
+          const d = p.t - p.c, r = p.r;
+          const cb = strengthBand(p.c, model).label, tb = (model.bands.find((b) => b.key === p.tb) || {}).label || '';
+          return '<div class="gr-row"><span class="gr-pill ' + (d < 0 ? 'lo' : 'hi') + '">' + grSigned(d) + '</span>' +
+            '<b>' + esc(grStageLabel(r.stage)) + (r.range_label ? ' · ' + esc(r.range_label) : '') + '</b>' +
+            '<span class="tad-dim">computed ' + p.c + ' ' + esc(cb) + ' · teacher ' + p.t + ' ' + esc(tb) + ' · ' +
+              esc(r.teacher_name || r.teacher_email || '') + ' · ' + esc(r.student_code || '') + ' · ' + esc(r.date_ymd || '') + '</span>' +
+            (r.student_id ? '<button class="tad-mini" data-tad="grsess" data-id="' + esc(r.student_id) + '" data-code="' + esc(r.student_code || '') + '">Sessions</button>' : '') +
+            '</div>';
+        }).join('') : '<p class="tad-note">No part is 10 or more points apart.</p>') + '</div>';
+    } else if (all.length) h += '<p class="tad-empty">Nothing graded matches these filters.</p>';
+  }
+  grHost.innerHTML = h;
+
+  // The preview line inside the "this device only" box.
+  const pv = $('tadGradesPreview');
+  if (pv) {
+    if (!gr.rows || !all.length) { pv.innerHTML = ''; }
+    else {
+      const a = grSummary(grPoints(rows, saved)), b = s;
+      pv.innerHTML = '<div class="gr-cmp"><span>With the saved weights: <b>' + (a.same == null ? '—' : a.same + '%') + '</b> same band, gap <b>' + grSigned(a.gap) + '</b></span>' +
+        (trying ? '<span>With these weights: <b>' + (b.same == null ? '—' : b.same + '%') + '</b>' +
+          (a.same != null && b.same != null && b.same !== a.same ? ' <em class="' + (b.same > a.same ? 'up' : 'down') + '">' + grSigned(b.same - a.same) + '</em>' : '') +
+          ', gap <b>' + grSigned(b.gap) + '</b></span>' : '<span class="tad-dim">Change a weight to see how the agreement would move.</span>') +
+        '</div><p class="tad-note" style="margin:4px 0 0;">Worked out from every teacher’s graded sessions on the server, with the filters above. Nothing is sent anywhere.</p>';
+    }
+  }
+}
+function tadGradesMount(host) {
+  grHost = host;
+  if (gr.rows === null) grLoad(); else grPaint();
+}
+window.tadGradesMount = tadGradesMount;
+window.tadGradesRefresh = () => grPaint();
+document.addEventListener('change', (e) => {
+  const t = e.target.closest && e.target.closest('[data-gr]');
+  if (!t) return;
+  const k = t.dataset.gr;
+  if (k === 'allModels') gr.allModels = t.checked; else gr[k] = t.value;
+  if (k === 'part') gr.stage = '';
+  grPaint();
+});
+
 window.TehfizAdmin = { open, available };
 
 })();
@@ -16837,6 +17142,86 @@ window.TehfizAdmin = { open, available };
 /* ── TehfizAdmin styles — every selector prefixed .tad- ───────────────── */
 .tad-overlay{display:none;position:fixed;inset:0;background:rgba(26,22,18,.5);z-index:700;
   align-items:stretch;justify-content:center;}
+/* v4_342: the full-screen admin page. */
+html.tad-lock,html.tad-lock body{overflow:hidden;}
+.tad-panel.tad-full{max-width:none;max-height:none;height:100%;padding:0;border:0;box-shadow:none;}
+.tad-top{flex:none;display:flex;align-items:center;gap:12px;background:#17191c;color:#e8e9ea;
+  padding:8px 16px;padding-top:max(8px,env(safe-area-inset-top));min-height:52px;}
+.tad-brand{font-weight:600;letter-spacing:.14em;font-size:13px;}
+.tad-crumb{font-size:13px;opacity:.75;}
+.tad-sp{flex:1;}
+.tad-top .tad-chip-btn{color:#e8e9ea;}
+.tad-back{background:transparent;border:1px solid rgba(232,233,234,.3);color:#e8e9ea;border-radius:8px;
+  padding:0 12px;min-height:40px;font:500 13px var(--ui-font);cursor:pointer;}
+.tad-back:hover{background:rgba(232,233,234,.1);}
+.tad-main{flex:1;min-height:0;display:grid;grid-template-columns:208px minmax(0,1fr);}
+.tad-nav{display:flex;flex-direction:column;gap:2px;padding:10px 8px;background:var(--parchment2);
+  border-right:.5px solid var(--border2);overflow-y:auto;}
+.tad-nav .tad-tab{display:flex;align-items:center;gap:8px;text-align:left;border:0;border-radius:8px;margin:0;
+  padding:0 12px;min-height:40px;font-size:13.5px;color:var(--ink2);}
+.tad-nav .tad-tab:hover{background:var(--parchment3);}
+.tad-nav .tad-tab.on{background:var(--parchment);color:var(--ink);font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,.08);}
+.tad-badge{margin-left:auto;background:var(--amber);color:#fff;border-radius:999px;padding:0 7px;font-size:11px;font-weight:600;line-height:18px;}
+.tad-content{display:flex;flex-direction:column;min-height:0;min-width:0;padding:14px 22px 16px;}
+.tad-content .tad-head{margin-bottom:4px;flex-wrap:wrap;}
+.tad-content .tad-title{font-size:19px;}
+.tad-acts{display:flex;gap:8px;flex-wrap:wrap;}
+@media(max-width:760px){
+  .tad-main{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);}
+  .tad-nav{flex-direction:row;overflow-x:auto;overflow-y:hidden;border-right:0;border-bottom:.5px solid var(--border2);
+    padding:6px 8px;scrollbar-width:none;}
+  .tad-nav::-webkit-scrollbar{display:none;}
+  .tad-nav .tad-tab{flex:none;white-space:nowrap;border-radius:999px;min-height:38px;}
+  .tad-nav .tad-tab.on{background:var(--ink);color:var(--parchment);box-shadow:none;}
+  .tad-content{padding:10px 12px 12px;}
+  .tad-back span{display:none;}
+}
+.tad-filters[hidden]{display:none;}
+.bk-list{display:flex;flex-direction:column;}
+.bk-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:7px 0;border-bottom:.5px solid var(--border);font-size:13px;}
+.bk-pill{font-size:11.5px;font-weight:600;border-radius:999px;padding:1px 9px;}
+.bk-pill.ok{background:color-mix(in srgb,var(--green) 16%,transparent);color:var(--green);}
+.bk-pill.bad{background:var(--lvl1-yellow-bg);color:var(--amber);}
+.gr-filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:2px 0 10px;}
+.gr-filters .tad-sel{width:auto;max-width:220px;}
+.gr-chk{font-size:12.5px;color:var(--ink2);display:flex;gap:6px;align-items:center;}
+.gr-trying{font-size:12.5px;color:var(--amber);background:var(--lvl1-yellow-bg);border-radius:6px;padding:6px 9px;margin:0 0 8px;}
+.gr-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:12px;}
+.gr-kpi{background:var(--parchment2);border-radius:10px;padding:10px 12px;}
+.gr-kpi b{display:block;font-size:22px;font-weight:600;font-variant-numeric:tabular-nums;}
+.gr-kpi span{font-size:12px;color:var(--ink3);}
+.gr-kpi.warn b{color:var(--amber);}
+.gr-two{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:12px;margin-bottom:12px;}
+.gr-card{background:var(--parchment2);border-radius:10px;padding:12px;margin-bottom:12px;min-width:0;}
+.gr-two .gr-card{margin-bottom:0;}
+.gr-card h4{margin:0 0 8px;font-size:13px;font-weight:600;}
+.gr-svg{width:100%;height:auto;display:block;}
+.gr-scroll{overflow-x:auto;}
+.gr-mx{border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums;}
+.gr-mx th{font-size:10.5px;font-weight:600;color:var(--ink3);padding:4px;text-align:center;}
+.gr-mx th.r{text-align:right;white-space:nowrap;}
+.gr-mx td{width:44px;height:30px;text-align:center;border:1px solid var(--parchment);}
+.gr-t{border-collapse:collapse;width:100%;font-size:12.5px;font-variant-numeric:tabular-nums;}
+.gr-t th,.gr-t td{text-align:left;padding:6px 6px;border-bottom:.5px solid var(--border);}
+.gr-t th{font-size:11.5px;color:var(--ink3);font-weight:600;}
+.gr-t .n{text-align:right;}
+.gr-t .warn{color:var(--amber);font-weight:600;}
+.gr-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:7px 0;border-bottom:.5px solid var(--border);font-size:13px;}
+.gr-row .tad-dim{flex:1 1 220px;}
+.gr-pill{font-size:11.5px;font-weight:600;border-radius:999px;padding:1px 8px;font-variant-numeric:tabular-nums;}
+.gr-pill.lo{background:var(--lvl1-yellow-bg);color:var(--amber);}
+.gr-pill.hi{background:var(--parchment3);color:var(--ink2);}
+.gr-cmp{display:flex;gap:10px;flex-wrap:wrap;font-size:12.5px;margin-bottom:2px;}
+.gr-cmp span{background:var(--parchment);border-radius:8px;padding:7px 10px;}
+.gr-cmp em{font-style:normal;font-weight:600;}
+.gr-cmp em.up{color:var(--green);} .gr-cmp em.down{color:var(--red);}
+@media(max-width:900px){.gr-two{grid-template-columns:minmax(0,1fr);} .gr-kpis{grid-template-columns:repeat(2,minmax(0,1fr));}}
+.tad-local{border:1.5px dashed var(--amber);background:var(--lvl1-yellow-bg);border-radius:10px;padding:12px 14px;margin-top:6px;}
+.tad-local-h{font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--amber);margin-bottom:4px;}
+.bc-page{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(260px,1fr);gap:16px;align-items:start;}
+.bc-page .tad-panel{margin:0;}
+.bc-side .bc-hist{margin-top:0;border-top:0;padding-top:0;}
+@media(max-width:900px){.bc-page{grid-template-columns:minmax(0,1fr);}}
 .tad-overlay.tad-on{display:flex;}
 .tad-panel{background:var(--parchment);width:100%;max-width:1100px;
   height:100%;display:flex;flex-direction:column;padding:14px 18px 16px;
@@ -18333,6 +18718,9 @@ span.seg-chip{display:flex;align-items:center;justify-content:center;box-sizing:
           hidden: !window.TehfizCalendar, run: () => window.TehfizCalendar.open() },
         { id: 'invoices', label: 'Invoices', icon: 'invoices', group: 'main',
           hidden: !window.TehfizInvoices, run: () => window.TehfizInvoices.open() },
+        // v4_342: the way into Admin, for the owner only (the server checks too).
+        { id: 'admin', label: 'Admin', icon: 'admin', group: 'main',
+          hidden: !(window.TehfizAdmin && TehfizAdmin.available()), run: () => window.TehfizAdmin.open() },
         { id: 'install', label: 'Install the app', icon: 'install', group: 'tools',
           hidden: !(window.TehfizPWA && window.TehfizPWA.canOffer()), run: () => window.TehfizPWA.install() },
         // v4_333: Import a .qrs file moved into Settings → Storage.
