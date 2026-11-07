@@ -1,6 +1,6 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   name-sync.js — TehfizNameSync — n2
-   Loaded by the teacher app from /app/teacher/name-sync.js?v=n2, after the
+   name-sync.js — TehfizNameSync — n3
+   Loaded by the teacher app from /app/teacher/name-sync.js?v=n3, after the
    TehfizSync module.
 
    Student names live only on the teacher's device; the Tehfiz server has no
@@ -24,6 +24,9 @@
    needs a tap to open its window). Turning off can be for this device only,
    or for every device.
 
+   n3: each student's own time zone travels with the name ({n, z}), for the
+   same reason: it is about the student and stays off the Tehfiz server.
+
    Merge: each name carries the time it was last changed. Per student the
    newer one wins, on both sides. A name cleared on purpose is a change too.
    Students removed from this device are left alone in the Drive copy.
@@ -39,7 +42,7 @@
    ═══════════════════════════════════════════════════════════════════════ */
 (function () {
 'use strict';
-const TEHFIZ_NAMESYNC_VERSION = 'n2';
+const TEHFIZ_NAMESYNC_VERSION = 'n3';
 
 const SCOPE = 'https://www.googleapis.com/auth/drive.appdata';
 const FILE_NAME = 'tehfiz-student-names.json';
@@ -68,6 +71,8 @@ function toast(m) { if (typeof window.showToast === 'function') window.showToast
 function isOn() { return get(K.on, null) === '1'; }
 function who() { const s = sync(); return s && s.who ? s.who() : null; }
 function rosterNow() { const s = sync(); return s && s.roster ? s.roster() : []; }
+// n3: what is tracked per student — the name and the time zone together.
+function keyOf(s) { return (s.name || '') + '\u0001' + (s.tz || ''); }
 function ago(ms) {
   const d = Math.max(0, Date.now() - ms) / 1000;
   if (d < 60) return 'just now';
@@ -227,8 +232,10 @@ function noteChanges() {
   const next = {};
   let changed = 0;
   rosterNow().forEach((s) => {
-    next[s.id] = s.name || '';
-    if (snap && (snap[s.id] || '') !== (s.name || '')) { meta[s.id] = now; changed++; }
+    next[s.id] = keyOf(s);
+    // A snapshot from n2 holds the name alone; read it as name + no zone.
+    const was = snap ? String(snap[s.id] || '') : null;
+    if (was !== null && (was.indexOf('\u0001') < 0 ? was + '\u0001' : was) !== keyOf(s)) { meta[s.id] = now; changed++; }
   });
   put(K.snap, next);
   if (changed) { put(K.meta, meta); put(K.dirty, '1'); }
@@ -237,7 +244,7 @@ function noteChanges() {
 
 function resnap() {
   const next = {};
-  rosterNow().forEach((s) => { next[s.id] = s.name || ''; });
+  rosterNow().forEach((s) => { next[s.id] = keyOf(s); });
   put(K.snap, next);
 }
 
@@ -253,26 +260,28 @@ async function run() {
     const rStu = (remote && remote.students) || {};
     const meta = get(K.meta, {});
     const local = {};
-    rosterNow().forEach((s) => { local[s.id] = { n: s.name || '', c: s.code || '', at: meta[s.id] || 0 }; });
+    rosterNow().forEach((s) => { local[s.id] = { n: s.name || '', z: s.tz || '', c: s.code || '', at: meta[s.id] || 0 }; });
 
     const out = {};
-    const apply = {};
+    const apply = {}, applyZ = {};
     const ids = new Set([...Object.keys(rStu), ...Object.keys(local)]);
     ids.forEach((sid) => {
       const L = local[sid], R = rStu[sid];
-      if (!R) { if (L.n || L.at) out[sid] = L; return; }
+      if (!R) { if (L.n || L.z || L.at) out[sid] = L; return; }
       if (!L) { out[sid] = R; return; }               // not on this device: keep it in Drive
       let w;
       if (L.at > R.at) w = L;
       else if (R.at > L.at) w = R;
       else w = R.n ? R : L;                           // tie: keep whichever has a name
-      out[sid] = { n: w.n, c: L.c || R.c || '', at: w.at };
+      out[sid] = { n: w.n, c: L.c || R.c || '', at: w.at, ...((w.z || '') ? { z: w.z } : {}) };
       if (w.n !== L.n) { apply[sid] = w.n; meta[sid] = w.at; }
+      if ((w.z || '') !== (L.z || '')) { applyZ[sid] = w.z || ''; meta[sid] = w.at; }
     });
 
     const changedLocal = Object.keys(apply).length;
-    if (changedLocal) {
-      sync().applyNames(apply);
+    if (Object.keys(applyZ).length && sync().applyTz) sync().applyTz(applyZ);
+    if (changedLocal || Object.keys(applyZ).length) {
+      if (changedLocal) sync().applyNames(apply);
       put(K.meta, meta);
       resnap();                                       // these came from Drive: not new edits here
     }

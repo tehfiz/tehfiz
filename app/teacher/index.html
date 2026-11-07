@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ═══════════════════════════════════════════════════════════════════
-     Tehfiz teacher app — v4_327
+     Tehfiz teacher app — v4_341
      Deployed from the `tehfiz` repo at app/teacher/index.html (the repo root
      is the web root). Locally, tehfiz-api/public/ is a clone of that repo:
      test with `npm run dev`, then commit and push from inside public/.
@@ -16,9 +16,9 @@
 if(t==='classic'||t==='lapis'||t==='mulberry')d.setAttribute('data-tz-theme',t);
 if(m==='dark'||(m==='device'&&window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches))d.setAttribute('data-tz-mode','dark');}catch(e){}})();</script>
 <link rel="stylesheet" href="/app/shared/tehfiz-shared.css?v=s13">
-<script src="/app/shared/tehfiz-shared.js?v=s12"></script>
+<script src="/app/shared/tehfiz-shared.js?v=s14"></script>
 <script src="/app/shared/tehfiz-ornament.js?v=o2"></script>
-<script src="/app/shared/tehfiz-header.js?v=h4"></script>
+<script src="/app/shared/tehfiz-header.js?v=h5"></script>
 <script src="/app/shared/tehfiz-pwa.js?v=p2"></script>
 <!-- Installable app (v4_305): manifest, icons, and the service worker TehfizPWA registers. -->
 <link rel="manifest" href="/app/teacher/manifest.webmanifest">
@@ -1046,6 +1046,7 @@ input.corr-btn.sel-c4{background:var(--parchment3);color:var(--ink2);border-colo
 .seg-mode{font-size:12px;font-weight:600;padding:2px 5px;border-radius:4px;white-space:nowrap;flex:none;}
 .seg-mode.recite{background:var(--parchment3);color:var(--ink2);}
 .seg-mode.spot{background:var(--spot-blue-bg);color:var(--spot-blue);}
+.seg-auto{font-size:11px;color:var(--ink3);border:1px dashed var(--border2);border-radius:4px;padding:0 5px;align-self:center;}
 .seg-row.spot{background:rgba(26,74,138,.045);border-radius:5px;padding:5px;margin:3px 0;}
 .seg-row{cursor:pointer;border-radius:5px;padding:4px 5px;transition:background .12s,box-shadow .12s;}
 .seg-row:hover{background:var(--parchment3);}
@@ -1053,7 +1054,18 @@ input.corr-btn.sel-c4{background:var(--parchment3);color:var(--ink2);border-colo
 .seg-row.active:hover{background:var(--gold-pale);}
 .seg-live{color:var(--gold-ink);font-size:11px;line-height:1;flex:none;}
 .seg-row.collapsed{display:flex;align-items:center;gap:6px;padding:5px 6px;opacity:.82;}
-.seg-row.collapsed:hover{opacity:1;}
+.seg-row.collapsed:hover,.seg-row.collapsed.active{opacity:1;}
+.seg-row.collapsed{cursor:pointer;}
+.setup-more-btn{margin-top:4px;background:none;border:none;padding:2px 0;font:400 12px var(--ui-font);color:var(--ink3);text-decoration:underline;cursor:pointer;}
+.setup-more-btn:hover{color:var(--ink);}
+.setup-more-btn[hidden],#setupMore[hidden]{display:none;}
+.seg-stg{flex:none;font-family:var(--ui-font);font-size:11.5px;font-weight:600;padding:1px 6px;border-radius:5px;background:var(--parchment2);color:var(--ink2);}
+.seg-chev{margin-left:4px;flex:none;color:var(--ink3);font-size:15px;line-height:1;}
+.seg-collapsed-meta{flex:none;}
+.seg-go{flex:none;width:28px;height:26px;border:1px solid var(--border);border-radius:6px;background:transparent;color:var(--ink2);cursor:pointer;font-size:14px;line-height:1;}
+.seg-go:hover{color:var(--ink);background:var(--parchment2);}
+.seg-fold{flex:none;margin-left:2px;width:26px;height:26px;border:1px solid var(--border);border-radius:6px;background:transparent;color:var(--ink3);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;}
+.seg-fold:hover{color:var(--ink);background:var(--parchment2);}
 .seg-collapsed-label{font-family:var(--ui-font);font-size:13px;color:var(--ink2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .seg-collapsed-meta{margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink3);white-space:nowrap;}
 .seg-mini.spot{background:var(--spot-blue-bg);border-color:rgba(26,74,138,.35);color:var(--spot-blue);}
@@ -1289,7 +1301,13 @@ body.seg-arming .word-btn:hover,body.seg-arming .qcf-word:hover{outline:2px soli
 .sess-name{font-weight:600;font-size:14px;}
 .sess-meta{font-size:12px;color:var(--ink3);margin-top:1px;font-family:'IBM Plex Mono',monospace;}
 .sess-pills{display:flex;flex-wrap:wrap;gap:3px;}
-.sess-actions{display:flex;gap:3px;flex-wrap:wrap;}
+.sess-actions{display:flex;gap:3px;flex-wrap:wrap;align-items:center;}
+.sess-card.tap{cursor:pointer;}
+.sess-card.tap:hover{border-color:var(--border2);}
+.sess-card.tap:focus-visible{outline:2px solid var(--gold);outline-offset:1px;}
+.sess-dots{min-width:34px;font-size:15px;line-height:1;}
+.sess-graded{font-size:11px;padding:1px 7px;border-radius:999px;border:1px solid var(--border2);color:var(--ink2);}
+.sess-menu{display:flex;flex-wrap:wrap;gap:4px;padding:8px 0 4px;border-top:1px dashed var(--border2);margin-top:4px;}
 .btn-tiny{padding:3px 7px;border-radius:4px;font-size:12px;cursor:pointer;font-family:var(--ui-font);border:.5px solid var(--border2);background:var(--parchment);color:var(--ink2);}
 .btn-tiny:hover{background:var(--parchment3);}
 .btn-tiny.del:hover{background:var(--red-bg);color:var(--red);border-color:var(--red);}
@@ -1989,6 +2007,10 @@ body.compact-ui .quick-form::before{
           <input class="tinput" id="studentName" placeholder="Student name" oninput="renderSetupSummary()" />
           <input class="tinput" id="sessionName" placeholder="Session name (optional)" style="width:105px;flex:none;" oninput="renderSetupSummary()" title="Left blank, the session is named from the ranges recited" />
         </div>
+        <!-- v4_333: remarks and "this session is for" fold under More details;
+             they open by themselves when remarks already has text. -->
+        <button type="button" class="setup-more-btn" id="setupMoreBtn" onclick="toggleSetupMore(true)">More details <span aria-hidden="true">›</span></button>
+        <div id="setupMore" hidden>
         <textarea class="tinput" id="sessionRemarks" placeholder="Session remarks" maxlength="240" rows="2" style="margin-top:4px;resize:none;font-size:11px;line-height:1.5;height:auto;width:100%;display:block;"></textarea>
         <!-- What this session is for. Filled in from what gets marked and
              updated as it does, so it costs nothing to leave alone — but
@@ -1997,6 +2019,7 @@ body.compact-ui .quick-form::before{
              starts the panel's space belongs to the mistake list, and the
              collapsed summary carries the focus instead. -->
         <div class="live-focus" id="liveFocus"></div>
+        </div>
       </div>
 
       <!-- Segment ranges: rendered by renderSegments(). -->
@@ -2655,7 +2678,7 @@ body.compact-ui .quick-form::before{
    console as APP_VERSION, or grep the deployed HTML for it. Bumped on every
    saved build; vcheck.py asserts it matches the filename, so a forgotten bump
    fails the integrity check rather than shipping a lie. */
-const APP_VERSION = 'v4_327';
+const APP_VERSION = 'v4_341';
 window.APP_VERSION = APP_VERSION;
 console.info('Tehfiz teacher app ' + APP_VERSION);
 
@@ -5203,7 +5226,9 @@ const SEG_ARM_TIMEOUT_MS = 45000;
 // entry: how the range is being set — 'auto' | 'pick' | 'type'.
 function newSegment(mode){
   const m = mode || 'recite';
-  return {id:`sg${++_segSeq}_${Date.now().toString(36)}`, type:_lastSessionType,
+  // typeAuto: the stage was not chosen for this segment by the teacher, so the
+  // map may suggest one (v4_330, _suggestStagesFromMap). Not saved.
+  return {id:`sg${++_segSeq}_${Date.now().toString(36)}`, type:_lastSessionType, typeAuto:true,
           mode:m,
           startKey:null, endKey:null, startSrc:null, endSrc:null,
           spotCount: m==='spot' ? 8 : null};
@@ -5329,6 +5354,7 @@ function addSegment(mode){
   const sg = newSegment(mode);
   segments.push(sg);
   activeSegmentId = sg.id;
+  _segOpenId = sg.id;
   sessionSaved = false;
   renderSegments();
   // A recite segment can fill itself in; a spot segment can't do anything until
@@ -5386,6 +5412,73 @@ function confirmDeleteSegment(alsoMistakes){
   showToast('Segment and its mistakes deleted');
 }
 
+/* v4_333: every segment is one line until it's tapped open. The open one stays
+   open while you work on it (and while a word is being tapped for it). */
+let _segOpenId = null;
+/* v4_337: jump the mushaf to where a segment starts, whenever it is needed. */
+function goToSegmentStart(id){
+  const sg = segments.find(s=>s.id===id);
+  const o = sg && segOrdered(sg);
+  if(!o || !keyValid(o.startKey)) return;
+  const [s,a] = o.startKey.split(':').map(Number);
+  navigateToVerse(s, a, null);
+}
+/* v4_337: a session set up from a planned lesson — its segments, in order,
+   with their stages and ranges, ready to listen to. The current session (if
+   any) stays in Sessions. Returns false if the current one needs attention. */
+function startSessionFromPlan(sid, plan){
+  if(mistakes.length && !sessionSaved){ clearResume(); if(mistakes.length) return false; }
+  else resetCurrent();
+  if(window.TehfizSync) TehfizSync.pickStudent(sid);
+  const segs = (plan||[]).map(p=>{
+    const sg = newSegment(p.mode==='spot'?'spot':'recite');
+    sg.type = p.type || 'unassigned'; sg.typeAuto = false;
+    if(p.start && p.end && keyValid(p.start) && keyValid(p.end)){
+      sg.startKey = p.start; sg.endKey = p.end; sg.startSrc = 'marked'; sg.endSrc = 'marked';
+      sg.rangeLabel = p.label || null;
+      if(p.unit){ sg.rangeUnit = p.unit; sg.rangeText = p.utext || ''; }
+    }
+    if(sg.mode==='spot') sg.spotCount = p.spots || 8;
+    return sg;
+  });
+  if(segs.length){
+    segments = segs; activeSegmentId = segs[0].id; _segOpenId = null;
+    _lastSessionType = segs[segs.length-1].type || _lastSessionType;
+    renderSegments();
+    if(segs[0].startKey) goToSegmentStart(segs[0].id);
+  }
+  return true;
+}
+/* v4_337: the range picker for something other than a session segment (the
+   lesson editor's planned segments). cb(result, unit, text). */
+function openRangePickerFor(cb, anchorEl, unit, text, opts){
+  cancelSegmentArm();
+  // v4_339: the new picker (range-picker.js) when it is loaded.
+  if(window.TehfizRange){
+    const o = opts || {}, pages = _studentMapPages(o.sid);
+    const rot = pages && o.stage==='old' && window.TehfizProfile && TehfizProfile.oldRotation ? TehfizProfile.oldRotation(o.sid, pages) : null;
+    TehfizRange.open({ title: o.title || 'Set range', start: o.start, end: o.end, unit, pages, stage: o.stage,
+      oldJuz: rot ? rot.juz : null, onSet: (r)=>cb(r, r.unit, r.text) });
+    return;
+  }
+  _rangePicker = {segId:null, cb, unit: unit || 'page', text: text || '', anchor: anchorEl || null};
+  renderRangePicker();
+}
+/* v4_339: a student's memorisation map, if this device has it. */
+function _studentMapPages(sid){
+  try{
+    const id = sid || (window.TehfizSync && TehfizSync.currentStudentId && TehfizSync.currentStudentId());
+    if(!id || !window.TehfizProfile || !TehfizProfile.planFor) return null;
+    const c = TehfizProfile.planFor(id);
+    return c && c.map && c.map.pages || null;
+  }catch(e){ return null; }
+}
+function toggleSegmentRow(id){
+  activeSegmentId = id;
+  _segOpenId = _segOpenId===id ? null : id;
+  _segOrphanWarn = null;
+  renderSegments();
+}
 function setActiveSegment(id){
   activeSegmentId = id;
   _segOrphanWarn = null;
@@ -5401,6 +5494,7 @@ function setSegmentType(id, type){
   const sg = segments.find(s=>s.id===id);
   if(!sg) return;
   sg.type = type;
+  delete sg.typeAuto; delete sg.typeFromMap;   // the teacher's choice stands
   _lastSessionType = type;   // next segment inherits it
   sessionSaved = false;
   renderSegments();
@@ -5580,8 +5674,20 @@ function openRangePicker(segId, anchorEl){
   const sg = segments.find(s=>s.id===segId);
   if(!sg) return;
   cancelSegmentArm();
+  if(window.TehfizRange){
+    const ok = keyValid(sg.startKey) && keyValid(sg.endKey);
+    TehfizRange.open({
+      title: (typeof sessionTypeLabel==='function' ? sessionTypeLabel(sg.type||'unassigned') : 'Segment') + ' \u00b7 range',
+      start: ok ? sg.startKey : null, end: ok ? sg.endKey : null, unit: sg.rangeUnit,
+      pages: _studentMapPages(), stage: sg.type,
+      mushaf: { juz: currentJuzNum(), surah: currentSurahNum(), page: currentPageNum() },
+      onWords: ()=>armSegmentMark(segId,'start'),
+      onSet: (r)=>_applySegRange(segId, r)
+    });
+    return;
+  }
   // Reopen on the unit they used last for this segment, else the handiest one
-  _rangePicker = {segId, unit: sg.rangeUnit || 'juz', text: sg.rangeText || '',
+  _rangePicker = {segId, cb:null, unit: sg.rangeUnit || 'juz', text: sg.rangeText || '',
                   anchor: anchorEl || null};
   renderRangePicker();
 }
@@ -5644,9 +5750,21 @@ function renderRangePreview(){
   if(btn) btn.disabled = false;
 }
 
+/* v4_339: a range from the new picker, set on a session segment. */
+function _applySegRange(segId, r){
+  const sg = segments.find(s=>s.id===segId);
+  if(!sg || !r) return;
+  const next = {startKey:r.startKey, endKey:r.endKey, startSrc:'marked', endSrc:'marked',
+                rangeUnit:r.unit, rangeText:r.text, rangeLabel: r.unit==='verses' ? null : r.label};
+  if(requestSegmentRangeChange(sg.id, next)) return;
+  Object.assign(sg, next);
+  sessionSaved=false;
+  renderSegments();
+}
 function applyRangePicker(){
   const r=_pickerResult();
   if(!r || r.error) return;
+  if(_rangePicker.cb){ const cb=_rangePicker.cb, u=_rangePicker.unit, tx=_rangePicker.text; closeRangePicker(); cb(r, u, tx); return; }
   const sg = segments.find(s=>s.id===_rangePicker.segId);
   if(sg){
     const next = {startKey:r.startKey, endKey:r.endKey, startSrc:'marked', endSrc:'marked',
@@ -5697,7 +5815,7 @@ function renderRangePicker(){
       <button onclick="pickerQuick('page')">Current page</button>
     </div>
     <div class="rp-foot">
-      <button class="rp-alt" onclick="const i='${_rangePicker.segId}';closeRangePicker();armSegmentMark(i,'start');">⌖ Tap words instead</button>
+      ${_rangePicker.cb?'<span></span>':`<button class="rp-alt" onclick="const i='${_rangePicker.segId}';closeRangePicker();armSegmentMark(i,'start');">⌖ Tap words instead</button>`}
       <button class="rp-apply" id="rpApply" onclick="applyRangePicker()">Set</button>
     </div>`;
   renderRangePreview();
@@ -5850,7 +5968,16 @@ function renderSetupSummary(){
         ? 'You set this session as '+String(FOCUS_LABEL[f]).toLowerCase()
         : 'Worked out from what you have marked')}">${esc(FOCUS_LABEL[f])}</span>`
     : '';
+  syncSetupMore();
   sum.innerHTML=`<span class="ss-chev">▸</span><span class="ss-text">${esc(bits.join(' · '))}</span>${fChip}<span class="ss-edit">✎</span>`;
+}
+let _setupMoreOpen = false;
+function toggleSetupMore(on){ _setupMoreOpen = on; syncSetupMore(); if(on){ const r=document.getElementById('sessionRemarks'); if(r && !document.body.classList.contains('compact-ui')) r.focus(); } }
+function syncSetupMore(){
+  const box=document.getElementById('setupMore'), btn=document.getElementById('setupMoreBtn');
+  if(!box||!btn) return;
+  const open = _setupMoreOpen || !!(document.getElementById('sessionRemarks')?.value||'').trim();
+  box.hidden = !open; btn.hidden = open;
 }
 // Called on the first commit — the moment setup is demonstrably finished.
 function collapseSetupOnce(){
@@ -5859,9 +5986,33 @@ function collapseSetupOnce(){
   applySetupCollapse();
 }
 
+/* v4_330: suggest each segment's stage from the student's memorisation map —
+   New where the range goes past what is memorised (or is the new lesson),
+   Recent or Old by what the range mostly is. Only for segments of the session
+   being logged whose stage the teacher has not picked; never for a session
+   reopened from the list, whose stages are history. */
+let _segAutoOff = false;
+function _suggestStagesFromMap(){
+  if(_segAutoOff || !window.TehfizProfile || !window.TehfizMap || !window.TehfizSync) return;
+  const sid = TehfizSync.currentStudentId && TehfizSync.currentStudentId();
+  if(!sid) return;
+  const pl = TehfizProfile.planFor(sid, ()=>renderSegments());
+  if(!pl || !pl.map || !TehfizMap.valid(pl.map.pages)) return;
+  segments.forEach(sg=>{
+    if(sg.mode==='spot' || !sg.typeAuto) return;
+    const o = segOrdered(sg);
+    if(!keyValid(o.startKey) || !keyValid(o.endKey)) return;
+    const t = TehfizMap.stageFor(pl.map.pages, o.startKey, o.endKey);
+    if(!t) return;
+    if(sg.type !== t){ sg.type = t; _lastSessionType = t; sessionSaved = false; }
+    sg.typeFromMap = true;
+  });
+}
+
 function renderSegments(){
   const el = document.getElementById('segPanel');
   if(!el) return;
+  _suggestStagesFromMap();
   // Re-test the stale warning against the CURRENT segments — widening a range
   // or adding a recite segment fixes the problem, and the notice has to notice.
   if(_segOrphanWarn){
@@ -5915,20 +6066,22 @@ function renderSegments(){
             : 'Set range…'}</button>`;
 
     const isActive = raw.id===activeSegmentId || (!activeSegmentId && i===segments.length-1);
-
-    // Inactive segments collapse to one line. Five expanded segments is what
-    // actually crowds the panel, and only the active one is being operated —
-    // tapping expands it and makes it active in the same gesture.
-    if(!isActive){
+    // v4_333: one line each — stage, range, verses — until tapped open. A
+    // segment being marked, confirmed or spot-tested stays open.
+    const isOpen = raw.id===_segOpenId || (segmentArm && segmentArm.segId===raw.id) || !!confirming || active;
+    if(!isOpen){
       const o=segOrdered(raw);
-      const label = raw.rangeLabel || describeRange(o.startKey,o.endKey) || 'no range';
+      const label = raw.rangeLabel || describeRange(o.startKey,o.endKey) || 'no range yet';
       const n = segVerseCount(o);
-      return `<div class="seg-row collapsed${spot?' spot':''}" onclick="setActiveSegment('${raw.id}')"
-                   title="Tap to make this the active segment">
-        <span class="seg-ord">${i+1}</span>
-        <span class="seg-mode ${spot?'spot':'recite'}">${spot?'Spot':'Recite'}</span>
+      return `<div class="seg-row collapsed${spot?' spot':''}${isActive?' active':''}" onclick="toggleSegmentRow('${raw.id}')"
+                   title="Tap to change this segment${isActive&&multi?' — new mistakes go here':''}">
+        ${isActive&&multi?'<span class="seg-live" title="Active">●</span>':''}
+        <span class="seg-stg">${esc(sessionTypeLabel(raw.type||'unassigned'))}</span>
+        ${spot?'<span class="seg-mode spot">Spot</span>':''}
         <span class="seg-collapsed-label">${esc(label)}</span>
-        <span class="seg-collapsed-meta">${n?`${n}v`:''}${spot&&raw.spotsData?.length?` · ${raw.spotsData.length} spots`:''}</span>
+        <span class="seg-collapsed-meta">${n?`${n} v`:''}${spot&&raw.spotsData?.length?` · ${raw.spotsData.length} spots`:''}</span>
+        ${o.startKey?`<button class="seg-go" onclick="event.stopPropagation();goToSegmentStart('${raw.id}')" title="Go to where this segment starts (${o.startKey})" aria-label="Go to the start">↪</button>`:''}
+        <span class="seg-chev" aria-hidden="true">›</span>
       </div>`;
     }
 
@@ -5942,13 +6095,16 @@ function renderSegments(){
         <select class="seg-type" onclick="event.stopPropagation()" onchange="setSegmentType('${raw.id}',this.value)">
           ${types.map(t=>`<option value="${t.id}"${t.id===raw.type?' selected':''}>${t.label}</option>`).join('')}
         </select>
+        ${raw.typeFromMap?'<span class="seg-auto" title="Chosen from the memorisation map \u2014 pick another stage if it is wrong">map</span>':''}
         <button class="seg-del" onclick="event.stopPropagation();removeSegment('${raw.id}')" title="Remove this segment">✕</button>
+        <button class="seg-fold" onclick="event.stopPropagation();toggleSegmentRow('${raw.id}')" title="Fold this segment to one line" aria-label="Fold"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg></button>
       </div>
       <div class="seg-row-line">
         <label class="seg-lbl">Range</label>
         ${spot ? rangeBtn
                : `${chip('start', sg.startKey, sg.startSrc)}<span class="seg-arrow">→</span>${chip('end', sg.endKey, sg.endSrc)}`}
         <span class="seg-count">${n?`${n} verse${n>1?'s':''}`:''}</span>
+        ${sg.startKey?`<button class="seg-go" onclick="event.stopPropagation();goToSegmentStart('${raw.id}')" title="Go to where this segment starts (${sg.startKey})" aria-label="Go to the start">↪</button>`:''}
         ${spot?'':`<button class="seg-mini tiny" onclick="event.stopPropagation();openRangePicker('${raw.id}',this)" title="Set the whole range at once by juz, page or surah">…</button>`}
       </div>
       ${spot?`<div class="seg-row-line">
@@ -5998,6 +6154,8 @@ function renderSegments(){
     ? `<div class="seg-note"><span class="seg-note-swatch">2:1</span> dashed = filled in automatically. Tap it to correct.</div>`
     : '';
 
+  // v4_337: tapping a segment open or closed keeps the list where it was.
+  const _segKeep = el.querySelector('.seg-scroll')?.scrollTop || 0;
   el.innerHTML = `<div class="seg-head">
       <span class="seg-head-title">Segment${multi?`s · ${segments.length}`:''}</span>
       <span class="seg-head-actions">
@@ -6005,6 +6163,7 @@ function renderSegments(){
         <button class="seg-mini spot" onclick="addSegment('spot')" title="A passage checked by sampling random spots">+ Spot test</button>
       </span>
     </div><div class="seg-scroll">${rows || empty}</div>${footnote}`;
+  if(_segKeep){ const sc=el.querySelector('.seg-scroll'); if(sc) sc.scrollTop=_segKeep; }
   renderOrphanWarn();
 }
 
@@ -7959,7 +8118,9 @@ function buildSessionObj(){
             // Raw inputs, not the score. A score can't be recomputed under a
             // revised formula; these can — which is the whole point of storing
             // them, since the model WILL be recalibrated once there's data.
-            strengthInputs: segmentStrengthInputs(segments, o, mistakes)};
+            strengthInputs: segmentStrengthInputs(segments, o, mistakes),
+            // The teacher's own grade, when given (Finish session / Edit grades).
+            ...(o.teacherGrade ? {teacherGrade:{...o.teacherGrade}} : {})};
   });
   return{version:QRS_VERSION,student,remarks,
     sessionName,
@@ -8007,6 +8168,7 @@ function buildSessionObj(){
        inferSessionFocus. Absent means "work it out from the mistakes", which
        stays correct even if those mistakes are later edited. */
     ...(_currentFocus ? {focus:_currentFocus} : {}),
+    ...(_sessionTeacherGrade ? {teacherGrade:{..._sessionTeacherGrade}} : {}),
     // Calibration record. `model` stamps which formula produced `score`, so an
     // aggregate never mixes scales; `inputs` is what a future model refits on.
     strength:(()=>{
@@ -8205,6 +8367,8 @@ function resetCurrent(){
   // Back to automatic. A focus carried over from the last session would be a
   // claim about this one that nobody made.
   _currentFocus = null;
+  _sessionTeacherGrade = null;
+  _segAutoOff = false;
   renderMistakesList();updateStats();
   _currentSessionId = null;
   _sessionInstant = null;
@@ -8218,6 +8382,7 @@ function resetCurrent(){
   window.TehfizSync && TehfizSync.clearBinding();
   document.getElementById('sessionName').value='';
   document.getElementById('sessionRemarks').value='';
+  _setupMoreOpen=false; syncSetupMore();
   cancelSegmentArm();
   segments=[];
   activeSegmentId=null;
@@ -8279,14 +8444,17 @@ function loadSessionById(id){
 
 // ── Load session into editor ──
 async function loadSessionIntoEditor(sess){
+  _segAutoOff = true;   // its stages are history: no map suggestions
   document.getElementById('studentName').value=sess.student||'';
   window.TehfizSync && TehfizSync.bindFromSession(sess);
   document.getElementById('sessionName').value=sessionNameOf(sess);
   document.getElementById('sessionRemarks').value=sess.remarks||'';
+  syncSetupMore();
   mistakes=migrateMistakes([...sess.mistakes]);
   // Only present when the teacher overrode the inference; absent means the
   // chip goes back to deriving it, which stays correct as mistakes are edited.
   _currentFocus = sess.focus || null;
+  _sessionTeacherGrade = sess.teacherGrade ? {...sess.teacherGrade} : null;
   // Segments: stored ones win; a legacy file gets one loose inferred span so
   // the passage is at least located (see inferSegment for why it can't be
   // trusted as a denominator).
@@ -8865,7 +9033,12 @@ function renderSessionsList(){
        and the level row is dropped when there is nothing to level. */
     const _tal = corrTally(s.mistakes);
     const {c1:self,c2:prompted,c3:teacher,c4:other}=_tal;
-    return`<div class="sess-card">
+    // v4_333: tap the card to review it; Send stays visible, the rest is in ⋯.
+    const _graded = isTeacherGraded(s)||(s.segments||[]).some(isTeacherGraded);
+    const _menu = _sessMenuOpen===s.id;
+    return`<div class="sess-card tap" role="button" tabindex="0" title="Tap to review"
+        onclick="if(!event.target.closest('button,a,.sess-menu'))reviewSession(${s.id})"
+        onkeydown="if((event.key==='Enter'||event.key===' ')&&event.target===this){event.preventDefault();reviewSession(${s.id});}">
       <div class="sess-card-head">
         <div>
           <div class="sess-name">${esc(s.student)}</div>
@@ -8879,22 +9052,29 @@ function renderSessionsList(){
             <span style="color:var(--ink3)">◌ ${other}</span>`:''}
             ${_tal.tajweed?`<span style="color:var(--tajweed)">${_tal.tajweed} tajweed</span>`:''}
             ${sessionFocusChipHTML(s)}
+            ${_graded?'<span class="sess-graded">&#10003; Graded</span>':''}
           </div>
         </div>
         <div class="sess-actions">
-          <button class="btn-tiny resume" onclick="loadSessionById(${s.id})">▶ Load</button>
-          <button class="btn-tiny accent" onclick="reviewSession(${s.id})">&#128202; Review</button>
-          <button class="btn-tiny" onclick="exportSingleQRS(${s.id})">&#8681; Save &amp; Export</button>
-          <button class="btn-tiny" onclick="shareTextSession(${s.id})">&#8679; Text</button>
-          <button class="btn-tiny del" onclick="deleteSession(${s.id})">&#215;</button>
+          <button class="btn-tiny sess-dots" onclick="toggleSessMenu(${s.id})" aria-haspopup="true" aria-expanded="${_menu}" title="More" aria-label="More">&#8943;</button>
         </div>
       </div>
+      ${_menu?`<div class="sess-menu" role="menu">
+          <button class="btn-tiny" onclick="toggleSessMenu(null);reviewSession(${s.id})">&#128202; Review</button>
+          <button class="btn-tiny" onclick="toggleSessMenu(null);loadSessionById(${s.id})">▶ Load to keep working</button>
+          <button class="btn-tiny" onclick="toggleSessMenu(null);TehfizGrades.openEditor(${s.id})">${_graded?'&#10003; Grades':'Grade'}</button>
+          <button class="btn-tiny" onclick="toggleSessMenu(null);exportSingleQRS(${s.id})">&#8681; Save &amp; Export .qrs</button>
+          <button class="btn-tiny" onclick="toggleSessMenu(null);shareTextSession(${s.id})">&#8679; Copy as text</button>
+          <button class="btn-tiny del" onclick="toggleSessMenu(null);deleteSession(${s.id})">&#215; Delete</button>
+        </div>`:''}
       <div class="sess-pills">${s.mistakes.slice(0,8).map(m=>`<span class="m-badge" style="font-size:11px;${typeBadgeStyle(s.typeConfig,m.type)}">${m.surah}:${m.ayah} ${typeLabelFor(s.typeConfig,m.type)}</span>`).join('')}${s.mistakes.length>8?`<span style="font-size:12px;color:var(--ink3)">+${s.mistakes.length-8}</span>`:''}</div>
     </div>`;
   }).join('');
   window.TehfizSync && TehfizSync.decorateSessionList();
 }
 
+let _sessMenuOpen = null;
+function toggleSessMenu(id){ _sessMenuOpen = (id==null || _sessMenuOpen===id) ? null : id; renderSessionsList(); }
 function deleteSession(id){
   if(!confirm('Delete this session?')) return;
   localStorage.setItem('qrt4_sessions',JSON.stringify(getSessions().filter(x=>x.id!==id)));
@@ -9141,6 +9321,10 @@ function focusPickToggle(input){
    "work it out from what has been marked", which is the default and stays
    correct as mistakes are added and removed. */
 let _currentFocus = null;
+/* The teacher's own grade for the whole session (v4_330), set from Finish
+   session or Sessions → Edit grades; per-segment grades live on the segments. */
+let _sessionTeacherGrade = null;
+function setSessionTeacherGrade(g){ _sessionTeacherGrade = g ? {...g} : null; }
 
 function renderLiveFocus(){
   const el = document.getElementById('liveFocus');
@@ -9302,12 +9486,14 @@ const STRENGTH_TIP = 'Memorization strength, shown as a percentage.\n\n'
   + 'never scores the same as a flawless recitation.\n\n'
   + 'Spot-tested and estimated ranges are excluded — they have no reliable verse count.';
 
-function strengthCardHTML(v, label, sub){
-  const b = strengthBand(v);
+// band: the band to show (the teacher's choice may differ from where v falls);
+// noPct: the teacher gave a band only, so the dial shows no made-up %.
+function strengthCardHTML(v, label, sub, band, noPct){
+  const b = band || strengthBand(v);
   return `<div class="str-card str-${b.key}" title="${STRENGTH_TIP}">
     <div class="str-dial">
       ${strengthArcSVG(v, b.color)}
-      <div class="str-val" style="color:${b.color};">${v==null?'—':v+'%'}</div>
+      <div class="str-val" style="color:${b.color};">${v==null||noPct?'—':v+'%'}</div>
     </div>
     <div class="str-meta">
       <div class="str-title">${label}<span class="str-info" onclick="openShortcutsToStrength()">?</span></div>
@@ -9365,11 +9551,11 @@ function buildTextReport(s){
   const _sInp = inputsAreCurrent(s)
     ? sessionInputsWithPages(s.strength && s.strength.inputs ? s.strength.inputs : null, _segs)
     : sessionInputsWithPages(sessionStrengthInputs(_segs, s.mistakes||[]), _segs);
-  const _sVal = strengthFromInputs(_sInp);
+  const _sVal = gradedValue(s, strengthFromInputs(_sInp));   // the teacher's grade wins (s13)
   if(_sVal!=null || _segs.length){
     t+='💪 *Memorization Strength*\n';
     if(_sVal!=null){
-      t+=`   Session : ${_sVal}% — ${strengthBand(_sVal).label}`;
+      t+=`   Session : ${gradeText(s,_sVal)}${isTeacherGraded(s)?' (teacher)':''}`;
       t+=`   (${(+_sInp.pages||0).toFixed(1)} pages, ${_sInp.verses} ayat, ${_sInp.mistakes} mistake${_sInp.mistakes!==1?'s':''})\n`;
     }
     if(_segs.length){
@@ -9379,14 +9565,15 @@ function buildTextReport(s){
         const inp = inputsAreCurrent(s)
           ? inputsWithPages(sg.strengthInputs, sg)
           : segmentStrengthInputs(s.segments||[], sg, s.mistakes||[]);
-        if(!inp){
+        if(!inp && !isTeacherGraded(sg)){
           t+=`   ○ ${label} — ${sg.mode==='spot'?'spot check, sampled not scored':'extent not confirmed, not scored'}\n`;
           return;
         }
-        const v = strengthFromInputs(inp);
+        if(!inp){ const tv=gradedValue(sg,null); t+=`   • ${label} : ${gradeText(sg,tv)} (teacher)\n`; return; }
+        const v = gradedValue(sg, strengthFromInputs(inp));
         t+= v==null
           ? `   ○ ${label} — too short to score (${(+inp.pages||0).toFixed(2)} of a page)\n`
-          : `   • ${label} : ${v}% — ${strengthBand(v).label}   (${inp.verses} ayat, ${inp.mistakes} mistake${inp.mistakes!==1?'s':''})\n`;
+          : `   • ${label} : ${gradeText(sg,v)}${isTeacherGraded(sg)?' (teacher)':''}   (${inp.verses} ayat, ${inp.mistakes} mistake${inp.mistakes!==1?'s':''})\n`;
       });
     }
     t+='\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n';
@@ -9765,6 +9952,8 @@ function collectStrengthSamples(){
       if(inp && inp.verses) out.push({
         student:sess.student, date:sess.dateYMD||sess.date,
         stage:sg.type||'unassigned', label:sg.rangeLabel||'', inputs:inp,
+        // The teacher's own grade beside the inputs: the target to fit to (s13).
+        teacher: teacherSetPct(sg.teacherGrade), teacherBand: teacherSetBand(sg.teacherGrade),
       });
     });
   });
@@ -11933,7 +12122,25 @@ function switchSetTab(tab){
   });
 }
 
+function syncTeachHours(){
+  let h=null; try{ h=JSON.parse(localStorage.getItem('tehfiz_teach_hours')||'null'); }catch{}
+  const on=document.getElementById('teachHoursOn'); if(!on) return;
+  on.checked=!!h;
+  if(h){ document.getElementById('teachHoursFrom').value=h.from; document.getElementById('teachHoursTo').value=h.to; }
+  document.getElementById('teachHoursRow').style.opacity = h ? '1' : '.5';
+}
+function saveTeachHours(){
+  const on=document.getElementById('teachHoursOn').checked;
+  const f=document.getElementById('teachHoursFrom').value||'15:00', to=document.getElementById('teachHoursTo').value||'21:00';
+  try{
+    if(on && f<to) localStorage.setItem('tehfiz_teach_hours', JSON.stringify({from:f,to:to}));
+    else localStorage.removeItem('tehfiz_teach_hours');
+  }catch{}
+  if(on && f>=to) showToast('The end has to be after the start');
+  syncTeachHours();
+}
 function openSettings(){
+  setTimeout(syncTeachHours, 0);
   setTimeout(_syncMushafPrefSwitches, 0);
   initTzPicker();
   renderTermChoice();
@@ -11962,6 +12169,8 @@ function effectiveTz(){
     ? Intl.DateTimeFormat().resolvedOptions().timeZone
     : appSettings.timezone;
 }
+// v4_337: lesson times (TehfizTime) follow the zone set in Settings too.
+window.tehfizMyTz = () => effectiveTz();
 
 // Format a Date object according to the current settings
 // Calendar date (YYYY-MM-DD) as it read in a given timezone.
@@ -12298,6 +12507,16 @@ document.querySelectorAll('.modal-bg').forEach(m=>m.addEventListener('click',e=>
         </div>
         <div id="stp-datetime" style="display:none;">
 <div class="edit-form-group">
+      <label>Teaching hours <span style="font-weight:400;color:var(--ink3)">— optional</span></label>
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:400;color:var(--ink2);margin:2px 0 6px;">
+        <input type="checkbox" id="teachHoursOn" onchange="saveTeachHours()"> Only suggest lesson times within these hours</label>
+      <div style="display:flex;align-items:center;gap:8px;" id="teachHoursRow">
+        <input type="time" id="teachHoursFrom" value="15:00" onchange="saveTeachHours()" class="tinput" style="width:auto;">
+        <span style="font-size:13px;color:var(--ink3)">to</span>
+        <input type="time" id="teachHoursTo" value="21:00" onchange="saveTeachHours()" class="tinput" style="width:auto;"></div>
+      <div style="font-size:12px;color:var(--ink3);margin-top:4px;line-height:1.5;">When planning a lesson, times outside these are shaded and not suggested. Off, the night (10 PM – 7 AM) is shaded instead.</div>
+    </div>
+<div class="edit-form-group">
       <label>Timezone</label>
       <!-- Custom searchable timezone picker -->
       <div style="position:relative;" id="tzPickerWrap">
@@ -12322,6 +12541,11 @@ document.querySelectorAll('.modal-bg').forEach(m=>m.addEventListener('click',e=>
     </div>
         </div>
         <div id="stp-storage" style="display:none;">
+<div class="edit-form-group" style="padding-top:2px;">
+      <label style="display:block;font-size:13px;color:var(--ink2);margin-bottom:4px;font-weight:600;">Import a session</label>
+      <div style="font-size:12px;color:var(--ink3);margin-bottom:6px;line-height:1.5;">Open a .qrs file saved from this app on another device.</div>
+      <button type="button" class="btn-tiny" style="min-height:34px;padding:4px 12px;" onclick="document.getElementById('importFile').click()">&#8681; Import a .qrs file</button>
+    </div>
 <div class="edit-form-group" style="border-top:.5px solid var(--border);padding-top:10px;margin-top:4px;">
       <label style="display:block;font-size:13px;color:var(--ink2);margin-bottom:6px;font-weight:600;">🗄 Quran Cache</label>
       <div style="background:var(--parchment3);border-radius:5px;height:8px;overflow:hidden;margin-bottom:5px;">
@@ -12687,9 +12911,10 @@ function studentByName(nm) {
 async function refreshRoster() {
   const data = await api('/api/students');
   const incoming = (data.students || []).filter((s) => !removed.includes(s.id));
-  const names = {};
-  roster.forEach((s) => { if (s.name) names[s.id] = s.name; });
-  roster = incoming.map((s) => ({ ...s, name: names[s.id] || '' }));
+  const names = {}, zones = {};
+  roster.forEach((s) => { if (s.name) names[s.id] = s.name; if (s.tz) zones[s.id] = s.tz; });
+  // v4_335: the student's time zone is local like the name, so it is kept too.
+  roster = incoming.map((s) => ({ ...s, name: names[s.id] || '', ...(zones[s.id] ? { tz: zones[s.id] } : {}) }));
   saveRoster();
   rebind();
   render();
@@ -12709,6 +12934,16 @@ function setStudentName(id, name) {
   s.name = String(name || '').trim();
   saveRoster();
   rebind();
+  render();
+}
+/* v4_335: the student's own time zone (IANA name, '' = same as the teacher).
+   Kept with the name — on this device and, with name sync on, in the
+   teacher's own Google Drive. Never sent to the Tehfiz server. */
+function setStudentTz(id, tz) {
+  const s = studentById(id);
+  if (!s) return;
+  if (tz) s.tz = String(tz); else delete s.tz;
+  saveRoster();
   render();
 }
 
@@ -12735,7 +12970,7 @@ function exportRoster() {
     type: 'tehfiz-roster', version: 1,
     exported: new Date().toISOString(),
     teacher: teacher ? teacher.email : null,
-    students: roster.map((s) => ({ id: s.id, code: s.code, name: s.name || '' })),
+    students: roster.map((s) => ({ id: s.id, code: s.code, name: s.name || '', ...(s.tz ? { tz: s.tz } : {}) })),
   };
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)],
@@ -12767,6 +13002,7 @@ function importRoster(ev) {
                     roster.find((s) => s.code === inc.code);
       if (local) {
         if (!local.name && inc.name) { local.name = inc.name; filled++; }
+        if (!local.tz && inc.tz) local.tz = inc.tz;
       } else if (inc.id && inc.code) {
         roster.push({ id: inc.id, code: inc.code, name: inc.name || '',
                       claimed: false, revoked: false, created_at: null,
@@ -12839,7 +13075,8 @@ function renderChip() {
   if (!signedIn())      { chip.innerHTML = ''; return; }
   if (!isActive())      { chip.innerHTML = '<span class="tsy-chip tsy-warn">awaiting approval</span>'; return; }
   if (binding)          {
-    chip.innerHTML = '<span class="tsy-chip tsy-ok">' + esc(binding.code) + '</span>';
+    chip.innerHTML = '<span class="tsy-chip tsy-ok">' + esc(binding.code) + '</span>' +
+      (window.TehfizProfile ? '<button class="tsy-chip-btn" data-tsy="profile" data-id="' + esc(binding.id) + '">Profile \u203a</button>' : '');
     return;
   }
   if (!typed)           { chip.innerHTML = '<span class="tsy-chip tsy-dim">no student linked</span>'; return; }
@@ -13418,8 +13655,9 @@ function render() {
             (s.claimed ? '<span class="tsy-ok-dot">● claimed</span>'
                        : '<span class="tsy-dim-dot">○ not claimed</span>') +
             '<span>' + (s.session_count || 0) + ' sent</span>' +
-            '<button class="tsy-chip-btn" data-tsy="manage" data-id="' + esc(s.id) + '">Manage</button>' +
-            '<button class="tsy-chip-btn" data-tsy="ask-hours" data-id="' + esc(s.id) + '">Hours</button>' +
+            /* v4_328: PIN/code (Manage) and Hours live on the Profile now. The
+               row itself still picks the student, so this is its own target. */
+            '<button class="tsy-chip-btn" data-tsy="profile" data-id="' + esc(s.id) + '">Profile \u203a</button>' +
             '<button class="tsy-chip-btn" data-tsy="review" data-id="' + esc(s.id) + '">Open in viewer</button>' +
             '<button class="tsy-chip-btn tsy-rm" data-tsy="askremove" data-id="' + esc(s.id) + '">Remove</button>' +
           '</div>' +
@@ -14187,6 +14425,7 @@ document.addEventListener('click', async (e) => {
   if (act === 'profile-close')   { closeProfilePanel(); return; }
   if (act === 'profile-dismiss') { dismissProfilePrompt(); return; }
   if (act === 'profile-save')    { await saveProfile(); return; }
+  if (act === 'profile') { if (window.TehfizProfile) window.TehfizProfile.open(id); return; }
   if (act === 'manage-close'){ managingId = null; managingAct = null; render(); return; }
   if (act === 'manage-back') { managingAct = null; render(); return; }
   if (act === 'ask-pin')     { managingAct = 'pin'; render(); return; }
@@ -14323,6 +14562,38 @@ if (document.readyState === 'loading') {
 
 window.TehfizSync = {
   currentStudentId: () => (binding ? binding.id : null),
+  /* v4_328, for TehfizProfile (profile.js): one student's server-owned fields
+     plus the local name, the sessions logged on this device for them, and the
+     two credential actions the Manage panel used to hold. Copies out. */
+  student(id) {
+    const s = studentById(id);
+    return s ? { id: s.id, code: s.code, name: s.name || '', tz: s.tz || '', claimed: !!s.claimed,
+                 session_count: s.session_count || 0, created_at: s.created_at || null } : null;
+  },
+  // v4_335: for the Profile (✎ name, time zone).
+  setStudentName(id, name) { setStudentName(id, name); },
+  setStudentTz(id, tz) { setStudentTz(id, tz); 
+  },
+  localSessionsFor(id) {
+    const s = studentById(id);
+    return s ? studentSessions(s).map((x) => ({ ...x })) : [];
+  },
+  async resetPin(id) {
+    await api('/api/students/' + encodeURIComponent(id) + '/reset-pin', { method: 'POST' });
+    const s = studentById(id);
+    if (s) s.claimed = false;
+    saveRoster(); render();
+  },
+  async rotateCode(id) {
+    const r = await api('/api/students/' + encodeURIComponent(id) + '/rotate', { method: 'POST' });
+    const s = studentById(id);
+    if (s) { s.code = r.code; s.claimed = false; }
+    saveRoster(); rebind(); render();
+    return r.code;
+  },
+  // mode 'progress' opens straight on the progress report.
+  viewerUrl(id, mode) { return '/app/student?review=' + encodeURIComponent(id) + (mode === 'progress' ? '&open=progress' : ''); },
+  openViewer(id, mode) { window.open(window.TehfizSync.viewerUrl(id, mode), '_blank'); },
   /* The bridge the Settings modal uses. That modal lives in the main app's
      script block and this panel lives in its own IIFE, so nothing here is
      reachable from there except through this object. */
@@ -14357,10 +14628,20 @@ window.TehfizSync = {
      api() keeps its 401 handling; the roster is copied so the module cannot
      change it. */
   api: (path, opts) => api(path, opts),
-  roster: () => roster.map((s) => ({ id: s.id, code: s.code, name: s.name || '' })),
+  roster: () => roster.map((s) => ({ id: s.id, code: s.code, name: s.name || '', tz: s.tz || '' })),
   /* For TehfizNameSync: names arriving from the teacher's own Google Drive.
      {studentId: name}. Written straight to storage — not via saveRoster(),
      whose event would send them straight back. */
+  /* v4_335: time zones from name sync — {id: tz or ''}. */
+  applyTz(map) {
+    let n = 0;
+    Object.keys(map || {}).forEach((id) => {
+      const s = studentById(id), z = String(map[id] || '');
+      if (s && (s.tz || '') !== z) { if (z) s.tz = z; else delete s.tz; n++; }
+    });
+    if (n) { writeJSON(K.roster, roster); render(); }
+    return n;
+  },
   applyNames(map) {
     let n = 0;
     Object.keys(map || {}).forEach((id) => {
@@ -15039,6 +15320,12 @@ let bcSubject = '', bcText = '', bcFormat = true, bcPreview = null, bcPvView = '
    behaves the way it did before the picker existed. */
 let bcExcluded = new Set();
 let bcExtra = '';
+/* v4_341: the footer (empty = the standard one), who unsubscribed, the send in
+   progress (so a stopped one can resume), and the log of past broadcasts. */
+let bcFooter = '', bcOptOut = new Set(), bcRun = null, bcHist = null, bcHistOpen = false;
+// The list stays open across re-renders once opened.
+document.addEventListener('toggle', (e) => { if (e.target && e.target.classList && e.target.classList.contains('bc-hist')) bcHistOpen = e.target.open; }, true);
+const BC_DEFAULT_FOOTER = 'You are receiving this because you have a Teh\u012bz teacher account.';
 
 function bcActiveTeachers() {
   return (teachers || []).filter((t) => t.status === 'active');
@@ -15046,7 +15333,7 @@ function bcActiveTeachers() {
 /* Ticked teachers plus anything typed. Deduping and validation happen on the
    server too — this copy is only so the count on the button is honest. */
 function bcRecipients() {
-  const picked = bcActiveTeachers().filter((t) => !bcExcluded.has(t.id)).map((t) => t.email);
+  const picked = bcActiveTeachers().filter((t) => !bcExcluded.has(t.id) && !bcIsOut(t.email)).map((t) => t.email);
   const typed = String(bcExtra || '').split(/[,\n;]+/).map((s) => s.trim()).filter(Boolean);
   const all = [];
   for (const e of picked.concat(typed)) {
@@ -15055,6 +15342,7 @@ function bcRecipients() {
   }
   return all;
 }
+function bcIsOut(email) { return bcOptOut.has(String(email || '').toLowerCase()); }
 function bcToggleOne(id) {
   // Read the typed boxes first: re-rendering replaces them.
   bcRead();
@@ -15072,6 +15360,13 @@ function bcSetAll(on) {
 async function bcLoadAudience() {
   try { bcAudience = await api('/api/admin/broadcast'); }
   catch { bcAudience = { count: 0, configured: false }; }
+  bcOptOut = new Set(((bcAudience && bcAudience.optedOut) || []).map((e) => String(e).toLowerCase()));
+  renderList();
+  bcLoadLog();
+}
+async function bcLoadLog() {
+  try { bcHist = (await api('/api/admin/broadcast/log')).broadcasts || []; }
+  catch { bcHist = null; }
   renderList();
 }
 
@@ -15091,18 +15386,21 @@ function bcPanel() {
         '> Formatted email</label>' +
       (bcFormat ? '<p class="tad-note bc-syntax">Blank line = new paragraph \u00b7 <code>## Heading</code> \u00b7 ' +
         '<code>- bullet</code> \u00b7 <code>**bold**</code> \u00b7 <code>[Button](https://\u2026)</code> on its own line \u00b7 ' +
+        '<code>![What it shows](https://tehfiz.com/mail/\u2026.png)</code> on its own line for a picture \u00b7 ' +
         'links work as typed. A plain-text copy goes with it.</p>' : '') : '') +
     (ready ? '<div class="bc-who">' +
       '<div class="bc-who-h"><span>Recipients</span>' +
         '<button class="tad-mini" data-tad="bcall">All</button>' +
         '<button class="tad-mini" data-tad="bcnone">None</button></div>' +
       '<div class="bc-list">' +
-        bcActiveTeachers().map((t) =>
-          '<label class="bc-chk"><input type="checkbox" data-tad="bcone" data-id="' + esc(t.id) + '"' +
-          (bcExcluded.has(t.id) ? '' : ' checked') + '> ' +
+        bcActiveTeachers().map((t) => {
+          const out = bcIsOut(t.email);
+          return '<label class="bc-chk' + (out ? ' bc-out' : '') + '"><input type="checkbox" data-tad="bcone" data-id="' + esc(t.id) + '"' +
+          (out ? ' disabled' : bcExcluded.has(t.id) ? '' : ' checked') + '> ' +
           esc(t.name || t.email) +
           (t.name ? '<span class="bc-em">' + esc(t.email) + '</span>' : '') +
-          '</label>').join('') +
+          (out ? '<span class="bc-tag">unsubscribed</span>' : '') +
+          '</label>'; }).join('') +
         (bcActiveTeachers().length ? '' : '<span class="tad-note">No active teachers.</span>') +
       '</div>' +
       '<input id="bcExtra" class="bc-in bc-extra" value="' + esc(bcExtra) + '" ' +
@@ -15110,6 +15408,9 @@ function bcPanel() {
     '</div>' : '') +
     '<input id="bcSubject" class="bc-in" placeholder="Subject" value="' + esc(bcSubject) + '">' +
     '<textarea id="bcBody" class="bc-in bc-body" rows="12" placeholder="Message\u2026">' + esc(bcText) + '</textarea>' +
+    '<label class="bc-lab" for="bcFooter">Footer</label>' +
+    '<textarea id="bcFooter" class="bc-in bc-foot" rows="2" placeholder="' + esc(BC_DEFAULT_FOOTER) + '">' + esc(bcFooter) + '</textarea>' +
+    '<p class="tad-note bc-syntax">Leave it empty for the standard line shown. An <b>Unsubscribe</b> link is always added under it.</p>' +
     '<div class="bc-actions">' +
       '<button class="tad-mini" data-tad="bcpreview"' + (a ? '' : ' disabled') + '>Preview</button>' +
       '<button class="tad-mini" data-tad="bctest"' + (ready ? '' : ' disabled') + '>' +
@@ -15121,8 +15422,37 @@ function bcPanel() {
       (bcBusy ? '<span class="bc-busy">' + esc(bcBusy) + '</span>' : '') +
     '</div>' +
     (bcLog.length ? '<div class="bc-log">' + bcLog.map(esc).join('<br>') + '</div>' : '') +
+    (bcRun && bcRun.cursor != null && !bcBusy ? '<div class="bc-actions" style="margin-top:6px;"><button class="tad-mini bc-send" data-tad="bcresume" data-id="' + esc(bcRun.id) + '">' +
+      'Resume from #' + (bcRun.cursor + 1) + ' of ' + bcRun.total + '</button></div>' : '') +
+    bcHistoryHtml() +
     bcPreviewHtml() +
   '</div>';
+}
+
+/* v4_341: past broadcasts, newest first, from the server's log. One that
+   stopped part way can be resumed from here; any can be loaded back into the
+   boxes to send again. */
+function bcHistoryHtml() {
+  if (!bcHist) return '';
+  if (!bcHist.length) return '<p class="tad-note" style="margin-top:10px;">No broadcasts sent yet.</p>';
+  const when = (ms) => { try { return new Date(ms).toLocaleString(undefined, { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' }); } catch { return ''; } };
+  return '<details class="bc-hist"' + (bcHistOpen ? ' open' : '') + '><summary>Past broadcasts (' + bcHist.length + ')</summary>' +
+    bcHist.map((b) => {
+      const open = b.status !== 'done' && b.pos < b.total;
+      const bits = ['Sent to ' + b.sent + ' of ' + b.total];
+      if (b.failures.length) bits.push(b.failures.length + ' failed');
+      if (b.skipped.length) bits.push(b.skipped.length + ' unsubscribed, skipped');
+      if (open) bits.push('stopped at #' + (b.pos + 1));
+      return '<div class="bc-h">' +
+        '<div class="bc-h-top"><strong>' + esc(b.subject) + '</strong><span>' + esc(when(b.created_at)) + '</span></div>' +
+        '<div class="bc-h-meta' + (b.failures.length || open ? ' warn' : '') + '">' + esc(bits.join(' \u00b7 ')) + '</div>' +
+        (b.failures.length ? '<div class="bc-h-fail">Failed: ' + esc(b.failures.join(', ')) + '</div>' : '') +
+        '<div class="bc-actions">' +
+          (open ? '<button class="tad-mini bc-send" data-tad="bcresume" data-id="' + esc(b.id) + '">Resume</button>' : '') +
+          (!open && b.failures.length ? '<button class="tad-mini" data-tad="bcretry" data-id="' + esc(b.id) + '">Retry the ' + b.failures.length + ' failed</button>' : '') +
+          '<button class="tad-mini" data-tad="bcreuse" data-id="' + esc(b.id) + '">Use again</button>' +
+        '</div></div>';
+    }).join('') + '</details>';
 }
 
 /* The server renders the preview with the same function the send uses, so
@@ -15150,7 +15480,7 @@ async function bcShowPreview() {
   bcBusy = 'Building preview\u2026'; renderList();
   try {
     bcPreview = await api('/api/admin/broadcast/preview', { method: 'POST',
-      body: { subject, text, ...(bcFormat ? { format: 'md' } : {}) } });
+      body: { subject, text, footer: bcFooter, ...(bcFormat ? { format: 'md' } : {}) } });
     bcPvView = bcPreview.html ? 'html' : 'text';
   } catch (err) { bcLog = ['Preview failed: ' + ((err && err.message) || 'unknown')]; }
   bcBusy = ''; renderList();
@@ -15163,7 +15493,9 @@ function bcRead() {
   const s = document.getElementById('bcSubject');
   const b = document.getElementById('bcBody');
   const x = document.getElementById('bcExtra');
+  const f = document.getElementById('bcFooter');
   if (x) bcExtra = x.value;
+  if (f) bcFooter = f.value;
   if (s) bcSubject = s.value;
   if (b) bcText = b.value;
   return { subject: bcSubject, text: bcText };
@@ -15175,7 +15507,7 @@ async function bcSendTest() {
   bcBusy = 'Sending test\u2026'; renderList();
   try {
     const r = await api('/api/admin/broadcast', { method: 'POST',
-      body: { subject, text, testTo: 'self', ...(bcFormat ? { format: 'md' } : {}) } });
+      body: { subject, text, footer: bcFooter, testTo: 'self', ...(bcFormat ? { format: 'md' } : {}) } });
     bcTested = !!r.sent;
     bcLog = [r.sent ? 'Test sent to ' + r.to + '. Check it, then send to all.'
                     : 'Test failed \u2014 nothing was sent to anyone.'];
@@ -15191,28 +15523,77 @@ async function bcSendAll() {
   if (!confirm('Send this to ' + emails.length + ' recipient' +
                (emails.length === 1 ? '' : 's') + '? This cannot be undone.')) return;
 
-  // The explicit list pages by position, so the cursor starts at 0 rather than ''.
-  let after = 0, sent = 0, failed = [];
+  // v4_341: the server logs the send and keeps the place; each call after the
+  // first only names the broadcast. A stopped send resumes from that place.
   bcLog = []; bcBusy = 'Sending\u2026'; renderList();
+  let r;
   try {
-    do {
-      const r = await api('/api/admin/broadcast', { method: 'POST',
-        body: { subject, text, emails, after, limit: 20, ...(bcFormat ? { format: 'md' } : {}) } });
-      sent += r.sent || 0;
-      if (r.failures && r.failures.length) failed = failed.concat(r.failures);
-      after = r.cursor;
-      bcBusy = 'Sent ' + sent + '\u2026'; renderList();
-    } while (after);
-    bcLog = ['Sent to ' + sent + ' teacher' + (sent === 1 ? '' : 's') + '.'];
-    if (failed.length) bcLog.push('Failed: ' + failed.join(', '));
-    // A second accidental send of the same text is the likeliest mistake from
-    // here, so the gate closes again behind it.
-    bcTested = false;
+    r = await api('/api/admin/broadcast', { method: 'POST',
+      body: { subject, text, footer: bcFooter, emails, ...(bcFormat ? { format: 'md' } : {}) } });
   } catch (err) {
-    bcLog = ['Stopped after ' + sent + ': ' + ((err && err.message) || 'unknown'),
-             'Nobody already sent to will be sent to again if you resume.'];
+    bcLog = ['Not sent: ' + ((err && err.message) || 'unknown')]; bcBusy = ''; renderList(); return;
+  }
+  if (r.error) {
+    bcLog = [r.error === 'all_unsubscribed' ? 'Everyone selected has unsubscribed. Nothing was sent.' : 'Not sent: ' + r.error];
+    bcBusy = ''; renderList(); return;
+  }
+  // A second accidental send of the same text is the likeliest mistake from
+  // here, so the gate closes again behind it.
+  bcTested = false;
+  await bcContinue(r);
+}
+
+/* Page on until the server says it is done; on any error, stop and offer
+   Resume — the server knows where it got to. */
+async function bcContinue(r) {
+  bcRun = r;
+  try {
+    while (r.cursor != null) {
+      bcBusy = 'Sent ' + r.sent + ' of ' + r.total + '\u2026'; renderList();
+      r = await api('/api/admin/broadcast', { method: 'POST', body: { id: r.id } });
+      if (r.error) throw new Error(r.error);
+      bcRun = r;
+    }
+    bcLog = ['Sent to ' + r.sent + ' of ' + r.total + '.'];
+    if (r.failures && r.failures.length) bcLog.push('Failed: ' + r.failures.join(', '));
+    if (r.skipped && r.skipped.length) bcLog.push('Skipped (unsubscribed): ' + r.skipped.join(', '));
+  } catch (err) {
+    bcLog = ['Stopped after ' + ((bcRun && bcRun.sent) || 0) + ' of ' + ((bcRun && bcRun.total) || '?') + ': ' + ((err && err.message) || 'unknown'),
+             'Resume carries on from where it stopped. Nobody already sent to gets it again.'];
   }
   bcBusy = ''; renderList();
+  bcLoadLog();
+}
+async function bcResume(id) {
+  if (bcBusy) return;
+  bcLog = []; bcBusy = 'Resuming\u2026'; renderList();
+  // Asking for the next page of a broadcast IS resuming it.
+  try {
+    const r = await api('/api/admin/broadcast', { method: 'POST', body: { id } });
+    if (r.error) throw new Error(r.error);
+    await bcContinue(r);
+  } catch (err) { bcLog = ['Could not resume: ' + ((err && err.message) || 'unknown')]; bcBusy = ''; renderList(); }
+}
+/* The same message again, to just the addresses that failed — logged as a
+   broadcast of its own. */
+async function bcRetryFailed(id) {
+  const b = (bcHist || []).find((x) => x.id === id);
+  if (!b || !b.failures.length || bcBusy) return;
+  if (!confirm('Send \u201c' + b.subject + '\u201d again to the ' + b.failures.length + ' address' + (b.failures.length === 1 ? '' : 'es') + ' that failed?')) return;
+  bcLog = []; bcBusy = 'Sending\u2026'; renderList();
+  try {
+    const r = await api('/api/admin/broadcast', { method: 'POST', body: { subject: b.subject, text: b.body, footer: b.footer || '',
+      emails: b.failures, ...(b.format === 'md' ? { format: 'md' } : {}) } });
+    if (r.error) throw new Error(r.error);
+    await bcContinue(r);
+  } catch (err) { bcLog = ['Not sent: ' + ((err && err.message) || 'unknown')]; bcBusy = ''; renderList(); }
+}
+function bcReuse(id) {
+  const b = (bcHist || []).find((x) => x.id === id);
+  if (!b) return;
+  bcSubject = b.subject || ''; bcText = b.body || ''; bcFooter = b.footer || ''; bcFormat = b.format === 'md';
+  bcPreview = null; bcLog = ['Loaded \u201c' + bcSubject + '\u201d. Check the recipients, then send.'];
+  renderList();
 }
 
 /* Read-only by design — there is no admin write path on the server either, so
@@ -16233,6 +16614,9 @@ document.addEventListener('click', async (e) => {
   if (act === 'bcone')    return bcToggleOne(t.dataset.id);
   if (act === 'bctest')   return bcSendTest();
   if (act === 'bcsend')   return bcSendAll();
+  if (act === 'bcresume') { bcRead(); return bcResume(t.dataset.id); }
+  if (act === 'bcreuse')  { return bcReuse(t.dataset.id); }
+  if (act === 'bcretry')  { return bcRetryFailed(t.dataset.id); }
   if (act === 'bcpreview') return bcShowPreview();
   if (act === 'bcpvclose') { bcPreview = null; return renderList(); }
   if (act === 'bcpvtab')  { bcRead(); bcPvView = t.dataset.v; return renderList(); }
@@ -16586,6 +16970,19 @@ window.TehfizAdmin = { open, available };
 .bc-chk{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ink);cursor:pointer;}
 .bc-em{color:var(--ink3);font-size:12px;}
 .bc-extra{margin-bottom:0;}
+.bc-lab{display:block;font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--ink3);margin:2px 0 3px;}
+.bc-foot{font-size:12.5px;resize:vertical;}
+.bc-out{color:var(--ink3);cursor:default;}
+.bc-tag{font-size:11px;color:var(--amber);border:.5px solid var(--amber);border-radius:4px;padding:0 4px;margin-left:auto;}
+.bc-hist{margin-top:10px;border-top:.5px solid var(--border2);padding-top:8px;}
+.bc-hist summary{font-size:13px;font-weight:600;color:var(--ink);cursor:pointer;}
+.bc-h{border:.5px solid var(--border2);border-radius:6px;padding:7px 9px;margin-top:6px;background:var(--parchment);display:flex;flex-direction:column;gap:4px;}
+.bc-h-top{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;font-size:13px;}
+.bc-h-top strong{flex:1 1 auto;min-width:0;overflow-wrap:anywhere;}
+.bc-h-top span{font-size:11.5px;color:var(--ink3);}
+.bc-h-meta{font-size:12px;color:var(--ink2);}
+.bc-h-meta.warn{color:var(--amber);}
+.bc-h-fail{font-size:11.5px;color:var(--ink3);overflow-wrap:anywhere;}
 .bc-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
 .bc-fmt{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ink);margin:2px 0 4px;cursor:pointer;}
 .bc-syntax{font-size:12px;line-height:1.7;margin:0 0 6px;}
@@ -17932,12 +18329,13 @@ span.seg-chip{display:flex;align-items:center;justify-content:center;box-sizing:
       return [
         { id: 'students', label: 'Students', icon: 'students', group: 'main', run: () => sync() && sync().open() },
         { id: 'sessions', label: 'Sessions', icon: 'sessions', group: 'main', run: () => openSessions() },
+        { id: 'calendar', label: 'Calendar', icon: 'calendar', group: 'main',
+          hidden: !window.TehfizCalendar, run: () => window.TehfizCalendar.open() },
         { id: 'invoices', label: 'Invoices', icon: 'invoices', group: 'main',
           hidden: !window.TehfizInvoices, run: () => window.TehfizInvoices.open() },
         { id: 'install', label: 'Install the app', icon: 'install', group: 'tools',
           hidden: !(window.TehfizPWA && window.TehfizPWA.canOffer()), run: () => window.TehfizPWA.install() },
-        { id: 'import', label: 'Import a .qrs file', icon: 'import', group: 'tools',
-          run: () => document.getElementById('importFile').click() },
+        // v4_333: Import a .qrs file moved into Settings → Storage.
         { id: 'settings', label: 'Settings', icon: 'settings', group: 'tools', run: () => openSettings() },
         { id: 'help', label: 'Help & keyboard shortcuts', icon: 'help', group: 'tools', kbd: '?', run: () => openShortcuts() },
         { id: 'tour', label: 'Take the tour', icon: 'tour', group: 'tools',
@@ -17972,9 +18370,16 @@ span.seg-chip{display:flex;align-items:center;justify-content:center;box-sizing:
   });
 })();
 </script>
-<script src="/app/teacher/sessions-sent.js?v=m3"></script>
-<script src="/app/teacher/finish-session.js?v=f4"></script>
-<script src="/app/teacher/invoices.js?v=i3"></script>
-<script src="/app/teacher/name-sync.js?v=n2"></script>
+<script src="/app/teacher/sessions-sent.js?v=m5"></script>
+<script src="/app/teacher/finish-session.js?v=f13"></script>
+<script src="/app/teacher/invoices.js?v=i7"></script>
+<script src="/app/shared/tehfiz-map.js?v=mp4"></script>
+<script src="/app/shared/tehfiz-time.js?v=t2"></script>
+<script src="/app/teacher/profile.js?v=p10"></script>
+<script src="/app/teacher/range-picker.js?v=rg2"></script>
+<script src="/app/teacher/lesson-editor.js?v=le3"></script>
+<script src="/app/teacher/calendar.js?v=c3"></script>
+<script src="/app/teacher/grades.js?v=g5"></script>
+<script src="/app/teacher/name-sync.js?v=n3"></script>
 </body>
 </html>

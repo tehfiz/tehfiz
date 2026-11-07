@@ -1,6 +1,6 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   sessions-sent.js — TehfizSent — m3
-   Loaded by the teacher app only, from /app/teacher/sessions-sent.js?v=m3.
+   sessions-sent.js — TehfizSent — m5
+   Loaded by the teacher app only, from /app/teacher/sessions-sent.js?v=m5.
 
    Adds two tabs to the Sessions panel:
      · Sent to students   — every session on the server for this teacher's
@@ -25,13 +25,14 @@
    ═══════════════════════════════════════════════════════════════════════ */
 (function () {
 'use strict';
-const TEHFIZ_SENT_VERSION = 'm3';
+const TEHFIZ_SENT_VERSION = 'm5';
 const KEY_STUDENT = 'tehfiz_sent_student';
 const PAGE = 100;
 
 let tab = 'sent';                          // chosen afresh on every open, see mount()
 let student = read(KEY_STUDENT) || '';     // '' = all students
 let rows = [], offset = 0, more = false, loading = false, error = '', loadedFor = null, busy = null;
+let menuFor = null;                        // m5: the card whose ⋯ menu is open
 
 function read(k) { try { return localStorage.getItem(k); } catch { return null; } }
 function write(k, v) { try { localStorage.setItem(k, v); } catch {} }
@@ -47,6 +48,26 @@ function studentLabel(id, code) {
   const s = rosterList().find((x) => x.id === id);
   if (s && s.name) return s.name + ' · ' + s.code;
   return (s && s.code) || code || 'Unknown student';
+}
+/* m4: when it reached the student, and when it was last sent again. The card
+   showed only the lesson's own date and "On this device", which read as if
+   nothing said whether — or when — it had gone. */
+function sentText(r) {
+  const at = (ms) => new Date(ms).toLocaleString(undefined, { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
+  if (!r.created_at) return '';
+  const upd = r.updated_at && r.updated_at - r.created_at > 60000 ? ' \u00b7 updated ' + at(r.updated_at) : '';
+  return 'Sent ' + at(r.created_at) + upd;
+}
+/* m5: the device copies that carry the teacher's own grade. */
+function gradedIds() {
+  const out = new Set();
+  try {
+    (getSessions() || []).forEach((s) => {
+      const g = (x) => typeof isTeacherGraded === 'function' && isTeacherGraded(x);
+      if (g(s) || (s.segments || []).some(g)) out.add(String(s.id));
+    });
+  } catch {}
+  return out;
 }
 function dateText(r) {
   const ymd = r.date_ymd || (r.started_at ? new Date(r.started_at).toISOString().slice(0, 10) : '');
@@ -95,8 +116,16 @@ function injectCss() {
 .tss-who{font-weight:600;color:var(--ink);}
 .tss-flags{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;}
 .tss-flag{font-size:11px;padding:2px 7px;border-radius:999px;border:1px solid var(--border2);color:var(--ink2);background:var(--parchment2);}
-.tss-flag.local{border-color:var(--green);color:var(--green);background:var(--green-bg);}
+.tss-flag.local{border-color:var(--border2);color:var(--ink2);background:var(--parchment2);}
+.tss-flag.sent{border-color:var(--ink2);color:var(--ink);background:transparent;}
 .tss-acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;}
+.tss-card.tap{cursor:pointer;}
+.tss-card.tap:hover{border-color:var(--ink3);}
+.tss-card.tap:focus-visible{outline:2px solid var(--gold);outline-offset:1px;}
+.tss-card.busy{opacity:.7;pointer-events:none;}
+.tss-head .tss-date{margin-left:auto;}
+.tss-dots{min-width:34px;font-size:15px;line-height:1;}
+.tss-menu{border-top:1px dashed var(--border2);padding-top:8px;}
 .tss-more{display:flex;justify-content:center;margin-top:10px;}
 .tss-stu{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 0 10px;padding:10px 12px;
   border:1px solid var(--border2);border-radius:8px;background:var(--parchment2);}
@@ -137,6 +166,9 @@ function mount() {
     list.insertAdjacentElement('afterend', pane);
     pane.addEventListener('click', onClick);
     pane.addEventListener('change', onChange);
+    pane.addEventListener('keydown', (e) => {
+      if ((e.key === 'Enter' || e.key === ' ') && e.target.classList && e.target.classList.contains('tss-card')) { e.preventDefault(); e.target.click(); }
+    });
   }
   apply();
 }
@@ -227,12 +259,15 @@ function render() {
     body = '<div class="tss-note">' + (who ? 'No sessions sent to ' + esc(who) + ' yet.' : 'No sessions sent yet.') + '</div>';
   } else {
     const local = localIds();
+    const graded = gradedIds();
     body = '<div class="tss-list">' + rows.map((r) => {
       const isLocal = local.has(String(r.client_id));
       const flags = [
+        r.created_at ? '<span class="tss-flag sent">\u2713 ' + esc(sentText(r)) + '</span>' : '',
         isLocal ? '<span class="tss-flag local">On this device</span>' : '',
         r.hidden_at ? '<span class="tss-flag">Hidden from student</span>' : '',
         r.own ? '' : '<span class="tss-flag">From another teacher</span>',
+        graded.has(String(r.client_id)) ? '<span class="tss-flag">\u2713 Graded</span>' : '',
       ].join('');
       const meta = [
         student ? '' : '<span class="tss-who">' + esc(studentLabel(r.student_id, r.student_code)) + '</span>',
@@ -241,16 +276,21 @@ function render() {
         stageText(r.stages),
       ].filter(Boolean).map((x) => x.startsWith('<') ? x : '<span>' + esc(x) + '</span>').join('');
       const b = busy === r.id;
-      return '<div class="tss-card' + (r.hidden_at ? ' hid' : '') + '">' +
+      const m = menuFor === r.id;
+      // m5: the card itself opens the review; everything else is in ⋯.
+      return '<div class="tss-card tap' + (r.hidden_at ? ' hid' : '') + (b ? ' busy' : '') + '" data-tss="review" data-id="' + esc(r.id) + '" role="button" tabindex="0" title="Tap to review">' +
         '<div class="tss-head"><span class="tss-name">' + esc(r.session_name || 'Untitled session') + '</span>' +
-          '<span class="tss-date">' + esc(dateText(r)) + '</span></div>' +
-        '<div class="tss-meta">' + meta + '</div>' +
+          '<span class="tss-date">' + esc(dateText(r)) + '</span>' +
+          '<button class="btn-tiny tss-dots" data-tss="menu" data-id="' + esc(r.id) + '" aria-haspopup="true" aria-expanded="' + m + '" aria-label="More" title="More">\u22ef</button></div>' +
+        '<div class="tss-meta">' + meta + (b ? '<span>Opening\u2026</span>' : '') + '</div>' +
         (flags ? '<div class="tss-flags">' + flags + '</div>' : '') +
-        '<div class="tss-acts">' +
-          '<button class="btn-tiny accent" data-tss="review" data-id="' + esc(r.id) + '"' + (b ? ' disabled' : '') + '>📊 Review</button>' +
+        (m ? '<div class="tss-acts tss-menu" role="menu">' +
           (isLocal ? '' : '<button class="btn-tiny" data-tss="save" data-id="' + esc(r.id) + '"' + (b ? ' disabled' : '') + '>⇩ Save to this device</button>') +
+          // m4: grades are edited on the device copy, then sent again.
+          (isLocal && window.TehfizGrades ? '<button class="btn-tiny" data-tss="grade" data-cid="' + esc(r.client_id) + '">Grades</button>' : '') +
           '<a class="btn-tiny" href="/app/student?review=' + encodeURIComponent(r.student_id) + '" target="_blank" rel="noopener">Student’s view ↗</a>' +
-        '</div></div>';
+        '</div>' : '') +
+        '</div>';
     }).join('') + '</div>' +
       (more ? '<div class="tss-more"><button class="btn-tiny" data-tss="more"' + (loading ? ' disabled' : '') + '>' +
         (loading ? 'Loading…' : 'Show more') + '</button></div>' : '');
@@ -277,9 +317,17 @@ async function onClick(e) {
   const t = e.target.closest('[data-tss]');
   if (!t) return;
   const act = t.dataset.tss;
+  if (act === 'menu') { e.stopPropagation(); menuFor = menuFor === t.dataset.id ? null : t.dataset.id; render(); return; }
+  if (act === 'review' && e.target.closest('a, .tss-menu')) return;
   if (act === 'signin') { if (typeof closeSessions === 'function') closeSessions(); sync().open(); return; }
   if (act === 'refresh') { load(true, student + '|' + Math.floor(Date.now() / 60000)); return; }
   if (act === 'more') { load(false); return; }
+  if (act === 'grade') {
+    // The device copy's id is the app's own session id (client_id).
+    const id = Number(t.dataset.cid);
+    if (window.TehfizGrades) window.TehfizGrades.openEditor(Number.isFinite(id) ? id : t.dataset.cid);
+    return;
+  }
   const row = rows.find((r) => String(r.id) === t.dataset.id);
   if (!row) return;
   if (act === 'review' || act === 'save') {

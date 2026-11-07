@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ═══════════════════════════════════════════════════════════════════
-     Tehfiz student viewer — v1_171
+     Tehfiz student viewer — v1_178
      Deployed from the `tehfiz` repo (its root is the web root) at
      app/student/index.html. Locally that repo is cloned into tehfiz-api's
      public/ folder, which tehfiz-api ignores; the API Worker serves /api/* only.
@@ -15,9 +15,9 @@
 if(t==='classic'||t==='lapis'||t==='mulberry')d.setAttribute('data-tz-theme',t);
 if(m==='dark'||(m==='device'&&window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches))d.setAttribute('data-tz-mode','dark');}catch(e){}})();</script>
 <link rel="stylesheet" href="/app/shared/tehfiz-shared.css?v=s13">
-<script src="/app/shared/tehfiz-shared.js?v=s12"></script>
+<script src="/app/shared/tehfiz-shared.js?v=s14"></script>
 <script src="/app/shared/tehfiz-ornament.js?v=o2"></script>
-<script src="/app/shared/tehfiz-header.js?v=h4"></script>
+<script src="/app/shared/tehfiz-header.js?v=h5"></script>
 <script src="/app/shared/tehfiz-pwa.js?v=p2"></script>
 <!-- Installable app (v1_156): manifest, icons, and the service worker TehfizPWA registers. -->
 <link rel="manifest" href="/app/student/manifest.webmanifest">
@@ -624,7 +624,15 @@ body.compact-ui .panel-footer{flex-shrink:0;}
 .sess-del:hover{color:var(--red);background:var(--red-bg);}
 
 /* SHARED FOOTER */
-.panel-footer{padding:6px 8px;border-top:1px solid var(--border2);background:var(--parchment);display:flex;gap:3px;flex-shrink:0;flex-wrap:nowrap;}
+.panel-footer{padding:6px 8px;border-top:1px solid var(--border2);background:var(--parchment);display:flex;gap:3px;flex-shrink:0;flex-wrap:nowrap;position:relative;}
+.btn-foot.pf-dots{flex:0 0 44px;font-size:16px;line-height:1;}
+.pf-more{position:absolute;right:8px;bottom:calc(100% + 4px);z-index:30;min-width:220px;background:var(--parchment);border:1px solid var(--border2);border-radius:10px;
+  box-shadow:0 10px 26px rgba(26,22,18,.2);padding:5px;display:flex;flex-direction:column;}
+.pf-more[hidden]{display:none;}
+.pf-mi{all:unset;box-sizing:border-box;display:flex;align-items:center;min-height:42px;padding:0 12px;border-radius:7px;font:13px var(--ui-font);color:var(--ink);cursor:pointer;}
+.pf-mi:hover,.pf-mi:focus-visible{background:var(--parchment3);}
+.pf-mi.danger{color:var(--red);}
+.pf-more hr{border:none;height:1px;background:var(--border);margin:4px 6px;}
 .btn-foot{flex:1;padding:6px 2px;border-radius:5px;font-family:var(--ui-font);font-size:12px;cursor:pointer;text-align:center;border:.5px solid var(--border2);background:var(--parchment);color:var(--ink2);transition:background .12s;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .btn-foot:hover{background:var(--parchment3);}
 .btn-foot.accent{background:var(--gold);color:var(--on-gold);border-color:var(--gold);font-weight:600;}
@@ -672,6 +680,22 @@ body.compact-ui .panel-footer{flex-shrink:0;}
    under the bar. */
 .modal-btns.sticky{position:sticky;bottom:-20px;z-index:3;margin:12px -20px -20px;padding:12px 20px;
   background:var(--parchment);border-top:1px solid var(--border);border-radius:0 0 12px 12px;}
+/* v1_175: the progress report is full screen: a bar on top, the report
+   centred at a readable width, Close and Copy along the bottom. */
+#reviewModal{padding:0;background:var(--parchment);}
+#reviewModal > .modal.wide{max-width:none;width:100%;height:100%;max-height:none;border:none;border-radius:0;box-shadow:none;
+  padding:0 max(16px,env(safe-area-inset-right)) 0 max(16px,env(safe-area-inset-left));display:flex;flex-direction:column;overflow-y:auto;}
+#reviewModal #reviewContent{width:100%;max-width:1000px;margin:0 auto;padding-top:14px;flex:1 0 auto;}
+#reviewModal .modal-btns.sticky{bottom:0;margin:12px calc(-1 * max(16px,env(safe-area-inset-left))) 0;padding:12px max(16px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom));border-radius:0;}
+.rv-top{position:sticky;top:0;z-index:4;flex:none;display:flex;align-items:center;justify-content:space-between;gap:10px;height:56px;
+  margin:0 calc(-1 * max(16px,env(safe-area-inset-left)));padding:0 max(16px,env(safe-area-inset-right)) 0 max(16px,env(safe-area-inset-left));background:var(--chrome);color:var(--on-ink);}
+.rv-top b{font-size:17px;font-weight:600;font-family:var(--ui-font);}
+.rv-x{width:40px;height:40px;border:1px solid rgba(255,255,255,.2);border-radius:9px;background:rgba(255,255,255,.08);color:var(--on-ink);cursor:pointer;font-size:14px;}
+.rv-x:hover{background:rgba(255,255,255,.18);}
+/* Embedded in the teacher app: their overlay has the bar, Back and Print, so
+   none of the viewer's own chrome shows — one header, not three. */
+body.tz-embed #topbar,body.tz-embed #trvRoot,body.tz-embed #hintBar,body.tz-embed #tjyStrip,body.tz-embed .topbar-restore-btn,
+body.tz-embed .panel-fab,body.tz-embed #autoscrollFabWrap,body.tz-embed #reviewModal .rv-top,body.tz-embed #reviewModal .modal-btns .btn-m.sec{display:none!important;}
 
 .btn-m{padding:6px 12px;border-radius:5px;font-family:var(--ui-font);font-size:13px;cursor:pointer;}
 .btn-m.sec{background:none;border:.5px solid var(--border2);color:var(--ink2);}
@@ -771,6 +795,7 @@ body.compact-ui .panel-footer{flex-shrink:0;}
 /* profile editor */
 .ms-prof{margin-top:8px;border-top:.5px solid var(--border);padding-top:7px;}
 .ms-prof summary{font-size:12px;color:var(--ink2);cursor:pointer;}
+.ms-map{margin-top:6px;}
 .jz-pick{display:flex;flex-wrap:wrap;gap:3px;}
 .jzp{width:26px;height:24px;border-radius:4px;border:.5px solid var(--border2);background:var(--parchment);color:var(--ink3);font-family:'IBM Plex Mono',monospace;font-size:12px;cursor:pointer;}
 .jzp.on{background:var(--gold-pale);border-color:var(--gold);color:var(--ink);font-weight:700;}
@@ -1214,6 +1239,9 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
 </style>
 </head>
 <body>
+<!-- v1_175: ?embed=1 — shown inside the teacher app's own progress overlay,
+     which has its own bar. Decided before anything paints. -->
+<script>if(new URLSearchParams(location.search).get('embed')==='1')document.body.classList.add('tz-embed');</script>
 
 <div class="word-tooltip" id="wordTooltip"></div>
 <div class="panel-backdrop" id="panelBackdrop" onclick="togglePanel()"></div>
@@ -1228,6 +1256,10 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
 <div class="topbar tzh-bar" id="topbar">
   <button class="tzh-btn tzh-menu-btn" id="tzhMenuBtn" type="button" aria-haspopup="true" aria-expanded="false"
     aria-label="Menu" onclick="TehfizHeader.toggleMenu()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg><span class="tzh-wide">Menu</span></button>
+  <!-- v1_174: My journey (the left panel) opens from the left end of the bar,
+       mirroring Sessions at the right end. Phones use the strip above the
+       mushaf and the menu instead. -->
+  <button class="tzh-btn tzh-roomy" id="tjyBtn" type="button" aria-expanded="false" onclick="window.TehfizJourney&&TehfizJourney.toggle()" title="Your next lesson, lesson days and what you have memorised">My journey</button>
   <span class="tzh-brand tzh-wide">Tehf&#299;z<span>for students</span></span>
   <div class="topbar-nav tzh-nav" id="topbarNav"></div>
   <button class="tzh-btn tzh-goto" id="tzhGoto" type="button" aria-label="Go to a page or verse" onclick="TehfizHeader.openGoto()">
@@ -1322,7 +1354,6 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
       <div id="mistakesLoaded" style="display:none;flex-direction:column;flex:1;overflow:hidden;min-height:0;">
         <div class="active-banner" id="activeBanner" style="display:none;">
           <span id="activeBannerText"></span>
-          <button class="active-banner-clear" onclick="clearAllActive()">Clear all</button>
         </div>
         <div class="stats-row">
           <div class="statbar" id="statBar" title="Tap a band to filter the list below"></div>
@@ -1338,8 +1369,6 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
         <span class="sessions-toolbar-label">Saved Sessions</span>
         <div style="display:flex;gap:4px;">
           <button class="sess-toolbar-btn" id="selectAllBtn" onclick="toggleSelectAll()" title="Select all / Deselect all">◉ Select all</button>
-          <button class="sess-toolbar-btn" onclick="clearAllActive()" title="Delete all sessions">✕ Delete all</button>
-          <label class="sess-toolbar-btn accent" style="cursor:pointer;">⬇ Import<input type="file" accept=".qrs" multiple style="display:none;" onchange="importSession(event)"></label>
         </div>
       </div>
       <!-- Selects sessions; it does not filter the mistake list. The sheet's
@@ -1356,9 +1385,15 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
 
     <!-- SHARED FOOTER — visible in both tabs -->
     <div class="panel-footer">
-      <button class="btn-foot" onclick="openReview()">📈 Progress</button>
-      <button class="btn-foot accent" onclick="loadFromFolder()" title="Scan a folder for all .qrs files and import them">📂 Import folder</button>
+      <!-- v1_174: Progress moved to My journey; importing and clearing are in ⋯. -->
       <button class="btn-foot" onclick="openShare()">↑ Share</button>
+      <button class="btn-foot pf-dots" id="pfMoreBtn" onclick="togglePanelMore(event)" aria-haspopup="true" aria-expanded="false" title="More" aria-label="More">&#8943;</button>
+      <div class="pf-more" id="pfMore" role="menu" hidden>
+        <label class="pf-mi" role="menuitem" style="cursor:pointer;">⬇ Import a .qrs file<input type="file" accept=".qrs" multiple style="display:none;" onchange="togglePanelMore();importSession(event)"></label>
+        <button class="pf-mi" role="menuitem" onclick="togglePanelMore();loadFromFolder()" title="Scan a folder for all .qrs files and import them">📂 Import a folder</button>
+        <hr>
+        <button class="pf-mi danger" role="menuitem" onclick="togglePanelMore();clearAllActive()" title="Removes sessions you imported; sessions from your teacher stay">✕ Clear imported sessions</button>
+      </div>
     </div>
   </div>
 </div>
@@ -1679,6 +1714,9 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
 
 <div class="modal-bg" id="reviewModal">
   <div class="modal wide">
+    <!-- v1_175: the progress report fills the screen, with its own bar. -->
+    <div class="rv-top"><b>Progress report</b>
+      <button type="button" class="rv-x" onclick="closeModal('reviewModal')" aria-label="Close">&#10005;</button></div>
     <div id="reviewContent"></div>
     <div class="modal-btns sticky">
       <button class="btn-m sec" onclick="closeModal('reviewModal')">Close</button>
@@ -1702,7 +1740,7 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
    console as APP_VERSION, or grep the deployed HTML for it. Bumped on every
    saved build; vcheck.py asserts it matches the filename, so a forgotten bump
    fails the integrity check rather than shipping a lie. */
-const APP_VERSION = 'v1_171';
+const APP_VERSION = 'v1_178';
 window.APP_VERSION = APP_VERSION;
 console.info('Tehfiz student viewer ' + APP_VERSION);
 
@@ -2015,7 +2053,7 @@ function scorableSegments(sessions){
         : segmentStrengthInputs(s.segments, sg, s.mistakes||[]);
       if(!inp || !inp.verses) return;
       out.push({session:s, seg:sg, date:d, stage:sg.type||'unassigned',
-                inputs:inp, score:strengthFromInputs(inp)});
+                inputs:inp, score:gradedValue(sg, strengthFromInputs(inp)), teacher:isTeacherGraded(sg)});
     });
   });
   return out;
@@ -2085,7 +2123,28 @@ function saveMemorisedJuz(set){
 }
 // Anything heard is memorised by definition, so observed is always unioned in —
 // the student can add to the profile but can't accidentally hide real history.
+/* v1_178: the teacher's memorisation map (journey.js), when there is one,
+   is what the progress report goes by — the same map the teacher sees on the
+   Profile. A juz counts when any of it is old or recent; the new lesson is
+   still being learned, so it does not. */
+function teacherMapPages(){
+  try{ const m=window.TehfizJourney&&TehfizJourney.map&&TehfizJourney.map(); return m?m.pages:null; }catch{ return null; }
+}
+function mapJuz(pages){
+  const set=new Set(), M=window.TehfizMap;
+  for(let j=1;j<=30;j++){
+    const a=(M.juzStart(j)-1)*2, b=M.juzEnd(j)*2-1;
+    for(let i=a;i<=b;i++) if(pages[i]==='o'||pages[i]==='r'){ set.add(j); break; }
+  }
+  return set;
+}
 function memorisedJuz(sessions){
+  const pages=teacherMapPages();
+  if(pages && window.TehfizMap){
+    const set=mapJuz(pages);
+    observedJuz(sessions).forEach(j=>set.add(j));
+    return {set, declared:true, fromMap:true};
+  }
   const declared=loadMemorisedJuz();
   const obs=observedJuz(sessions);
   if(!declared) return {set:obs, declared:false};
@@ -2093,6 +2152,7 @@ function memorisedJuz(sessions){
   return {set:declared, declared:true};
 }
 function toggleMemorisedJuz(j, sessions){
+  if(memorisedJuz(sessions).fromMap) return false;
   const {set}=memorisedJuz(sessions);
   const obs=observedJuz(sessions, true);
   if(set.has(j)){
@@ -2248,7 +2308,7 @@ function portionCondition(sessions, memSet){
         if(segmentScorable(sg)){
           e.spotOnly=false;
           const inp=inputsWithPages(sg.strengthInputs,sg)||segmentStrengthInputs(s.segments,sg,s.mistakes||[]);
-          const sc=strengthFromInputs(inp);
+          const sc=gradedValue(sg, strengthFromInputs(inp));   // the teacher's grade wins (s13)
           // The score and WHEN + AS WHAT it was earned move together. e.last
           // advances on every segment including spot tests, so without these two
           // a juz spot-tested yesterday renders bright green beside a
@@ -2877,6 +2937,19 @@ function togglePanel(){
   }
 }
 
+// ── PANEL ⋯ MENU (v1_174)
+function togglePanelMore(e){
+  const m=document.getElementById('pfMore'), b=document.getElementById('pfMoreBtn');
+  if(!m) return;
+  if(e) e.stopPropagation();
+  m.hidden=!m.hidden;
+  if(b) b.setAttribute('aria-expanded', String(!m.hidden));
+}
+document.addEventListener('click', e=>{
+  const m=document.getElementById('pfMore');
+  if(m && !m.hidden && !e.target.closest('#pfMore,#pfMoreBtn')){ m.hidden=true; const b=document.getElementById('pfMoreBtn'); if(b) b.setAttribute('aria-expanded','false'); }
+});
+
 // ── PANEL TABS
 function switchPanelTab(tab){
   currentPanelTab=tab;
@@ -3456,7 +3529,7 @@ function setSessionTypePreset(preset){
 function _refreshStageLabels(){
   const multi = document.getElementById('reviewContent');
   if(multi && document.getElementById('reviewModal')?.classList.contains('open'))
-    multi.innerHTML = buildMultiReviewHTML(activeSessions);
+    { multi.innerHTML = buildMultiReviewHTML(activeSessions); _msMountMap(); }
   const single = document.getElementById('singleReviewContent');
   if(single && reviewingSession && document.getElementById('singleReviewModal')?.classList.contains('open'))
     single.innerHTML = buildReviewHTML(reviewingSession);
@@ -4642,6 +4715,7 @@ function openReview(){
   // flattened into one synthetic session the way the old version did.
   _msTab='overview'; _msTrendWindow='all';
   document.getElementById('reviewContent').innerHTML = buildMultiReviewHTML(activeSessions);
+  _msMountMap();
   document.getElementById('reviewModal').classList.add('open');
 }
 // ═══════════════════════════════════════════════════════════════════
@@ -4668,8 +4742,19 @@ let _msTrendWindow = 'all';
 function msToggleJuz(j){
   if(!toggleMemorisedJuz(j, activeSessions)) { showToast('Already revised — cannot be un-memorised'); return; }
   const el=document.getElementById('reviewContent');
-  if(el) el.innerHTML = buildMultiReviewHTML(activeSessions);
+  if(el) { el.innerHTML = buildMultiReviewHTML(activeSessions); _msMountMap(); }
 }
+/* v1_178: the map inside "Memorised portions", read-only. */
+function _msMountMap(){
+  const el=document.querySelector('#reviewContent [data-msmap]'), pages=teacherMapPages();
+  if(!el || !pages || !window.TehfizMap) return;
+  const m=TehfizJourney.map();
+  TehfizMap.render(el, { pages, recentAuto: m.recent_auto!==false && m.recent_auto!==0, editable:false, openReadOnly:true });
+}
+// A fresh copy of the map: redraw the report if it is open.
+window.addEventListener('tehfiz-plan', ()=>{
+  if(document.getElementById('reviewModal')?.classList.contains('open')) _msRerender();
+});
 
 function buildMultiReviewHTML(sessions){
   const S = sessionsChrono(sessions);
@@ -4909,7 +4994,7 @@ function _logRows(S){
         const inp = inputsAreCurrent(s)
           ? (inputsWithPages(sg.strengthInputs, sg) || segmentStrengthInputs(s.segments, sg, s.mistakes||[]))
           : segmentStrengthInputs(s.segments, sg, s.mistakes||[]);
-        if(inp && inp.verses){ score = strengthFromInputs(inp); pages = inp.pages; }
+        if(inp && inp.verses){ score = gradedValue(sg, strengthFromInputs(inp)); pages = inp.pages; }
       }
       rows.push({
         sid: s.id || (ymd + '|' + time), sessionName: sessionNameOf(s),
@@ -5266,6 +5351,15 @@ function _msRotation(S, mem){
 }
 
 function _msProfileEditor(S, mem){
+  if(mem.fromMap){
+    const who = window.TehfizReview && TehfizReview.active && TehfizReview.active()
+      ? 'This is the memorisation map from the student\u2019s Profile. Change it there.'
+      : 'Your teacher keeps this map in Tehfiz. It is the same one you see in My journey.';
+    return `<details class="ms-prof" open><summary>Memorised portions \u2014 from the memorisation map</summary>
+      <div class="ms-note" style="margin:6px 0;">${who}</div>
+      <div class="ms-map" data-msmap></div>
+    </details>`;
+  }
   const obs=observedJuz(S, true);
   return `<details class="ms-prof"><summary>Memorised portions${mem.declared?'':' — inferred from revisions so far'}</summary>
     <div class="ms-note" style="margin:6px 0;">Tap a juz to mark it memorised. Anything already
@@ -5291,7 +5385,7 @@ const MS_STAGE_COLORS={new:'var(--red)', recent:'var(--lvl2-orange)', old:'var(-
 function msSetWindow(w){ _msTrendWindow=w; _msRerender(); }
 function _msRerender(){
   const el=document.getElementById('reviewContent');
-  if(el) el.innerHTML=buildMultiReviewHTML(activeSessions);
+  if(el) { el.innerHTML=buildMultiReviewHTML(activeSessions); _msMountMap(); }
 }
 
 // Ticks that stay readable at every window: months when the span is long,
@@ -5423,12 +5517,12 @@ function _msSessions(S){
       <span>Sessions</span><span class="rv-summary-n">${S.length}</span><span class="rv-chev">▾</span>
     </summary><div class="rv-details-body">
     ${[...S].reverse().map(s=>{
-      const sc=strengthFromInputs(sessionInputsWithPages(s.strength?.inputs||null, s.segments));
-      const b=strengthBand(sc);
+      const sc=gradedValue(s, strengthFromInputs(sessionInputsWithPages(s.strength?.inputs||null, s.segments)));
+      const b=gradedBand(s, sc);
       return `<div class="ms-row" onclick="openSingleReview(${s.id})">
         <span class="ms-row-ref"><strong>${sessionDateText(s)}</strong> ${esc(sessionNameOf(s))}</span>
         <span class="ms-row-meta">${(s.mistakes||[]).length} mistakes</span>
-        <span class="ms-row-score" style="color:${b.color};">${sc==null?'—':sc+'%'}</span>
+        <span class="ms-row-score" style="color:${b.color};">${sc==null?'—':bandOnly(s)?b.label:sc+'%'}</span>
       </div>`;
     }).join('')}
     </div></details>`;
@@ -5640,12 +5734,14 @@ const STRENGTH_TIP = 'Memorization strength, shown as a percentage.\n\n'
   + 'never scores the same as a flawless recitation.\n\n'
   + 'Spot-tested and estimated ranges are excluded — they have no reliable verse count.';
 
-function strengthCardHTML(v, label, sub){
-  const b = strengthBand(v);
+// band: the band to show (the teacher's choice may differ from where v falls);
+// noPct: the teacher gave a band only, so the dial shows no made-up %.
+function strengthCardHTML(v, label, sub, band, noPct){
+  const b = band || strengthBand(v);
   return `<div class="str-card str-${b.key}" title="${STRENGTH_TIP}">
     <div class="str-dial">
       ${strengthArcSVG(v, b.color)}
-      <div class="str-val" style="color:${b.color};">${v==null?'—':v+'%'}</div>
+      <div class="str-val" style="color:${b.color};">${v==null||noPct?'—':v+'%'}</div>
     </div>
     <div class="str-meta">
       <div class="str-title">${label}<span class="str-info" onclick="openInterventionGuide()">?</span></div>
@@ -7577,6 +7673,8 @@ function _trvSyncOffset(){
   if(!b) return;
   requestAnimationFrame(()=>{
     document.body.style.paddingTop = b.offsetHeight + 'px';
+    // v1_176: full-screen layers (My journey, the progress report) start below it.
+    document.documentElement.style.setProperty('--trv-h', b.offsetHeight + 'px');
   });
 }
 window.addEventListener('resize', _trvSyncOffset);
@@ -7624,6 +7722,9 @@ else mount();
 /* Height is set from JS by _trvSyncOffset() — see there for why a fixed value
    cannot work. This is only the value before the first measurement lands. */
 body.trv-mode{padding-top:32px;}
+/* v1_176: the banner stays on top while reviewing, so full-screen layers
+   begin under it instead of hiding their bar (and ✕) behind it. */
+body.trv-mode:not(.tz-embed) #tjyRoot,body.trv-mode:not(.tz-embed) #reviewModal{top:var(--trv-h,32px);}
 .trv-banner{flex-wrap:nowrap;}
 .trv-eye{font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:1.5px;
   background:var(--gold);color:var(--on-gold);border-radius:3px;padding:2px 7px;font-weight:700;flex:none;}
@@ -7853,6 +7954,11 @@ const STEPS = [
   { title: 'Your lessons live here',
     find: () => pick(['#panelToggleBtn', '#panelFab']),
     body: 'This opens and closes the panel with all your lessons in it.' },
+
+  { title: 'Your journey',
+    find: () => pick(['#tjyBtn', '#tjyStrip']),
+    body: 'Your next lesson, your lesson days and what you have memorised are ' +
+          'here, with your progress report.' },
 
   { title: 'Every lesson is a card',
     before: () => { const o = reveal(); ensureDemo(); return o; },
@@ -8173,6 +8279,11 @@ span.seg-chip{display:flex;align-items:center;justify-content:center;box-sizing:
 .ttr-fake-btn,.ttr-fake-sel,.ttr-demo .seg-mode,.ttr-demo .seg-mini{display:inline-flex;align-items:center;justify-content:center;}
 </style>
 
+<!-- v1_174: My journey — the left panel and the next-lesson strip. -->
+<script src="/app/shared/tehfiz-map.js?v=mp4"></script>
+<script src="/app/shared/tehfiz-time.js?v=t2"></script>
+<script src="/app/student/journey.js?v=j5"></script>
+
 <script>
 /* ═══ Header configuration (TehfizHeader, /app/shared/tehfiz-header.js) ═══ */
 (function () {
@@ -8184,6 +8295,8 @@ span.seg-chip{display:flex;align-items:center;justify-content:center;box-sizing:
     items: function () {
       const paired = !!(claim() && claim().isPaired());
       return [
+        { id: 'journey', label: review() ? 'Journey' : 'My journey', icon: 'journey', group: 'main',
+          hidden: !window.TehfizJourney, run: () => window.TehfizJourney.open() },
         { id: 'sessions', label: 'Sessions', icon: 'panel', group: 'main', run: () => togglePanel() },
         { id: 'account', label: paired ? 'Account' : 'Log in', icon: 'account', group: 'main',
           hidden: review(), run: () => claim() && claim().open() },

@@ -18,7 +18,7 @@
    · Nothing here may run against the page at load time: this file runs in the
      <head>, before <body> exists. Declarations and pure tables only.
    ═══════════════════════════════════════════════════════════════════════ */
-const TEHFIZ_SHARED_VERSION = 's12';
+const TEHFIZ_SHARED_VERSION = 's14';
 
 // ── sessionName vs. the legacy `range` key ────────────────────────
 // v3 and earlier stored the (optional) session name under `range`, a leftover
@@ -749,6 +749,52 @@ function sessionStrengthInputs(segs, mistakes){
 
 function sessionStrength(segs, mistakes, model){
   return strengthFromInputs(sessionStrengthInputs(segs, mistakes), model);
+}
+
+/* ── The teacher's own grade (s13) ─────────────────────────────────────
+   Optional, per segment (sg.teacherGrade) and for the whole session
+   (sess.teacherGrade): {pct, band, at}. The teacher may give a %, a band, or
+   both, and each is kept exactly as given (null when not given): "70% but I'd
+   call it Strong" is information the model should learn from. Where only one
+   was given, the other is read from it — a band alone scores as its middle %,
+   a % alone shows in the band it falls in. The computed inputs are stored beside it, untouched, so the
+   model's weights can be fitted to teachers' judgement later.
+   Everywhere a strength is shown, the teacher's grade wins when present. */
+const STRENGTH_BAND_MIDS = {vstrong:95, strong:82, steady:65, shaky:45, weak:17};
+// The % the teacher typed, or null — no fallback (exports, the editor).
+function teacherSetPct(g){
+  const n = g && g.pct != null && g.pct !== '' ? Number(g.pct) : NaN;
+  return Number.isFinite(n) ? Math.max(0, Math.min(100, Math.round(n))) : null;
+}
+// The band the teacher chose, or null.
+function teacherSetBand(g){ return g && g.band && STRENGTH_BAND_MIDS[g.band] != null ? g.band : null; }
+// The teacher's score: the typed %, else the middle of the chosen band.
+function teacherPct(g){
+  const n = teacherSetPct(g);
+  if(n != null) return n;
+  const b = teacherSetBand(g);
+  return b ? STRENGTH_BAND_MIDS[b] : null;
+}
+// The band to SHOW beside a value: the teacher's chosen band if any, else the
+// band the value falls in.
+function gradedBand(x, value){
+  const k = teacherSetBand(x && x.teacherGrade);
+  return (k && STRENGTH_MODEL.bands.find(b=>b.key===k)) || strengthBand(value);
+}
+// A band-only grade: there is no real % to print.
+function bandOnly(x){ const g = x && x.teacherGrade; return !!g && teacherSetPct(g) == null && teacherSetBand(g) != null; }
+// "70% — Strong", or just "Strong" for a band-only grade.
+function gradeText(x, value){
+  const b = gradedBand(x, value);
+  return bandOnly(x) || value == null ? b.label : value + '% — ' + b.label;
+}
+function isTeacherGraded(x){ return teacherPct(x && x.teacherGrade) != null; }
+// The value to SHOW: the teacher's grade if given, else the computed one.
+function gradedValue(x, computed){ const t = teacherPct(x && x.teacherGrade); return t != null ? t : computed; }
+// Build a grade from what the teacher gave; null when they gave nothing.
+function makeGrade(pct, band){
+  const p = teacherSetPct({ pct }), b = teacherSetBand({ band });
+  return p == null && b == null ? null : { pct: p, band: b, at: Date.now() };
 }
 
 // Verses with no mistake at all — the most immediately readable figure here.
@@ -2373,7 +2419,8 @@ function _rvVersesSplit(ml, cfg){
 function _rvStrength(s, ml){
   const segs = s.segments || [];
   const hifzAssessed = sessionFocus(s) !== 'tajweed';
-  const score = hifzAssessed ? sessionStrength(segs, ml) : null;
+  const score = gradedValue(s, hifzAssessed ? sessionStrength(segs, ml) : null);
+  const graded = isTeacherGraded(s);
   const scorable = segs.filter(segmentScorable);
   const verses = scorable.reduce((n,sg)=>n+segVerseCount(segOrdered(sg)),0);
   /* Without this the dial falls to strengthBand(null) — "Not enough recited" —
@@ -2399,8 +2446,8 @@ function _rvStrength(s, ml){
         <div class="seg-stat-body">${done?`<strong>${t.pass}/${done}</strong> passed`:'Not assessed'}${t.none?` · ${t.none} unassessed`:''}</div>
       </div>`;
     }
-    const v = segmentStrength(segs, sg, ml);
-    const b = strengthBand(v);
+    const v = gradedValue(sg, segmentStrength(segs, sg, ml));
+    const b = gradedBand(sg, v);
     const clean = cleanVerseStats(segs, sg, ml);
     const run   = longestCleanRun(segs, sg, ml);
     /* The chart lives inside this card, whose onclick toggles the segment
@@ -2411,8 +2458,9 @@ function _rvStrength(s, ml){
                  title="Show only this segment's mistakes below">
       <div class="seg-stat-head"><span class="seg-stat-name">${esc(name)}</span><span class="seg-stat-stage">${esc(stage)}</span></div>
       <div class="seg-stat-body">
-        <span class="seg-stat-score" style="color:${b.color};">${v==null?'—':v+'%'}</span>
+        <span class="seg-stat-score" style="color:${b.color};">${v==null||bandOnly(sg)?'—':v+'%'}</span>
         <span class="seg-stat-band" style="color:${b.color};">${b.label}</span>
+        ${isTeacherGraded(sg)?'<span class="seg-stat-clean" title="The teacher\u2019s own grade">teacher\u2019s grade</span>':''}
         ${clean?`<span class="seg-stat-clean">${clean.clean}/${clean.total} clean (${clean.pct}%)</span>`:''}
       </div>
       ${run?`<div class="seg-stat-run" title="Longest unbroken run of mistake-free verses.">
@@ -2422,7 +2470,7 @@ function _rvStrength(s, ml){
     </div>`;
   }).join('');
 
-  return strengthCardHTML(score, 'Memorization strength', sub)
+  return strengthCardHTML(score, 'Memorization strength' + (graded ? ' \u00b7 teacher\u2019s grade' : ''), sub, gradedBand(s, score), bandOnly(s))
        + (segCards?`<div class="seg-stats">${segCards}</div>`:'');
 }
 

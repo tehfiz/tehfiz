@@ -1,9 +1,16 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   invoices.js — TehfizInvoices — i2
-   Loaded by the teacher app only, from /app/teacher/invoices.js?v=i2.
-   Opened from the header menu (Menu → Invoices).
+   invoices.js — TehfizInvoices — i6
+   Loaded by the teacher app only, from /app/teacher/invoices.js?v=i7.
+   i7: redrawing (a tap on a row, a status change) keeps the place on the page.
+   Opened from the header menu (Menu → Invoices), and used by a student's
+   Profile (profile.js) for that student's Billing tab.
 
-   One month, every student taught that month:
+   i4: a billing PERIOD is either a calendar month or a custom range of days
+   (5 Oct – 4 Nov). Status, the reference and the file name follow the period.
+   The server still answers by month, so a range fetches the months it spans
+   and keeps the sessions whose date falls inside it.
+
+   One period, every student taught in it:
      · a summary — students, sessions, hours billed, total due
      · a row per student — who to bill, sessions, time recorded and billed
        (after rounding), rate, amount, status (Not printed / Printed / Paid)
@@ -29,14 +36,17 @@
    ═══════════════════════════════════════════════════════════════════════ */
 (function () {
 'use strict';
-const TEHFIZ_INVOICES_VERSION = 'i3';
+const TEHFIZ_INVOICES_VERSION = 'i7';
 const K_BILLTO = 'tehfiz_inv_billto', K_STATUS = 'tehfiz_inv_status', K_PAY = 'tehfiz_inv_payment';
+const K_LASTEND = 'tehfiz_inv_lastend';   // {sid: 'YYYY-MM-DD'} end of the last period printed
+const K_RANGE = 'tehfiz_inv_range';       // the last custom range used on the list {from, to}
 
 let isOpen = false, month = '', loading = false, error = '';
-let data = null;          // {month, rows:[{sid, seconds, sessions, untimed}], sessions:[...]}
+let period = null;        // {kind:'month', ym} | {kind:'range', from:'YYYY-MM-DD', to:'YYYY-MM-DD'}
+let data = null;          // {period, rows:[{sid, seconds, sessions, untimed}], sessions:[...]}
 let monthsWithData = [];  // ['2026-09', ...] newest first
 let editing = null;       // sid whose settings row is open
-let showDefaults = false, preview = null;
+let showDefaults = false, preview = null;   // preview: a line (lineFor) to show
 
 const $ = (id) => document.getElementById(id);
 function esc(x) {
@@ -57,6 +67,57 @@ function ymAdd(ym, n) {
   return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
 }
 function monthLabel(ym) { return bill() ? bill().monthLabel(ym) : ym; }
+
+/* ── periods ────────────────────────────────────────────────────────────── */
+function ymdToday() { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+function ymdAdd(ymd, n) {
+  const d = new Date(ymd + 'T12:00:00'); d.setDate(d.getDate() + n);
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+function okYmd(x) { return /^\d{4}-\d{2}-\d{2}$/.test(String(x || '')); }
+function monthPeriod(ym) { return { kind: 'month', ym }; }
+function rangePeriod(from, to) {
+  if (!okYmd(from)) from = ymNow() + '-01';
+  if (!okYmd(to)) to = ymdToday();
+  if (to < from) { const t = from; from = to; to = t; }
+  return { kind: 'range', from, to };
+}
+function pFrom(p) { return p.kind === 'month' ? p.ym + '-01' : p.from; }
+function pTo(p) {
+  if (p.kind !== 'month') return p.to;
+  const [y, m] = p.ym.split('-').map(Number);
+  return p.ym + '-' + String(new Date(y, m, 0).getDate()).padStart(2, '0');
+}
+// Status keys: a month keeps its old 'YYYY-MM' key, so marks made before i4 still apply.
+function pKey(p) { return p.kind === 'month' ? p.ym : p.from + '..' + p.to; }
+function dayLabel(ymd, withYear) {
+  return new Date(ymd + 'T12:00:00').toLocaleDateString(undefined, withYear
+    ? { day: 'numeric', month: 'short', year: 'numeric' } : { day: 'numeric', month: 'short' });
+}
+function pLabel(p) {
+  if (p.kind === 'month') return monthLabel(p.ym);
+  const sameYear = p.from.slice(0, 4) === p.to.slice(0, 4);
+  return dayLabel(p.from, !sameYear) + ' \u2013 ' + dayLabel(p.to, true);
+}
+function pRef(p, code) {
+  const c = String(code || '').toUpperCase();
+  return 'TF-' + (p.kind === 'month' ? p.ym.replace('-', '') : p.from.replace(/-/g, '')) + '-' + c;
+}
+function lastEnd(sid) { return readJ(K_LASTEND, {})[sid] || ''; }
+function noteEnd(sid, p) {
+  const all = readJ(K_LASTEND, {}), end = pTo(p);
+  if (!all[sid] || all[sid] < end) { all[sid] = end; writeJ(K_LASTEND, all); }
+}
+/* A custom range starts the day after the last invoice ended (for one
+   student), or after the last range used on the list, and runs to today. */
+function defaultRange(sid) {
+  const today = ymdToday();
+  let from = '';
+  if (sid) { const e = lastEnd(sid); if (e) from = ymdAdd(e, 1); }
+  else { const r = readJ(K_RANGE, null); if (r && okYmd(r.to)) from = ymdAdd(r.to, 1); }
+  if (!from || from > today) from = ymNow() + '-01';
+  return rangePeriod(from, today);
+}
 function hm(sec) {
   const s = Math.max(0, Math.round(sec || 0)), h = Math.floor(s / 3600), m = Math.round((s % 3600) / 60);
   if (!h && !m) return s ? '< 1 min' : '0 min';
@@ -81,10 +142,10 @@ function payment() {
   return { due: 10, from: '', phone: '', howto: '', ...readJ(K_PAY, {}) };
 }
 function billTo(sid) { return (readJ(K_BILLTO, {})[sid] || '').trim(); }
-function statusOf(sid) { return readJ(K_STATUS, {})[month + '|' + sid] || {}; }
-function setStatus(sid, patch) {
+function statusOf(sid, p) { return readJ(K_STATUS, {})[pKey(p || period) + '|' + sid] || {}; }
+function setStatus(sid, patch, p) {
   const all = readJ(K_STATUS, {});
-  const key = month + '|' + sid;
+  const key = pKey(p || period) + '|' + sid;
   const next = { ...(all[key] || {}), ...patch };
   Object.keys(next).forEach((k) => { if (next[k] == null) delete next[k]; });
   all[key] = next; writeJ(K_STATUS, all);
@@ -92,11 +153,12 @@ function setStatus(sid, patch) {
 
 /* Everything one invoice needs, computed once — the table, the preview and
    the print all read this, so they cannot drift apart. */
-function lineFor(r) {
+function lineFor(r, d, p) {
+  d = d || data; p = p || period;
   const b = bill();
   const rate = b.rate(r.sid);
   const step = b.step(rate);
-  const rows = (data.sessions || []).filter((x) => x.student_id === r.sid)
+  const rows = (d.sessions || []).filter((x) => x.student_id === r.sid)
     .sort((a, c) => String(a.date_ymd).localeCompare(String(c.date_ymd)));
   const billed = rows.length
     ? rows.reduce((n, x) => n + b.billedSec(x.duration_sec || 0, step), 0)
@@ -109,8 +171,9 @@ function lineFor(r) {
     sid: r.sid, s: student(r.sid), rows, rate, step, billed, amount, free,
     recorded: r.seconds || 0, sessions: r.sessions || 0, untimed: r.untimed || 0,
     currency: rate.currency || '', rateIsDefault: stored.amount == null,
-    billTo: billTo(r.sid), status: statusOf(r.sid),
-    ref: 'TF-' + month.replace('-', '') + '-' + String(student(r.sid).code || r.sid.slice(0, 8)).toUpperCase(),
+    billTo: billTo(r.sid), status: statusOf(r.sid, p),
+    period: p, periodLabel: pLabel(p),
+    ref: pRef(p, student(r.sid).code || r.sid.slice(0, 8)),
   };
 }
 
@@ -122,21 +185,42 @@ async function loadMonths() {
     monthsWithData = Array.from(set).sort().reverse();
   } catch { monthsWithData = []; }
 }
-async function loadMonth(ym) {
-  month = ym; loading = true; error = ''; data = null; editing = null; render();
-  try {
-    const d = await sync().api('/api/sessions/hours?detail=1&from=' + ym + '&to=' + ym);
-    data = {
-      month: ym,
-      rows: (d.months || []).filter((x) => x.month === ym && x.student_id).map((x) => ({
+/* One period's rows and sessions. A month uses the server's own totals; a
+   range is summed from the sessions whose date falls inside it. */
+async function fetchPeriod(p) {
+  const fm = pFrom(p).slice(0, 7), tm = pTo(p).slice(0, 7);
+  const d = await sync().api('/api/sessions/hours?detail=1&from=' + fm + '&to=' + tm);
+  if (p.kind === 'month') {
+    return {
+      period: p,
+      rows: (d.months || []).filter((x) => x.month === p.ym && x.student_id).map((x) => ({
         sid: x.student_id, seconds: x.seconds || 0, sessions: x.sessions || 0, untimed: x.untimed || 0 })),
       sessions: d.sessions || [], truncated: !!d.truncated,
     };
-  } catch (e) {
-    error = e && e.status === 401 ? 'Signed out — sign in again to see invoices.' : 'Could not load ' + monthLabel(ym) + ': ' + ((e && e.message) || 'offline');
+  }
+  const from = pFrom(p), to = pTo(p);
+  const sessions = (d.sessions || []).filter((x) => x.date_ymd && x.date_ymd >= from && x.date_ymd <= to);
+  const by = new Map();
+  sessions.forEach((x) => {
+    if (!x.student_id) return;
+    const r = by.get(x.student_id) || { sid: x.student_id, seconds: 0, sessions: 0, untimed: 0 };
+    r.sessions += 1;
+    if (x.duration_sec == null) r.untimed += 1; else r.seconds += x.duration_sec;
+    by.set(x.student_id, r);
+  });
+  return { period: p, rows: Array.from(by.values()), sessions, truncated: !!d.truncated };
+}
+async function loadPeriod(p) {
+  period = p; month = p.kind === 'month' ? p.ym : month;
+  if (p.kind === 'range') writeJ(K_RANGE, { from: p.from, to: p.to });
+  loading = true; error = ''; data = null; editing = null; render();
+  try { data = await fetchPeriod(p); }
+  catch (e) {
+    error = e && e.status === 401 ? 'Signed out — sign in again to see invoices.' : 'Could not load ' + pLabel(p) + ': ' + ((e && e.message) || 'offline');
   }
   loading = false; render();
 }
+function loadMonth(ym) { return loadPeriod(monthPeriod(ym)); }
 /* Invoices are raised in arrears: early in a month the one to raise is last
    month's. Otherwise open on the newest month that has any teaching. */
 function defaultMonth() {
@@ -236,7 +320,7 @@ function injectCss() {
 }
 @media (min-width:901px){ .tinv-r > .c-meta{display:none;} }
 /* dialogs (defaults, preview) */
-.tinv-dlg{position:fixed;inset:0;z-index:1160;display:flex;align-items:center;justify-content:center;padding:16px;}
+.tinv-dlg{position:fixed;inset:0;z-index:1260;display:flex;align-items:center;justify-content:center;padding:16px;}
 .tinv-dlg .scrim{position:absolute;inset:0;background:rgba(23,25,28,.5);}
 .tinv-card{position:relative;background:var(--parchment);border-radius:14px;max-width:560px;width:100%;max-height:calc(100vh - 32px);
   overflow:auto;padding:18px 20px;display:flex;flex-direction:column;gap:14px;box-shadow:0 18px 48px rgba(23,25,28,.3);}
@@ -280,6 +364,18 @@ function injectCss() {
 .tinv-doc .ft{margin-top:auto;display:flex;justify-content:space-between;font-size:11px;color:#626973;border-top:1px solid rgba(23,25,28,.13);padding-top:10px;}
 @media (max-width:860px){ .tinv-pv .pvpage{padding:10px;overflow:auto;justify-content:flex-start;} }
 #tinvPrint{display:none;}
+/* i4: Month / Custom range, and a name that opens the student's Profile */
+.tinv-seg{display:flex;}
+.tinv-seg button{height:40px;padding:0 14px;border:1px solid var(--border2);background:var(--surface,#fff);color:var(--ink);font:500 14px var(--ui-font);cursor:pointer;}
+.tinv-seg button:first-child{border-radius:8px 0 0 8px;}
+.tinv-seg button:last-child{border-radius:0 8px 8px 0;margin-left:-1px;}
+.tinv-seg button[aria-pressed="true"]{background:var(--ink);color:var(--parchment);border-color:var(--ink);font-weight:600;}
+.tinv-rng{gap:8px;}
+.tinv-rng input{height:40px;box-sizing:border-box;padding:0 10px;border:1px solid var(--border2);border-radius:8px;background:var(--surface,#fff);color:var(--ink);font:400 14px var(--ui-font);}
+.tinv-to{min-width:0!important;font-size:14px!important;font-weight:400!important;color:var(--ink3);}
+.tinv-name{background:none;border:none;padding:0;text-align:left;font:600 14px var(--ui-font);color:var(--ink);cursor:pointer;
+  text-decoration:underline;text-decoration-color:var(--border2);text-underline-offset:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.tinv-name:hover{text-decoration-color:var(--ink);}
 @media print{
   @page{size:A4;margin:0;}
   /* The app is a full-height, overflow-hidden flex column; printed as is,
@@ -317,12 +413,17 @@ function rowHtml(L) {
       ? '<button class="tinv-sb" data-tinv="unpaid" data-sid="' + esc(L.sid) + '" title="Mark as not paid">Undo paid</button>'
       : L.status.printed
         ? '<button class="tinv-sb strong" data-tinv="paid" data-sid="' + esc(L.sid) + '">Mark paid</button>'
-        : '<button class="tinv-sb strong" data-tinv="print" data-sid="' + esc(L.sid) + '"' + (L.amount == null ? ' disabled title="Set a rate first"' : '') + '>Print</button>') +
+        : '<button class="tinv-sb strong" data-tinv="print" data-sid="' + esc(L.sid) + '"' + (L.amount == null ? ' disabled title="Set a rate first"' : '') + '>Print</button>' +
+          '<button class="tinv-sb" data-tinv="paid" data-sid="' + esc(L.sid) + '" title="Paid without printing an invoice">Paid</button>') +
     '<button class="tinv-sb" data-tinv="edit" data-sid="' + esc(L.sid) + '" aria-label="Billing for ' + esc(name) + '">Edit</button>' +
   '</div>';
   const warn = !L.billTo || L.untimed || (L.amount == null && !L.free);
   return '<div class="tinv-r' + (warn ? ' warnrow' : '') + '">' +
-    '<div class="tinv-who c-who"><b>' + esc(name) + (s.code ? '<span class="tinv-code">' + esc(s.code) + '</span>' : '') + '</b>' + bt + '</div>' +
+    '<div class="tinv-who c-who">' +
+      (window.TehfizProfile && !s.removed
+        ? '<button class="tinv-name" data-tinv="profile" data-sid="' + esc(L.sid) + '" title="Open ' + esc(name) + '\u2019s Profile, on Billing">'
+        : '<b>') + esc(name) + (s.code ? '<span class="tinv-code">' + esc(s.code) + '</span>' : '') +
+      (window.TehfizProfile && !s.removed ? '</button>' : '</b>') + bt + '</div>' +
     '<div class="c-meta"><span>' + L.sessions + ' sessions</span><span>' + hm(L.billed) + ' billed</span>' +
       (L.untimed ? '<button class="tinv-fix" data-tinv="fix" data-sid="' + esc(L.sid) + '">' + L.untimed + ' untimed · fix</button>' : '') + '</div>' +
     '<div class="c-hide tinv-num">' + L.sessions + '</div>' +
@@ -359,14 +460,22 @@ function mainHtml() {
   const b = bill();
   const d = { ...b.profileRate(), ...b.defaults() };
   const defStep = b.step(d);
+  const isRange = period.kind === 'range';
+  const pick = isRange
+    ? '<div class="tinv-mon tinv-rng"><input type="date" data-tinvin="from" value="' + esc(period.from) + '" aria-label="From">' +
+        '<span class="tinv-to">to</span><input type="date" data-tinvin="to" value="' + esc(period.to) + '" aria-label="To"></div>'
+    : '<div class="tinv-mon"><button class="tinv-ib" data-tinv="prev" aria-label="Previous month">‹</button>' +
+        '<span>' + esc(monthLabel(month)) + '</span>' +
+        '<button class="tinv-ib" data-tinv="next" aria-label="Next month"' + (month >= ymNow() ? ' disabled' : '') + '>›</button></div>';
   const head = '<div class="tinv-top"><h2>Invoices</h2>' +
-    '<div class="tinv-mon"><button class="tinv-ib" data-tinv="prev" aria-label="Previous month">‹</button>' +
-      '<span>' + esc(monthLabel(month)) + '</span>' +
-      '<button class="tinv-ib" data-tinv="next" aria-label="Next month"' + (month >= ymNow() ? ' disabled' : '') + '>›</button></div>' +
+    '<div class="tinv-seg" role="group" aria-label="Billing period">' +
+      '<button data-tinv="mode-month" aria-pressed="' + !isRange + '">Month</button>' +
+      '<button data-tinv="mode-range" aria-pressed="' + isRange + '">Custom range</button></div>' +
+    pick +
     '<div class="tinv-acts"><button class="tinv-btn" data-tinv="defaults">Billing defaults</button>';
-  if (loading) return head + '</div></div><div class="tinv-empty">Loading ' + esc(monthLabel(month)) + '…</div>';
+  if (loading) return head + '</div></div><div class="tinv-empty">Loading ' + esc(pLabel(period)) + '…</div>';
   if (error) return head + '</div></div><div class="tinv-err" role="alert">' + esc(error) + '</div>';
-  const lines = (data.rows || []).map(lineFor)
+  const lines = (data.rows || []).map((r) => lineFor(r))
     .sort((a, c) => (a.s.name || '~' + a.s.code).localeCompare(c.s.name || '~' + c.s.code));
   const printable = lines.filter((L) => !L.free && L.amount != null);
   const sessions = lines.reduce((n, L) => n + L.sessions, 0);
@@ -376,7 +485,7 @@ function mainHtml() {
   const actions = head +
     '<button class="tinv-btn pri" data-tinv="printall"' + (printable.length ? '' : ' disabled') + '>Print all ' + printable.length + '</button></div></div>';
   if (!lines.length) {
-    return actions + '<div class="tinv-empty">No sessions sent with a date in ' + esc(monthLabel(month)) + '.' +
+    return actions + '<div class="tinv-empty">No sessions sent with a date in ' + esc(pLabel(period)) + '.' +
       (monthsWithData.length ? '<br>Months with teaching: ' + monthsWithData.slice(0, 6).map((m) =>
         '<button class="tinv-fix" data-tinv="goto" data-m="' + m + '">' + esc(monthLabel(m)) + '</button>').join(' · ') : '') + '</div>';
   }
@@ -392,7 +501,7 @@ function mainHtml() {
       lines.map(rowHtml).join('') +
     '</div>' +
     '<span class="tinv-note">Times come from sessions you sent, by the date on the session. Rates, “bill to”, payment details and status are kept on this device.' +
-      (data.truncated ? ' Only the first 1000 sessions of this month are itemised.' : '') + '</span>';
+      (data.truncated ? ' Only the first 1000 sessions of this period are itemised' + (isRange ? ', so a long range may be missing some.' : '.') : '') + '</span>';
 }
 
 function docHtml(L) {
@@ -415,7 +524,7 @@ function docHtml(L) {
     '<div class="two"><div>' +
         '<span class="lab">Bill to</span><span class="big">' + esc(L.billTo || '[Who to bill]') + '</span>' +
         '<span class="t">For ' + esc(L.s.name || 'student') + (L.s.code ? ' · ' + esc(L.s.code) : '') + '</span>' +
-        '<span class="lab">Billing period</span><span class="t" style="color:#17191c;font-size:16px;font-weight:500;">' + esc(monthLabel(month)) + '</span>' +
+        '<span class="lab">Billing period</span><span class="t" style="color:#17191c;font-size:16px;font-weight:500;">' + esc(L.periodLabel) + '</span>' +
         '<span class="t mono">' + esc(L.ref) + '</span>' +
       '</div><div class="rt">' +
         '<span class="lab">From</span><span class="t" style="color:#17191c;font-weight:600;font-size:16px;">' + esc(from) + '</span>' +
@@ -466,9 +575,9 @@ function defaultsHtml() {
 function previewHtml(L) {
   return '<div class="tinv-dlg"><div class="scrim" data-tinv="dlg-close"></div>' +
     '<div class="tinv-card tinv-pv" role="dialog" aria-modal="true" aria-label="Invoice preview">' +
-      '<div class="pvbar"><b>' + esc(L.s.name || L.s.code) + ' · ' + esc(monthLabel(month)) + '</b><span style="display:flex;gap:8px;">' +
+      '<div class="pvbar"><b>' + esc(L.s.name || L.s.code) + ' · ' + esc(L.periodLabel) + '</b><span style="display:flex;gap:8px;">' +
         '<button class="tinv-btn" data-tinv="dlg-close">Close</button>' +
-        '<button class="tinv-btn pri" data-tinv="print" data-sid="' + esc(L.sid) + '"' + (L.amount == null || L.free ? ' disabled' : '') + '>Print</button></span></div>' +
+        '<button class="tinv-btn pri" data-tinv="print-preview"' + (L.amount == null || L.free ? ' disabled' : '') + '>Print</button></span></div>' +
       '<div class="pvpage">' + docHtml(L) + '</div>' +
     '</div></div>';
 }
@@ -477,15 +586,18 @@ function render() {
   let root = $('tinvRoot');
   if (!root) { root = document.createElement('div'); root.id = 'tinvRoot'; document.body.appendChild(root);
                root.addEventListener('click', onClick); root.addEventListener('change', onChange); }
-  if (!isOpen) { root.innerHTML = ''; return; }
   let dlg = '';
   if (showDefaults) dlg = defaultsHtml();
-  else if (preview && data) { const r = data.rows.find((x) => x.sid === preview); if (r) dlg = previewHtml(lineFor(r)); }
+  else if (preview) dlg = previewHtml(preview);
+  // A Profile can open the preview without this screen: then it is all there is.
+  if (!isOpen) { root.innerHTML = dlg; return; }
   const focusId = document.activeElement && document.activeElement.dataset ? document.activeElement.dataset.tinvin : null;
   const focusSid = focusId ? document.activeElement.dataset.sid : null;
+  const oldMain = root.querySelector('.tinv-main'), keep = oldMain ? oldMain.scrollTop : 0;
   root.innerHTML = '<div class="tinv" role="dialog" aria-modal="true" aria-label="Invoices">' +
     '<div class="tinv-bar"><button class="tinv-back" data-tinv="close">‹ Back</button><h1>Invoices</h1></div>' +
     '<div class="tinv-main"><div class="tinv-inner">' + (bill() ? mainHtml() : '') + '</div></div>' + dlg + '</div>';
+  const newMain = root.querySelector('.tinv-main'); if (newMain && keep) newMain.scrollTop = keep;
   if (focusId) {
     const el = root.querySelector('[data-tinvin="' + focusId + '"][data-sid="' + focusSid + '"]');
     if (el) el.focus();
@@ -504,7 +616,7 @@ function printLines(lines) {
      only, so the name never travels anywhere; restored once printing ends. */
   const prevTitle = document.title;
   const who = lines.length === 1 ? (lines[0].s.name || lines[0].s.code) : (lines.length + ' students');
-  document.title = (monthLabel(month) + ' - ' + who).replace(/[\\/:*?"<>|]+/g, ' ').trim();
+  document.title = (lines[0].periodLabel + ' - ' + who).replace(/[\\/:*?"<>|]+/g, ' ').trim();
   const done = () => {
     document.body.classList.remove('tinv-printing');
     document.title = prevTitle;
@@ -512,8 +624,22 @@ function printLines(lines) {
   };
   window.addEventListener('afterprint', done);
   const now = new Date().toISOString();
-  lines.forEach((L) => { if (!L.status.printed) setStatus(L.sid, { printed: now }); });
+  lines.forEach((L) => {
+    // The amount is kept with the status so a Profile can list past invoices.
+    setStatus(L.sid, { printed: L.status.printed || now, amount: L.amount, cur: L.currency, label: L.periodLabel }, L.period);
+    noteEnd(L.sid, L.period);
+  });
+  if (onChanged) onChanged();
   setTimeout(() => { window.print(); setTimeout(() => { done(); render(); }, 800); }, 60);
+}
+
+/* Paid — with or without having printed it (paid in cash, invoiced some other
+   way). The amount and label are kept so the Profile's past invoices list it,
+   and a paid period counts as invoiced for the next custom range. */
+function markPaid(L, on) {
+  if (!on) { setStatus(L.sid, { paid: null }, L.period); return; }
+  setStatus(L.sid, { paid: new Date().toISOString(), amount: L.amount, cur: L.currency, label: L.periodLabel }, L.period);
+  noteEnd(L.sid, L.period);
 }
 
 /* ── events ─────────────────────────────────────────────────────────────── */
@@ -522,6 +648,14 @@ function onClick(e) {
   if (!t) return;
   const a = t.dataset.tinv, sid = t.dataset.sid;
   if (a === 'close') return close();
+  if (a === 'mode-month') { if (period.kind !== 'month') loadMonth(month || ymNow()); return; }
+  if (a === 'mode-range') { if (period.kind !== 'range') loadPeriod(defaultRange(null)); return; }
+  if (a === 'profile') { if (window.TehfizProfile) window.TehfizProfile.open(sid, 'billing'); return; }
+  if (a === 'print-preview') {
+    const L = preview; if (!L) return;
+    if (!L.billTo) { toast('Add who to bill first'); return; }
+    preview = null; render(); return printLines([L]);
+  }
   if (a === 'prev') return loadMonth(ymAdd(month, -1));
   if (a === 'next') return loadMonth(ymAdd(month, 1));
   if (a === 'goto') return loadMonth(t.dataset.m);
@@ -534,12 +668,12 @@ function onClick(e) {
                          step: Number.isFinite(step) && step >= 1 ? String(Math.min(step, 240)) : '' });
     writeJ(K_PAY, { from: v('tinvDFrom').trim(), phone: v('tinvDPhone').trim(),
                     due: Math.max(0, Math.min(90, parseInt(v('tinvDDue'), 10) || 10)), howto: v('tinvDHow').trim() });
-    showDefaults = false; toast('Billing defaults saved'); return render();
+    showDefaults = false; toast('Billing defaults saved'); render(); if (onChanged) onChanged(); return;
   }
   if (a === 'edit') { editing = editing === sid ? null : sid; return render(); }
   if (a === 'edit-done') { editing = null; return render(); }
-  if (a === 'preview') { preview = sid; return render(); }
-  if (a === 'paid') { setStatus(sid, { paid: new Date().toISOString() }); return render(); }
+  if (a === 'preview') { const r = data.rows.find((x) => x.sid === sid); preview = r ? lineFor(r) : null; return render(); }
+  if (a === 'paid') { const r = data.rows.find((x) => x.sid === sid); if (r) markPaid(lineFor(r), true); return render(); }
   if (a === 'unpaid') { setStatus(sid, { paid: null }); return render(); }
   if (a === 'fix') {
     try { localStorage.setItem('tehfiz_sent_student', sid); } catch {}
@@ -556,7 +690,7 @@ function onClick(e) {
     return printLines([L]);
   }
   if (a === 'printall') {
-    const lines = data.rows.map(lineFor).filter((L) => !L.free && L.amount != null);
+    const lines = data.rows.map((r) => lineFor(r)).filter((L) => !L.free && L.amount != null);
     const missing = lines.filter((L) => !L.billTo).length;
     if (missing) toast(missing + ' invoice' + (missing === 1 ? ' has' : 's have') + ' no “bill to” yet');
     return printLines(lines);
@@ -565,6 +699,11 @@ function onClick(e) {
 function onChange(e) {
   const el = e.target, f = el.dataset.tinvin, sid = el.dataset.sid;
   if (!f) return;
+  if (f === 'from' || f === 'to') {
+    const from = f === 'from' ? el.value : period.from, to = f === 'to' ? el.value : period.to;
+    if (okYmd(from) && okYmd(to)) loadPeriod(rangePeriod(from, to));
+    return;
+  }
   if (f === 'billto') {
     const all = readJ(K_BILLTO, {}); all[sid] = el.value.trim(); if (!all[sid]) delete all[sid]; writeJ(K_BILLTO, all);
   } else if (f === 'amount') bill().setStored(sid, { amount: el.value.trim().replace(/[, ]/g, '') || undefined });
@@ -576,7 +715,10 @@ function onChange(e) {
   render();
 }
 document.addEventListener('keydown', (e) => {
-  if (!isOpen) return;
+  if (!isOpen && !preview && !showDefaults) return;
+  // A Profile opened from this screen sits on top, unless an invoice preview is over it.
+  if (!preview && !showDefaults && window.TehfizProfile && window.TehfizProfile.isOpen()) return;
+  if (!isOpen) { if (e.key === 'Escape') { e.stopPropagation(); e.preventDefault(); preview = null; showDefaults = false; render(); } return; }
   if (e.key === 'Escape') {
     e.stopPropagation(); e.preventDefault();
     if (showDefaults || preview) { showDefaults = false; preview = null; render(); } else close();
@@ -594,11 +736,53 @@ async function open() {
     return;
   }
   isOpen = true; editing = null; preview = null; showDefaults = false;
-  loading = true; month = month || ymNow(); render();
+  loading = true; month = month || ymNow(); period = period || monthPeriod(month); render();
   await Promise.all([loadMonths(), bill().loadProfile().catch(() => {})]);
-  await loadMonth(defaultMonth());
+  if (period.kind === 'range') await loadPeriod(period);
+  else await loadMonth(defaultMonth());
 }
 function close() { isOpen = false; render(); }
 
-window.TehfizInvoices = { open, close, version: TEHFIZ_INVOICES_VERSION };
+/* ── for one student (the Billing tab of profile.js) ────────────────────── */
+let onChanged = null;     // the Profile re-renders after a print or a status change
+const forStudent = {
+  monthPeriod, rangePeriod, defaultRange, label: pLabel, today: ymdToday, lastEnd,
+  // Everything the tab shows for this student in this period, or null when
+  // nothing was taught in it. Fetched fresh: the tab is opened rarely.
+  async line(sid, p) {
+    injectCss();
+    const d = await fetchPeriod(p);
+    const r = d.rows.find((x) => x.sid === sid);
+    return r ? lineFor(r, d, p) : null;
+  },
+  preview(L) { injectCss(); preview = L; showDefaults = false; render(); },
+  print(L) { injectCss(); if (!L.billTo) { toast('Add who to bill first'); return false; } printLines([L]); return true; },
+  setPaid(L, on) { markPaid(L, on); if (onChanged) onChanged(); },
+  // Past invoices: every period this student has a printed or paid status for.
+  history(sid) {
+    const all = readJ(K_STATUS, {}), out = [];
+    Object.keys(all).forEach((k) => {
+      const i = k.lastIndexOf('|'); if (k.slice(i + 1) !== sid) return;
+      const key = k.slice(0, i), v = all[k] || {};
+      if (!v.printed && !v.paid) return;
+      const p = key.includes('..') ? rangePeriod(key.split('..')[0], key.split('..')[1]) : monthPeriod(key);
+      out.push({ key, period: p, label: v.label || pLabel(p), printed: v.printed || null, paid: v.paid || null,
+                 amount: v.amount == null ? null : v.amount, cur: v.cur || '' });
+    });
+    return out.sort((a, b) => pTo(b.period).localeCompare(pTo(a.period)));
+  },
+  billTo, setBillTo(sid, v) {
+    const all = readJ(K_BILLTO, {}); all[sid] = String(v || '').trim(); if (!all[sid]) delete all[sid]; writeJ(K_BILLTO, all);
+  },
+  // Hours by month for one student (newest first), for the tab's month list.
+  async months(sid) {
+    const d = await sync().api('/api/sessions/hours');
+    return (d.months || []).filter((x) => x.student_id === sid).sort((a, b) => b.month.localeCompare(a.month));
+  },
+  // The Billing defaults dialog on its own, over a Profile (i6).
+  openDefaults() { injectCss(); preview = null; showDefaults = true; render(); },
+  hm, money, onChange(fn) { onChanged = fn; },
+};
+
+window.TehfizInvoices = { open, close, forStudent, version: TEHFIZ_INVOICES_VERSION };
 })();
