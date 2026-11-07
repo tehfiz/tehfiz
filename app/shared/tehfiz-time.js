@@ -3,6 +3,8 @@
    Loaded by the teacher app and the student viewer, from
    /app/shared/tehfiz-time.js?v=t2.
 
+   t3: next() passes over a lesson under way that has clearly been taught.
+
    t2: "my" zone can come from the app (window.tehfizMyTz — the teacher app
    passes its Settings time zone), single lessons carry a plan, a note and
    `replaces` like the next lesson does, and a replaced lesson is left out
@@ -30,7 +32,7 @@
    ═══════════════════════════════════════════════════════════════════════ */
 (function () {
 'use strict';
-const TEHFIZ_TIME_VERSION = 't2';
+const TEHFIZ_TIME_VERSION = 't3';
 const DAY = 86400000;
 
 function deviceTz() {
@@ -185,11 +187,23 @@ function occurrences(tt, from, to) {
   }
   return [...byMs.values()].sort((a, b) => a.at - b.at);
 }
-/* The next lesson that has not finished yet (one under way still counts). */
-function next(tt, now) {
+/* The next lesson that has not finished yet (one under way still counts).
+   t3: one that has already started is passed over when it has clearly been
+   taught — a next lesson was set for later than it (Finish session does
+   that after the session), or `done` (session start times, ms) has a session
+   within 3 hours of it. */
+function next(tt, now, done) {
   const t = now || Date.now();
   const list = occurrences(tt, t - 4 * 3600000, t + 15 * DAY);
-  return list.find((o) => o.at + Math.max(o.len || 30, 1) * 60000 > t) || null;
+  const set = tt && tt.next_lesson ? Date.parse(tt.next_lesson.at) : NaN;
+  return list.find((o) => {
+    if (o.at + Math.max(o.len || 30, 1) * 60000 <= t) return false;
+    if (o.at <= t && o.kind !== 'set') {
+      if (Number.isFinite(set) && set > o.at) return false;
+      if (Array.isArray(done) && done.some((d) => d <= t && Math.abs(d - o.at) <= 3 * 3600000)) return false;
+    }
+    return true;
+  }) || null;
 }
 /* A weekly slot as wall time somewhere else: {wd, t, dayShift} for the zone
    `to`, using its next occurrence (so DST is the one in force then). */

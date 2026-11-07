@@ -1,6 +1,16 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   calendar.js — TehfizCalendar — c3
-   Loaded by the teacher app only, from /app/teacher/calendar.js?v=c3.
+   calendar.js — TehfizCalendar — c4
+   Loaded by the teacher app only, from /app/teacher/calendar.js?v=c4.
+
+   c4: the week view is a grid of whole hours, each the same height; a
+   lesson sits at its real minute, as tall as it is long, with its time on
+   it, and lessons at the same time share the width. Two or more empty
+   hours fold into a band (tap it to open those hours) unless "Every hour"
+   is chosen (06:00 to midnight; remembered on this device,
+   tehfiz_cal_fold). Tapping an empty time (or + on a day in List) picks a
+   student, then opens the lesson editor at that time — straight to the
+   editor when the calendar shows one student. The zone the times are in is
+   named next to the dates, and a line marks now.
 
    c3: every upcoming lesson has Edit (the shared lesson editor), Start a
    session sets up the planned segments, overlapping lessons get a warning sign, and
@@ -42,11 +52,14 @@
    ═══════════════════════════════════════════════════════════════════════ */
 (function () {
 'use strict';
-const TEHFIZ_CALENDAR_VERSION = 'c3';
+const TEHFIZ_CALENDAR_VERSION = 'c4';
 const MATCH_MS = 3 * 3600000;
 const K_PLANS = 'tehfiz_cal_plans';
 const K_DISMISS = 'tehfiz_cal_dismissed';
 const K_VIEW = 'tehfiz_cal_view';
+const K_FOLD = 'tehfiz_cal_fold';
+const K_HOURS = 'tehfiz_teach_hours';
+const PX = 64;                // one hour of the week grid, px
 const DAY = 86400000;
 
 const $ = (id) => document.getElementById(id);
@@ -72,6 +85,10 @@ let plans = readJ(K_PLANS, null);   // {at, plans: [{student_id, slots, tz, less
 let sent = [];                // session rows for the week
 let loading = false, err = '';
 let pick = null;              // the lesson whose actions are showing
+let fold = readJ(K_FOLD, true) !== false;   // fold runs of empty hours
+let opened = new Set();       // folded runs opened this week (their first hour)
+let grid = null;              // the week grid as drawn: {segs, days}
+let slot = null;              // a new lesson being placed: {at, x, y}
 
 function Z() { return T().myTz(); }
 function addDays(ms, n) { const p = T().partsIn(ms + 12 * 3600000, Z()); return T().zonedToMs(p.y, p.mo, p.d + n, 0, 0, Z()); }
@@ -159,9 +176,13 @@ function build() {
   done.forEach((d) => out.push({ ...d, kind: 'done', status: 'done', label: (d.sid && nm[d.sid]) || d.who || 'Student' }));
 
   // scheduled lessons
-  if (T() && plans && plans.plans) {
+  if (T()) {
     const ids = new Set(roster().map((s) => s.id));
-    plans.plans.forEach((p) => {
+    const list = ((plans && plans.plans) || []).slice();
+    const have = new Set(list.map((p) => p.student_id));
+    // c4: a lesson added here before the server has a plan for that student
+    roster().forEach((s) => { if (!have.has(s.id)) list.push({ student_id: s.id }); });
+    list.forEach((p) => {
       if (!ids.has(p.student_id)) return;
       const tt = ttFor(p);
       const nextO = T().next(tt, now);
@@ -208,22 +229,205 @@ function pillHtml(e) {
   const t = { done: '✓ Done', missed: 'Missed?', next: 'Next', up: 'Upcoming' }[e.status];
   return '<span class="tcal-pill ' + e.status + '">' + t + '</span>';
 }
+/* ── week grid (c4) ─────────────────────────────────────────────────────── */
+function minOfDay(ms) { const p = T().partsIn(ms, Z()); return p.h * 60 + p.mi; }
+function evLen(e) {
+  if (e.status === 'done') return e.dur ? Math.max(10, Math.round(e.dur / 60)) : 30;
+  return e.len || 30;
+}
+function teachHours() {
+  const h = readJ(K_HOURS, null);
+  const m = (x) => { const r = /^(\d{1,2}):(\d{2})$/.exec(String(x || '')); return r ? (+r[1]) * 60 + (+r[2]) : null; };
+  const a = h && m(h.from), b = h && m(h.to);
+  return a != null && b != null && b > a ? { from: a, to: b } : null;
+}
+/* Rows of the grid: [{h0, h1, gap?, y, hgt}] — whole hours h0..h1. */
+function segments(evs) {
+  const spans = evs.map((e) => { const s0 = minOfDay(e.at); return [s0, Math.min(1440, s0 + evLen(e))]; });
+  const used = new Set();
+  spans.forEach(([a, b]) => { for (let h = Math.floor(a / 60); h < Math.max(Math.ceil(b / 60), Math.floor(a / 60) + 1); h++) used.add(h); });
+  let first, last;
+  if (fold) {
+    if (spans.length) {
+      first = Math.max(0, Math.min(...spans.map((x) => Math.floor(x[0] / 60))) - 1);
+      last = Math.min(24, Math.max(...spans.map((x) => Math.ceil(x[1] / 60))) + 1);
+    } else { const th = teachHours(); first = th ? Math.floor(th.from / 60) : 9; last = th ? Math.ceil(th.to / 60) : 21; }
+  } else {
+    first = 6; last = 24;
+    spans.forEach(([a, b]) => { first = Math.min(first, Math.floor(a / 60)); last = Math.max(last, Math.ceil(b / 60)); });
+  }
+  const out = [];
+  let h = first;
+  while (h < last) {
+    if (fold && !used.has(h)) {
+      let k = h; while (k < last && !used.has(k)) k++;
+      if (k - h >= 2 && !opened.has(h)) { out.push({ h0: h, h1: k, gap: true }); h = k; continue; }
+    }
+    const p = out[out.length - 1];
+    if (p && !p.gap && p.h1 === h) p.h1 = h + 1; else out.push({ h0: h, h1: h + 1 });
+    h++;
+  }
+  let y = 0;
+  out.forEach((g) => { g.y = y; g.hgt = g.gap ? 30 : (g.h1 - g.h0) * PX; y += g.hgt; });
+  return out;
+}
+function yOf(min) {
+  const hh = min / 60;
+  for (const g of grid.segs) if (!g.gap && hh >= g.h0 && hh <= g.h1) return g.y + (hh - g.h0) * PX;
+  return null;
+}
+function minAtY(y) {
+  for (const g of grid.segs) if (y >= g.y && y < g.y + g.hgt) return g.gap ? null : Math.round(g.h0 * 60 + (y - g.y) / PX * 60);
+  return null;
+}
+/* The moment `min` minutes into day i of the week, in the teacher's zone. */
+function slotMs(i, min) {
+  const p = T().partsIn(grid.days[i] + 12 * 3600000, Z());
+  return T().zonedToMs(p.y, p.mo, p.d, Math.floor(min / 60), min % 60, Z());
+}
+/* Lessons that overlap share the width: lane and lane count for each. */
+function laneOut(items) {
+  items.sort((a, b) => a.s - b.s || a.t - b.t);
+  let group = [], end = -1;
+  const flush = () => {
+    const ends = [];
+    group.forEach((x) => { let k = ends.findIndex((v) => v <= x.s); if (k < 0) { k = ends.length; ends.push(0); } ends[k] = x.t; x.lane = k; });
+    group.forEach((x) => { x.n = ends.length; });
+    group = [];
+  };
+  items.forEach((x) => { if (group.length && x.s >= end) flush(); group.push(x); end = Math.max(end, x.t); });
+  if (group.length) flush();
+  return items;
+}
+function hourText(h) {
+  const p = T().partsIn(weekStart + 12 * 3600000, Z());
+  return timeText(T().zonedToMs(p.y, p.mo, p.d, h, 0, Z()));
+}
 function weekHtml(evs) {
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
-  const today = ymd(Date.now());
-  const times = Array.from(new Set(evs.map((e) => hm(e.at)))).sort();
+  const today = ymd(Date.now()), now = Date.now();
+  const segs = segments(evs);
+  grid = { segs, days };
+  const H = segs.reduce((n, g) => n + g.hgt, 0);
   const head = '<div class="tcal-dh tcal-corner"></div>' + days.map((d) =>
     '<div class="tcal-dh' + (ymd(d) === today ? ' today' : '') + '">' + esc(dateText(d, { weekday: 'short' })) +
       '<b>' + T().partsIn(d + 12 * 3600000, Z()).d + '</b></div>').join('');
-  if (!times.length) {
-    return '<div class="tcal-wk">' + head + '</div><div class="tcal-empty">No lessons this week.</div>';
+  let gut = '', lines = '', bands = '';
+  segs.forEach((g) => {
+    if (g.gap) {
+      lines += '<div class="tcal-gapbg" style="top:' + g.y + 'px;height:' + g.hgt + 'px"></div>';
+      bands += '<button type="button" class="tcal-gap" data-tcal="unfold" data-h="' + g.h0 + '" style="top:' + g.y + 'px;height:' + g.hgt + 'px">' +
+        '<span>' + esc(hourText(g.h0)) + ' – ' + esc(g.h1 >= 24 ? hourText(0) : hourText(g.h1)) + ' · no lessons</span></button>';
+      return;
+    }
+    for (let k = g.h0; k < g.h1; k++) {
+      const y = g.y + (k - g.h0) * PX;
+      gut += '<span class="tcal-hl" style="top:' + y + 'px">' + esc(hourText(k)) + '</span>';
+      if (k > g.h0) lines += '<div class="tcal-hr" style="top:' + y + 'px"></div>';
+      lines += '<div class="tcal-hr half" style="top:' + (y + PX / 2) + 'px"></div>';
+    }
+  });
+  const cols = days.map((d, di) => {
+    const items = laneOut(evs.map((e, i) => ({ e, i })).filter((x) => ymd(x.e.at) === ymd(d)).map((x) => {
+      const s0 = minOfDay(x.e.at), t0 = Math.min(1440, s0 + evLen(x.e));
+      return { ...x, s: s0, end: t0, t: Math.max(t0, s0 + 23) };
+    }));
+    const cards = items.map((x) => {
+      const top = yOf(x.s); if (top == null) return '';
+      const bot = yOf(x.end);
+      const h = Math.max((bot != null ? bot : top + (x.end - x.s) / 60 * PX) - top, 24);
+      const w = 100 / x.n;
+      return '<button type="button" class="tcal-ev ' + x.e.status + (pick === x.i ? ' on' : '') + (h < 40 ? ' short' : '') + '" data-tcal="ev" data-i="' + x.i + '"' +
+        ' style="top:' + (top + 1) + 'px;height:' + (h - 2) + 'px;left:calc(' + (w * x.lane) + '% + 3px);width:calc(' + w + '% - 6px)"' +
+        ' title="' + esc(x.e.label + ' · ' + timeText(x.e.at) + ' · ' + evText(x.e)) + '">' +
+        '<b>' + (x.e.clash ? '<span class="tcal-warn">⚠</span> ' : '') + '<span class="tcal-evt">' + esc(timeText(x.e.at)) + '</span> ' + esc(x.e.label) + '</b>' +
+        '<span>' + esc(evText(x.e)) + '</span></button>';
+    }).join('');
+    let nowLine = '';
+    if (ymd(d) === today) { const ny = yOf(minOfDay(now)); if (ny != null) nowLine = '<div class="tcal-now" style="top:' + ny + 'px"></div>'; }
+    let ghost = '<div class="tcal-ghost" hidden></div>';
+    if (slot && ymd(slot.at) === ymd(d)) {
+      const gy = yOf(minOfDay(slot.at));
+      if (gy != null) ghost = '<div class="tcal-ghost" style="top:' + gy + 'px">+ ' + esc(timeText(slot.at)) + '</div>';
+    }
+    const endOfDay = addDays(d, 1);
+    return '<div class="tcal-col' + (ymd(d) === today ? ' today' : '') + (endOfDay <= now ? ' past' : '') + '" data-tcal="slot" data-d="' + di + '" style="height:' + H + 'px">' +
+      lines + nowLine + cards + ghost + '</div>';
+  }).join('');
+  return '<div class="tcal-wk">' + head + '</div>' +
+    '<div class="tcal-wk tcal-body"><div class="tcal-gut" style="height:' + H + 'px">' + gut + '</div>' + cols + bands + '</div>';
+}
+/* Where a tap or the pointer is in the grid: {i, min, at, past} or null. */
+function slotFrom(col, clientY) {
+  if (!grid) return null;
+  const i = +col.dataset.d, r = col.getBoundingClientRect();
+  let m = minAtY(clientY - r.top);
+  if (m == null) return null;
+  m = Math.min(Math.floor(m / 15) * 15, 1440 - 15);
+  const at = slotMs(i, m);
+  return { i, min: m, at, past: at < Date.now() };
+}
+function onMove(ev) {
+  const root = $('tcalRoot'); if (!root || slot) return;
+  root.querySelectorAll('.tcal-ghost').forEach((g) => { if (!g.dataset.keep) g.hidden = true; });
+  const col = ev.target.closest && ev.target.closest('.tcal-col');
+  if (!col || ev.target.closest('.tcal-ev')) return;
+  const s0 = slotFrom(col, ev.clientY);
+  if (!s0) return;
+  const g = col.querySelector('.tcal-ghost'); if (!g) return;
+  g.hidden = false; g.style.top = yOf(s0.min) + 'px';
+  g.classList.toggle('past', s0.past);
+  g.textContent = s0.past ? 'Past' : '+ ' + timeText(s0.at);
+}
+function onLeave() {
+  const root = $('tcalRoot'); if (!root || slot) return;
+  root.querySelectorAll('.tcal-ghost').forEach((g) => { g.hidden = true; });
+}
+/* The student list for a new lesson. */
+function pickerHtml(evs) {
+  if (!slot) return '';
+  const day = ymd(slot.at);
+  const hint = (id) => {
+    const e = evs.find((x) => x.sid === id && ymd(x.at) === day);
+    if (!e) return '';
+    return (e.status === 'done' ? 'session ' : 'lesson ') + timeText(e.at);
+  };
+  const list = roster().slice().sort((a, b) => (a.name || a.code).localeCompare(b.name || b.code));
+  const items = list.map((s) => '<button type="button" class="tcal-pki" data-tcal="pkstu" data-id="' + esc(s.id) + '" data-q="' + esc(String(s.name || s.code).toLowerCase()) + '">' +
+    '<span>' + esc(s.name || s.code) + '</span><small>' + esc(hint(s.id)) + '</small></button>').join('');
+  let pos = '';
+  if (!compact()) {
+    const W = 280, x = Math.min(Math.max(8, slot.x + 14), window.innerWidth - W - 8);
+    const y = Math.min(Math.max(70, slot.y - 30), window.innerHeight - 380);
+    pos = ' style="left:' + x + 'px;top:' + y + 'px"';
   }
-  const rows = times.map((tm) => '<div class="tcal-tm">' + esc(timeText(evs.find((e) => hm(e.at) === tm).at)) + '</div>' +
-    days.map((d) => {
-      const here = evs.map((e, i) => [e, i]).filter(([e]) => ymd(e.at) === ymd(d) && hm(e.at) === tm);
-      return '<div class="tcal-cell' + (ymd(d) === today ? ' today' : '') + '">' + here.map(([e, i]) => evHtml(e, i)).join('') + '</div>';
-    }).join('')).join('');
-  return '<div class="tcal-wk">' + head + rows + '</div>';
+  return '<div class="tcal-pk' + (compact() ? ' sheet' : '') + '" role="dialog" aria-label="New lesson"' + pos + '>' +
+    '<div class="tcal-acth"><b>New lesson</b><span>' + esc(T().whenText(slot.at, Z())) + '</span>' +
+      '<button type="button" class="tcal-x" data-tcal="unslot" aria-label="Close">✕</button></div>' +
+    (list.length > 5 ? '<input type="search" class="tcal-pkq" id="tcalPkq" placeholder="Find a student" aria-label="Find a student" autocomplete="off">' : '') +
+    '<div class="tcal-pkl">' + (items || '<div class="tcal-agn">Add a student first.</div>') + '</div>' +
+    '<div class="tcal-pkn" hidden>No student by that name</div></div>';
+}
+/* The student's usual lesson length, if their weekly days have one. */
+function usualLen(sid) {
+  const p = ((plans && plans.plans) || []).find((x) => x.student_id === sid) || { student_id: sid };
+  const tt = ttFor(p);
+  const l = Object.values((tt && tt.slots) || {}).map((x) => +(x && x.len) || 0).find((n) => n > 0);
+  return l || 0;
+}
+function newLesson(sid, at) {
+  if (!window.TehfizLesson) { toast('The lesson editor did not load'); return; }
+  const len = usualLen(sid);
+  window.TehfizLesson.open({ sid, mode: 'save', draft: { at, ...(len ? { len } : {}) }, onDone: () => { pick = null; render(); } });
+}
+/* List view's + on a day: that day at the start of teaching hours (5 PM if
+   none), or the next quarter hour if that has passed. */
+function dayDefault(i) {
+  const th = teachHours();
+  let at = slotMs(i, th ? th.from : 17 * 60);
+  const now = Date.now();
+  if (at < now) { const q = 15 * 60000; at = Math.ceil(now / q) * q; }
+  return at;
 }
 function listHtml(evs) {
   const today = ymd(Date.now());
@@ -232,7 +436,9 @@ function listHtml(evs) {
     const here = evs.map((e, i) => [e, i]).filter(([e]) => ymd(e.at) === ymd(d));
     const label = T().dayText(d + 12 * 3600000, Z());
     const full = dateText(d, { weekday: 'short', day: 'numeric', month: 'short' });
-    return '<div class="tcal-agd' + (ymd(d) === today ? ' today' : '') + '">' + esc(label === full ? full : label + ' · ' + full) + '</div>' +
+    const canAdd = addDays(d, 1) > Date.now();
+    return '<div class="tcal-agd' + (ymd(d) === today ? ' today' : '') + '"><span>' + esc(label === full ? full : label + ' · ' + full) + '</span>' +
+      (canAdd ? '<button type="button" class="tcal-agadd" data-tcal="dayadd" data-d="' + days.indexOf(d) + '" aria-label="Add a lesson on ' + esc(full) + '">+ Add</button>' : '') + '</div>' +
       (here.length ? here.map(([e, i]) =>
         '<button type="button" class="tcal-agi' + (pick === i ? ' on' : '') + '" data-tcal="ev" data-i="' + i + '"><span class="tcal-t">' + esc(timeText(e.at)) + '</span>' +
           '<span class="tcal-w"><b>' + (e.clash ? '<span class="tcal-warn" title="Overlaps ' + esc(e.clash.label) + '">⚠</span> ' : '') + esc(e.label) + '</b><small>' + esc(evText(e)) + '</small></span>' + pillHtml(e) + '</button>').join('')
@@ -269,6 +475,7 @@ function render() {
   root.hidden = false;
   const evs = build(); lastEvs = evs;
   const v = currentView();
+  grid = { segs: [], days: Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)) };
   const end = addDays(weekStart, 6);
   const range = dateText(weekStart, { day: 'numeric', month: 'short' }) + ' – ' + dateText(end, { day: 'numeric', month: 'short', year: 'numeric' });
   const opts = '<option value="">All students</option>' + roster().slice().sort((a, b) => (a.name || a.code).localeCompare(b.name || b.code))
@@ -290,14 +497,19 @@ function render() {
       '<div class="tcal-seg" role="group" aria-label="View"><button type="button" data-tcal="view" data-v="week" aria-pressed="' + (v === 'week') + '">Week</button>' +
         '<button type="button" data-tcal="view" data-v="list" aria-pressed="' + (v === 'list') + '">List</button></div>' +
       '<select class="tcal-sel" data-tcal="who" aria-label="Student">' + opts + '</select>' +
+      (v === 'week' && !err.startsWith('signed') ? '<div class="tcal-seg" role="group" aria-label="Empty hours"><button type="button" data-tcal="fold" data-f="1" aria-pressed="' + fold + '">Fold empty hours</button>' +
+        '<button type="button" data-tcal="fold" data-f="0" aria-pressed="' + !fold + '">Every hour</button></div>' : '') +
+      '<span class="tcal-zone">Times in <b>' + esc(T().tzLabel(Z())) + '</b></span>' +
     '</div>' +
     '<div class="tcal-main">' + body +
       (err && plans && err !== 'signedout' ? '<div class="tcal-mut tcal-pad">Offline — showing the schedules saved on this device.</div>' : '') + '</div>' +
     '<div class="tcal-lg"><span><i class="done"></i>Done' + (counts.done ? ' · ' + counts.done : '') + '</span><span><i class="up"></i>Upcoming</span><span><i class="next"></i>Next lesson</span>' +
       '<span><i class="missed"></i>No session logged' + (counts.missed ? ' · ' + counts.missed : '') + '</span></div>' +
     (pick != null ? actionsHtml(lastEvs[pick]) : '') +
+    pickerHtml(evs) +
   '</div>';
   const nm = root.querySelector('.tcal-main'); if (nm && keep) nm.scrollTop = keep;
+  const q = $('tcalPkq'); if (q && !compact()) q.focus({ preventScroll: true });
 }
 
 /* ── actions ────────────────────────────────────────────────────────────── */
@@ -331,14 +543,28 @@ function onClick(ev) {
   const t = ev.target.closest('[data-tcal]');
   if (!t) return;
   const a = t.dataset.tcal;
-  if (a === 'who') return;
+  if (a === 'who' || a === 'pkq') return;
   if (a === 'close') return close();
   if (a === 'prev' || a === 'next' || a === 'today') {
     weekStart = a === 'today' ? mondayOf(Date.now()) : addDays(weekStart, a === 'prev' ? -7 : 7);
-    pick = null; load(); return;
+    pick = null; slot = null; opened = new Set(); load(); return;
   }
-  if (a === 'view') { view = t.dataset.v; writeJ(K_VIEW, view); pick = null; return render(); }
-  if (a === 'ev') { const i = +t.dataset.i; pick = pick === i ? null : i; return render(); }
+  if (a === 'fold') { fold = t.dataset.f === '1'; writeJ(K_FOLD, fold); opened = new Set(); slot = null; return render(); }
+  if (a === 'unfold') { opened.add(+t.dataset.h); slot = null; return render(); }
+  if (a === 'unslot') { slot = null; return render(); }
+  if (a === 'pkstu') { const at = slot && slot.at; slot = null; render(); if (at) newLesson(t.dataset.id, at); return; }
+  if (a === 'slot' || a === 'dayadd') {
+    if (slot || pick != null) { slot = null; pick = null; return render(); }   // a tap outside closes what is open
+    let at;
+    if (a === 'slot') { const s0 = slotFrom(t, ev.clientY); if (!s0 || s0.past) return; at = s0.at; }
+    else at = dayDefault(+t.dataset.d);
+    if (who) { newLesson(who, at); return; }
+    const r = t.getBoundingClientRect();
+    slot = { at, x: a === 'slot' ? r.right : r.left, y: ev.clientY || r.bottom };
+    return render();
+  }
+  if (a === 'view') { view = t.dataset.v; writeJ(K_VIEW, view); pick = null; slot = null; return render(); }
+  if (a === 'ev') { const i = +t.dataset.i; slot = null; pick = pick === i ? null : i; return render(); }
   if (a === 'unpick') { pick = null; return render(); }
   const e = pick != null ? lastEvs[pick] : null;
   if (!e) return;
@@ -359,7 +585,15 @@ function onClick(ev) {
   if (a === 'edit' && window.TehfizLesson) { window.TehfizLesson.open({ sid: e.sid, occ: e, mode: 'save', onDone: () => { pick = null; render(); } }); }
 }
 function onChange(ev) {
-  if (ev.target.dataset && ev.target.dataset.tcal === 'who') { who = ev.target.value; pick = null; render(); }
+  if (ev.target.dataset && ev.target.dataset.tcal === 'who') { who = ev.target.value; pick = null; slot = null; render(); }
+}
+/* The picker's search: hide students whose name does not match. */
+function onInput(ev) {
+  if (ev.target.id !== 'tcalPkq') return;
+  const q = ev.target.value.trim().toLowerCase(), root = $('tcalRoot');
+  let n = 0;
+  root.querySelectorAll('.tcal-pki').forEach((b) => { const ok = !q || b.dataset.q.includes(q); b.hidden = !ok; if (ok) n++; });
+  const none = root.querySelector('.tcal-pkn'); if (none) none.hidden = n > 0;
 }
 
 /* ── open / close ───────────────────────────────────────────────────────── */
@@ -369,18 +603,26 @@ function open() {
   if (!root) {
     root = document.createElement('div'); root.id = 'tcalRoot'; root.hidden = true;
     document.body.appendChild(root);
-    root.addEventListener('click', onClick); root.addEventListener('change', onChange);
+    root.addEventListener('click', onClick); root.addEventListener('change', onChange); root.addEventListener('input', onInput);
+    root.addEventListener('mousemove', onMove); root.addEventListener('mouseleave', onLeave);
+    // Enter in the search picks the only student left.
+    root.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter' || e.target.id !== 'tcalPkq') return;
+      const vis = [...root.querySelectorAll('.tcal-pki')].filter((b) => !b.hidden);
+      if (vis.length === 1) { e.preventDefault(); vis[0].click(); }
+    });
   }
-  open_ = true; pick = null;
+  open_ = true; pick = null; slot = null;
   if (!weekStart) weekStart = mondayOf(Date.now());
   render();
   load();
 }
-function close() { open_ = false; pick = null; render(); }
+function close() { open_ = false; pick = null; slot = null; render(); }
 document.addEventListener('keydown', (e) => {
   if (!open_) return;
   if (window.TehfizLesson && window.TehfizLesson.isOpen()) return;   // the editor has its own keys
-  if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); if (pick != null) { pick = null; render(); } else close(); return; }
+  if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); if (slot) { slot = null; render(); } else if (pick != null) { pick = null; render(); } else close(); return; }
+  if (e.key === 'Enter' && e.target && e.target.id === 'tcalPkq') return;   // handled on the root
   e.stopPropagation();   // the app's single-key shortcuts stay quiet behind this page
 }, true);
 // The Profile may change a schedule while the calendar is open underneath.
@@ -417,15 +659,37 @@ function injectCss() {
 .tcal-pad{padding:10px 14px;}
 .tcal-empty{padding:40px 16px;text-align:center;color:var(--ink3);font-size:14px;}
 .tcal-wk{display:grid;grid-template-columns:64px repeat(7,minmax(110px,1fr));min-width:830px;}
-.tcal-dh{position:sticky;top:0;z-index:2;padding:8px 8px 6px;font-size:12px;color:var(--ink3);background:var(--surface,#fff);border-bottom:1px solid var(--border);border-left:1px solid var(--border);}
+.tcal-wk:first-child{position:sticky;top:0;z-index:4;}
+.tcal-dh{padding:8px 8px 6px;font-size:12px;color:var(--ink3);background:var(--surface,#fff);border-bottom:1px solid var(--border);border-left:1px solid var(--border);}
 .tcal-dh b{display:block;font-size:16px;color:var(--ink);font-weight:600;}
 .tcal-dh.today b{color:var(--gold);}
 .tcal-corner{border-left:none;}
-.tcal-tm{font:500 11.5px 'IBM Plex Mono',monospace;color:var(--ink3);padding:8px 6px;border-bottom:1px solid var(--border);}
-.tcal-cell{min-height:56px;padding:4px;border-left:1px solid var(--border);border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:4px;}
-.tcal-cell.today{background:color-mix(in srgb,var(--gold) 7%,transparent);}
-.tcal-ev{all:unset;box-sizing:border-box;cursor:pointer;display:flex;flex-direction:column;gap:1px;padding:5px 7px;border-radius:7px;font-size:12px;line-height:1.3;
-  border-left:3px solid;min-width:0;}
+.tcal-body{position:relative;background:var(--surface,#fff);padding-bottom:12px;}
+.tcal-gut{position:relative;}
+.tcal-hl{position:absolute;right:8px;transform:translateY(-50%);font:500 11px 'IBM Plex Mono',monospace;color:var(--ink3);white-space:nowrap;}
+.tcal-hl:first-child{transform:none;}
+.tcal-col{position:relative;border-left:1px solid var(--border);cursor:copy;}
+.tcal-col.past{cursor:default;}
+.tcal-col.today{background:color-mix(in srgb,var(--gold) 7%,transparent);}
+.tcal-hr{position:absolute;left:0;right:0;border-top:1px solid var(--border);pointer-events:none;}
+.tcal-hr.half{border-top-style:dotted;opacity:.55;}
+.tcal-gapbg{position:absolute;left:0;right:0;pointer-events:none;background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--ink) 7%,transparent) 0 6px,transparent 6px 12px);
+  border-top:1px solid var(--border);border-bottom:1px solid var(--border);}
+.tcal-gap{all:unset;box-sizing:border-box;position:absolute;left:64px;right:0;z-index:2;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+.tcal-gap span{font-size:11.5px;color:var(--ink3);background:var(--surface,#fff);border:1px solid var(--border);border-radius:999px;padding:1px 10px;}
+.tcal-gap:hover span,.tcal-gap:focus-visible span{color:var(--ink);border-color:var(--gold);}
+.tcal-now{position:absolute;left:0;right:0;border-top:2px solid var(--red);z-index:3;pointer-events:none;}
+.tcal-now::before{content:"";position:absolute;left:-4px;top:-5px;width:8px;height:8px;border-radius:50%;background:var(--red);}
+.tcal-ghost{position:absolute;left:3px;right:3px;height:30px;z-index:1;pointer-events:none;border:1.5px dashed var(--gold);border-radius:7px;
+  background:color-mix(in srgb,var(--gold) 12%,transparent);font:600 11.5px 'IBM Plex Mono',monospace;color:var(--gold);padding:6px 7px;box-sizing:border-box;}
+.tcal-ghost.past{border-color:var(--border2);background:none;color:var(--ink3);}
+.tcal-zone{font-size:12.5px;color:var(--ink3);}
+.tcal-zone b{color:var(--ink);font-weight:600;}
+.tcal-ev{all:unset;box-sizing:border-box;cursor:pointer;display:flex;flex-direction:column;gap:1px;padding:4px 7px;border-radius:7px;font-size:12px;line-height:1.3;
+  border-left:3px solid;min-width:0;position:absolute;z-index:2;overflow:hidden;}
+.tcal-ev.short{flex-direction:row;align-items:center;}
+.tcal-ev.short > span{display:none;}
+.tcal-evt{font:600 11px 'IBM Plex Mono',monospace;color:var(--ink2);}
 .tcal-ev b{font-weight:600;font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .tcal-ev span{color:var(--ink2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .tcal-ev:focus-visible,.tcal-agi:focus-visible{outline:2px solid var(--gold);outline-offset:1px;}
@@ -435,8 +699,20 @@ function injectCss() {
 .tcal-ev.next{background:var(--gold-pale,#fbf1cf);border-color:var(--gold);}
 .tcal-ev.missed{background:color-mix(in srgb,var(--red) 10%,var(--surface,#fff));border-color:var(--red);border-left-style:dashed;}
 .tcal-ag{display:flex;flex-direction:column;padding-bottom:20px;}
-.tcal-agd{padding:12px 14px 5px;font-size:11.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3);}
+.tcal-agd{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 14px 5px;font-size:11.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3);}
 .tcal-agd.today{color:var(--ink);}
+.tcal-agadd{min-height:32px;padding:0 10px;border:1px solid var(--border2);border-radius:8px;background:var(--surface,#fff);color:var(--ink);font:500 12.5px var(--ui-font);
+  letter-spacing:0;text-transform:none;cursor:pointer;}
+.tcal-pk{position:fixed;z-index:6;width:280px;max-height:360px;background:var(--parchment);border:1px solid var(--border2);border-radius:14px;
+  box-shadow:0 14px 40px rgba(23,25,28,.28);padding:12px 12px 10px;display:flex;flex-direction:column;gap:8px;}
+.tcal-pk.sheet{left:50%;bottom:56px;transform:translateX(-50%);width:min(440px,calc(100% - 24px));max-height:60vh;}
+.tcal-pkq{height:38px;padding:0 10px;border:1px solid var(--border2);border-radius:8px;background:var(--surface,#fff);color:var(--ink);font:14px var(--ui-font);}
+.tcal-pkl{overflow:auto;display:flex;flex-direction:column;gap:2px;min-height:0;}
+.tcal-pki{all:unset;box-sizing:border-box;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:10px;min-height:40px;padding:6px 10px;border-radius:8px;font-size:14px;}
+.tcal-pki[hidden]{display:none;}
+.tcal-pki:hover,.tcal-pki:focus-visible{background:var(--gold-pale,#fbf1cf);}
+.tcal-pki small{font-size:12px;color:var(--ink3);}
+.tcal-pkn{font-size:13px;color:var(--ink3);padding:4px 10px;}
 .tcal-agi{all:unset;box-sizing:border-box;cursor:pointer;display:grid;grid-template-columns:64px 1fr auto;gap:10px;align-items:center;padding:10px 14px;
   background:var(--surface,#fff);border-top:1px solid var(--border);font-size:14px;}
 .tcal-agi.on{background:var(--parchment);}

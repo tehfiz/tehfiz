@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   tehfiz-shared.js — s4
+   tehfiz-shared.js — s15
    Loaded by BOTH apps (teacher /app/teacher/, viewer /app/student/) before
    their own scripts, from /app/shared/tehfiz-shared.js?v=s4.
 
@@ -18,7 +18,7 @@
    · Nothing here may run against the page at load time: this file runs in the
      <head>, before <body> exists. Declarations and pure tables only.
    ═══════════════════════════════════════════════════════════════════════ */
-const TEHFIZ_SHARED_VERSION = 's14';
+const TEHFIZ_SHARED_VERSION = 's15';
 
 // ── sessionName vs. the legacy `range` key ────────────────────────
 // v3 and earlier stored the (optional) session name under `range`, a leftover
@@ -371,6 +371,10 @@ function surahMatches(query, limit){
   const push=(arr,num)=>{ if(typeof num!=='number'||num<1||num>114||seen.has(num)) return;
     seen.add(num); arr.push({num, name:SURAH_NAMES[num-1]}); };
   push(starts, alias);
+  // s15: a name typed in full — the surah's own name without "Al-", or one of
+  // its other names — comes first ("alaq" is Al-'Alaq before At-Talaq).
+  const K=_surahKeys(), q0=q.replace(/^the(?=[a-z]{3})/,'');
+  K.forEach((k,i)=>{ if(k.core===q||k.alt.includes(q)||k.alt.includes(q0)) push(starts,i+1); });
   all.forEach(x=>{
     if(seen.has(x.num)) return;
     const n=_normName(x.name);
@@ -386,7 +390,61 @@ function surahMatches(query, limit){
   // additive: it never reorders anything the old ranking already produced.
   const aliasPre=[];
   for(const k in SURAH_ALIASES){ if(k.startsWith(q)) push(aliasPre, SURAH_ALIASES[k]); }
-  return [...starts, ...contains, ...aliasPre].slice(0, limit||114);
+  // s15: other names (Arabic script, English meaning, the names used in South
+  // Asia — Tabarak, Amma, Bani Israil, Ha Mim Sajdah …) and, last, spelling
+  // that SOUNDS the same (toor → At-Tur, rehman → Ar-Rahman, mudassir →
+  // Al-Muddaththir): both sides reduced to a consonant skeleton. Still
+  // appended after everything above, so earlier rankings do not move.
+  const alt=[], fz=[], fz2=[];
+  const qa=_arNorm(String(query||'')).replace(/\s+/g,'');
+  if(/[؀-ۿ]/.test(qa)){
+    K.forEach((k,i)=>{ if(k.ar.startsWith(qa)||(qa.length>=2&&k.ar.includes(qa))) push(alt,i+1); });
+    return [...starts, ...contains, ...aliasPre, ...alt].slice(0, limit||114);
+  }
+  const q2=q0.replace(_ART_RE,'');
+  if(q.length>=2) K.forEach((k,i)=>{ if(k.alt.some(a=>a.startsWith(q)||a.startsWith(q0)||(q2!==q&&a.startsWith(q2)))) push(alt,i+1); });
+  if(q.length>=3 && /[a-z]/.test(q)){
+    const s1=_surahSkel(q), s2=_surahSkel(q2);
+    K.forEach((k,i)=>{ if(k.sk.has(s1)||k.sk.has(s2)) push(fz,i+1); });
+    if(s2.length>=2) K.forEach((k,i)=>{ for(const x of k.sk) if(x.startsWith(s2)||x.startsWith(s1)){ push(fz2,i+1); break; } });
+  }
+  return [...starts, ...contains, ...aliasPre, ...alt, ...fz, ...fz2].slice(0, limit||114);
+}
+
+// s15: "Al-", "An-", "Ash-" … at the start of a typed name.
+const _ART_RE=/^(al|an|ar|as|at|ash|ad|adh|az|ath|aal|el)(?=[a-z]{3})/;
+// Arabic as typed: no harakat or tatweel, one alef, ة as ه, ى as ي, no ال.
+function _arNorm(x){
+  return String(x||'').replace(/[ً-ٰٟـ]/g,'').replace(/[أإآٱ]/g,'ا')
+    .replace(/ة/g,'ه').replace(/ى/g,'ي').replace(/^ال/,'');
+}
+/* The consonants of a name as it sounds, so spellings that differ only in
+   vowels, doubled letters or the usual letter swaps meet:
+     kh→x  gh→g  sh→$  th→s (ث, "mudassir")  dh, zh, z→d ("zuha", "zariyat")
+     ph→f  q, c→k ("kahaf")  vowels and w/y dropped ("toor", "yaseen")
+     doubled letters once ("muzzammil")  a final h dropped ("baqara/baqarah") */
+function _surahSkel(x){
+  let s=String(x||'').toLowerCase().replace(/[^a-z]/g,'');
+  s=s.replace(/kh/g,'x').replace(/gh/g,'g').replace(/sh/g,'$').replace(/th/g,'s').replace(/dh|zh/g,'d').replace(/ph/g,'f');
+  s=s.replace(/[qc]/g,'k').replace(/z/g,'d').replace(/[aeiouwy]/g,'').replace(/(.)\1+/g,'$1');
+  if(s.length>2) s=s.replace(/h$/,'');
+  return s;
+}
+// Built on first search (not at load): for each surah its other names, its
+// Arabic name and the skeletons of all its Latin names.
+let _surahKeyCache=null;
+function _surahKeys(){
+  if(_surahKeyCache) return _surahKeyCache;
+  _surahKeyCache=SURAH_NAMES.map((nm,i)=>{
+    const latin=[nm, nm.replace(/^[A-Za-z]{1,3}-/,'')].concat(SURAH_ALT[i]||[]);
+    const sk=new Set();
+    latin.forEach(x=>{ const n=_normName(x); if(n){ sk.add(_surahSkel(n)); sk.add(_surahSkel(n.replace(_ART_RE,''))); } });
+    sk.delete('');
+    return { alt:(SURAH_ALT[i]||[]).map(x=>_normName(x).replace(/^the/,'')).filter(Boolean)
+                .concat((SURAH_ALT[i]||[]).map(x=>_normName(x))),
+             ar:_arNorm(SURAH_AR[i]||''), core:_normName(nm.replace(/^[A-Za-z]{1,3}-/,'')), sk };
+  });
+  return _surahKeyCache;
 }
 
 // Transliteration varies wildly; these are the spellings people actually type
@@ -404,6 +462,128 @@ const SURAH_ALIASES = {
   naba:78, amma:78, ikhlas:112, falak:113, falaq:113, nas:114, ikhlaas:112,
   jumua:62, jumuah:62, kafirun:109, kaafiroon:109, dhuha:93, duha:93,
 };
+
+// s15: other names for each surah, index 0 = Al-Fatihah: the English meaning
+// (from quran.com) first, then the names and spellings people use — in South
+// Asia especially. surahMatches() searches them; plain data, nothing runs.
+const SURAH_ALT = [
+  ["Opener", "Fatiha", "Fateha", "Faatiha", "Alhamd", "Al-Hamd", "Umm al-Kitab", "Ummul Kitab", "Umm ul Quran", "Sab'ul Mathani", "Opening"],
+  ["Cow", "Baqara", "Bakara", "Bakarah", "Baqrah"],
+  ["Family of Imran", "Aal Imran", "Aal-e-Imran", "Ale Imran", "Al Imran", "Imran"],
+  ["Women", "Nisa", "Nisaa", "Nissa"],
+  ["Table Spread", "Maida", "Maaida", "Maidah", "Mayida"],
+  ["Cattle", "Anam", "Anaam", "Inam"],
+  ["Heights", "Araf", "Aaraf", "A'raaf"],
+  ["Spoils of War", "Anfal", "Anfaal"],
+  ["Repentance", "Tawba", "Taubah", "Tauba", "Tobah", "Bara'ah", "Baraah", "Bara'at", "Baraat"],
+  ["Jonah", "Younus", "Yoonus", "Younis"],
+  ["Hud", "Hood"],
+  ["Joseph", "Yousuf", "Yousaf", "Yusaf"],
+  ["Thunder", "Rad", "Raad", "Ra'd"],
+  ["Abraham", "Ebrahim", "Ibraheem"],
+  ["Rocky Tract", "Hijar"],
+  ["Bee", "Nahal"],
+  ["Night Journey", "Bani Israil", "Bani Israel", "Bani Isra'il", "Israa", "Isra"],
+  ["Cave", "Kahaf", "Kehf", "Kahf"],
+  ["Mary", "Mariam", "Maryum"],
+  ["Ta-Ha", "Taha", "Ta Ha", "Tahaa"],
+  ["Prophets", "Ambiya", "Anbiyaa", "Ambiyaa"],
+  ["Pilgrimage", "Haj"],
+  ["Believers", "Muminun", "Mominoon", "Muminoon", "Mu'minoon"],
+  ["Light", "Noor", "Nour"],
+  ["Criterion", "Furqaan", "Furkan"],
+  ["Poets", "Shuara", "Shu'araa", "Shoara"],
+  ["Ant", "Namal", "Namil"],
+  ["Stories", "Qasas", "Kasas", "Qisas"],
+  ["Spider", "Ankaboot", "Ankabut", "Ankabuut"],
+  ["Romans", "Room", "Roum"],
+  ["Luqman", "Lukman", "Luqmaan"],
+  ["Prostration", "Sajda", "Sajdah", "Alif Lam Mim Sajdah"],
+  ["Combined Forces", "Ahzaab"],
+  ["Sheba", "Sabaa"],
+  ["Originator", "Faatir", "Malaika", "Malaikah", "Mala'ikah"],
+  ["Ya Sin", "Yaseen", "Yasin", "Yasseen", "Ya Seen", "Yaa Seen"],
+  ["Those who set the Ranks", "Saaffat", "Saffaat"],
+  ["Letter \"Saad\"", "Saad", "Swad", "Suad", "Sawad"],
+  ["Troops", "Zumur", "Zummar"],
+  ["Forgiver", "Ghaafir", "Mumin", "Momin", "Al-Mu'min"],
+  ["Explained in Detail", "Fussilat", "Fusilat", "Ha Mim Sajdah", "Hameem Sajdah", "Haa Meem Sajdah", "Hamim Sajdah"],
+  ["Consultation", "Shoora", "Shoura"],
+  ["Ornaments of Gold", "Zukhruf", "Zukhrof"],
+  ["Smoke", "Dukhaan", "Dukhan"],
+  ["Crouching", "Jasiya", "Jasiyah", "Jathiya", "Jaasiya"],
+  ["Wind-Curved Sandhills", "Ahqaaf", "Ahkaf"],
+  ["Muhammad", "Qital", "Qitaal"],
+  ["Victory", "Fatah", "Fateh"],
+  ["Rooms", "Hujraat", "Hujuraat"],
+  ["Letter \"Qaf\"", "Qaaf"],
+  ["Winnowing Winds", "Zariyat", "Zaariyat", "Dhariyaat", "Zariyaat"],
+  ["Mount", "Toor", "Tuur", "Tour"],
+  ["Star", "Najam"],
+  ["Moon", "Qamr", "Kamar"],
+  ["Beneficent", "Rehman", "Rahmaan", "Rehmaan"],
+  ["Inevitable", "Waqia", "Waqiya", "Waaqiah", "Waqiyah"],
+  ["Iron", "Hadeed"],
+  ["Pleading Woman", "Mujadilah", "Mujaadila", "Mujadalah"],
+  ["Exile", "Hasr"],
+  ["She that is to be examined", "Mumtahina", "Mumtahinah", "Mumtahanah"],
+  ["Ranks", "Saf", "Saff", "Saaf"],
+  ["Congregation, Friday", "Juma", "Jumah", "Jumuah", "Jumu'a"],
+  ["Hypocrites", "Munafiqoon", "Munaafiqun"],
+  ["Mutual Disillusion", "Taghaabun"],
+  ["Divorce", "Talaaq"],
+  ["Prohibition", "Tahreem", "Tehreem"],
+  ["Sovereignty", "Tabarak", "Tabarakallazi", "Tabaarak"],
+  ["Pen", "Nun", "Noon"],
+  ["Reality", "Haaqqah", "Haqqa", "Al-Haaqqa"],
+  ["Ascending Stairways", "Maarij", "Ma'aarij", "Maaarij"],
+  ["Noah", "Nooh"],
+  ["Jinn", "Jin"],
+  ["Enshrouded One", "Muzammil", "Muzzamil", "Muzamil"],
+  ["Cloaked One", "Muddathir", "Mudassir", "Muddassir", "Mudathir", "Muddaththir"],
+  ["Resurrection", "Qiyama", "Qayamah", "Qiyamat", "Qayamat"],
+  ["Man", "Dahr", "Insaan", "Hal Ata"],
+  ["Emissaries", "Mursalaat"],
+  ["Tidings", "Amma", "Nabaa", "Naba'", "Amma Yatasaaloon"],
+  ["Those who drag forth", "Naziat", "Naziaat", "Nazi'at"],
+  ["He Frowned", "Abasa", "Abas"],
+  ["Overthrowing", "Takweer", "Takwir"],
+  ["Cleaving", "Infitaar"],
+  ["Defrauding", "Mutaffifeen", "Mutaffifin", "Tatfif", "Tatfeef"],
+  ["Sundering", "Inshiqaaq"],
+  ["Mansions of the Stars", "Burooj", "Buruuj"],
+  ["Nightcommer", "Taariq"],
+  ["Most High", "Aala", "A'la", "Ala", "Sabbihisma"],
+  ["Overwhelming", "Ghashiya", "Ghaashiyah"],
+  ["Dawn", "Fajar"],
+  ["City", "Balad"],
+  ["Sun", "Shams"],
+  ["Night", "Lail", "Lael", "Leyl"],
+  ["Morning Hours", "Duha", "Zuha", "Dhuha", "Zoha", "Doha"],
+  ["Relief", "Inshirah", "Alam Nashrah", "Sharah", "Nashrah"],
+  ["Fig", "Teen", "Tin", "Wat Teen"],
+  ["Clot", "Iqra", "Iqraa", "Alaq", "Alak"],
+  ["Power", "Qadar", "Kadr", "Inna Anzalna"],
+  ["Clear Proof", "Bayyina", "Bayinah", "Lam Yakun", "Lam Yakunillazeena"],
+  ["Earthquake", "Zilzal", "Zilzaal", "Zalzala", "Zalzalah", "Izaa Zulzilat"],
+  ["Courser", "Aadiyat", "Adiyaat", "Aadiyaat"],
+  ["Calamity", "Qaria", "Qaariah", "Al-Qaaria"],
+  ["Rivalry in world increase", "Takasur", "Takaathur", "Alhakumut Takathur"],
+  ["Declining Day", "Asar", "Wal Asr"],
+  ["Traducer", "Humaza", "Humazah", "Wailul"],
+  ["Elephant", "Feel", "Fil", "Alam Tara"],
+  ["Quraysh", "Quraish", "Qureish", "Li Ilaf"],
+  ["Small kindnesses", "Maun", "Maoon", "Ma'oon", "Araayta", "Ara'ayta"],
+  ["Abundance", "Kausar", "Kauthar", "Kosar", "Kawsar", "Inna Aataina"],
+  ["Disbelievers", "Kafiroon", "Kaafiroon", "Kafirun", "Qul Ya Ayyuhal Kafirun"],
+  ["Divine Support", "Nasar", "Iza Ja'a"],
+  ["Palm Fiber", "Lahab", "Tabbat", "Tabbat Yada", "Masad"],
+  ["Sincerity", "Ikhlas", "Ikhlaas", "Tawheed", "Tauheed", "Qul Huwallah"],
+  ["Daybreak", "Falak", "Falaq", "Qul Aoozu Birabbil Falaq"],
+  ["Mankind", "Naas", "Nas", "Qul Aoozu Birabbin Naas"]
+];
+// s15: the Arabic names (quran.com), for searching in Arabic script.
+const SURAH_AR = ["الفاتحة", "البقرة", "آل عمران", "النساء", "المائدة", "الأنعام", "الأعراف", "الأنفال", "التوبة", "يونس", "هود", "يوسف", "الرعد", "ابراهيم", "الحجر", "النحل", "الإسراء", "الكهف", "مريم", "طه", "الأنبياء", "الحج", "المؤمنون", "النور", "الفرقان", "الشعراء", "النمل", "القصص", "العنكبوت", "الروم", "لقمان", "السجدة", "الأحزاب", "سبإ", "فاطر", "يس", "الصافات", "ص", "الزمر", "غافر", "فصلت", "الشورى", "الزخرف", "الدخان", "الجاثية", "الأحقاف", "محمد", "الفتح", "الحجرات", "ق", "الذاريات", "الطور", "النجم", "القمر", "الرحمن", "الواقعة", "الحديد", "المجادلة", "الحشر", "الممتحنة", "الصف", "الجمعة", "المنافقون", "التغابن", "الطلاق", "التحريم", "الملك", "القلم", "الحاقة", "المعارج", "نوح", "الجن", "المزمل", "المدثر", "القيامة", "الانسان", "المرسلات", "النبإ", "النازعات", "عبس", "التكوير", "الإنفطار", "المطففين", "الإنشقاق", "البروج", "الطارق", "الأعلى", "الغاشية", "الفجر", "البلد", "الشمس", "الليل", "الضحى", "الشرح", "التين", "العلق", "القدر", "البينة", "الزلزلة", "العاديات", "القارعة", "التكاثر", "العصر", "الهمزة", "الفيل", "قريش", "الماعون", "الكوثر", "الكافرون", "النصر", "المسد", "الإخلاص", "الفلق", "الناس"];
 
 // ── Naming a range for humans ─────────────────────────────────────
 // Verse keys are canonical but unreadable — "4:24 → 5:82" tells a student

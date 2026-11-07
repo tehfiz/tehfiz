@@ -1,6 +1,11 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   profile.js — TehfizProfile — p10
-   Loaded by the teacher app only, from /app/teacher/profile.js?v=p10.
+   profile.js — TehfizProfile — p12
+   Loaded by the teacher app only, from /app/teacher/profile.js?v=p12.
+
+   p12: the map's memorised ayahs (TehfizMap mp5) are saved with its pages —
+   queued with them, sent with them, and kept in step after a lesson.
+
+   p11: the next-lesson card skips today's lesson once it has been taught.
 
    p9: lessons are planned and edited in one editor (lesson-editor.js):
    the next-lesson card's Edit, + Add a single lesson, a single lesson's row.
@@ -49,10 +54,10 @@
    ═══════════════════════════════════════════════════════════════════════ */
 (function () {
 'use strict';
-const TEHFIZ_PROFILE_VERSION = 'p10';
+const TEHFIZ_PROFILE_VERSION = 'p12';
 const K_TT = 'tehfiz_prof_tt';            // {sid: {days: {'1': {t:'17:00', len:45}, …}, lessons: [{at, len}]}}, 0 = Sunday — a cache
 const K_LSQ = 'tehfiz_prof_lsq';          // {sid: true} single lessons not yet on the server (p7)
-const K_MAPQ = 'tehfiz_prof_mapq';        // {sid: {pages, recent_auto}} not yet on the server
+const K_MAPQ = 'tehfiz_prof_mapq';        // {sid: {pages, recent_auto, ayahs}} not yet on the server
 const K_TTQ = 'tehfiz_prof_ttq';          // {sid: true} timetable not yet on the server
 const K_NLQ = 'tehfiz_prof_nlq';          // {sid: next lesson | null} not yet on the server
 /* p3: the last plan seen per student, so a session can use the map (stage,
@@ -72,7 +77,7 @@ function cachedPlan(id) {
   const mq = readJ(K_MAPQ, {})[id], nq = readJ(K_NLQ, {});
   if (!c && !mq) return null;
   const p = { map: { ...((c && c.map) || {}) }, timetable: { ...((c && c.timetable) || {}) }, at: c ? c.at : 0 };
-  if (mq) { p.map.pages = mq.pages; p.map.recent_auto = mq.recent_auto; }
+  if (mq) { p.map.pages = mq.pages; p.map.recent_auto = mq.recent_auto; if (mq.ayahs != null) p.map.ayahs = mq.ayahs; }
   if (Object.prototype.hasOwnProperty.call(nq, id)) p.timetable.next_lesson = nq[id];
   return p;
 }
@@ -178,7 +183,7 @@ async function loadPlan(id) {
     cachePlan(id, p);
     const mq = readJ(K_MAPQ, {})[id];
     cacheTT(id, p.timetable);
-    if (mq) { plan.map = { ...plan.map, pages: mq.pages, recent_auto: mq.recent_auto }; }
+    if (mq) { plan.map = { ...plan.map, pages: mq.pages, recent_auto: mq.recent_auto, ...(mq.ayahs != null ? { ayahs: mq.ayahs } : {}) }; }
     planState = 'ok';
     if (Object.prototype.hasOwnProperty.call(readJ(K_NLQ, {}), id)) plan.timetable = { ...plan.timetable, next_lesson: readJ(K_NLQ, {})[id] };
     if (mq || readJ(K_TTQ, {})[id] || readJ(K_LSQ, {})[id] || Object.prototype.hasOwnProperty.call(readJ(K_NLQ, {}), id)) flush();
@@ -186,7 +191,7 @@ async function loadPlan(id) {
     if (id !== sid) return;
     planState = 'error'; planErr = (e && e.message) || 'offline';
     const mq = readJ(K_MAPQ, {})[id];
-    if (mq) { plan = { map: { pages: mq.pages, recent_auto: mq.recent_auto }, timetable: { slots: timetable(id).days } }; }
+    if (mq) { plan = { map: { pages: mq.pages, recent_auto: mq.recent_auto, ayahs: mq.ayahs != null ? mq.ayahs : null }, timetable: { slots: timetable(id).days } }; }
   }
   render();
 }
@@ -203,7 +208,7 @@ async function flush() {
   let failed = false;
   for (const id of ids) {
     const body = {};
-    if (mq[id]) { body.pages = mq[id].pages; body.recent_auto = mq[id].recent_auto; }
+    if (mq[id]) { body.pages = mq[id].pages; body.recent_auto = mq[id].recent_auto; if (mq[id].ayahs != null) body.ayahs = mq[id].ayahs; }
     // p7: the weekly times go with the zone they were entered in.
     if (tq[id]) { body.slots = timetable(id).days; if (T()) body.tz = T().myTz(); }
     if (lq[id]) body.lessons = timetable(id).lessons;
@@ -213,7 +218,7 @@ async function flush() {
       const r = await sync().api('/api/students/' + encodeURIComponent(id) + '/plan', { method: 'PUT', body });
       const m2 = readJ(K_MAPQ, {}), t2 = readJ(K_TTQ, {});
       // Only clear what was sent: a change made while this was in flight stays queued.
-      if (m2[id] && mq[id] && m2[id].pages === mq[id].pages && m2[id].recent_auto === mq[id].recent_auto) { delete m2[id]; writeJ(K_MAPQ, m2); }
+      if (m2[id] && mq[id] && m2[id].pages === mq[id].pages && m2[id].recent_auto === mq[id].recent_auto && m2[id].ayahs === mq[id].ayahs) { delete m2[id]; writeJ(K_MAPQ, m2); }
       if (t2[id] && tq[id]) { delete t2[id]; writeJ(K_TTQ, t2); }
       const l2 = readJ(K_LSQ, {});
       if (l2[id] && lq[id] && JSON.stringify(timetable(id).lessons) === JSON.stringify(body.lessons)) { delete l2[id]; writeJ(K_LSQ, l2); }
@@ -231,13 +236,17 @@ async function flush() {
 }
 window.addEventListener('online', () => flush());
 function setNote(t) { saveNote = t; const el = $('tpfSaveNote'); if (el) el.textContent = t; }
-function queueMap(id, pages, recentAuto) {
-  const q = readJ(K_MAPQ, {}); q[id] = { pages, recent_auto: recentAuto }; writeJ(K_MAPQ, q);
+/* p12: the ayahs always go with the pages, in step with them. */
+function queueMap(id, pages, recentAuto, ayahs) {
+  const M = window.TehfizMap;
+  const ay = M && M.reconcile ? M.reconcile(pages, ayahs || '') : undefined;
+  const q = readJ(K_MAPQ, {}); q[id] = { pages, recent_auto: recentAuto, ...(ay !== undefined ? { ayahs: ay } : {}) }; writeJ(K_MAPQ, q);
+  return ay;
 }
-function onMapChange(pages, recentAuto) {
-  queueMap(sid, pages, recentAuto);
+function onMapChange(pages, recentAuto, ayahs) {
+  const ay = queueMap(sid, pages, recentAuto, ayahs);
   plan = plan || { map: {}, timetable: { slots: {} } };
-  plan.map = { ...plan.map, pages, recent_auto: recentAuto };
+  plan.map = { ...plan.map, pages, recent_auto: recentAuto, ...(ay !== undefined ? { ayahs: ay } : {}) };
   const sumEl = $('tpfMapSum'); if (sumEl) sumEl.innerHTML = mapSummaryHtml(pages);
   scheduleSave();
 }
@@ -253,6 +262,14 @@ function mapSummaryHtml(pages) {
 /* The next scheduled lesson after `from` — a weekly day or a single lesson,
    whichever comes first (p7). The next lesson set in Finish session is left
    out: this is what Finish suggests for the NEXT one. null when none. */
+/* p11: the lesson the Overview calls next — one under way that this device
+   already has a session for (or that a later next lesson was set after) is
+   passed over. */
+function nextOf(id) {
+  const done = (typeof getSessions === 'function' ? getSessions() || [] : [])
+    .filter((x) => x.studentId === id).map((x) => Date.parse(x.isoDate || '')).filter(Number.isFinite);
+  return T().next(ttOf(id), Date.now(), done);
+}
 function nextLesson(id, from) {
   const now = from ? +new Date(from) : Date.now();
   if (!T()) return null;
@@ -403,7 +420,7 @@ body.compact-ui .tpf-nxcard{max-width:none;border-radius:16px 16px 0 0;padding-b
 function nextCardHtml(s) {
   /* p7: the soonest of the three — the next lesson set in Finish session, a
      single lesson, a weekly day. */
-  const o = T() ? T().next(ttOf(sid)) : null;
+  const o = T() ? nextOf(sid) : null;
   if (!o) {
     return '<div class="tpf-card lead"><span class="tpf-h">Next lesson</span>' +
       '<span class="tpf-mut">No lessons scheduled yet.</span>' +
@@ -727,7 +744,7 @@ function renderNow() {
   if (tzScroll && $('tpfTzList')) $('tpfTzList').scrollTop = tzScroll;
   const mapEl = $('tpfMap');
   if (mapEl && window.TehfizMap && plan) {
-    TehfizMap.render(mapEl, { pages: plan.map.pages, recentAuto: plan.map.recent_auto !== false, editable: true,
+    TehfizMap.render(mapEl, { pages: plan.map.pages, ayahs: plan.map.ayahs || '', recentAuto: plan.map.recent_auto !== false, editable: true,
                               state: mapView, onChange: onMapChange });
   }
 }
@@ -757,7 +774,7 @@ async function onClick(e) {
   if (a === 'tzpick') { sync().setStudentTz(sid, t.dataset.z); tzQ = ''; tzEdit = false; return render(); }
   if (a === 'tzchange') { tzEdit = true; tzQ = ''; render(); const q = document.querySelector('#tpfRoot [data-tpfin="tzq"]'); if (q) q.focus({ preventScroll: true }); return; }
   if (a === 'tzcancel') { tzEdit = false; tzQ = ''; return render(); }
-  if (a === 'nxedit') { const o = T() && T().next(ttOf(sid)); if (o) lessonEditor({ sid, occ: o }); return; }
+  if (a === 'nxedit') { const o = T() && nextOf(sid); if (o) lessonEditor({ sid, occ: o }); return; }
   if (a === 'nameedit') { nameEdit = true; return render(); }
   if (a === 'namecancel') { nameEdit = false; return render(); }
   if (a === 'namesave') { saveName(); return; }
@@ -965,13 +982,15 @@ function previewLesson(id, ranges) {
   const M = window.TehfizMap, c = cachedPlan(id);
   if (!M || !c || !M.valid(c.map.pages)) return null;
   const r = M.withLesson(c.map.pages, ranges, c.map.recent_auto !== false);
-  return { pages: r.pages, recentAuto: c.map.recent_auto !== false, added: r.added,
+  // p12: the ayahs recited join the memorised ones, exactly.
+  const ayahs = M.withRanges ? M.reconcile(r.pages, M.withRanges(M.reconcile(c.map.pages, c.map.ayahs || ''), ranges)) : undefined;
+  return { pages: r.pages, recentAuto: c.map.recent_auto !== false, added: r.added, ayahs,
            addedText: r.added.length ? M.halvesText(r.added[0], r.added[r.added.length - 1]) : '' };
 }
 function applyLesson(id, ranges) {
   const pv = previewLesson(id, ranges);
   if (!pv || !pv.added.length) return pv;
-  queueMap(id, pv.pages, pv.recentAuto);
+  queueMap(id, pv.pages, pv.recentAuto, pv.ayahs);
   scheduleSave();
   return pv;
 }
@@ -1017,7 +1036,7 @@ function suggestPlan(id, pagesAfter) {
 }
 /* Start a session for the student's next lesson, its segments set up. */
 function startFromPlan(id) {
-  const o = T() && T().next(ttOf(id));
+  const o = T() && nextOf(id);
   const planned = o ? T().planOf(o) : [];
   close();
   if (typeof startSessionFromPlan === 'function') {

@@ -1,6 +1,19 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   range-picker.js — TehfizRange — rg2
-   Loaded by the teacher app only, from /app/teacher/range-picker.js?v=rg2.
+   range-picker.js — TehfizRange — rg4
+   Loaded by the teacher app only, from /app/teacher/range-picker.js?v=rg4.
+
+   rg4: verse numbers are typed (no verse grid); the surah's pages stay open
+   under From/To while typing, and typing updates the tiles and the selected
+   range in place, so nothing redraws, loses focus or jumps. Picking a From
+   surah selects all of it; Enter in From goes to To, in To sets the range.
+
+   rg3: part of a juz or a surah. Pages has 1st half, 2nd half and quarters
+   of the open juz, cut at the mushaf's hizb markers (RUB below: the first
+   verse of each of the 240 quarter-hizb, verse numbers through the mushaf,
+   from quran.com) — exact verses, not half pages. Surah & verse shows the
+   chosen surah's own pages when From and To are in one surah: tap the first
+   and last page (or First page, First 2 pages, First half, Second half);
+   the range never leaves the surah.
 
    "Set range" for a session segment or a planned lesson segment. Two tabs,
    both big piece first, then narrow it:
@@ -40,7 +53,17 @@
    ═══════════════════════════════════════════════════════════════════════ */
 (function () {
 'use strict';
-const TEHFIZ_RANGE_VERSION = 'rg2';
+const TEHFIZ_RANGE_VERSION = 'rg4';
+// rg3: the first verse (1–6236) of each quarter-hizb; 8 to a juz.
+const RUB = [1,33,51,67,82,99,113,131,149,165,184,196,210,226,240,250,260,270,279,290,308,326,345,368,386,406,426,446,464,479,494,505,517,529,551,567,581,593,607,628,641,656,670,681,696,710,720,736,751,766,778,802,825,848,863,884,900,916,930,940,955,985,1001,1019,1042,1071,1096,1110,1125,1143,1161,1182,1201,1221,1236,1254,1269,1281,1295,1310,1328,1346,1357,1375,1390,1417,1435,1454,1479,1497,1514,1534,1557,1581,1603,1626,1649,1673,1697,1712,1726,1742,1760,1778,1803,1851,1902,1931,1952,1976,1991,2012,2030,2052,2079,2099,2128,2157,2172,2191,2215,2239,2272,2309,2349,2403,2431,2459,2484,2512,2534,2566,2596,2614,2633,2655,2674,2709,2748,2792,2812,2826,2844,2856,2876,2908,2933,2984,3043,3113,3160,3186,3215,3241,3264,3281,3303,3328,3341,3366,3386,3410,3440,3463,3491,3514,3534,3551,3564,3584,3593,3616,3630,3652,3675,3701,3733,3765,3810,3871,3933,3991,4022,4066,4090,4111,4134,4154,4174,4199,4227,4243,4265,4285,4299,4323,4349,4382,4431,4485,4511,4531,4555,4578,4601,4613,4626,4657,4706,4759,4810,4855,4902,4980,5054,5091,5105,5118,5137,5157,5178,5192,5218,5230,5242,5272,5324,5394,5448,5495,5552,5610,5673,5759,5830,5885,5949,6024,6091,6155];
+const NV = 6236;
+/* Juz j, quarters q1..q2 (1–4, two rub each): verse numbers [a, z]. */
+function juzPart(j, q1, q2) {
+  const r = (i) => RUB[(j - 1) * 8 + i];
+  const a = r((q1 - 1) * 2), z = q2 < 4 ? r(q2 * 2) - 1 : (j < 30 ? RUB[j * 8] - 1 : NV);
+  return [a, z];
+}
+const JPARTS = [[1, 2, '1st half'], [3, 4, '2nd half'], [1, 1, '1st quarter'], [2, 2, '2nd quarter'], [3, 3, '3rd quarter'], [4, 4, '4th quarter']];
 const $ = (id) => document.getElementById(id);
 const esc = (x) => String(x == null ? '' : x).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const M = () => window.TehfizMap;
@@ -62,7 +85,7 @@ function open(o) {
     title: o.title || 'Set range', onSet: o.onSet || null, onWords: o.onWords || null,
     pages, stage: o.stage || '', oldJuz: o.oldJuz || null, mushaf: o.mushaf || null,
     unit: o.unit === 'verses' || o.unit === 'ayah' || o.unit === 'surah' ? 'verses' : 'juz',
-    jmode: 'open', jfirst: null, a: null, b: null, tap: 'a', whole: null, cyc: null, before: null, openJuz: 1,
+    jmode: 'open', jfirst: null, a: null, b: null, tap: 'a', whole: null, cyc: null, before: null, openJuz: 1, exact: null, sptap: 'a',
     from: { s: 1, a: 1 }, to: { s: 1, a: 7 }, act: null, q: '',
   };
   const okKeys = o.start && o.end && keyAbs(o.start) && keyAbs(o.end);
@@ -87,6 +110,8 @@ function open(o) {
     document.body.appendChild(root);
     root.addEventListener('click', onClick);
     root.addEventListener('input', onInput);
+    // rg4: leaving a verse box tidies what was typed (blank or too big).
+    root.addEventListener('focusout', (e) => { if (S && e.target.dataset && e.target.dataset.trgv) liveVerse(e.target, true); });
     root.addEventListener('pointerdown', (e) => { lastPointer = e.pointerType || 'mouse'; }, true);
     root.addEventListener('keydown', onKey);
   }
@@ -115,6 +140,12 @@ function result() {
   if (S.a == null) return { error: 'Open a juz and pick pages, or select all of it.' };
   const lo = Math.min(S.a, S.b), hi = Math.max(S.a, S.b);
   let keys, label;
+  if (S.exact) {
+    // rg3: part of a juz, at the hizb markers — exact verses.
+    const k1 = keyFromAbs(S.exact.a), k2 = keyFromAbs(S.exact.z);
+    return { startKey: k1, endKey: k2, label: S.exact.label, unit: 'juz', text: k1 + '-' + k2,
+             sub: k1 + ' → ' + k2 + ' · ' + (S.exact.z - S.exact.a + 1) + ' verses' };
+  }
   if (S.whole) {
     keys = [M().juzKeys(S.whole.f)[0], M().juzKeys(S.whole.t)[1]];
     label = S.whole.f === S.whole.t ? 'Juz ' + S.whole.f : 'Juz ' + S.whole.f + '–' + S.whole.t;
@@ -161,24 +192,31 @@ function runShortcut(x) {
   const m = S.mushaf;
   S.act = null;
   if (x.id === 'cs' && m) { S.unit = 'verses'; S.from = { s: m.surah, a: 1 }; S.to = { s: m.surah, a: AYAH_COUNTS[m.surah - 1] }; return; }
-  S.unit = 'juz'; S.tap = 'a'; S.cyc = null;
+  S.unit = 'juz'; S.tap = 'a'; S.cyc = null; S.exact = null;
   if (x.id === 'cj' && m) return selectJuz(m.juz);
   if (x.id === 'cp' && m) { S.whole = null; S.a = H(m.page, 0); S.b = H(m.page, 1); S.openJuz = juzOf(m.page); return; }
   if (x.id === 'j') return selectJuz(x.j);
   S.whole = null; S.a = x.a; S.b = x.b; S.openJuz = juzOf(pageOf(x.a));
 }
-function selectJuz(j) { S.whole = { f: j, t: j }; S.a = H(jFirst(j), 0); S.b = H(jLast(j), 1); S.openJuz = j; S.tap = 'a'; S.cyc = null; }
+function selectJuz(j) { S.exact = null; S.whole = { f: j, t: j }; S.a = H(jFirst(j), 0); S.b = H(jLast(j), 1); S.openJuz = j; S.tap = 'a'; S.cyc = null; }
 
 /* ── picking pages ──────────────────────────────────────────────────────── */
 /* lo..hi is one pick: a whole page or a half. The first pick is the start,
    the next the end; a later end before the start swaps them. */
 function pick(lo, hi) {
-  S.whole = null;
+  S.whole = null; S.exact = null;
   if (S.tap === 'a' || S.a == null) { S.a = lo; S.b = hi; S.tap = 'b'; return; }
   if (hi < S.a) { S.b = Math.max(S.a, S.b); S.a = lo; } else S.b = hi;
   S.tap = 'a';
 }
-function snap() { S.before = { a: S.a, b: S.b, tap: S.tap, whole: S.whole }; }
+function snap() { S.before = { a: S.a, b: S.b, tap: S.tap, whole: S.whole, exact: S.exact }; }
+/* rg3: part of the open juz at the hizb markers. */
+function selectPart(i) {
+  const j = S.openJuz, [q1, q2, nm] = JPARTS[i], [a, z] = juzPart(j, q1, q2);
+  const hs = M().halvesForRange(keyFromAbs(a), keyFromAbs(z));
+  S.whole = null; S.a = hs[0]; S.b = hs[hs.length - 1]; S.tap = 'a'; S.cyc = null;
+  S.exact = { a, z, j, i, label: 'Juz ' + j + ', ' + nm };
+}
 function pagePick(p, half) {
   if (half == null) { snap(); S.cyc = { p, m: 0 }; return pick(H(p, 0), H(p, 1)); }   // the page number: all of it
   if (lastPointer === 'touch') {
@@ -227,6 +265,11 @@ function strip() {
   }
   return '<div class="trg-blk"><div class="trg-bh"><b>Pages</b><span class="trg-sub">Juz ' + j + ' \u00b7 p. ' + jFirst(j) + '\u2013' + jLast(j) + '</span>' +
       '<button type="button" class="trg-chip' + (all ? ' on' : '') + '" data-trg="all">' + (all ? '\u2713 All of Juz ' + j : 'Select all of Juz ' + j) + '</button></div>' +
+    '<div class="trg-parts" role="group" aria-label="Part of Juz ' + j + '">' +
+      JPARTS.map(([q1, q2, nm], i) => (i === 2 ? '<span class="trg-pk">Quarter</span>' : '') +
+        '<button type="button" class="trg-chip sm' + (S.exact && S.exact.j === j && S.exact.i === i ? ' on' : '') + '" data-trg="part" data-i="' + i + '" title="' +
+          esc(keyFromAbs(juzPart(j, q1, q2)[0]) + ' – ' + keyFromAbs(juzPart(j, q1, q2)[1])) + '">' + (i < 2 ? nm : String(i - 1)) + '</button>').join('') +
+    '</div>' +
     '<div class="trg-st"><span class="trg-how"></span><span>' + (S.tap === 'a' ? 'Next: the start' : 'Next: the end') + '</span></div>' +
     '<div class="trg-pgs">' + h + '</div>' +
     '<p class="trg-help">The end can be in another juz: show its pages above and pick there.</p>' +
@@ -242,32 +285,88 @@ function surList(which) {
       (which === 't' && x.num < S.from.s ? ' disabled' : '') + '><span class="n">' + x.num + '</span>' + esc(x.name) + '<span class="c">' + AYAH_COUNTS[x.num - 1] + ' v</span></button>').join('') ||
       '<div class="trg-mut" style="padding:6px">No surah matches</div>') + '</div>';
 }
-function verseGrid(end) {
-  const e = S[end], n = AYAH_COUNTS[e.s - 1], lo = end === 'to' && S.to.s === S.from.s ? S.from.a : 1;
-  let h = '';
-  for (let a = 1; a <= n; a++) {
-    const sel = (end === 'from' && a === S.from.a) || (end === 'to' && a === S.to.a);
-    const inr = S.from.s === S.to.s && e.s === S.from.s && a > S.from.a && a < S.to.a;
-    h += '<button type="button" data-trg="va" data-a="' + a + '"' + (a < lo ? ' disabled' : '') + ' class="' + (sel ? 'end' : inr ? 'in' : '') + '">' + a + '</button>';
+/* rg4: a verse number to type. */
+function vin(w, e) {
+  return '<label class="trg-fld v"><input class="trg-vin" id="trgV' + w + '" data-trgv="' + w + '" type="text" inputmode="numeric" autocomplete="off" maxlength="3" value="' + e.a + '"' +
+    ' aria-label="' + (w === 'f' ? 'From' : 'To') + ' verse of ' + esc(SURAH_NAMES[e.s - 1]) + '"><small>/' + AYAH_COUNTS[e.s - 1] + '</small></label>';
+}
+/* Typing: the state, the page tiles, the chips and the selected range change
+   in place — no redraw. */
+function liveVerse(inp, final) {
+  const w = inp.dataset.trgv, e = S[w === 'f' ? 'from' : 'to'], n = AYAH_COUNTS[e.s - 1];
+  const v = parseInt(inp.value, 10);
+  if (Number.isFinite(v) && v >= 1) e.a = Math.min(n, v);
+  if (final) inp.value = e.a;
+  S.sptap = 'a';
+  paintLive();
+}
+function paintLive() {
+  const root = $('trgRoot'); if (!root || !S) return;
+  const s = S.from.s;
+  if (S.to.s === s) {
+    const fa = absVerse(S.from.s, S.from.a), ta = absVerse(S.to.s, S.to.a);
+    root.querySelectorAll('.trg-spg[data-p]').forEach((b) => {
+      const [a, z] = spRange(s, +b.dataset.p);
+      b.classList.toggle('in', z >= fa && a <= ta);
+      b.classList.toggle('end', (fa >= a && fa <= z) || (ta >= a && ta <= z));
+    });
+    root.querySelectorAll('[data-trg="spc"]').forEach((b) => {
+      b.classList.toggle('on', fa === spRange(s, +b.dataset.x)[0] && ta === spRange(s, +b.dataset.y)[1]);
+    });
   }
-  return '<div class="trg-vg">' + h + '</div>';
+  const r = result(), pv = root.querySelector('.trg-prev');
+  if (pv) {
+    pv.classList.toggle('err', !!r.error);
+    pv.innerHTML = '<span class="trg-pl">Selected range</span>' + (r.error ? '<b>' + esc(r.error) + '</b>' : '<b>' + esc(r.label) + '</b><span>' + esc(r.sub) + '</span>');
+  }
+  const set = root.querySelector('[data-trg="set"]'); if (set) set.disabled = !!r.error;
 }
 function versesHtml() {
   const f = S.from, t = S.to, nm = (s) => s + ' · ' + esc(SURAH_NAMES[s - 1]);
   let h = '<div class="trg-ends">' +
     '<span class="trg-k">From</span><div class="trg-pick"><button type="button" class="trg-fld s' + (S.act === 'fS' ? ' on' : '') + '" data-trg="act" data-k="fS"><span>' + nm(f.s) + '</span><small>▾</small></button>' +
-      '<button type="button" class="trg-fld v' + (S.act === 'fV' ? ' on' : '') + '" data-trg="act" data-k="fV"><span>' + f.a + '</span><small>/' + AYAH_COUNTS[f.s - 1] + '</small></button></div>' +
+      vin('f', f) + '</div>' +
     '<span class="trg-k">To</span><div class="trg-pick"><button type="button" class="trg-fld s' + (S.act === 'tS' ? ' on' : '') + '" data-trg="act" data-k="tS"><span>' + nm(t.s) + '</span><small>▾</small></button>' +
-      '<button type="button" class="trg-fld v' + (S.act === 'tV' ? ' on' : '') + '" data-trg="act" data-k="tV"><span>' + t.a + '</span><small>/' + AYAH_COUNTS[t.s - 1] + '</small></button></div></div>';
+      vin('t', t) + '</div></div>';
+  if (!S.act && f.s === t.s) h += surahPages(f.s);
   if (S.act === 'fS' || S.act === 'tS') h += '<div class="trg-ch"><div class="trg-ct">' + (S.act === 'fS' ? 'From' : 'To') + ': which surah?</div>' + surList(S.act[0]) + '</div>';
-  if (S.act === 'fV' || S.act === 'tV') h += '<div class="trg-ch"><div class="trg-ct">' + (S.act === 'fV' ? 'From' : 'To') + ': verse of ' + esc(SURAH_NAMES[S[S.act === 'fV' ? 'from' : 'to'].s - 1]) + '</div>' + verseGrid(S.act === 'fV' ? 'from' : 'to') + '</div>';
   return h;
+}
+/* rg3: the surah's own pages, each clipped to the surah's verses. */
+function spRange(s, p) {
+  const sa = absVerse(s, 1), sz = absVerse(s, AYAH_COUNTS[s - 1]);
+  const a = PAGE_FIRST_VERSE_ABS[p - 1], z = (p < 604 ? PAGE_FIRST_VERSE_ABS[p] : NV + 1) - 1;
+  return [Math.max(a, sa), Math.min(z, sz)];
+}
+function surahPages(s) {
+  const p1 = SURAH_PAGES[(s - 1) * 2], p2 = SURAH_PAGES[(s - 1) * 2 + 1];
+  if (!(p2 > p1)) return '';
+  const fa = absVerse(S.from.s, S.from.a), ta = absVerse(S.to.s, S.to.a), sa = absVerse(s, 1);
+  let tiles = '';
+  for (let p = p1; p <= p2; p++) {
+    const [a, z] = spRange(s, p), inr = z >= fa && a <= ta, end = (fa >= a && fa <= z) || (ta >= a && ta <= z);
+    tiles += '<button type="button" class="trg-spg' + (inr ? ' in' : '') + (end ? ' end' : '') + '" data-trg="spg" data-p="' + p + '" aria-label="Page ' + p + ', ayahs ' + (a - sa + 1) + ' to ' + (z - sa + 1) + '">' +
+      '<b>' + p + '</b><small>' + (a - sa + 1) + '–' + (z - sa + 1) + '</small></button>';
+  }
+  const n = p2 - p1 + 1, half = Math.floor(n / 2);
+  const chips = [['First page', p1, p1]].concat(n > 2 ? [['First 2 pages', p1, p1 + 1]] : [])
+    .concat(n > 1 ? [['First half', p1, p1 + Math.max(0, half - 1)], ['Second half', p1 + half, p2]] : []);
+  const cur = (x, y) => fa === spRange(s, x)[0] && ta === spRange(s, y)[1];
+  return '<div class="trg-blk"><div class="trg-bh"><b>Pages of ' + esc(SURAH_NAMES[s - 1]) + '</b><span class="trg-sub">p. ' + p1 + '\u2013' + p2 + '</span></div>' +
+    '<p class="trg-help">' + (S.sptap === 'b' ? 'Now tap the last page.' : 'Tap the first page, then the last. Ayahs stay inside ' + esc(SURAH_NAMES[s - 1]) + '.') + '</p>' +
+    '<div class="trg-parts">' + chips.map(([l, x, y]) => '<button type="button" class="trg-chip sm' + (cur(x, y) ? ' on' : '') + '" data-trg="spc" data-x="' + x + '" data-y="' + y + '">' + l + '</button>').join('') + '</div>' +
+    '<div class="trg-spgs">' + tiles + '</div></div>';
+}
+function spSet(s, x, y) {
+  const sa = absVerse(s, 1), a = spRange(s, Math.min(x, y))[0], z = spRange(s, Math.max(x, y))[1];
+  S.from = { s, a: a - sa + 1 }; S.to = { s, a: z - sa + 1 };
 }
 function render() {
   const root = $('trgRoot');
   if (!root || !S) return;
   const body = root.querySelector('.trg-body'), keep = body ? body.scrollTop : 0;
-  const vgKeep = (root.querySelector('.trg-vg') || {}).scrollTop || 0, lsKeep = (root.querySelector('.trg-list') || {}).scrollTop || 0;
+  const lsKeep = (root.querySelector('.trg-list') || {}).scrollTop || 0;
+  const spEl = root.querySelector('.trg-spgs'), spKeep = spEl ? spEl.scrollTop : null;
   const r = result(), sc = shortcuts();
   root.innerHTML = '<div class="trg-wrap"><div class="trg-scrim" data-trg="close"></div>' +
     '<div class="trg-card" role="dialog" aria-modal="true" aria-labelledby="trgT">' +
@@ -288,10 +387,14 @@ function render() {
     ? 'Tap a page for all of it; again for its first half, again for its second.'
     : 'Click the top or bottom of a page for that half, or its number for the whole page.';
   const nb = root.querySelector('.trg-body'); if (nb) nb.scrollTop = keep;
-  const vg = root.querySelector('.trg-vg'); if (vg) {
-    vg.scrollTop = vgKeep;
-    const cur = vg.querySelector('.end'); if (cur && !vgKeep) cur.scrollIntoView({ block: 'nearest' });
+  // rg4: the page tiles keep their place; the first time, the selection is
+  // brought into view inside the tiles only (the sheet itself does not move).
+  const sp = root.querySelector('.trg-spgs');
+  if (sp) {
+    if (spKeep != null) sp.scrollTop = spKeep;
+    else { const c = sp.querySelector('.trg-spg.end'); if (c && c.offsetTop + c.offsetHeight > sp.clientHeight) sp.scrollTop = c.offsetTop - 4; }
   }
+  if (S.focusV) { const v = $('trgV' + S.focusV); S.focusV = null; if (v && !$('trgQ')) { v.focus({ preventScroll: true }); v.select(); } }
   const ls = root.querySelector('.trg-list'); if (ls) ls.scrollTop = lsKeep;
   const q = $('trgQ'); if (q) { q.focus({ preventScroll: true }); q.setSelectionRange(q.value.length, q.value.length); }
 }
@@ -315,29 +418,44 @@ function onClick(e) {
     } else S.openJuz = j;
   }
   else if (a === 'all') selectJuz(S.openJuz);
+  else if (a === 'part') selectPart(+t.dataset.i);
+  else if (a === 'spc') { spSet(S.from.s, +t.dataset.x, +t.dataset.y); S.sptap = 'a'; }
+  else if (a === 'spg') {
+    const p = +t.dataset.p, s = S.from.s;
+    if (S.sptap === 'a') { spSet(s, p, p); S.sptap = 'b'; S.spFirst = p; }
+    else { spSet(s, S.spFirst, p); S.sptap = 'a'; }
+  }
   else if (a === 'pgw') pagePick(+t.dataset.p, null);
   else if (a === 'half') pagePick(+t.dataset.p, +t.dataset.h);
   else if (a === 'sc') { const x = shortcuts()[+t.dataset.i]; if (x) runShortcut(x); }
-  else if (a === 'act') { S.act = S.act === t.dataset.k ? null : t.dataset.k; S.q = ''; }
+  else if (a === 'act') { S.act = S.act === t.dataset.k ? null : t.dataset.k; S.q = ''; S.sptap = 'a'; }
   else if (a === 'sur') {
     const s = +t.dataset.s;
-    if (S.act === 'fS') { S.from = { s, a: 1 }; if (S.to.s < s || S.to.s === s) S.to = { s, a: 1 }; S.act = 'fV'; }
-    else { S.to = { s, a: s === S.from.s ? S.from.a : 1 }; S.act = 'tV'; }
-    S.q = '';
-  } else if (a === 'va') {
-    const v = +t.dataset.a;
-    if (S.act === 'fV') { S.from.a = v; if (verseCount(S.from, S.to) < 1 || S.to.s === S.from.s) S.to = { s: S.from.s, a: v }; S.act = 'tV'; }
-    else { S.to.a = v; S.act = null; }
+    // rg4: a From surah selects all of it; narrow it by typing or by page.
+    if (S.act === 'fS') { S.from = { s, a: 1 }; S.to = { s, a: AYAH_COUNTS[s - 1] }; }
+    else S.to = { s, a: AYAH_COUNTS[s - 1] };
+    S.focusV = S.act === 'tS' ? 't' : 'f'; S.act = null; S.q = ''; S.sptap = 'a';
   } else return;
   render();
 }
-function onInput(e) { if (S && e.target.id === 'trgQ') { S.q = e.target.value; render(); } }
+function onInput(e) {
+  if (!S) return;
+  if (e.target.id === 'trgQ') { S.q = e.target.value; render(); return; }
+  if (e.target.dataset && e.target.dataset.trgv) liveVerse(e.target, false);
+}
 // Esc closes only this picker, even over the lesson editor: caught on window,
 // before the app's own document handlers see it.
 // Enter in the surah search takes the first match.
 window.addEventListener('keydown', (e) => {
   if (!S) return;
   if (e.key === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); close(); return; }
+  if (e.key === 'Enter' && e.target && e.target.dataset && e.target.dataset.trgv) {
+    e.preventDefault(); e.stopImmediatePropagation();
+    liveVerse(e.target, true);
+    if (e.target.dataset.trgv === 'f') { const t = $('trgVt'); if (t) { t.focus(); t.select(); } }
+    else if (!result().error) apply();
+    return;
+  }
   if (e.key === 'Enter' && e.target && e.target.id === 'trgQ') {
     e.preventDefault(); e.stopImmediatePropagation();
     const first = document.querySelector('#trgRoot .trg-list button:not([disabled])');
@@ -351,6 +469,16 @@ function injectCss() {
   if ($('trgCss')) return;
   const st = document.createElement('style'); st.id = 'trgCss';
   st.textContent = `
+.trg-parts{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:2px 0 8px;}
+.trg-pk{font-size:12px;color:var(--ink3);margin-left:4px;}
+.trg-chip.sm{min-height:32px;padding:0 10px;font-size:12.5px;}
+.trg-spgs{display:grid;grid-template-columns:repeat(auto-fill,minmax(58px,1fr));gap:6px;max-height:220px;overflow:auto;padding:2px;}
+.trg-spg{all:unset;box-sizing:border-box;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:1px;padding:6px 4px;border:1.5px solid var(--border2);border-radius:8px;background:var(--surface,#fff);}
+.trg-spg b{font:600 12.5px 'IBM Plex Mono',monospace;color:var(--ink);}
+.trg-spg small{font:500 10.5px 'IBM Plex Mono',monospace;color:var(--ink3);}
+.trg-spg.in{border-color:var(--trg-sel);background:color-mix(in srgb,var(--trg-sel) 14%,var(--surface,#fff));}
+.trg-spg.end{box-shadow:0 0 0 2px var(--trg-sel);}
+.trg-spg:focus-visible{outline:2px solid var(--trg-sel);outline-offset:1px;}
 #trgRoot{--trg-g:#3e9b2f;--trg-sel:#b8901c;
   --trg-o:var(--trg-g);--trg-r:color-mix(in srgb,var(--trg-g) 42%,var(--surface,#fff));--trg-0:var(--parchment3);
   --trg-n:repeating-linear-gradient(45deg,var(--ink) 0 2px,var(--surface,#fff) 2px 4px);}
@@ -415,7 +543,9 @@ body.compact-ui .trg-card{max-width:none;max-height:94vh;border-radius:16px 16px
 .trg-fld small{color:var(--ink3);font-size:11px;flex:none;}
 .trg-fld.on{border-color:var(--trg-sel);box-shadow:0 0 0 2px color-mix(in srgb,var(--trg-sel) 30%,transparent);}
 .trg-fld.s{flex:1;}
-.trg-fld.v{width:92px;flex:none;font-family:var(--ui-mono,ui-monospace,monospace);}
+.trg-fld.v{width:92px;flex:none;font-family:var(--ui-mono,ui-monospace,monospace);cursor:text;padding:0 10px 0 0;}
+.trg-vin{all:unset;box-sizing:border-box;width:100%;min-width:0;height:40px;padding:0 0 0 10px;font:15px var(--ui-mono,ui-monospace,monospace);color:var(--ink);}
+.trg-fld.v:focus-within{border-color:var(--trg-sel);box-shadow:0 0 0 2px color-mix(in srgb,var(--trg-sel) 30%,transparent);}
 .trg-ch{border:1px solid var(--border);border-radius:10px;background:var(--surface,#fff);padding:8px;display:flex;flex-direction:column;gap:6px;}
 .trg-ct{font-size:12px;color:var(--ink3);}
 .trg-in{border:1px solid var(--border2);border-radius:8px;padding:8px 10px;background:var(--parchment);color:var(--ink);font:14px var(--ui-font);width:100%;box-sizing:border-box;}
@@ -426,11 +556,6 @@ body.compact-ui .trg-card{max-width:none;max-height:94vh;border-radius:16px 16px
 .trg-list button:disabled{opacity:.35;cursor:default;}
 .trg-list .n{font:12px var(--ui-mono,ui-monospace,monospace);color:var(--ink3);width:26px;text-align:right;flex:none;}
 .trg-list .c{margin-left:auto;font-size:11px;color:var(--ink3);}
-.trg-vg{display:grid;grid-template-columns:repeat(8,1fr);gap:4px;max-height:200px;overflow:auto;padding:1px;}
-.trg-vg button{border:1px solid var(--border);background:var(--parchment);color:var(--ink);border-radius:7px;padding:6px 0;font:12.5px var(--ui-mono,ui-monospace,monospace);cursor:pointer;}
-.trg-vg button.in{background:color-mix(in srgb,var(--trg-sel) 22%,var(--parchment));border-color:transparent;}
-.trg-vg button.end{background:var(--ink);color:var(--parchment);border-color:var(--ink);}
-.trg-vg button:disabled{opacity:.3;cursor:default;}
 .trg-prev{background:var(--parchment2);border-radius:10px;padding:9px 11px;font-size:13px;display:flex;flex-direction:column;gap:2px;}
 .trg-prev b{font-weight:600;}
 .trg-prev .trg-pl{font:600 11px var(--ui-font);letter-spacing:.05em;text-transform:uppercase;color:var(--ink3);}

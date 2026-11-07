@@ -1,6 +1,8 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   lesson-editor.js — TehfizLesson — le3
-   Loaded by the teacher app only, from /app/teacher/lesson-editor.js?v=le3.
+   lesson-editor.js — TehfizLesson — le4
+   Loaded by the teacher app only, from /app/teacher/lesson-editor.js?v=le4.
+
+   le4: Escape closes only the editor, not the calendar or Profile under it.
 
    le3: a lesson already on the schedule (Finish session's next lesson)
    opens as that lesson, so it never clashes with itself; "No next lesson".
@@ -50,7 +52,7 @@
    ═══════════════════════════════════════════════════════════════════════ */
 (function () {
 'use strict';
-const TEHFIZ_LESSON_VERSION = 'le3';
+const TEHFIZ_LESSON_VERSION = 'le4';
 const K_HOURS = 'tehfiz_teach_hours';     // {from:'15:00', to:'21:00'} — optional, set in Settings
 const K_PLANS = 'tehfiz_cal_plans';       // the calendar's copy of every student's timetable
 const SNAP = 15, DAY = 86400000;
@@ -510,7 +512,9 @@ document.addEventListener('pointerup', () => { if (drag) { drag = null; if (ed) 
 document.addEventListener('keydown', (e) => {
   if (!ed) return;
   if (typeof _rangePicker !== 'undefined' && _rangePicker) return;   // the range picker has the keys
-  if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); if (ed.monthOpen) { ed.monthOpen = false; render(); } else close(); return; }
+  // le4: stopImmediate — the calendar's and Profile's listeners on document
+  // would otherwise see the editor already closed and close themselves too.
+  if (e.key === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); if (ed.monthOpen) { ed.monthOpen = false; render(); } else close(); return; }
   if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && e.target.classList && e.target.classList.contains('tle-blk')) {
     e.preventDefault(); setMin(minOf(ed.at) + (e.key === 'ArrowRight' ? SNAP : -SNAP)); paintTime();
   }

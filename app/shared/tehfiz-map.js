@@ -1,7 +1,21 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   tehfiz-map.js — TehfizMap — mp4
+   tehfiz-map.js — TehfizMap — mp6
    Loaded by the teacher app (Profile → Memorised, sessions) and, read-only,
-   by the student viewer, from /app/shared/tehfiz-map.js?v=mp4.
+   by the student viewer, from /app/shared/tehfiz-map.js?v=mp6.
+
+   mp6: By surah's search is the app's own surah search (other names,
+   Arabic, spellings that sound alike).
+
+   mp5: the map also keeps WHICH AYAHS are memorised (student_maps.ayahs,
+   ranges of verse numbers 1–6236: "1-7,2134-2173"). A surah's first and last
+   half pages are often shared with its neighbours, and in Juz 30 several
+   surahs share one half — so ticking a surah now marks exactly its ayahs,
+   and the By surah list reads them ("40/110"). The half pages stay what the
+   juz view, the stages and old/recent use. The two are kept in step:
+     a half page counts as memorised  ⇔  at least one of its ayahs does
+   reconcile(pages, ayahs) enforces that — a half marked with no ayahs gets
+   all of them (a page ticked on the juz view, a lesson, an older app), and
+   ayahs in a half that is not marked are dropped. By surah has a search.
 
    mp4: halfKeys / juzKeys turn a half page or a juz back into a verse range,
    for planning a lesson from the map.
@@ -36,7 +50,7 @@
    ═══════════════════════════════════════════════════════════════════════ */
 (function () {
 'use strict';
-const TEHFIZ_MAP_VERSION = 'mp4';
+const TEHFIZ_MAP_VERSION = 'mp6';
 const PAGES = 604, LEN = PAGES * 2;
 const STATES = { '-': 'Not yet', o: 'Old', r: 'Recent', n: 'New lesson' };
 const MEMO = (c) => c === 'o' || c === 'r' || c === 'n';
@@ -104,6 +118,72 @@ function surahRangeKeys(i, a1, a2) {
   a1 = Math.max(1, Math.min(n, a1 | 0 || 1)); a2 = Math.max(1, Math.min(n, a2 | 0 || n));
   return [(i + 1) + ':' + Math.min(a1, a2), (i + 1) + ':' + Math.max(a1, a2)];
 }
+
+/* ── ayahs (mp5) ────────────────────────────────────────────────────────── */
+const NV = 6236;
+function bitsEmpty() { return new Uint8Array(NV + 1); }
+/* "1-7,20" → bits; '' → none; anything malformed → null. */
+function parseAyahs(str) {
+  if (typeof str !== 'string' || !/^(\d{1,4}(-\d{1,4})?(,\d{1,4}(-\d{1,4})?)*)?$/.test(str)) return null;
+  const b = bitsEmpty();
+  if (!str) return b;
+  for (const part of str.split(',')) {
+    const [x, y] = part.split('-').map(Number), z = y == null ? x : y;
+    if (!(x >= 1 && z <= NV && x <= z)) return null;
+    b.fill(1, x, z + 1);
+  }
+  return b;
+}
+function ayahsText(b) {
+  const out = [];
+  for (let v = 1; v <= NV; v++) {
+    if (!b[v]) continue;
+    let z = v; while (z + 1 <= NV && b[z + 1]) z++;
+    out.push(z > v ? v + '-' + z : String(v)); v = z;
+  }
+  return out.join(',');
+}
+/* The verses of a half page, as halfKeys splits them. */
+function halfAbs(h) {
+  const pg = pageOf(h), a = pageFirst(pg), end = (pg < PAGES ? pageFirst(pg + 1) : NV + 1) - 1, span = end - a + 1;
+  const cut = a + Math.floor(span / 2);
+  return span < 2 ? [a, end] : (h % 2 ? [cut, end] : [a, cut - 1]);
+}
+/* Every half page holding any of the verses a..z. */
+function halvesOfAbs(a, z) {
+  const out = [], h0 = (pageOfAbs(a) - 1) * 2, h1 = (pageOfAbs(z) - 1) * 2 + 1;
+  for (let h = h0; h <= h1; h++) { const r = halfAbs(h); if (r[0] <= z && r[1] >= a) out.push(h); }
+  return out;
+}
+function countIn(b, a, z) { let n = 0; for (let v = a; v <= z; v++) n += b[v]; return n; }
+function reconcileBits(pages, b) {
+  const allow = bitsEmpty();
+  for (let h = 0; h < LEN; h++) if (MEMO(pages[h])) { const r = halfAbs(h); allow.fill(1, r[0], r[1] + 1); }
+  for (let v = 1; v <= NV; v++) if (b[v] && !allow[v]) b[v] = 0;
+  for (let h = 0; h < LEN; h++) {
+    if (!MEMO(pages[h])) continue;
+    const r = halfAbs(h);
+    if (!countIn(b, r[0], r[1])) b.fill(1, r[0], r[1] + 1);
+  }
+  return b;
+}
+/* The ayahs for these pages: what the host saves next to them. */
+function reconcile(pages, ayahs) {
+  if (!valid(pages)) return '';
+  return ayahsText(reconcileBits(pages, parseAyahs(ayahs || '') || bitsEmpty()));
+}
+/* Ayahs recited in a lesson join the memorised ones (reconcile with the new
+   pages afterwards). ranges: [[startKey, endKey], …] */
+function withRanges(ayahs, ranges) {
+  const b = parseAyahs(ayahs || '') || bitsEmpty();
+  (Array.isArray(ranges) ? ranges : []).forEach(([s0, e0]) => {
+    let a = keyAbs(s0), z = keyAbs(e0); if (!a || !z) return;
+    if (a > z) { const t = a; a = z; z = t; }
+    b.fill(1, a, z + 1);
+  });
+  return ayahsText(b);
+}
+function surahAbs(i) { return [absVerse(i + 1, 1), absVerse(i + 1, AYAH_COUNTS[i])]; }
 
 /* "Recent" = everything memorised in the juz of the new lesson (the last half
    marked New). Everything else memorised is Old. No new lesson: unchanged. */
@@ -234,6 +314,9 @@ function injectCss() {
 .tzm-sn:hover{text-decoration:underline;}
 .tzm-srow .tzm-bar{flex:1;margin:0;height:9px;}
 .tzm-srow .q{width:58px;flex:none;text-align:right;font:12px 'IBM Plex Mono',monospace;color:var(--ink3);}
+.tzm-sq{height:38px;box-sizing:border-box;padding:0 10px;border:1px solid var(--border2);border-radius:8px;background:var(--surface,#fff);color:var(--ink);font:14px var(--ui-font);width:100%;}
+.tzm-si[hidden],.tzm-snone[hidden]{display:none;}
+.tzm-slist .tzm-si:first-child .tzm-srow{border-top:none;}
 .tzm-ayr{background:var(--parchment2);border-radius:10px;padding:10px;margin:2px 0 8px;display:flex;flex-direction:column;gap:8px;font-size:13px;}
 .tzm-ayr .r{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
 .tzm-ayr input{width:72px;height:36px;box-sizing:border-box;padding:0 8px;border:1px solid var(--border2);border-radius:8px;background:var(--surface,#fff);
@@ -285,31 +368,73 @@ function juzView(st) {
       bar(st.pages, juzStart(j), juzEnd(j)) + '</div>';
   }).join('') + '</div>';
 }
+/* mp6: the same search as everywhere else (surahMatches in the shared file:
+   other names, Arabic, spellings that sound alike), used here as a filter. */
+let _mq = { q: null, set: null, order: null };
+function matchInfo(q) {
+  const t = String(q || '').trim();
+  if (!t) return null;
+  if (_mq.q !== t) { const order = surahMatches(t, 114).map((x) => x.num - 1); _mq = { q: t, set: new Set(order), order }; }
+  return _mq;
+}
+function surahMatch(i, q) { const m = matchInfo(q); return !m || m.set.has(i); }
+/* Searching lists the best match first; cleared, the list is in surah order. */
+function orderSurahs(el, q) {
+  const list = el.querySelector('.tzm-slist'); if (!list) return 0;
+  const m = matchInfo(q), none = list.querySelector('.tzm-snone');
+  const items = new Map([...list.querySelectorAll('.tzm-si')].map((x) => [+x.dataset.s, x]));
+  const order = m ? m.order : [...items.keys()].sort((a, b) => a - b);
+  items.forEach((x, i) => { x.hidden = !!m && !m.set.has(i); });
+  order.forEach((i) => { const x = items.get(i); if (x) list.insertBefore(x, none); });
+  if (none) none.hidden = !m || m.order.length > 0;
+  return m ? m.order.length : items.size;
+}
+function surahBar(st, i) {
+  const [a, z] = surahAbs(i);
+  return '<span class="tzm-bar">' + halvesOfAbs(a, z).map((h) => {
+    const r = halfAbs(h), x = Math.max(a, r[0]), y = Math.min(z, r[1]);
+    return '<span class="tzm-c-' + (countIn(st.bits, x, y) ? st.pages[h] : '-') + '"></span>';
+  }).join('') + '</span>';
+}
 function surahView(st) {
-  return '<div>' + SURAH_NAMES.map((nm, i) => {
-    const [a, b] = surahSpan(i);
-    // The same halves a tick writes: a surah that starts or ends mid page owns
-    // only its own half of that page, so ticking it reads as "all".
-    const hs = surahHalves(i, a, b), f = fill(st.pages, hs);
-    const cls = f.m === f.of ? 'full' : f.m ? 'part' : '';
-    const q = !f.m ? '—' : f.m === f.of ? 'all' : halfText(f.m / 2) + '/' + halfText(f.of / 2);
+  const search = '<input type="search" class="tzm-sq" data-tzmin="sq" placeholder="Find a surah: name or number" aria-label="Find a surah" autocomplete="off" value="' + esc(st.sq || '') + '">';
+  const items = SURAH_NAMES.map((nm, i) => {
+    // mp5: exact to the ayah — a neighbour sharing the page is not touched.
+    const [a, z] = surahAbs(i), n = AYAH_COUNTS[i], m = countIn(st.bits, a, z);
+    const cls = m === n ? 'full' : m ? 'part' : '';
+    const q = !m ? '—' : m === n ? 'all' : m + '/' + n;
     const row = '<div class="tzm-srow">' +
       '<button type="button" class="tzm-box ' + cls + (st.editable ? '' : ' ro') + '" data-tzm="ticksurah" data-s="' + i + '" aria-label="' +
         (cls === 'full' ? esc(nm) + ' memorised — tap to clear' : 'Mark ' + esc(nm) + ' memorised') + '"><i>' + (cls === 'full' ? '✓' : '') + '</i></button>' +
       '<button type="button" class="tzm-sn" data-tzm="surah" data-s="' + i + '">' + (i + 1) + ' · ' + esc(nm) + '</button>' +
-      bar(st.pages, a, b) + '<span class="q">' + q + '</span></div>';
-    if (st.ayr !== i) return row;
-    const n = AYAH_COUNTS[i];
-    const rng = st.ayrFrom && st.ayrTo ? halvesForRange(...surahRangeKeys(i, st.ayrFrom, st.ayrTo)) : [];
-    return row + '<div class="tzm-ayr">' +
-      (st.editable
-        ? '<div class="r">Ayahs <input type="number" min="1" max="' + n + '" data-tzmin="from" value="' + (st.ayrFrom || 1) + '" aria-label="From ayah"> to ' +
-            '<input type="number" min="1" max="' + n + '" data-tzmin="to" value="' + (st.ayrTo || n) + '" aria-label="To ayah"><span class="tzm-note">of ' + n + '</span></div>' +
-          (rng.length ? '<span class="tzm-note">≈ ' + esc(halvesText(rng[0], rng[rng.length - 1])) + ' · the map is kept in half pages, so a range ending mid-page rounds to the nearest half</span>' : '') +
-          '<div class="tzm-acts"><button type="button" class="g" data-tzm="ayrmark">✓ Mark memorised</button><button type="button" data-tzm="ayrclear">Clear these ayahs</button></div>'
-        : '') +
-      '<div class="tzm-acts"><button type="button" data-tzm="juzof" data-p="' + a + '">Open juz ' + juzOfPage(a) + '</button></div></div>';
-  }).join('') + '</div>';
+      surahBar(st, i) + '<span class="q" title="' + (m && m < n ? m + ' of ' + n + ' ayahs' : '') + '">' + q + '</span></div>';
+    let more = '';
+    if (st.ayr === i) {
+      const p1 = surahSpan(i)[0];
+      const fa = Math.max(1, Math.min(n, st.ayrFrom || 1)), ta = Math.max(1, Math.min(n, st.ayrTo || n));
+      const hs = halvesForRange(...surahRangeKeys(i, fa, ta));
+      more = '<div class="tzm-ayr">' +
+        (st.editable
+          ? '<div class="r">Ayahs <input type="number" min="1" max="' + n + '" data-tzmin="from" value="' + (st.ayrFrom || 1) + '" aria-label="From ayah"> to ' +
+              '<input type="number" min="1" max="' + n + '" data-tzmin="to" value="' + (st.ayrTo || n) + '" aria-label="To ayah"><span class="tzm-note">of ' + n + '</span></div>' +
+            '<span class="tzm-note tzm-hs">' + (hs.length ? 'Exactly these ayahs · on the juz view, ' + esc(halvesText(hs[0], hs[hs.length - 1])) : '') + '</span>' +
+            '<div class="tzm-acts"><button type="button" class="g" data-tzm="ayrmark">✓ Mark memorised</button><button type="button" data-tzm="ayrclear">Clear these ayahs</button></div>'
+          : (m && m < n ? '<span class="tzm-note">' + esc(memoText(st.bits, i)) + '</span>' : '')) +
+        '<div class="tzm-acts"><button type="button" data-tzm="juzof" data-p="' + p1 + '">Open juz ' + juzOfPage(p1) + '</button></div></div>';
+    }
+    return '<div class="tzm-si" data-s="' + i + '"' + (surahMatch(i, st.sq) ? '' : ' hidden') + '>' + row + more + '</div>';
+  }).join('');
+  return search + '<div class="tzm-slist">' + items + '<div class="tzm-note tzm-snone" hidden>No surah by that name.</div></div>';
+}
+/* "Ayahs 1–40 memorised" for a surah done in part. */
+function memoText(b, i) {
+  const [a, z] = surahAbs(i), runs = [];
+  for (let v = a; v <= z; v++) {
+    if (!b[v]) continue;
+    let w = v; while (w + 1 <= z && b[w + 1]) w++;
+    runs.push(w > v ? (v - a + 1) + '–' + (w - a + 1) : String(v - a + 1)); v = w;
+  }
+  return 'Ayahs ' + runs.join(', ') + ' memorised';
 }
 function juzEditor(st) {
   const j = st.juz, a = juzStart(j), b = juzEnd(j);
@@ -353,16 +478,19 @@ function draw(el) {
         '<button type="button" data-tzm="view" data-v="surah" aria-pressed="' + (st.view === 'surah') + '">By surah</button></div>' +
         (st.editable ? '<button type="button" class="tzm-q" data-tzm="help" aria-expanded="' + !!st.help + '" aria-label="How to mark the map" title="How to mark the map">?</button>' : '') + '</div>' +
       (st.editable && st.help ? '<span class="tzm-note">' + (st.view === 'surah'
-        ? 'Tick a surah to mark all of it. Tap its name to mark a range of ayahs.'
+        ? 'Tick a surah to mark all of it, exactly to the ayah. Tap its name to mark a range of ayahs.'
         : 'Tap ○ to mark a whole juz memorised (tap ✓ again to clear it). Tap the juz itself to mark single pages.') + '</span>' : '') +
       legend() + (st.view === 'surah' ? surahView(st) : juzView(st));
   el.innerHTML = '<div class="tzm' + (st.recentAuto ? '' : ' byhand') + '">' + body + autoNote(st) + '</div>';
+  if (!st.juz && st.view === 'surah' && st.sq) orderSurahs(el, st.sq);
 }
 
 /* ── editing ────────────────────────────────────────────────────────────── */
 // What "memorised" writes: Old (derive() makes it Recent when it belongs there).
 function tickValue(st, cur) { return cur === 'r' && !st.recentAuto ? 'r' : 'o'; }
 function writeHalves(st, hs, mode) {
+  // mp5: marking a half page marks all of its ayahs; clearing it clears them.
+  if (st.bits) hs.forEach((h) => { const r = halfAbs(h); st.bits.fill(mode === 'u' ? 0 : 1, r[0], r[1] + 1); });
   const a = st.pages.split('');
   hs.forEach((h) => {
     if (mode === 'm') { if (a[h] === '-') a[h] = 'o'; }
@@ -375,9 +503,22 @@ function writeHalves(st, hs, mode) {
 function commit(el) {
   const st = el._tzm;
   if (st.recentAuto) st.pages = derive(st.pages);
+  st.bits = reconcileBits(st.pages, st.bits);
   draw(el);
-  if (st.onChange) st.onChange(st.pages, st.recentAuto);
+  if (st.onChange) st.onChange(st.pages, st.recentAuto, ayahsText(st.bits));
 }
+/* mp5: after ayahs change, the half pages follow — a half with any ayah
+   memorised is memorised, one with none is not. */
+function syncHalves(st, hs) {
+  const p = st.pages.split('');
+  hs.forEach((h) => {
+    const r = halfAbs(h), any = countIn(st.bits, r[0], r[1]) > 0;
+    if (any && p[h] === '-') p[h] = 'o';
+    else if (!any) p[h] = '-';
+  });
+  st.pages = p.join('');
+}
+function setAyahs(st, a, z, on) { st.bits.fill(on ? 1 : 0, a, z + 1); syncHalves(st, halvesOfAbs(a, z)); }
 function tickAll(st, hs) {
   const full = hs.every((h) => st.pages[h] !== '-');
   writeHalves(st, hs, full ? 'u' : 'm');
@@ -389,6 +530,18 @@ function targetHalves(st, cell, hf) {
   const pg = +cell.dataset.pg; return [(pg - 1) * 2, (pg - 1) * 2 + 1];
 }
 
+/* mp5: the ayah fields update the state and the note in place. Redrawing
+   here (as mp4 did on change) replaced the panel on blur, so a click on
+   "Mark memorised" right after typing could be lost. */
+function ayrInput(el, t) {
+  const st = el._tzm, n = AYAH_COUNTS[st.ayr];
+  if (t.dataset.tzmin === 'from') st.ayrFrom = +t.value || 1; else st.ayrTo = +t.value || n;
+  const note = el.querySelector('.tzm-ayr .tzm-hs');
+  if (!note) return;
+  const fa = Math.max(1, Math.min(n, st.ayrFrom || 1)), ta = Math.max(1, Math.min(n, st.ayrTo || n));
+  const hs = halvesForRange(...surahRangeKeys(st.ayr, fa, ta));
+  note.textContent = hs.length ? 'Exactly these ayahs · on the juz view, ' + halvesText(hs[0], hs[hs.length - 1]) : '';
+}
 function attach(el) {
   el.addEventListener('click', (e) => {
     const t = e.target.closest('[data-tzm]'); if (!t || !el.contains(t)) return;
@@ -397,7 +550,7 @@ function attach(el) {
     if (a === 'help') { st.help = !st.help; return draw(el); }
     if (a === 'tickjuz') { e.stopPropagation(); if (!st.editable) return; tickAll(st, halvesOf(juzStart(+t.dataset.j), juzEnd(+t.dataset.j))); return commit(el); }
     if (a === 'juz') { if (!st.editable && !st.openReadOnly) return; st.juz = +t.dataset.j; return draw(el); }
-    if (a === 'ticksurah') { if (!st.editable) return; const [p1, p2] = surahSpan(+t.dataset.s); tickSurah(st, +t.dataset.s, p1, p2); return commit(el); }
+    if (a === 'ticksurah') { if (!st.editable) return; tickSurah(st, +t.dataset.s); return commit(el); }
     if (a === 'surah') { const i = +t.dataset.s; st.ayr = st.ayr === i ? null : i; st.ayrFrom = 1; st.ayrTo = AYAH_COUNTS[i]; return draw(el); }
     if (a === 'juzof') { st.juz = juzOfPage(+t.dataset.p); st.ayr = null; return draw(el); }
     if (a === 'out') { st.juz = null; return draw(el); }
@@ -405,13 +558,28 @@ function attach(el) {
     if (a === 'brush') { st.brush = t.dataset.b; return draw(el); }
     if (a === 'all') { const hs = halvesOf(juzStart(st.juz), juzEnd(st.juz)); writeHalves(st, hs, t.dataset.b === 'm' ? 'm' : 'u'); return commit(el); }
     if (a === 'ayrmark' || a === 'ayrclear') {
-      const hs = halvesForRange(...surahRangeKeys(st.ayr, st.ayrFrom, st.ayrTo));
-      writeHalves(st, hs, a === 'ayrmark' ? 'm' : 'u'); return commit(el);
+      const [k1, k2] = surahRangeKeys(st.ayr, st.ayrFrom, st.ayrTo);
+      setAyahs(st, keyAbs(k1), keyAbs(k2), a === 'ayrmark'); return commit(el);
     }
     if (a === 'auto') { st.recentAuto = true; if (st.brush === 'o' || st.brush === 'r') st.brush = 'm'; return commit(el); }
     if (a === 'byhand') { st.recentAuto = false; return commit(el); }
   });
+  // mp5: the surah search filters in place, so typing keeps the focus.
+  el.addEventListener('input', (e) => {
+    const t = e.target, st = el._tzm;
+    if (st && (t.dataset.tzmin === 'from' || t.dataset.tzmin === 'to')) return ayrInput(el, t);
+    if (!st || t.dataset.tzmin !== 'sq') return;
+    st.sq = t.value;
+    orderSurahs(el, st.sq);
+  });
   el.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && e.target.dataset && e.target.dataset.tzmin === 'sq') {
+      e.preventDefault();
+      // Enter opens the best match.
+      const first = [...el.querySelectorAll('.tzm-si')].find((x) => !x.hidden);
+      if (first && el._tzm.sq) { const b = first.querySelector('[data-tzm="surah"]'); if (b) b.click(); }
+      return;
+    }
     if (e.key !== 'Enter' && e.key !== ' ') return;
     const t = e.target.closest('.tzm-jc[data-tzm="juz"]'); if (!t || e.target !== t) return;
     e.preventDefault(); t.click();
@@ -419,8 +587,8 @@ function attach(el) {
   el.addEventListener('change', (e) => {
     const t = e.target, st = el._tzm; if (!st) return;
     if (t.dataset.tzmin === 'halves') { st.halves = t.checked; return draw(el); }
-    if (t.dataset.tzmin === 'from') { st.ayrFrom = +t.value || 1; return draw(el); }
-    if (t.dataset.tzmin === 'to') { st.ayrTo = +t.value || AYAH_COUNTS[st.ayr]; return draw(el); }
+    if (t.dataset.tzmin === 'sq') return;
+    if (t.dataset.tzmin === 'from' || t.dataset.tzmin === 'to') return ayrInput(el, t);
   });
   /* Press, then drag across pages: the first page decides the action for the
      whole run (tick, or untick if it was already ticked), so a drag never
@@ -459,12 +627,12 @@ function attach(el) {
   window.addEventListener('pointercancel', end);
 }
 /* A surah's first and last pages are usually shared with its neighbours, so
-   ticking it marks its own ayahs, not the whole of those pages. */
-function surahHalves(i, p1, p2) {
-  const hs = halvesForRange(...surahRangeKeys(i, 1, AYAH_COUNTS[i]));
-  return hs.length ? hs : halvesOf(p1, p2);
+   ticking it marks its own ayahs (mp5: exactly), not the whole of those
+   pages. Ticked again when all of it is memorised, it is cleared. */
+function tickSurah(st, i) {
+  const [a, z] = surahAbs(i);
+  setAyahs(st, a, z, countIn(st.bits, a, z) < z - a + 1);
 }
-function tickSurah(st, i, p1, p2) { tickAll(st, surahHalves(i, p1, p2)); }
 
 /* Draw the map into `el`. Calling again with new pages keeps the view the
    teacher was in (which juz is open, which mark, half pages). */
@@ -477,18 +645,25 @@ function render(el, opts) {
     ...(el._tzm || {}),
     pages: valid(opts.pages) ? opts.pages : empty(),
     recentAuto: opts.recentAuto !== false,
+    bits: null,
     editable: !!opts.editable, openReadOnly: opts.openReadOnly !== false,
     onChange: opts.onChange || null,
   };
+  el._tzm.bits = reconcileBits(el._tzm.pages, parseAyahs(opts.ayahs || '') || bitsEmpty());
   if (first) attach(el);
+  // Redrawing while the teacher types in the search keeps the field and caret.
+  const ae = document.activeElement, typing = ae && el.contains(ae) && ae.dataset && ae.dataset.tzmin === 'sq';
+  const caret = typing ? ae.selectionStart : null;
   draw(el);
+  if (typing) { const q = el.querySelector('[data-tzmin="sq"]'); if (q) { q.focus({ preventScroll: true }); try { q.setSelectionRange(caret, caret); } catch (_) {} } }
 }
 // Where the teacher was, for a host that redraws the container.
 function viewState(el) {
   const s = el && el._tzm;
-  return s ? { view: s.view, juz: s.juz, brush: s.brush, halves: s.halves, ayr: s.ayr, ayrFrom: s.ayrFrom, ayrTo: s.ayrTo } : null;
+  return s ? { view: s.view, juz: s.juz, brush: s.brush, halves: s.halves, ayr: s.ayr, ayrFrom: s.ayrFrom, ayrTo: s.ayrTo, sq: s.sq } : null;
 }
 
 window.TehfizMap = { LEN, empty, valid, derive, summary, newText, halvesText, nextHalf, juzOfPage, juzStart, juzEnd, halfKeys, halvesKeys, juzKeys,
-                     halvesForRange, stageFor, withLesson, render, viewState, version: TEHFIZ_MAP_VERSION };
+                     halvesForRange, stageFor, withLesson, render, viewState,
+                     reconcile, withRanges, validAyahs: (x) => parseAyahs(x) !== null, version: TEHFIZ_MAP_VERSION };
 })();

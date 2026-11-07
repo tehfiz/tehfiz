@@ -1,6 +1,8 @@
 /* ═══════════════════════════════════════════════════════════════════════
    journey.js — TehfizJourney — j5
-   Loaded by the student viewer only, from /app/student/journey.js?v=j5.
+   Loaded by the student viewer only, from /app/student/journey.js?v=j6.
+
+   j6: the map gets the memorised ayahs too, so By surah is exact.
 
    j5: the memorisation map is shared with the progress report: map()
    returns it, and a 'tehfiz-plan' event fires when a fresh copy arrives.
@@ -42,7 +44,7 @@
    ═══════════════════════════════════════════════════════════════════════ */
 (function () {
 'use strict';
-const TEHFIZ_JOURNEY_VERSION = 'j5';
+const TEHFIZ_JOURNEY_VERSION = 'j6';
 const KEY_PLAN = 'tehfiz_journey_plan';
 const REFRESH_MS = 5 * 60 * 1000;
 const DAY_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -291,7 +293,7 @@ function render() {
       root.innerHTML = rootHtml();
       const m = $('tjyMap');
       if (m && window.TehfizMap) {
-        window.TehfizMap.render(m, { pages: plan.map.pages, recentAuto: plan.map.recent_auto !== false && plan.map.recent_auto !== 0,
+        window.TehfizMap.render(m, { pages: plan.map.pages, ayahs: plan.map.ayahs || '', recentAuto: plan.map.recent_auto !== false && plan.map.recent_auto !== 0,
           editable: false, openReadOnly: true, state: mapState || undefined });
       }
       const nb = $('tjyBody'); if (nb && keep) nb.scrollTop = keep;
