@@ -1,6 +1,10 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   profile.js — TehfizProfile — p12
-   Loaded by the teacher app only, from /app/teacher/profile.js?v=p12.
+   profile.js — TehfizProfile — p14
+   Loaded by the teacher app only, from /app/teacher/profile.js?v=p14.
+
+   p14: the student's time zone can be found by country.
+
+   p13: nextOf is exported, for the Students list.
 
    p12: the map's memorised ayahs (TehfizMap mp5) are saved with its pages —
    queued with them, sent with them, and kept in step after a lesson.
@@ -54,7 +58,7 @@
    ═══════════════════════════════════════════════════════════════════════ */
 (function () {
 'use strict';
-const TEHFIZ_PROFILE_VERSION = 'p12';
+const TEHFIZ_PROFILE_VERSION = 'p14';
 const K_TT = 'tehfiz_prof_tt';            // {sid: {days: {'1': {t:'17:00', len:45}, …}, lessons: [{at, len}]}}, 0 = Sunday — a cache
 const K_LSQ = 'tehfiz_prof_lsq';          // {sid: true} single lessons not yet on the server (p7)
 const K_MAPQ = 'tehfiz_prof_mapq';        // {sid: {pages, recent_auto, ayahs}} not yet on the server
@@ -478,7 +482,9 @@ function tzEntries() {
 function tzListHtml(cur) {
   const q = tzQ.toLowerCase().trim().replace(/^gmt/, 'utc');
   const all = tzEntries();
-  const hits = q ? all.filter((e) => e.search.includes(q) || e.label.toLowerCase().includes(q)) : all;
+  // p14: by country too, whole-word matches first (TehfizTime t4).
+  const sc = (e) => Math.max(T().zoneScore ? T().zoneScore(e.value, q) : 0, (e.search.includes(q) || e.label.toLowerCase().includes(q)) ? 1 : 0);
+  const hits = q ? all.map((e) => ({ e, s: sc(e) })).filter((x) => x.s).sort((a, b) => b.s - a.s).map((x) => x.e) : all;
   const same = '<button type="button" class="tpf-tzo' + (!cur ? ' on' : '') + '" data-tpf="tzpick" data-z="" role="option" aria-selected="' + !cur + '">Same as you · ' + esc(T().tzLabel(T().myTz())) + '</button>';
   return (q ? '' : same) + hits.slice(0, 60).map((e) =>
     '<button type="button" class="tpf-tzo' + (e.value === cur ? ' on' : '') + '" data-tpf="tzpick" data-z="' + esc(e.value) + '" role="option" aria-selected="' + (e.value === cur) + '">' + esc(e.label) + '</button>').join('') +
@@ -1049,7 +1055,7 @@ function saveNextLesson(id, nx) {
   scheduleSave();
 }
 
-window.TehfizProfile = { open, close, isOpen: () => isOpen, nextLesson, timetable, theirLine, ttOf, editLesson, setLessons, suggestPlan, startFromPlan,
+window.TehfizProfile = { open, close, isOpen: () => isOpen, nextLesson, nextOf, timetable, theirLine, ttOf, editLesson, setLessons, suggestPlan, startFromPlan,
   isEditing: () => !!(window.TehfizLesson && window.TehfizLesson.isOpen()),
   planFor, previewLesson, applyLesson, suggestNext, saveNextLesson, oldRotation, version: TEHFIZ_PROFILE_VERSION };
 })();

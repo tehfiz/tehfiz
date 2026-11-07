@@ -1,6 +1,8 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   lesson-editor.js — TehfizLesson — le4
-   Loaded by the teacher app only, from /app/teacher/lesson-editor.js?v=le4.
+   lesson-editor.js — TehfizLesson — le5
+   Loaded by the teacher app only, from /app/teacher/lesson-editor.js?v=le5.
+
+   le5: archived students' lessons are left out of the clash check.
 
    le4: Escape closes only the editor, not the calendar or Profile under it.
 
@@ -52,7 +54,7 @@
    ═══════════════════════════════════════════════════════════════════════ */
 (function () {
 'use strict';
-const TEHFIZ_LESSON_VERSION = 'le4';
+const TEHFIZ_LESSON_VERSION = 'le5';
 const K_HOURS = 'tehfiz_teach_hours';     // {from:'15:00', to:'21:00'} — optional, set in Settings
 const K_PLANS = 'tehfiz_cal_plans';       // the calendar's copy of every student's timetable
 const SNAP = 15, DAY = 86400000;
@@ -110,6 +112,8 @@ function allTimetables() {
       out[s.id] = t;
     }
   });
+  // le5: an archived student's lessons are not in the way of anyone else's.
+  (S() && S().roster ? S().roster() : []).forEach((s) => { if (s.archived) delete out[s.id]; });
   return out;
 }
 let plansFetched = 0;

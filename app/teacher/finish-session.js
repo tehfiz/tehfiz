@@ -1,6 +1,11 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   finish-session.js — TehfizFinish — f13
-   Loaded by the teacher app only, from /app/teacher/finish-session.js?v=f13.
+   finish-session.js — TehfizFinish — f15
+   Loaded by the teacher app only, from /app/teacher/finish-session.js?v=f15.
+
+   f15: the next lesson's plan is not filled in from the map any more; a
+   lesson already planned keeps its plan, otherwise "Suggest from the map".
+
+   f14: archived students only come up in the student box when typed for.
 
    Replaces the five-button session footer (Save · Send · Report · Clear ·
    Save & Export) with one decision at the end of a lesson:
@@ -32,7 +37,7 @@
    ═══════════════════════════════════════════════════════════════════════ */
 (function () {
 'use strict';
-const TEHFIZ_FINISH_VERSION = 'f13';
+const TEHFIZ_FINISH_VERSION = 'f15';
 
 let open_ = false, view = 'form', moreOpen = false;
 let st = null;   // the sheet's working state, see begin()
@@ -306,7 +311,8 @@ function studentField() {
 }
 function acMatches() {
   const q = st.query.trim().toLowerCase();
-  const list = rosterList();
+  // f14: archived students only come up when typed for.
+  const list = rosterList().filter((s) => !s.archived || q);
   const hit = (s) => !q || (s.name || '').toLowerCase().includes(q) || (s.code || '').toLowerCase().includes(q);
   return list.filter(hit).sort((a, b) => (a.name || '~').localeCompare(b.name || '~')).slice(0, 30);
 }
@@ -409,9 +415,10 @@ function suggestFor(P, id, pages) {
     occ = T().occurrences(tt, Date.now() + 60000, Date.now() + 15 * 86400000)[0] || null;
     if (occ && Array.isArray(occ.plan) && occ.plan.length) planned = occ.plan.map((x) => ({ ...x }));
   }
-  const plan = planned || (P.suggestPlan ? P.suggestPlan(id, pages) : []);
+  // f15: a lesson already planned keeps its plan; otherwise the plan starts
+  // empty — the map's suggestion is one tap (Suggest), not filled in for you.
   return { at: sug.at ? +sug.at : null, len: sug.len || 0, fromTimetable: sug.fromTimetable,
-           plan: plan.length ? plan : (T() ? T().planOf(sug) : []), note: (occ && occ.note) || '' };
+           plan: planned || [], note: (occ && occ.note) || '' };
 }
 function planState() {
   const P = window.TehfizProfile, b = bound();
@@ -449,7 +456,8 @@ function nextLine(ps) {
     ? (their ? '<div class="tfs-their">' + esc(their) + '</div>' : '') +
       (n.plan.length ? '<div class="tfs-plan">' + n.plan.map((p) => '<div class="tfs-seg"><span><b>' + esc(p.mode === 'spot' ? 'Spot test' : stageName(p.type)) + '</b> · ' +
         esc(p.label || p.text || (p.start ? p.start + '–' + p.end : '')) + '</span>' + (p.start ? '<span class="tfs-v">' + esc(p.start) + '</span>' : '') + '</div>').join('') + '</div>' : '') +
-      '<div class="tfs-row"><button type="button" class="tfs-chip" data-tfs="nxchange">Change time or plan…</button></div>' +
+      '<div class="tfs-row"><button type="button" class="tfs-chip" data-tfs="nxchange">Change time or plan…</button>' +
+        (!n.plan.length && window.TehfizProfile && window.TehfizProfile.suggestPlan ? '<button type="button" class="tfs-chip" data-tfs="nxsuggest">Suggest from the map</button>' : '') + '</div>' +
       '<div class="tfs-dim">' + (n.fromTimetable ? 'From ' + nm + '’s schedule. ' : '') +
         'Shown to ' + nm + ' in their viewer. <button type="button" class="tfs-inl" data-tfs="nxoff">Don’t set a next lesson</button></div>'
     : '<button type="button" class="tfs-chip" data-tfs="nxon">Set a next lesson</button>');
@@ -916,6 +924,14 @@ document.addEventListener('click', (e) => {
   if (a === 'rename') { readForm(); st.renaming = true; render(); const i = $('tfsSName'); if (i) { i.focus(); i.select(); } return; }
   if (a === 'nxon' && st.next) { readForm(); st.next.on = true; if (!st.next.at) return openNextEditor(); render(); return; }
   if (a === 'nxchange' && st.next) { readForm(); return openNextEditor(); }
+  if (a === 'nxsuggest' && st.next) {
+    readForm();
+    const P = window.TehfizProfile, b = bound(), ps = planState();
+    const pages = ps && ps.pv ? ps.pv.pages : null;
+    const plan = P && b ? P.suggestPlan(b.id, pages) : [];
+    if (!plan.length) { toast('Mark what ' + (b.name || b.code) + ' has memorised on the map to get suggestions'); return; }
+    st.next.plan = plan; render(); return;
+  }
   if (a === 'nxoff' && st.next) { readForm(); st.next.on = false; st.open.next = false; render(); return; }
   if (a === 'create') return createFromQuery();
   if (a === 'mins') { readForm(); st.minutes = +t.dataset.n; st.error = ''; render(); return; }

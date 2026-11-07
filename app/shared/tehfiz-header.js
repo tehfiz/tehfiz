@@ -1,6 +1,6 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   tehfiz-header.js — TehfizHeader — h6
-   Loaded by both apps from /app/shared/tehfiz-header.js?v=h6, after
+   tehfiz-header.js — TehfizHeader — h7
+   Loaded by both apps from /app/shared/tehfiz-header.js?v=h7, after
    tehfiz-shared.js. Styles live in tehfiz-shared.css under .tzh-.
 
    The one-row header. The bar's own markup is in each app (it has to paint
@@ -26,7 +26,12 @@
    ═══════════════════════════════════════════════════════════════════════ */
 (function () {
 'use strict';
-const TEHFIZ_HEADER_VERSION = 'h6';
+const TEHFIZ_HEADER_VERSION = 'h7';
+/* h7: the phone menu's View has Pages (Framed / Continuous), as the desktop
+   View pop does. In Go to, searching for a surah keeps the list above the
+   keyboard: the sheet follows the visible part of the screen
+   (visualViewport), the other fields step aside while the list is open, and
+   the list is only as tall as the room left. */
 
 let cfg = { items: () => [], who: () => null, shortcuts: () => [] };
 let menuOpen = false, viewOpen = false, gotoOpen = false;
@@ -134,6 +139,12 @@ function menuHtml() {
           '<button class="tzh-step" type="button" data-tzh="speed" data-d="-1" aria-label="Slower">−</button>' +
           '<span class="tzh-speed" id="tzhSpeed">' + esc(speedText()) + '</span>' +
           '<button class="tzh-step" type="button" data-tzh="speed" data-d="1" aria-label="Faster">+</button></div>'
+      : '') +
+    (window.TehfizPageStyle && $('viewPagesChoice')
+      ? (() => { const cont = TehfizPageStyle.get() === 'continuous';
+          return '<div class="tzh-mrow"><span>Pages</span>' +
+            '<button class="tzh-step tzh-step-w tzh-seg" type="button" data-tzpv="framed" data-tzh="pages" aria-pressed="' + !cont + '">Framed</button>' +
+            '<button class="tzh-step tzh-step-w tzh-seg" type="button" data-tzpv="continuous" data-tzh="pages" aria-pressed="' + cont + '">Continuous</button></div>'; })()
       : '')
     : '';
 
@@ -328,11 +339,13 @@ function openGoto() {
   _shortcuts = (cfg.shortcuts ? cfg.shortcuts() : []) || [];
   wrap.innerHTML = gotoHtml();
   gotoOpen = true;
+  fitGoto();
   requestAnimationFrame(() => wrap.classList.add('on'));
 }
 function closeGoto() {
   const wrap = $('tzhGotoWrap');
   gotoOpen = false;
+  fitGoto();
   if (wrap) { wrap.classList.remove('on'); setTimeout(() => { if (!gotoOpen) wrap.innerHTML = ''; }, 220); }
 }
 function surahText(n) { return n ? n + '. ' + (SURAH_NAMES[n - 1] || '') : ''; }
@@ -348,9 +361,29 @@ function spRender(q) {
     : '<div class="tzh-sp-empty">No surah matches</div>';
   list.hidden = false;
   const q2 = $('tzhGtSurahQ'); if (q2) q2.setAttribute('aria-expanded', 'true');
+  const sh = document.querySelector('#tzhGotoWrap .tzh-sheet'); if (sh) sh.classList.add('searching');
+  fitGoto();
+}
+/* h7: keep the Go to sheet, and the surah list in it, above the keyboard. */
+function fitGoto() {
+  const wrap = $('tzhGotoWrap');
+  if (!wrap) return;
+  const vv = window.visualViewport;
+  if (!gotoOpen || !vv) { wrap.style.top = ''; wrap.style.height = ''; wrap.style.bottom = ''; return; }
+  wrap.style.top = vv.offsetTop + 'px'; wrap.style.height = vv.height + 'px'; wrap.style.bottom = 'auto';
+  const sheet = wrap.querySelector('.tzh-sheet'), list = $('tzhGtList');
+  if (sheet) sheet.style.maxHeight = Math.round(vv.height * 0.92) + 'px';
+  if (!sheet || !list || list.hidden) { if (list) list.style.maxHeight = ''; return; }
+  const room = vv.height - list.getBoundingClientRect().top + vv.offsetTop - 24;
+  list.style.maxHeight = Math.max(132, Math.min(420, Math.round(room))) + 'px';
+}
+if (window.visualViewport) {
+  ['resize', 'scroll'].forEach((t) => window.visualViewport.addEventListener(t, () => { if (gotoOpen) fitGoto(); }));
 }
 function spClose() {
   const list = $('tzhGtList'); if (list) list.hidden = true;
+  const sh = document.querySelector('#tzhGotoWrap .tzh-sheet'); if (sh) sh.classList.remove('searching');
+  fitGoto();
   const q = $('tzhGtSurahQ'), h = $('tzhGtSurah');
   if (q) { q.setAttribute('aria-expanded', 'false'); if (h) q.value = surahText(+h.value); }
 }
@@ -396,6 +429,9 @@ function onRootClick(e) {
   }
   if (act === 'zoom') { changeMushafZoom(+t.dataset.d); return; }
   if (act === 'fit') { fitMushafToScreen(); return; }
+  // The shared click handler (TehfizPageStyle) has already switched the style;
+  // redraw the menu so the pressed button follows.
+  if (act === 'pages') { setTimeout(refreshMenu, 0); return; }
   if (act === 'speed') {
     const b = $(+t.dataset.d > 0 ? 'asFaster' : 'asSlower');
     if (b) b.click();

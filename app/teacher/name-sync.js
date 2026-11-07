@@ -1,7 +1,11 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   name-sync.js — TehfizNameSync — n3
-   Loaded by the teacher app from /app/teacher/name-sync.js?v=n3, after the
+   name-sync.js — TehfizNameSync — n4
+   Loaded by the teacher app from /app/teacher/name-sync.js?v=n4, after the
    TehfizSync module.
+
+   n4: when #tnsBox has the class tns-compact (the Students list, v4_349) it
+   is one line at the foot of the list: where the names are kept, with Why?
+   for the privacy note, and Turn on sync / Connect this device / Sync now.
 
    Student names live only on the teacher's device; the Tehfiz server has no
    name column and never receives one. This optional feature keeps a copy of
@@ -42,7 +46,7 @@
    ═══════════════════════════════════════════════════════════════════════ */
 (function () {
 'use strict';
-const TEHFIZ_NAMESYNC_VERSION = 'n3';
+const TEHFIZ_NAMESYNC_VERSION = 'n4';
 
 const SCOPE = 'https://www.googleapis.com/auth/drive.appdata';
 const FILE_NAME = 'tehfiz-student-names.json';
@@ -397,6 +401,7 @@ function render() {
      syncing is on, so it steps aside. */
   const warn = document.querySelector('#tsyBody .tsy-warnbox');
   if (warn) warn.hidden = isOn();
+  if (box.classList.contains('tns-compact')) { renderCompact(box); paintStatus(); loadGis(); return; }
   if (!isOn() && acct && acct.on && acctFor === (who() || {}).email) {
     box.innerHTML =
       '<div class="tns-card">' +
@@ -438,10 +443,40 @@ function render() {
   loadGis();      // so a later tap can open Google's popup straight away
 }
 
+/* n4: one line at the foot of the Students list. */
+const WHY = 'Student names are kept on this device and never sent to the Tehf\u012bz server. This protects your ' +
+  'students\u2019 privacy: they are children, and no identifiable record of them is kept anywhere but with you. ' +
+  'Clearing site data or switching devices leaves you with codes and no names \u2014 so turn on name sync, which keeps ' +
+  'a copy in a private Tehf\u012bz folder in your own Google Drive (the folder can\u2019t see anything else there), ' +
+  'or export the roster from \u22ef and keep it somewhere safe.';
+let whyOpen = false;
+function renderCompact(box) {
+  const acctOn = !isOn() && acct && acct.on && acctFor === (who() || {}).email;
+  const dot = isOn() ? 'ok' : acctOn ? 'mid' : '';
+  const text = isOn() ? 'Names sync with your Google Drive' : acctOn ? 'Name sync is on for your account' : 'Names are on this device only';
+  const btn = isOn()
+    ? '<button type="button" class="tsy-btn" data-tns="now">\u21bb Sync now</button><button type="button" class="tsy-chip-btn" data-tns="off">Turn off</button>'
+    : acctOn ? '<button type="button" class="tsy-btn tns-pri" data-tns="connect">Connect this device</button>'
+             : '<button type="button" class="tsy-btn tns-pri" data-tns="on">Turn on sync</button>';
+  box.innerHTML =
+    '<div class="tns-line"><span class="tns-dot ' + dot + '"></span>' +
+      '<span class="tns-lt"><span>' + text + '</span><span class="tns-status" id="tnsStatus"></span></span>' +
+      '<button type="button" class="tns-why" data-tns="why" aria-expanded="' + whyOpen + '">Why?</button>' +
+      '<span class="tns-btns">' + btn + '</span></div>' +
+    '<p class="tns-p tns-whyp"' + (whyOpen ? '' : ' hidden') + '>' + WHY + '</p>' +
+    (isOn() ? '<div class="tns-off" id="tnsOff" hidden>' +
+      '<p class="tns-p">Names already on a device stay there either way.</p>' +
+      '<div class="tns-row"><button type="button" class="tsy-btn" data-tns="off-here">Turn off on this device only</button>' +
+      '<button type="button" class="tsy-btn" data-tns="off-all">Turn off on all devices</button>' +
+      '<button type="button" class="tsy-btn tns-danger" data-tns="off-delete">Turn off everywhere and delete the Drive copy</button>' +
+      '<button type="button" class="tsy-chip-btn" data-tns="off-cancel">Cancel</button></div></div>' : '');
+}
+
 document.addEventListener('click', (e) => {
   const b = e.target.closest && e.target.closest('[data-tns]');
   if (!b) return;
   const act = b.dataset.tns;
+  if (act === 'why') { whyOpen = !whyOpen; render(); return; }
   if (act === 'on' || act === 'connect') {
     requestToken(() => { setLocal(true); put(K.snap, null); noteChanges(); pushFlag(true); render(); run(); });
   } else if (act === 'later') {
@@ -515,6 +550,14 @@ css.textContent =
     'padding:10px 12px;border-radius:10px;background:var(--surface,#fff);color:var(--ink);border:1px solid var(--border2);' +
     'box-shadow:0 6px 24px rgba(0,0,0,.18);font-size:13px;line-height:1.45;}' +
   '.tns-bar-t{flex:1 1 240px;}' +
+  '.tns-line{display:flex;align-items:center;gap:8px;flex-wrap:wrap;border:1px solid var(--border2);border-radius:10px;padding:8px 10px;background:var(--surface,#fff);}' +
+  '.tns-dot{width:9px;height:9px;border-radius:50%;background:var(--amber);flex:none;}' +
+  '.tns-dot.ok{background:var(--green);}.tns-dot.mid{background:var(--gold);}' +
+  '.tns-lt{display:flex;flex-direction:column;font-size:13px;color:var(--ink2);flex:1 1 150px;min-width:0;}' +
+  '.tns-lt .tns-status{font-size:11.5px;}' +
+  '.tns-why{border:0;background:none;color:var(--amber);text-decoration:underline;font:13px var(--ui-font);cursor:pointer;padding:0 2px;}' +
+  '.tns-btns{display:flex;gap:6px;margin-left:auto;}' +
+  '.tns-whyp{margin:8px 2px 0;}' +
   '.tns-bar-b{display:flex;gap:8px;margin-left:auto;}';
 document.head.appendChild(css);
 

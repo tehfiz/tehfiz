@@ -292,6 +292,13 @@ body.compact-ui .tzh-bar .tzh-timer .btn-t-label{display:none;}
 .tzh-sp-list{max-height:min(260px,38vh);overflow:auto;background:var(--surface,#fff);border:1px solid var(--border2);border-radius:8px;
   padding:4px;display:flex;flex-direction:column;}
 .tzh-sp-list[hidden]{display:none;}
+/* h7: while the surah list is open in Go to, the other fields step aside so
+   the list sits right under the box, above the keyboard. */
+.tzh-sheet.searching > :not(.tzh-grab):not(.tzh-sheet-head):not(.tzh-f2){display:none;}
+.tzh-sheet.searching .tzh-f2{grid-template-columns:1fr;}
+.tzh-sheet.searching .tzh-f2 > label{display:none;}
+/* h7: Framed / Continuous in the phone menu */
+.tzh-seg[aria-pressed="true"]{background:var(--ink);color:var(--parchment);border-color:var(--ink);}
 .tzh-sp-opt{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:10px;min-height:44px;padding:0 10px;border-radius:6px;
   cursor:pointer;color:var(--ink);font:400 15px var(--ui-font);}
 .tzh-sp-opt.hi,.tzh-sp-opt:hover{background:var(--gold-pale);}

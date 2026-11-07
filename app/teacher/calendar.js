@@ -1,6 +1,8 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   calendar.js — TehfizCalendar — c4
-   Loaded by the teacher app only, from /app/teacher/calendar.js?v=c4.
+   calendar.js — TehfizCalendar — c5
+   Loaded by the teacher app only, from /app/teacher/calendar.js?v=c5.
+
+   c5: archived students (v4_349) are not in the calendar or its pickers.
 
    c4: the week view is a grid of whole hours, each the same height; a
    lesson sits at its real minute, as tall as it is long, with its time on
@@ -52,7 +54,7 @@
    ═══════════════════════════════════════════════════════════════════════ */
 (function () {
 'use strict';
-const TEHFIZ_CALENDAR_VERSION = 'c4';
+const TEHFIZ_CALENDAR_VERSION = 'c5';
 const MATCH_MS = 3 * 3600000;
 const K_PLANS = 'tehfiz_cal_plans';
 const K_DISMISS = 'tehfiz_cal_dismissed';
@@ -100,7 +102,8 @@ function timeText(ms) { return T().timeText(ms, Z()); }
 function dateText(ms, o) { try { return new Date(ms + 12 * 3600000).toLocaleDateString(undefined, { ...o, timeZone: Z() }); } catch { return new Date(ms).toLocaleDateString(undefined, o); } }
 function stageLabel(id) { return typeof sessionTypeLabel === 'function' ? sessionTypeLabel(id) : id; }
 function names() { const m = {}; (sync() && sync().roster ? sync().roster() : []).forEach((s) => { m[s.id] = s.name || s.code; }); return m; }
-function roster() { return sync() && sync().roster ? sync().roster() : []; }
+// c5: archived students are left out (their past sessions still show, by name).
+function roster() { return (sync() && sync().roster ? sync().roster() : []).filter((s) => !s.archived); }
 function currentView() { return view || readJ(K_VIEW, null) || (compact() ? 'list' : 'week'); }
 
 /* ── data ───────────────────────────────────────────────────────────────── */

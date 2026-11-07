@@ -15,10 +15,10 @@
 (function(){try{var d=document.documentElement,t=localStorage.getItem('tehfiz_theme'),m=localStorage.getItem('tehfiz_mode');
 if(t==='classic'||t==='lapis'||t==='mulberry')d.setAttribute('data-tz-theme',t);
 if(m==='dark'||(m==='device'&&window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches))d.setAttribute('data-tz-mode','dark');}catch(e){}})();</script>
-<link rel="stylesheet" href="/app/shared/tehfiz-shared.css?v=s13">
+<link rel="stylesheet" href="/app/shared/tehfiz-shared.css?v=s15">
 <script src="/app/shared/tehfiz-shared.js?v=s15"></script>
 <script src="/app/shared/tehfiz-ornament.js?v=o2"></script>
-<script src="/app/shared/tehfiz-header.js?v=h6"></script>
+<script src="/app/shared/tehfiz-header.js?v=h7"></script>
 <script src="/app/shared/tehfiz-pwa.js?v=p2"></script>
 <!-- Installable app (v4_305): manifest, icons, and the service worker TehfizPWA registers. -->
 <link rel="manifest" href="/app/teacher/manifest.webmanifest">
@@ -1054,6 +1054,25 @@ input.corr-btn.sel-c4{background:var(--parchment3);color:var(--ink2);border-colo
 .seg-row.active:hover{background:var(--gold-pale);}
 .seg-live{color:var(--gold-ink);font-size:11px;line-height:1;flex:none;}
 .seg-row.collapsed{display:flex;align-items:center;gap:6px;padding:5px 6px;opacity:.82;}
+/* v4_352: the open segment, one job per line */
+.seg-row.seg-open{display:flex;flex-direction:column;gap:7px;padding:8px 8px 8px 10px;}
+.seg-l1{display:flex;align-items:center;gap:4px;}
+.seg-l1 .seg-type{flex:1;min-width:0;height:32px;font:600 14px var(--ui-font);padding:0 6px;border-radius:7px;}
+.seg-l1 .seg-del,.seg-l1 .seg-fold{flex:none;}
+.seg-l1 .seg-mode.spot{flex:none;}
+.seg-from{font-size:11.5px;color:var(--ink3);margin-top:-3px;line-height:1.35;}
+.seg-from b{font-weight:500;color:var(--amber);}
+.seg-l2{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:6px;align-items:end;}
+.seg-l2 .seg-chip-wrap{display:flex;flex-direction:column;align-items:stretch;gap:3px;min-width:0;}
+.seg-l2 .seg-chip{height:32px;font-size:13px;text-align:center;border-radius:7px;width:100%;box-sizing:border-box;overflow:hidden;text-overflow:ellipsis;}
+.seg-l2 .seg-chip-in{width:100%;}
+.seg-l2 .seg-arrow{padding-bottom:7px;color:var(--ink3);}
+.seg-l2s .seg-range{width:100%;}
+.seg-l3{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.seg-n{flex:1;font:500 12px 'IBM Plex Mono',monospace;color:var(--ink3);white-space:nowrap;}
+.seg-tb{height:28px;padding:0 9px;border:1px solid var(--border2);border-radius:7px;background:var(--parchment);color:var(--ink);font:500 12.5px var(--ui-font);cursor:pointer;white-space:nowrap;}
+.seg-tb:hover{border-color:var(--gold);background:var(--gold-pale);}
+.seg-open > .seg-row-line{margin:0;}
 .seg-row.collapsed:hover,.seg-row.collapsed.active{opacity:1;}
 .seg-row.collapsed{cursor:pointer;}
 .setup-more-btn{margin-top:4px;background:none;border:none;padding:2px 0;font:400 12px var(--ui-font);color:var(--ink3);text-decoration:underline;cursor:pointer;}
@@ -2678,7 +2697,7 @@ body.compact-ui .quick-form::before{
    console as APP_VERSION, or grep the deployed HTML for it. Bumped on every
    saved build; vcheck.py asserts it matches the filename, so a forgotten bump
    fails the integrity check rather than shipping a lie. */
-const APP_VERSION = 'v4_347';
+const APP_VERSION = 'v4_352';
 window.APP_VERSION = APP_VERSION;
 console.info('Tehfiz teacher app ' + APP_VERSION);
 
@@ -5333,6 +5352,21 @@ function ensureSegmentCovers(surah, ayah){
     if(v > keyAbs(o.endKey)   && act.endSrc!=='marked'){   act.endKey=key;   act.endSrc='auto'; renderSegments(); return true; }
     if(v < keyAbs(o.startKey) && act.startSrc!=='marked'){ act.startKey=key; act.startSrc='auto'; renderSegments(); return true; }
   }
+  /* v4_350: the student carried on past a range that was set by hand (a
+     planned lesson, the picker, a tapped boundary). Reciting on is the usual
+     reason, so the nearest recite segment that ends (or starts) within a page
+     or so of this verse is stretched to it, instead of a new segment of one
+     verse being opened beside it. "Separate" in the message undoes it. */
+  const near = _segmentToContinue(v, act);
+  if(near){
+    const o = segOrdered(near), after = v > keyAbs(o.endKey);
+    _segUndo = {id:near.id, which: after?'end':'start', key: after?near.endKey:near.startKey, src: after?near.endSrc:near.startSrc, verse:key};
+    if(after){ near.endKey=key; near.endSrc='auto'; } else { near.startKey=key; near.startSrc='auto'; }
+    activeSegmentId = near.id; _segOrphanWarn = null;
+    renderSegments();
+    _segUndoToast(near, after);
+    return true;
+  }
   // Otherwise open a fresh recite segment here and make it the active one
   const sg = newSegment('recite');
   sg.startKey = sg.endKey = key;
@@ -5342,6 +5376,75 @@ function ensureSegmentCovers(surah, ayah){
   _segOrphanWarn = null;
   renderSegments();
   return true;
+}
+
+/* v4_350: the recite segment this verse simply continues — the active one
+   first, then any other — when the gap from its edge is at most SEG_CONTINUE
+   verses (about a page) and no other segment sits in between. */
+const SEG_CONTINUE = 15;
+let _segUndo = null;
+function _segmentToContinue(v, act){
+  const cands = segments.filter(sg=>sg.mode==='recite').sort((a,b)=>(b===act)-(a===act));
+  for(const sg of cands){
+    const o = segOrdered(sg);
+    if(!keyValid(o.startKey) || !keyValid(o.endKey)) continue;
+    const a = keyAbs(o.startKey), b = keyAbs(o.endKey);
+    const gap = v > b ? v - b : v < a ? a - v : 0;
+    if(!gap || gap > SEG_CONTINUE) continue;
+    const lo = Math.min(v, a), hi = Math.max(v, b);
+    const between = segments.some(x=>{ if(x===sg) return false; const q=segOrdered(x);
+      return keyValid(q.startKey)&&keyValid(q.endKey) && keyAbs(q.startKey)<=hi && keyAbs(q.endKey)>=lo; });
+    if(!between) return sg;
+  }
+  return null;
+}
+function _segUndoToast(sg, after){
+  const el = document.getElementById('segUndo') || (()=>{ const d=document.createElement('div'); d.id='segUndo'; d.className='seg-undo'; document.body.appendChild(d); return d; })();
+  const st = typeof sessionTypeLabel==='function' ? sessionTypeLabel(sg.type||'unassigned') : 'Segment';
+  el.innerHTML = '<span>' + esc(st) + ' ' + (after ? 'extended to ' + esc(sg.endKey) : 'now starts at ' + esc(sg.startKey)) + '</span>' +
+    '<button type="button" onclick="segUndoSeparate()">Separate</button>';
+  el.classList.add('on');
+  clearTimeout(el._t); el._t = setTimeout(()=>{ el.classList.remove('on'); _segUndo = null; }, 6000);
+}
+/* Undo: the old edge goes back, and the verse gets its own segment. */
+function segUndoSeparate(){
+  const u = _segUndo; _segUndo = null;
+  const el = document.getElementById('segUndo'); if(el) el.classList.remove('on');
+  const sg = u && segments.find(x=>x.id===u.id); if(!sg) return;
+  if(u.which==='end'){ sg.endKey=u.key; sg.endSrc=u.src; } else { sg.startKey=u.key; sg.startSrc=u.src; }
+  const n = newSegment('recite');
+  n.startKey = n.endKey = u.verse; n.startSrc = n.endSrc = 'auto'; n._noMerge = true;
+  segments.push(n); activeSegmentId = n.id; sessionSaved = false;
+  renderSegments();
+  showToast('Kept as a separate segment');
+}
+/* v4_350: two recite segments of the same stage that touch or overlap are one
+   recitation — they become one segment. Spot tests and different stages are
+   never merged (autoSessionName keeps the same rule for names). A segment
+   just split off with "Separate" is left alone. */
+function mergeTouchingSegments(){
+  let changed = false;
+  for(let again = true; again;){
+    again = false;
+    const rs = segments.filter(sg=>sg.mode==='recite' && !sg._noMerge).map(sg=>({sg, o:segOrdered(sg)}))
+      .filter(x=>keyValid(x.o.startKey) && keyValid(x.o.endKey))
+      .sort((x,y)=>keyAbs(x.o.startKey)-keyAbs(y.o.startKey));
+    for(let i=1;i<rs.length;i++){
+      const A = rs[i-1], B = rs[i];
+      if((A.sg.type||'unassigned') !== (B.sg.type||'unassigned')) continue;
+      if(keyAbs(B.o.startKey) > keyAbs(A.o.endKey) + 1) continue;
+      // B folds into A: A keeps its start; the later end wins, with where it came from.
+      if(keyAbs(B.o.endKey) > keyAbs(A.o.endKey)){ A.sg.endKey = B.o.endKey; A.sg.endSrc = B.sg.endSrc; }
+      A.sg.startKey = A.o.startKey; A.sg.rangeLabel = null;
+      if(A.sg.typeAuto && !B.sg.typeAuto){ A.sg.typeAuto = false; }
+      if(activeSegmentId === B.sg.id) activeSegmentId = A.sg.id;
+      if(_segOpenId === B.sg.id) _segOpenId = A.sg.id;
+      segments = segments.filter(x=>x !== B.sg);
+      changed = again = true; break;
+    }
+  }
+  if(changed) sessionSaved = false;
+  return changed;
 }
 
 function ensureSegment(){
@@ -5522,8 +5625,11 @@ function armSegmentMark(segId, which){
   clearRangeState(); hideRangeNotice();
   segmentArm = {segId, which};
   document.body.classList.add('seg-arming');
+  // v4_350: the panel's segment opens so its box can take the typing.
+  _segOpenId = segId;
   showSegNotice(which);
   renderSegments();
+  _focusSegChip();
   clearTimeout(_segArmTimeout);
   _segArmTimeout = setTimeout(()=>{
     if(segmentArm){ cancelSegmentArm(); showToast('Segment marking cancelled — took too long'); }
@@ -5541,6 +5647,48 @@ function cancelSegmentArm(){
 
 // Applied from wordTapped() when a boundary is armed. Verse granularity only —
 // students recite whole ayahs, so a word-level boundary is false precision.
+/* v4_350: the typed boundary. "15" keeps the surah shown, "3:15", "3 15" or
+   "3.15" sets both. Returns the key, or null if it is not a verse. */
+function _parseChipVerse(text, orig){
+  // The box opens with the verse number selected, so typing "3:5" over it
+  // leaves "2:3:5": the last two numbers are the surah and the verse.
+  const nums = (String(text||'').match(/\d{1,3}/g) || []).map(Number);
+  if(!nums.length || /[^\d\s:.\/]/.test(String(text||'').trim())) return null;
+  let s, a;
+  if(nums.length >= 2){ s = nums[nums.length-2]; a = nums[nums.length-1]; }
+  else { s = +(String(orig||'').split(':')[0]) || currentSurahNum() || 1; a = nums[0]; }
+  if(!(s>=1 && s<=114 && a>=1 && a<=AYAH_COUNTS[s-1])) return null;
+  return s + ':' + a;
+}
+function _focusSegChip(){
+  const i = document.getElementById('segChipIn'); if(!i || document.activeElement===i) return;
+  i.focus({preventScroll:true});
+  const c = i.value.indexOf(':');
+  try{ i.setSelectionRange(c >= 0 ? c + 1 : 0, i.value.length); }catch(e){}
+}
+function segChipKey(e){
+  const i = e.target;
+  if(e.key==='Escape'){ e.preventDefault(); e.stopPropagation(); cancelSegmentArm(); return; }
+  if(e.key!=='Enter') return;
+  e.preventDefault(); e.stopPropagation();
+  const k = _parseChipVerse(i.value, i.dataset.orig);
+  if(!k){ showToast('Type a verse: 15, or 3:15'); return; }
+  const [su, ay] = k.split(':').map(Number);
+  if(segmentArm) _applySegmentMark(su, ay);
+}
+/* Leaving the box: a changed value is applied; an unchanged one leaves the
+   boundary armed, so the tap on a mushaf word that took the focus away still
+   sets it (that tap reaches wordTapped after this). */
+function segChipBlur(i){
+  if(i.value.trim() === (i.dataset.orig||'')) return;
+  const k = _parseChipVerse(i.value, i.dataset.orig);
+  setTimeout(()=>{
+    if(!segmentArm || segmentArm.segId !== i.dataset.seg || segmentArm.which !== i.dataset.which) return;   // a word tap set it
+    if(!k){ showToast('Type a verse: 15, or 3:15'); return; }
+    const [su, ay] = k.split(':').map(Number);
+    _applySegmentMark(su, ay);
+  }, 180);
+}
 function _applySegmentMark(surah, ayah){
   const arm = segmentArm;
   const sg = segments.find(s=>s.id===arm.segId);
@@ -5566,7 +5714,7 @@ function showSegNotice(which){
     document.body.appendChild(n);
   }
   n.className='seg-notice';
-  n.innerHTML=`<span class="seg-notice-icon">⌖</span><br><strong>Tap the ${which==='start'?'FIRST':'LAST'} word of this segment</strong><br><span class="seg-notice-sub">Setting the segment ${which==='start'?'start':'end'} · Esc to cancel</span>`;
+  n.innerHTML=`<span class="seg-notice-icon">⌖</span><br><strong>Tap the ${which==='start'?'FIRST':'LAST'} word of this segment</strong><br><span class="seg-notice-sub">or type the verse in the box · Esc to cancel</span>`;
   n.style.opacity='1';
 }
 function hideSegNotice(){
@@ -6013,6 +6161,14 @@ function renderSegments(){
   const el = document.getElementById('segPanel');
   if(!el) return;
   _suggestStagesFromMap();
+  if(!reviewingSession) mergeTouchingSegments();
+  // v4_350: a redraw while a boundary is being typed keeps what was typed.
+  const _ci = document.getElementById('segChipIn');
+  if(_ci && document.activeElement===_ci){
+    const keep = {v:_ci.value, a:_ci.selectionStart, b:_ci.selectionEnd, seg:_ci.dataset.seg, w:_ci.dataset.which};
+    queueMicrotask(()=>{ const n=document.getElementById('segChipIn');
+      if(n && n.dataset.seg===keep.seg && n.dataset.which===keep.w){ n.value=keep.v; n.focus({preventScroll:true}); try{ n.setSelectionRange(keep.a, keep.b); }catch(e){} } });
+  }
   // Re-test the stale warning against the CURRENT segments — widening a range
   // or adding a recite segment fixes the problem, and the notice has to notice.
   if(_segOrphanWarn){
@@ -6046,6 +6202,16 @@ function renderSegments(){
                                   : `${cap} of the segment (${key}) — estimated from mistakes, tap to correct`;
       // The caption is what makes the pair readable: the chip alone was a verse
       // key with nothing saying which end of the range it was.
+      /* v4_350: armed, the chip is a box too — the verse number is selected,
+         so typing replaces it; "3:15" or "3 15" changes the surah as well.
+         Tapping a word in the mushaf still sets it, as before. */
+      if(isArmed(which)){
+        const cur = key || (which==='end' ? sg.startKey : sg.endKey) || '';
+        return `<span class="seg-chip-wrap"><span class="seg-chip-cap">${cap}</span>` +
+          `<input class="seg-chip seg-chip-in armed" id="segChipIn" data-seg="${raw.id}" data-which="${which}" data-orig="${esc(cur)}" value="${esc(cur)}" ` +
+          `inputmode="text" autocomplete="off" spellcheck="false" placeholder="${which==='start'?'first':'last'} verse" title="${ttl} — or type a verse: 15, or 3:15" ` +
+          `onclick="event.stopPropagation()" onkeydown="segChipKey(event)" onblur="segChipBlur(this)"></span>`;
+      }
       return `<span class="seg-chip-wrap"><span class="seg-chip-cap">${cap}</span>` +
         `<button class="seg-chip${state}" title="${ttl}" onclick="event.stopPropagation();armSegmentMark('${raw.id}','${which}')">${txt}</button></span>`;
     };
@@ -6085,27 +6251,26 @@ function renderSegments(){
       </div>`;
     }
 
-    return `<div class="seg-row${spot?' spot':''}${isActive?' active':''}" onclick="setActiveSegment('${raw.id}')"
+    /* v4_352: one job per line — the stage (wide, with ✕ and fold), where it
+       came from if the map chose it, the range, then the verse count and
+       the tools as labelled buttons. */
+    return `<div class="seg-row seg-open${spot?' spot':''}${isActive?' active':''}" onclick="setActiveSegment('${raw.id}')"
                  title="${isActive?'New mistakes are logged against this segment':'Tap to log new mistakes against this segment'}">
-      <div class="seg-row-line">
-        ${multi?`<span class="seg-ord">${i+1}</span>`:''}
-        ${isActive&&multi?`<span class="seg-live" title="Active">●</span>`:''}
-        <span class="seg-mode ${spot?'spot':'recite'}">${spot?'Spot':'Recite'}</span>
-        <label class="seg-lbl">Stage</label>
-        <select class="seg-type" onclick="event.stopPropagation()" onchange="setSegmentType('${raw.id}',this.value)">
+      <div class="seg-l1">
+        ${spot?'<span class="seg-mode spot">Spot test</span>':''}
+        <select class="seg-type" aria-label="Stage" onclick="event.stopPropagation()" onchange="setSegmentType('${raw.id}',this.value)">
           ${types.map(t=>`<option value="${t.id}"${t.id===raw.type?' selected':''}>${t.label}</option>`).join('')}
         </select>
-        ${raw.typeFromMap?'<span class="seg-auto" title="Chosen from the memorisation map \u2014 pick another stage if it is wrong">map</span>':''}
-        <button class="seg-del" onclick="event.stopPropagation();removeSegment('${raw.id}')" title="Remove this segment">✕</button>
+        <button class="seg-del" onclick="event.stopPropagation();removeSegment('${raw.id}')" title="Remove this segment" aria-label="Remove this segment">✕</button>
         <button class="seg-fold" onclick="event.stopPropagation();toggleSegmentRow('${raw.id}')" title="Fold this segment to one line" aria-label="Fold"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg></button>
       </div>
-      <div class="seg-row-line">
-        <label class="seg-lbl">Range</label>
-        ${spot ? rangeBtn
-               : `${chip('start', sg.startKey, sg.startSrc)}<span class="seg-arrow">→</span>${chip('end', sg.endKey, sg.endSrc)}`}
-        <span class="seg-count">${n?`${n} verse${n>1?'s':''}`:''}</span>
-        ${sg.startKey?`<button class="seg-go" onclick="event.stopPropagation();goToSegmentStart('${raw.id}')" title="Go to where this segment starts (${sg.startKey})" aria-label="Go to the start">↪</button>`:''}
-        ${spot?'':`<button class="seg-mini tiny" onclick="event.stopPropagation();openRangePicker('${raw.id}',this)" title="Set the whole range at once by juz, page or surah">…</button>`}
+      ${raw.typeFromMap?`<div class="seg-from">Stage <b>picked from the map</b>, change it if it’s wrong</div>`:''}
+      ${spot ? `<div class="seg-l2s">${rangeBtn}</div>`
+             : `<div class="seg-l2">${chip('start', sg.startKey, sg.startSrc)}<span class="seg-arrow">→</span>${chip('end', sg.endKey, sg.endSrc)}</div>`}
+      <div class="seg-l3">
+        <span class="seg-n">${n?`${n} verse${n>1?'s':''}`:(spot?'':'No verses yet')}</span>
+        ${sg.startKey?`<button class="seg-tb" onclick="event.stopPropagation();goToSegmentStart('${raw.id}')" title="Go to where this segment starts (${sg.startKey})">↪ Start</button>`:''}
+        ${spot?'':`<button class="seg-tb" onclick="event.stopPropagation();openRangePicker('${raw.id}',this)" title="Set the whole range at once by juz, page, surah or verse">Range…</button>`}
       </div>
       ${spot?`<div class="seg-row-line">
         <label class="seg-lbl">Spots</label>
@@ -6120,7 +6285,7 @@ function renderSegments(){
                <span class="seg-hint">${(()=>{const t=spotTally(raw.spotsData);return `${t.pass+t.partial+t.fail}/${t.total} assessed`;})()}</span>`
             : `<button class="seg-start" onclick="event.stopPropagation();requestPopulateSpots('${raw.id}')" ${n?'':'disabled'}>▶ Populate spots</button>
                <span class="seg-hint">${n?`across ${n} verses`:'set the range first'}</span>`}
-      </div>
+      </div>`:''}
       ${confirming && confirming.kind==='delete'?`<div class="seg-warn">
         <strong>Delete this segment?</strong>
         <span class="seg-warn-loss">Its ${confirming.count} mistake${confirming.count>1?'s':''} will be deleted with it.</span>
@@ -6141,7 +6306,7 @@ function renderSegments(){
           <button class="seg-warn-no" onclick="cancelPopulateSpots()">Cancel</button>
           <button class="seg-warn-yes" onclick="confirmPopulateSpots()">${confirming.kind==='range'?'Change range':'Repopulate'}</button>
         </div>
-      </div>`:''}`:''}
+      </div>`:''}
     </div>`;
   }).join('');
 
@@ -8069,6 +8234,8 @@ function refreshSessionNamePlaceholder(){
 function finalizeSegments(){
   cancelSegmentArm();
   autoFillSegmentEnd(true);
+  segments.forEach(sg=>{ delete sg._noMerge; });
+  mergeTouchingSegments();
 }
 
 function buildSessionObj(){
@@ -9852,10 +10019,13 @@ function buildTzEntries(){
       // Parse numeric offset for sorting: UTC+05:30 → 5.5
       const m2 = offsetStr.match(/UTC([+-])(\d+):(\d+)/);
       const numOff = m2 ? (m2[1]==='-'?-1:1)*(parseInt(m2[2])+parseInt(m2[3])/60) : 0;
-      const city   = tz.split('/').pop().replace(/_/g,' ');
+      // v4_351: the country too, and searchable by it ("malaysia", "uae").
+      const T4 = window.TehfizTime && TehfizTime.country ? TehfizTime : null;
+      const city   = T4 ? T4.city(tz) : tz.split('/').pop().replace(/_/g,' ');
       const region = tz.includes('/') ? tz.split('/')[0].replace(/_/g,' ') : '';
-      const label  = `${offsetStr}  ${city}${region?' · '+region:''}`;
-      _tzEntries.push({value:tz, label, search:(tz+' '+city+' '+region+' '+offsetStr).toLowerCase(), offset:numOff});
+      const ctry   = T4 ? T4.country(tz) : '';
+      const label  = `${offsetStr}  ${city}${ctry?' · '+ctry:(region?' · '+region:'')}`;
+      _tzEntries.push({value:tz, label, search:((T4 ? T4.zoneSearch(tz) : tz+' '+city+' '+region)+' '+offsetStr).toLowerCase(), offset:numOff});
     } catch(e){}
   });
 
@@ -9873,7 +10043,9 @@ function buildTzEntries(){
 function renderTzList(filter=''){
   const entries = buildTzEntries();
   const q = filter.toLowerCase().trim();
-  const filtered = q ? entries.filter(e=>e.search.includes(q)) : entries;
+  // v4_351: whole-word matches first ("india" before Indiana).
+  const sc = (e)=> e.value==='device' ? (e.search.includes(q)?1:0) : (window.TehfizTime && TehfizTime.zoneScore ? Math.max(TehfizTime.zoneScore(e.value,q), e.search.includes(q)?1:0) : (e.search.includes(q)?1:0));
+  const filtered = q ? entries.map(e=>({e, s:sc(e)})).filter(x=>x.s).sort((a,b)=>b.s-a.s).map(x=>x.e) : entries;
   const list = document.getElementById('tzList');
   if(!filtered.length){
     list.innerHTML=`<div style="padding:8px 10px;font-size:13px;color:var(--ink3);font-style:italic;">No results</div>`;
@@ -13093,8 +13265,9 @@ function acList() { return $('tsyAc'); }
 function acMatches() {
   const el = nameInput();
   const q = normName(el ? el.value : '');
-  const named = roster.filter((s) => s.name);
-  const blank = roster.filter((s) => !s.name);
+  // v4_349: archived students only come up when their name is typed.
+  const named = roster.filter((s) => s.name && (!s.archived || q));
+  const blank = roster.filter((s) => !s.name && !s.archived);
   const hits = q ? named.filter((s) => normName(s.name).includes(q)) : named;
   /* Codes with no local name are shown last and always: on a fresh device
      they are the entire roster, and hiding them would make it look empty. */
@@ -13115,7 +13288,7 @@ function openAc() {
   list.innerHTML =
     items.map((s, i) => (
       '<div class="tsy-ac-item' + (i === acIndex ? ' sel' : '') + '" data-tsy="pick" data-id="' + esc(s.id) + '">' +
-        '<span class="tsy-ac-name">' + (s.name ? esc(s.name) : '<em>unnamed</em>') + '</span>' +
+        '<span class="tsy-ac-name">' + (s.name ? esc(s.name) : '<em>unnamed</em>') + (s.archived ? ' <em>· archived</em>' : '') + '</span>' +
         '<span class="tsy-ac-code">' + esc(s.code) + '</span>' +
       '</div>'
     )).join('') +
@@ -13554,11 +13727,154 @@ function renderWho() {
   if (window.TehfizHeader) TehfizHeader.refreshMenu();
 }
 
+/* ── v4_349: the Students list ─────────────────────────────────────────────
+   Groups: Today (lessons today, in time order, then everyone else), All
+   (A–Z), Not joined (code not used yet), Archived. The search covers every
+   student, archived ones too, and lists matches A–Z. Each card: name, their
+   local time when it differs from the teacher's (tap: TehfizTzConv), the
+   next lesson, the last session logged on this device. Tap the card: the
+   Profile. Start: picks them for the session. ⋯: Profile, viewer, code,
+   archive, remove. While a finished session waits for a student, the card
+   and its button send it instead. */
+let stuQ = '', stuGroup = 'today', stuMenu = null;
+function stuProf() { return window.TehfizProfile; }
+function stuT() { return window.TehfizTime; }
+function stuLabel(s) { return s.name || s.code; }
+function stuNext(s) {
+  try { const P = stuProf(); return P && P.nextOf ? P.nextOf(s.id) : null; } catch { return null; }
+}
+function stuIsToday(o) { return !!(o && stuT() && stuT().dayText(o.at) === 'Today'); }
+function stuLast(s) {
+  let best = null, bt = -Infinity;
+  studentSessions(s).forEach((x) => { const t = Date.parse(x.isoDate || ''); if (Number.isFinite(t) && t > bt) { bt = t; best = x; } });
+  if (!best) return null;
+  const p = String(best.duration || '').split(':').map(Number);
+  const sec = p.length === 3 ? p[0] * 3600 + p[1] * 60 + p[2] : p.length === 2 ? p[0] * 60 + p[1] : 0;
+  return { at: bt, n: (best.mistakes || []).length, min: Number.isFinite(sec) ? Math.round(sec / 60) : 0 };
+}
+function stuTzChip(s) {
+  const T = stuT();
+  if (!s.tz || !T || !T.validTz(s.tz) || T.sameOffset(s.tz, T.myTz())) return '';
+  return '<button type="button" class="tsy-tchip" data-tsy="tzconv" data-id="' + esc(s.id) + '" ' +
+    'title="' + esc(stuLabel(s) + '’s time in ' + T.city(s.tz) + ' · ' + T.diffText(s.tz)) + '">' +
+    esc(T.timeText(Date.now(), s.tz)) + '</button>';
+}
+function stuNextText(o) {
+  const T = stuT();
+  if (!o || !T) return '';
+  const d = T.dayText(o.at), t = T.timeText(o.at);
+  return d === 'Today' ? '<span class="tsy-today">Today ' + esc(t) + '</span>' : 'Next: ' + esc(d + ' ' + t);
+}
+function stuLastText(s) {
+  const l = stuLast(s), T = stuT();
+  if (l && T) return esc(T.dayText(l.at)) + ' · ' + l.n + ' mistake' + (l.n === 1 ? '' : 's') + (l.min ? ' · ' + l.min + ' min' : '');
+  const n = s.session_count || 0;
+  return n ? n + ' session' + (n === 1 ? '' : 's') + ' sent' : 'No sessions yet';
+}
+function stuSortName(a, b) { return stuLabel(a).localeCompare(stuLabel(b)); }
+function stuGroupsHtml() {
+  const nPend = roster.filter((s) => !s.archived && !s.claimed).length, nArch = roster.filter((s) => s.archived).length;
+  return [['today', 'Today'], ['all', 'All'], ['pend', 'Not joined', nPend], ['arch', 'Archived', nArch]]
+    .filter(([k, , n]) => n === undefined || n > 0 || stuGroup === k)
+    .map(([k, l, n]) => '<button type="button" class="tsy-g" data-tsy="stugroup" data-g="' + k + '" aria-pressed="' + (stuGroup === k && !stuQ) + '">' +
+      l + (n ? ' <span>' + n + '</span>' : '') + '</button>').join('');
+}
+function stuCard(s) {
+  const sending = !!pendingSendSession;
+  const o = s.claimed ? stuNext(s) : null;
+  const l2 = !s.claimed
+    ? '<span class="tsy-pend">Not joined · <code class="tsy-pcode">' + esc(s.code) + '</code></span>' +
+      ' <button type="button" class="tsy-tchip tsy-copy" data-tsy="copycode" data-code="' + esc(s.code) + '">Copy</button>'
+    : (o ? stuNextText(o) : 'No lesson set');
+  const menu = stuMenu === s.id
+    ? '<div class="tsy-menu" role="menu">' +
+        '<button type="button" role="menuitem" data-tsy="profile" data-id="' + esc(s.id) + '">Profile</button>' +
+        '<button type="button" role="menuitem" data-tsy="review" data-id="' + esc(s.id) + '">Open in viewer</button>' +
+        '<button type="button" role="menuitem" data-tsy="copycode" data-code="' + esc(s.code) + '">Copy code · ' + esc(s.code) + '</button>' +
+        '<button type="button" role="menuitem" data-tsy="archive" data-id="' + esc(s.id) + '" data-a="' + (s.archived ? '0' : '1') + '">' + (s.archived ? 'Unarchive' : 'Archive') + '</button>' +
+        '<button type="button" role="menuitem" class="tsy-rmi" data-tsy="askremove" data-id="' + esc(s.id) + '">Remove from this device…</button>' +
+      '</div>' : '';
+  return '<div class="tsy-card' + (s.archived ? ' arch' : '') + (binding && binding.id === s.id ? ' on' : '') + '" role="button" tabindex="0" ' +
+      'data-tsy="' + (sending ? 'pickfor' : 'stuopen') + '" data-id="' + esc(s.id) + '">' +
+      '<span class="tsy-av" aria-hidden="true">' + esc((stuLabel(s)[0] || '?').toUpperCase()) + '</span>' +
+      '<span class="tsy-mid">' +
+        '<span class="tsy-nm"><b>' + (s.name ? esc(s.name) : '<em>No name</em>' + (s.claimed ? ' · ' + esc(s.code) : '')) + '</b>' + stuTzChip(s) +
+          (s.archived ? '<span class="tsy-archb">Archived</span>' : '') + '</span>' +
+        '<span class="tsy-l2">' + l2 + '</span>' +
+        '<span class="tsy-l3">' + (!s.claimed && o === null && stuNext(s) ? stuNextText(stuNext(s)) + ' · ' : '') + stuLastText(s) + '</span>' +
+      '</span>' +
+      '<span class="tsy-acts">' +
+        (sending
+          ? '<button type="button" class="tsy-go" data-tsy="pickfor" data-id="' + esc(s.id) + '">Send</button>'
+          : '<button type="button" class="tsy-go" data-tsy="userow" data-id="' + esc(s.id) + '" title="Pick ' + esc(stuLabel(s)) + ' for this session">Start</button>') +
+        '<button type="button" class="tsy-more" data-tsy="stumenu" data-id="' + esc(s.id) + '" aria-label="More for ' + esc(stuLabel(s)) + '" aria-expanded="' + (stuMenu === s.id) + '">⋯</button>' +
+      '</span>' + menu +
+    '</div>' + (removingId === s.id ? removeWarning(s) : '');
+}
+function stuListHtml() {
+  if (!roster.length) return '<p class="tsy-lead">No students yet. Tap ＋ Add, or type a name in the session panel and choose “Create a code”.</p>';
+  const q = stuQ.trim();
+  let groups;
+  if (q) {
+    const n = normName(q), c = q.replace(/[\s-]/g, '').toLowerCase();
+    const hits = roster.filter((s) => (n && normName(s.name).includes(n)) || (c && s.code.replace(/-/g, '').toLowerCase().includes(c))).sort(stuSortName);
+    groups = [['', hits]];
+    if (!hits.length) return '<p class="tsy-empty">No student matches “' + esc(q) + '”.</p>';
+  } else {
+    const live = roster.filter((s) => !s.archived);
+    if (stuGroup === 'today') {
+      const withNext = live.map((s) => ({ s, o: s.claimed ? stuNext(s) : null }));
+      const today = withNext.filter((x) => stuIsToday(x.o)).sort((a, b) => a.o.at - b.o.at).map((x) => x.s);
+      const rest = live.filter((s) => !today.includes(s)).sort(stuSortName);
+      groups = [['Lessons today', today], [today.length ? 'Everyone else' : '', rest]];
+    } else if (stuGroup === 'pend') groups = [['', live.filter((s) => !s.claimed).sort(stuSortName)]];
+    else if (stuGroup === 'arch') groups = [['', roster.filter((s) => s.archived).sort(stuSortName)]];
+    else groups = [['', live.slice().sort(stuSortName)]];
+  }
+  const out = groups.filter(([, l]) => l.length).map(([h, l]) => (h ? '<div class="tsy-gh">' + h + '</div>' : '') + l.map(stuCard).join('')).join('');
+  if (out) return out;
+  return '<p class="tsy-empty">' + (stuGroup === 'arch' ? 'No archived students.' : stuGroup === 'pend' ? 'Everyone has joined.' : 'No students here.') + '</p>';
+}
+function stuPaintList() {
+  const l = $('tsyList'); if (l) l.innerHTML = stuListHtml();
+  const g = document.querySelector('#tsyBody .tsy-groups'); if (g) g.innerHTML = stuGroupsHtml();
+}
+function stuHeadActs() {
+  const el = $('tsyHActs'); if (!el) return;
+  if (!signedIn() || !isActive() || profileOpen) { el.innerHTML = ''; return; }
+  el.innerHTML =
+    '<button type="button" class="tsy-hb" data-tsy="stumenu" data-id="__top" aria-label="More" aria-expanded="' + (stuMenu === '__top') + '">⋯</button>' +
+    '<button type="button" class="tsy-hb pri" data-tsy="newstudent">＋ Add</button>' +
+    (stuMenu === '__top'
+      ? '<div class="tsy-menu top" role="menu">' +
+          '<button type="button" role="menuitem" data-tsy="refresh">↻ Refresh</button>' +
+          '<button type="button" role="menuitem" data-tsy="exportroster">⭳ Export roster</button>' +
+          '<label class="tsy-mlab" role="menuitem">⭱ Import roster<input type="file" accept=".json" hidden data-tsy="importroster"></label>' +
+          (removed.length ? '<button type="button" role="menuitem" data-tsy="restoreremoved">Restore removed students (' + removed.length + ')</button>' : '') +
+          '<button type="button" role="menuitem" data-tsy="profile-open">Your teacher profile</button>' +
+          '<button type="button" role="menuitem" data-tsy="signout">Sign out' + (teacher && teacher.email ? ' · ' + esc(teacher.email) : '') + '</button>' +
+        '</div>' : '');
+}
+/* Archive / unarchive (0014): this teacher's lists only. */
+async function setArchivedFor(id, on) {
+  const s = studentById(id); if (!s) return;
+  const was = !!s.archived;
+  s.archived = on; stuMenu = null; saveRoster(); render();
+  try {
+    await api('/api/students/' + encodeURIComponent(id) + '/archive', { method: 'POST', body: { archived: on } });
+    toast(on ? stuLabel(s) + ' archived · find them under Archived' : stuLabel(s) + ' is back in your lists');
+  } catch (err) {
+    s.archived = was; saveRoster(); render();
+    showError('Could not ' + (on ? 'archive' : 'unarchive') + ': ' + err.message);
+  }
+}
+
 function render() {
   const body = $('tsyBody');
   if (!body) return;
   renderChip();
   renderWho();
+  stuHeadActs();
   if (!$('tsyOverlay').classList.contains('tsy-on')) return;
 
   const err = errorMsg
@@ -13632,88 +13948,33 @@ function render() {
     : '';
 
   const picking = pendingSendSession
-    ? '<div class="tsy-picking">Choose who this session belongs to.</div>' : '';
-
-  /* Rows are ALWAYS clickable. `pickfor` completes a send that is waiting for
-     a student; `userow` just selects the student for the session being logged.
-     The rename input and the rotate button carry their own data-tsy, and
-     closest() finds the innermost match first, so clicking either of them
-     never reaches the row's own action. */
-  const rowAction = pendingSendSession ? 'pickfor' : 'userow';
-  const rows = roster.length
-    ? roster.map((s) => (
-        '<div class="tsy-row tsy-pickable" data-tsy="' + rowAction + '" data-id="' + esc(s.id) + '">' +
-          '<div class="tsy-row-main">' +
-            '<input class="tsy-name" data-tsy="rename" data-id="' + esc(s.id) + '" ' +
-              'value="' + esc(s.name || '') + '" placeholder="Student name">' +
-            /* Its own data-tsy: the row carries `userow`/`pickfor`, and
-               closest() finds the innermost match first, so without this a tap
-               on the code would select the student instead of copying. */
-            '<code class="tsy-code tsy-copyable" data-tsy="copycode" ' +
-              'data-code="' + esc(s.code) + '" title="Tap to copy">' +
-              esc(s.code) + '</code>' +
-          '</div>' +
-          '<div class="tsy-row-meta">' +
-            (s.claimed ? '<span class="tsy-ok-dot">● claimed</span>'
-                       : '<span class="tsy-dim-dot">○ not claimed</span>') +
-            '<span>' + (s.session_count || 0) + ' sent</span>' +
-            /* v4_328: PIN/code (Manage) and Hours live on the Profile now. The
-               row itself still picks the student, so this is its own target. */
-            '<button class="tsy-chip-btn" data-tsy="profile" data-id="' + esc(s.id) + '">Profile \u203a</button>' +
-            '<button class="tsy-chip-btn" data-tsy="review" data-id="' + esc(s.id) + '">Open in viewer</button>' +
-            '<button class="tsy-chip-btn tsy-rm" data-tsy="askremove" data-id="' + esc(s.id) + '">Remove</button>' +
-          '</div>' +
-          (removingId === s.id ? removeWarning(s) : '') +
-          (managingId === s.id ? managePanel(s) : '') +
-        '</div>'
-      )).join('')
-    : '<p class="tsy-lead">No students yet. Type a name in the session panel and ' +
-      'choose “Create a code”, or add one here.</p>';
+    ? '<div class="tsy-picking"><strong>Who is this session for?</strong> Tap a student to send it to them.</div>' : '';
 
   if (profileOpen) {
     body.innerHTML = err + profilePanel();
     return;
   }
 
-  body.innerHTML = err + profilePrompt() + picking + queuedNote + adminPanel() +
-    // Name first once there is one; the address stays beside it, because it is
-    // what identifies the account when something needs changing.
-    '<div class="tsy-who">Signed in as ' +
-      ((profile && profile.name) || teacher.name
-        ? '<strong>' + esc((profile && profile.name) || teacher.name) + '</strong> ' +
-          '<span class="tsy-who-em">' + esc(teacher.email) + '</span>'
-        : esc(teacher.email)) +
-      ' <button class="tsy-chip-btn" data-tsy="profile-open">Edit profile</button>' +
-      ' <button class="tsy-chip-btn" data-tsy="signout">Sign out</button></div>' +
-    '<div class="tsy-warnbox">Names are kept on this device and never sent to the Tehf\u012bz ' +
-      'server. This protects your students\u2019 privacy: they are children, and no ' +
-      'identifiable record of them is kept anywhere but with you. Unless name sync is on, ' +
-      'clearing site data or switching devices leaves you with codes and no names. ' +
-      '<strong>Turn on name sync below, or export the roster and keep it somewhere safe.</strong></div>' +
-    '<div id="tnsBox"></div>' +
-    '<div class="tsy-tools">' +
-      '<button class="tsy-btn" data-tsy="newstudent">＋ New student</button>' +
-      '<button class="tsy-btn" data-tsy="refresh">↻ Refresh</button>' +
-      '<button class="tsy-btn" data-tsy="exportroster">⭳ Export roster</button>' +
-      '<label class="tsy-btn">⭱ Import roster' +
-        '<input type="file" accept=".json" hidden data-tsy="importroster"></label>' +
+  /* v4_349: students first. The account, the privacy note and the roster
+     tools used to come before the list; now the list leads, the tools are in
+     the ⋯ at the top, and the privacy note and name sync are one line at the
+     foot (#tnsBox, filled by TehfizNameSync in its compact form). */
+  body.innerHTML = err + profilePrompt() + picking + queuedNote +
+    '<div class="tsy-find">' +
+      '<input type="search" class="tsy-q" id="tsyQ" data-tsyq="1" placeholder="Find a student by name or code" ' +
+        'autocomplete="off" aria-label="Find a student" value="' + esc(stuQ) + '">' +
+      '<div class="tsy-groups" role="group" aria-label="Show">' + stuGroupsHtml() + '</div>' +
     '</div>' +
-    '<div class="tsy-rows">' + rows + '</div>' +
-    (removed.length
-      ? '<div class="tsy-removed-note">' + removed.length + ' student' +
-        (removed.length === 1 ? '' : 's') + ' removed from this device. ' +
-        'Their codes and sessions are still on the server. ' +
-        '<button class="tsy-chip-btn" data-tsy="restoreremoved">Restore</button></div>'
-      : '') +
-    /* Last thing in the panel, below the roster and the removed note. An
-       approved teacher never sees the waiting-for-approval card again, so
-       without this the referral form becomes unreachable once they are in —
-       and a teacher with room for students is exactly who should find it.
-       Plain text, at the foot, so it is passed rather than presented. */
+    '<div class="tsy-list" id="tsyList">' + stuListHtml() + '</div>' +
+    '<div id="tnsBox" class="tns-compact"></div>' +
+    /* Last thing in the panel. An approved teacher never sees the
+       waiting-for-approval card again, so without this the referral form
+       becomes unreachable once they are in. Plain text, passed rather than
+       presented. */
     '<p class="tsy-aside">' +
       '<a href="https://docs.google.com/forms/d/e/1FAIpQLScftHflWSx1kK4n_juVqKwCDWtwFx_eb88XVO9tsdNsJxZ96Q/viewform" target="_blank" rel="noopener">Looking for students?</a>' +
-      ' \u00b7 ' +
-      '<a href="https://patreon.com/tehfiz" target="_blank" rel="noopener">Support Tehf\u012bz</a>' +
+      ' · ' +
+      '<a href="https://patreon.com/tehfiz" target="_blank" rel="noopener">Support Tehfīz</a>' +
     '</p>';
 
   /* This function replaces the whole body, so anything TehfizTour injected is
@@ -14361,11 +14622,39 @@ document.addEventListener('change', (e) => {
   setInvoiceRate(el.dataset.sid, { [el.dataset.invsel]: v, ...(el.dataset.invsel === 'step' ? { unit: undefined } : {}) });
 });
 
+/* v4_349: the search repaints the list only, so typing keeps the focus. */
+document.addEventListener('input', (e) => {
+  if (!e.target || !e.target.dataset || !e.target.dataset.tsyq) return;
+  stuQ = e.target.value; stuPaintList();
+});
+document.addEventListener('keydown', (e) => {
+  const c = e.target && e.target.classList && e.target.classList.contains('tsy-card') ? e.target : null;
+  if (c && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); c.click(); }
+  if (e.key === 'Escape' && stuMenu) { stuMenu = null; render(); }
+});
 document.addEventListener('click', async (e) => {
+  // v4_349: a ⋯ menu closes on any tap outside it.
+  if (stuMenu && !(e.target.closest && e.target.closest('.tsy-menu, [data-tsy="stumenu"]'))) {
+    stuMenu = null; render();
+    if (!(e.target.closest && e.target.closest('[data-tsy]'))) return;
+  }
   const t = e.target.closest('[data-tsy]');
   if (!t) return;
   const act = t.dataset.tsy;
   const id  = t.dataset.id;
+  if (t.closest('.tsy-menu') && act !== 'stumenu') stuMenu = null;
+  if (act === 'stumenu')  { e.stopPropagation(); stuMenu = stuMenu === id ? null : id; render(); return; }
+  if (act === 'stugroup') { stuGroup = t.dataset.g; stuQ = ''; const q = $('tsyQ'); if (q) q.value = ''; stuPaintList(); return; }
+  if (act === 'stuopen')  { if (removingId) return; if (window.TehfizProfile) window.TehfizProfile.open(id); return; }
+  if (act === 'archive')  { await setArchivedFor(id, t.dataset.a === '1'); return; }
+  if (act === 'tzconv')   {
+    const s = studentById(id);
+    if (s && window.TehfizTzConv) {
+      const o = stuNext(s);
+      window.TehfizTzConv.open({ name: stuLabel(s), tz: s.tz, next: o ? +o.at : null });
+    }
+    return;
+  }
 
   if (act === 'open')        { open(); }
   if (act === 'close')       { close(); }
@@ -14452,7 +14741,7 @@ document.addEventListener('click', async (e) => {
     } catch (err) { showError('Could not change the code: ' + err.message); }
     return;
   }
-  if (act === 'askremove')   { removingId = id; render(); return; }
+  if (act === 'askremove')   { removingId = id; stuMenu = null; render(); return; }
   if (act === 'cancelremove'){ removingId = null; render(); return; }
   if (act === 'confirmremove'){ removeStudentLocally(id); return; }
   if (act === 'exportstudent'){ const s = studentById(id); if (s) exportStudent(s); return; }
@@ -14520,8 +14809,9 @@ function mount() {
     '<div class="tsy-overlay" id="tsyOverlay">' +
       '<div class="tsy-panel">' +
         '<div class="tsy-head">' +
-          '<span class="tsy-title">Students &amp; Sending</span>' +
-          '<button class="tsy-x" data-tsy="close">✕</button>' +
+          '<span class="tsy-title">Students</span>' +
+          '<span class="tsy-hacts" id="tsyHActs"></span>' +
+          '<button class="tsy-x" data-tsy="close" aria-label="Close">✕</button>' +
         '</div>' +
         '<div class="tsy-body" id="tsyBody"></div>' +
       '</div>' +
@@ -14630,7 +14920,8 @@ window.TehfizSync = {
      api() keeps its 401 handling; the roster is copied so the module cannot
      change it. */
   api: (path, opts) => api(path, opts),
-  roster: () => roster.map((s) => ({ id: s.id, code: s.code, name: s.name || '', tz: s.tz || '' })),
+  // v4_349: `archived` too — the calendar and the pickers leave those out.
+  roster: () => roster.map((s) => ({ id: s.id, code: s.code, name: s.name || '', tz: s.tz || '', archived: !!s.archived })),
   /* For TehfizNameSync: names arriving from the teacher's own Google Drive.
      {studentId: name}. Written straight to storage — not via saveRoster(),
      whose event would send them straight back. */
@@ -14793,7 +15084,60 @@ window.TehfizSync = {
   border-radius:5px;padding:4px 9px;font-size:13px;font-family:var(--ui-font);cursor:pointer;}
 .tsy-btn:hover{background:var(--parchment3);}
 
+/* v4_349: the Students list */
+.tsy-head{position:relative;gap:8px;}
+.tsy-title{flex:1;font-size:17px;}
+.tsy-hacts{display:flex;gap:6px;align-items:center;position:relative;}
+.tsy-hb{min-width:38px;height:36px;padding:0 10px;border:1px solid var(--border2);border-radius:9px;background:var(--surface,#fff);color:var(--ink);font:500 14px var(--ui-font);cursor:pointer;}
+.tsy-hb.pri{background:var(--ink);color:var(--parchment);border-color:var(--ink);font-weight:600;}
+.tsy-find{position:sticky;top:-18px;z-index:3;background:var(--parchment);padding:4px 0 8px;margin:0 0 4px;display:flex;flex-direction:column;gap:8px;}
+.tsy-q{height:40px;box-sizing:border-box;width:100%;padding:0 12px;border:1px solid var(--border2);border-radius:9px;background:var(--surface,#fff);color:var(--ink);font:15px var(--ui-font);}
+.tsy-groups{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;}
+.tsy-g{flex:none;border:1px solid var(--border2);background:var(--surface,#fff);color:var(--ink2);border-radius:999px;padding:5px 12px;font:13px var(--ui-font);cursor:pointer;white-space:nowrap;}
+.tsy-g span{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink3);}
+.tsy-g[aria-pressed="true"]{background:var(--gold-pale);border-color:var(--gold);color:var(--ink);font-weight:600;}
+.tsy-list{display:flex;flex-direction:column;gap:8px;}
+.tsy-gh{font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3);margin:6px 2px 0;}
+.tsy-card{position:relative;display:grid;grid-template-columns:40px minmax(0,1fr) auto;gap:10px;align-items:center;background:var(--surface,#fff);
+  border:1px solid var(--border);border-radius:12px;padding:10px 8px 10px 12px;cursor:pointer;}
+.tsy-card:hover{border-color:var(--gold);}
+.tsy-card:focus-visible{outline:2px solid var(--gold);outline-offset:1px;}
+.tsy-card.on{border-color:var(--green);box-shadow:inset 3px 0 0 var(--green);}
+.tsy-card.arch{opacity:.8;}
+.tsy-av{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;font-weight:600;background:var(--gold-pale);color:var(--amber);}
+.tsy-mid{display:flex;flex-direction:column;gap:3px;min-width:0;}
+.tsy-nm{display:flex;align-items:center;gap:8px;min-width:0;}
+.tsy-nm b{font-size:15.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.tsy-nm em{font-weight:400;color:var(--ink3);}
+.tsy-l2,.tsy-l3{font-size:12.5px;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.tsy-l3{color:var(--ink3);}
+.tsy-today{color:var(--green);font-weight:600;}
+.tsy-pend{color:var(--amber);}
+.tsy-pcode{font:600 12px 'IBM Plex Mono',monospace;background:var(--lvl1-yellow-bg);border-radius:5px;padding:1px 5px;color:var(--ink);}
+.tsy-tchip{flex:none;border:0;border-radius:999px;background:var(--spot-blue-bg);color:var(--ink);padding:2px 8px;font:500 11.5px 'IBM Plex Mono',monospace;cursor:pointer;}
+.tsy-tchip.tsy-copy{background:var(--lvl1-yellow-bg);font-family:var(--ui-font);}
+.tsy-archb{flex:none;font-size:11px;color:var(--ink3);border:1px solid var(--border2);border-radius:999px;padding:0 7px;}
+.tsy-acts{display:flex;align-items:center;gap:2px;}
+.tsy-go{height:36px;padding:0 12px;border:1px solid var(--border2);border-radius:9px;background:var(--parchment);color:var(--ink);font:600 13px var(--ui-font);cursor:pointer;}
+.tsy-go:hover{border-color:var(--green);color:var(--green);}
+.tsy-more{width:32px;height:36px;border:0;background:none;color:var(--ink3);font-size:18px;border-radius:8px;cursor:pointer;}
+.tsy-more:hover{background:var(--parchment2);}
+.tsy-menu{position:absolute;right:6px;top:calc(100% - 6px);z-index:5;min-width:210px;background:var(--surface,#fff);border:1px solid var(--border2);
+  border-radius:10px;box-shadow:var(--shadow-lg);padding:4px;display:flex;flex-direction:column;cursor:default;}
+.tsy-menu.top{top:calc(100% + 6px);right:0;}
+.tsy-menu button,.tsy-mlab{all:unset;box-sizing:border-box;padding:9px 10px;border-radius:7px;font:14px var(--ui-font);color:var(--ink);cursor:pointer;}
+.tsy-menu button:hover,.tsy-mlab:hover,.tsy-menu button:focus-visible{background:var(--parchment2);}
+.tsy-menu .tsy-rmi{color:var(--red);}
+.tsy-empty{color:var(--ink3);font-size:13.5px;text-align:center;padding:18px 4px;}
+#tnsBox.tns-compact{margin-top:12px;}
 .tsy-rows{display:flex;flex-direction:column;gap:6px;}
+/* v4_350: a typed segment boundary, and the "extended" message */
+.seg-chip-in{width:84px;font:600 13px 'IBM Plex Mono',monospace;text-align:center;cursor:text;outline:none;}
+.seg-undo{position:fixed;left:50%;bottom:calc(80px + env(safe-area-inset-bottom,0px));transform:translateX(-50%) translateY(10px);z-index:1000;
+  display:flex;align-items:center;gap:12px;background:var(--chrome);color:var(--on-ink);border-radius:999px;padding:6px 6px 6px 16px;
+  font:13px var(--ui-font);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;white-space:nowrap;}
+.seg-undo.on{opacity:1;pointer-events:auto;transform:translateX(-50%);}
+.seg-undo button{border:0;border-radius:999px;background:rgba(255,255,255,.16);color:inherit;font:600 13px var(--ui-font);padding:6px 12px;cursor:pointer;}
 .tsy-row{border:.5px solid var(--border);border-radius:7px;padding:8px 10px;background:var(--parchment2);}
 .tsy-row.tsy-pickable{cursor:pointer;}
 .tsy-row.tsy-pickable:hover{border-color:var(--green);}
@@ -14950,6 +15294,7 @@ window.TehfizSync = {
 .tsy-input{width:100%;border:.5px solid var(--border2);border-radius:5px;background:var(--parchment);
   padding:5px 7px;font-size:13px;font-family:'IBM Plex Mono',monospace;color:var(--ink);}
 @media(max-width:700px){.tsy-panel{max-height:92vh;padding:14px 14px 18px;}}
+@media(max-width:700px){.tsy-find{top:-14px;}}
 </style>
 
 <!-- ═══════════════════════════════════════════════════════════════════════════
@@ -18759,15 +19104,16 @@ span.seg-chip{display:flex;align-items:center;justify-content:center;box-sizing:
 })();
 </script>
 <script src="/app/teacher/sessions-sent.js?v=m5"></script>
-<script src="/app/teacher/finish-session.js?v=f13"></script>
+<script src="/app/teacher/finish-session.js?v=f15"></script>
 <script src="/app/teacher/invoices.js?v=i7"></script>
 <script src="/app/shared/tehfiz-map.js?v=mp6"></script>
-<script src="/app/shared/tehfiz-time.js?v=t3"></script>
-<script src="/app/teacher/profile.js?v=p12"></script>
-<script src="/app/teacher/range-picker.js?v=rg4"></script>
-<script src="/app/teacher/lesson-editor.js?v=le4"></script>
-<script src="/app/teacher/calendar.js?v=c4"></script>
+<script src="/app/shared/tehfiz-time.js?v=t4"></script>
+<script src="/app/teacher/profile.js?v=p14"></script>
+<script src="/app/teacher/range-picker.js?v=rg5"></script>
+<script src="/app/teacher/lesson-editor.js?v=le5"></script>
+<script src="/app/teacher/calendar.js?v=c5"></script>
+<script src="/app/teacher/tz-converter.js?v=tc1"></script>
 <script src="/app/teacher/grades.js?v=g5"></script>
-<script src="/app/teacher/name-sync.js?v=n3"></script>
+<script src="/app/teacher/name-sync.js?v=n4"></script>
 </body>
 </html>
