@@ -15,10 +15,13 @@
 (function(){try{var d=document.documentElement,t=localStorage.getItem('tehfiz_theme'),m=localStorage.getItem('tehfiz_mode');
 if(t==='classic'||t==='lapis'||t==='mulberry')d.setAttribute('data-tz-theme',t);
 if(m==='dark'||(m==='device'&&window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches))d.setAttribute('data-tz-mode','dark');}catch(e){}})();</script>
-<link rel="stylesheet" href="/app/shared/tehfiz-shared.css?v=s15">
-<script src="/app/shared/tehfiz-shared.js?v=s15"></script>
+<link rel="stylesheet" href="/app/shared/tehfiz-shared.css?v=s21">
+<script src="/app/shared/tehfiz-shared.js?v=s21"></script>
 <script src="/app/shared/tehfiz-ornament.js?v=o2"></script>
 <script src="/app/shared/tehfiz-header.js?v=h7"></script>
+<script src="/app/shared/tehfiz-callink.js?v=cl1"></script>
+<script src="/app/shared/tehfiz-versefind.js?v=vf2"></script>
+<script src="/app/shared/tehfiz-keys.js?v=k2"></script>
 <script src="/app/shared/tehfiz-pwa.js?v=p2"></script>
 <!-- Installable app (v4_305): manifest, icons, and the service worker TehfizPWA registers. -->
 <link rel="manifest" href="/app/teacher/manifest.webmanifest">
@@ -31,6 +34,7 @@ if(m==='dark'||(m==='device'&&window.matchMedia&&matchMedia('(prefers-color-sche
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <title>Tehfīz: Feedback Logger — for teachers</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=Lora:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@700&text=%D8%A2%D9%8A%D8%A7%D8%AA%D9%87%D8%A7%D9%85%D9%83%D9%8A%D8%A9%D9%85%D8%AF%D9%86%D9%8A%D8%A9%D9%A0%D9%A1%D9%A2%D9%A3%D9%A4%D9%A5%D9%A6%D9%A7%D9%A8%D9%A9%20&display=swap" rel="stylesheet"><!-- surah banner side labels only -->
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 :root{
@@ -1864,6 +1868,10 @@ body.compact-ui .quick-form::before{
   <button class="tzh-btn tzh-goto" id="tzhGoto" type="button" aria-label="Go to a page or verse" onclick="TehfizHeader.openGoto()">
     <span class="tzh-goto-txt"><span class="tzh-goto-main" id="tzhGotoMain">&mdash;</span><span class="tzh-goto-sub" id="tzhGotoSub"></span></span>
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+  <!-- v4_357 / v1_188: Find a verse by how it sounds (TehfizVerseFind). Icon and
+       "Find" on a wide screen, the icon alone on a phone. Also the / key. -->
+  <button class="tzh-btn tzh-find" id="tzhFind" type="button" aria-label="Find a verse by how it sounds" title="Find a verse by how it sounds (/)"
+    onclick="window.TehfizVerseFind&&TehfizVerseFind.open()"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><span class="tzh-wide">Find</span></button>
   <span class="tzh-spacer"></span>
   <span id="tzhAsWrap"><button class="vc-btn" id="asToggleBtn" data-keep-icon="1" onclick="toggleAutoScroll()" title="Auto-scroll (a)" aria-label="Auto-scroll"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 11l5-5 5 5M7 18l5-5 5 5"/></svg><span class="as-bar-spd" id="asBarSpeed">1.00x</span></button></span>
   <button class="tzh-btn" id="tzhViewBtn" type="button" aria-haspopup="true" aria-expanded="false" onclick="TehfizHeader.toggleView()">View <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
@@ -2308,6 +2316,9 @@ body.compact-ui .quick-form::before{
 
       <!-- TAB: Shortcuts -->
       <div id="scp-keys">
+        <!-- v4_359: straight to Settings → Keyboard. -->
+        <div style="display:flex;justify-content:flex-end;margin:0 0 8px;">
+          <button type="button" class="btn-m" style="border:1px solid var(--border2);background:var(--surface,#fff);color:var(--ink);" onclick="openKeySettings()">⌨ Change shortcuts</button></div>
         <table style="width:100%;border-collapse:collapse;font-size:13px;">
           <thead>
             <tr style="border-bottom:.5px solid var(--border2);">
@@ -2318,40 +2329,33 @@ body.compact-ui .quick-form::before{
           <tbody>
             <tr style="border-bottom:.5px solid var(--border);"><td style="padding:6px 8px;font-family:'IBM Plex Mono',monospace;background:var(--parchment2);border-radius:3px;color:var(--ink2);">↑ / ↓</td><td style="padding:6px 8px;color:var(--ink2);">Scroll Quran text up / down</td></tr>
             <tr style="border-bottom:.5px solid var(--border);"><td style="padding:6px 8px;font-family:'IBM Plex Mono',monospace;background:var(--parchment2);border-radius:3px;color:var(--ink2);">PgUp / PgDn</td><td style="padding:6px 8px;color:var(--ink2);">Scroll one full screen up / down</td></tr>
-            <tr style="border-bottom:.5px solid var(--border);"><td style="padding:6px 8px;font-family:'IBM Plex Mono',monospace;background:var(--parchment2);border-radius:3px;color:var(--ink2);">→ / ←</td><td style="padding:6px 8px;color:var(--ink2);">Previous / Next Juz</td></tr>
-            <tr style="border-bottom:.5px solid var(--border);"><td style="padding:6px 8px;font-family:'IBM Plex Mono',monospace;background:var(--parchment2);border-radius:3px;color:var(--ink2);">t</td><td style="padding:6px 8px;color:var(--ink2);">Toggle translation on/off</td></tr>
-            <tr style="border-bottom:.5px solid var(--border);"><td style="padding:6px 8px;font-family:'IBM Plex Mono',monospace;background:var(--parchment2);border-radius:3px;color:var(--ink2);">c</td><td style="padding:6px 8px;color:var(--ink2);">Toggle compact/expanded mode</td></tr>
-            <tr style="border-bottom:.5px solid var(--border);"><td style="padding:6px 8px;font-family:'IBM Plex Mono',monospace;background:var(--parchment2);border-radius:3px;color:var(--ink2);">+ / −</td><td style="padding:6px 8px;color:var(--ink2);">Increase / decrease font size</td></tr>
+            <tr style="border-bottom:.5px solid var(--border);"><td style="padding:6px 8px;font-family:'IBM Plex Mono',monospace;background:var(--parchment2);border-radius:3px;color:var(--ink2);">→ / ←</td><td style="padding:6px 8px;color:var(--ink2);">Previous / next page</td></tr>
+            <tr style="border-bottom:.5px solid var(--border);"><td style="padding:6px 8px;font-family:'IBM Plex Mono',monospace;background:var(--parchment2);border-radius:3px;color:var(--ink2);">?</td><td style="padding:6px 8px;color:var(--ink2);">Open this help</td></tr>
+          </tbody>
+          <!-- v4_357: the app-wide shortcuts, filled in by TehfizKeys.mountHelp -->
+          <tbody id="tzkHelp"></tbody>
+          <tbody>
             <tr style="border-bottom:.5px solid var(--border);"><td style="padding:6px 8px;font-family:'IBM Plex Mono',monospace;background:var(--parchment2);border-radius:3px;color:var(--ink2);">Esc</td><td style="padding:6px 8px;color:var(--ink2);">Close whatever's open (modal, sessions list)</td></tr>
             <tr style="border-bottom:.5px solid var(--border);background:var(--amber-bg);"><td colspan="2" style="padding:5px 8px;font-size:11px;color:var(--amber);font-weight:600;text-transform:uppercase;letter-spacing:.05em;">When marking a mistake</td></tr>
             <tr style="border-bottom:.5px solid var(--border);"><td style="padding:6px 8px;font-family:'IBM Plex Mono',monospace;background:var(--parchment2);border-radius:3px;color:var(--ink2);">Esc</td><td style="padding:6px 8px;color:var(--ink2);">Cancel / close form</td></tr>
             <tr style="border-bottom:.5px solid var(--border);"><td style="padding:6px 8px;font-family:'IBM Plex Mono',monospace;background:var(--parchment2);border-radius:3px;color:var(--ink2);">Enter</td><td style="padding:6px 8px;color:var(--ink2);">Confirm &amp; add mistake</td></tr>
-            <tr style="border-bottom:.5px solid var(--border);"><td style="padding:6px 8px;font-family:'IBM Plex Mono',monospace;background:var(--parchment2);border-radius:3px;color:var(--ink2);">1 – 5</td><td style="padding:6px 8px;color:var(--ink2);">Select mistake type by position in the current category tab (Tehfiz/Tajweed)</td></tr>
+            <tr style="border-bottom:.5px solid var(--border);"><td style="padding:6px 8px;font-family:'IBM Plex Mono',monospace;background:var(--parchment2);border-radius:3px;color:var(--ink2);">1 – 6</td><td style="padding:6px 8px;color:var(--ink2);">Select mistake type by position in the current category tab (Tehfiz/Tajweed)</td></tr>
             <tr style="border-bottom:.5px solid var(--border);"><td style="padding:6px 8px;font-family:'IBM Plex Mono',monospace;background:var(--parchment2);border-radius:3px;color:var(--ink2);">Shift</td><td style="padding:6px 8px;color:var(--ink2);">Hold to show the <em>other</em> category's types without leaving your tab. On a phone, each button shows its counterpart in small grey text \u2014 press and hold to pick that instead.</td></tr>
-            <tr style="border-bottom:.5px solid var(--border);"><td style="padding:6px 8px;font-family:'IBM Plex Mono',monospace;background:var(--parchment2);border-radius:3px;color:var(--ink2);">Shift + 1 – 5</td><td style="padding:6px 8px;color:var(--ink2);">Pick from that other category directly. The tab switches to it for that one mistake and hands back once you Add or Cancel \u2014 unless you tapped the tab yourself, which sticks.</td></tr>
-            <tr style="border-bottom:.5px solid var(--border);"><td style="padding:6px 8px;font-family:'IBM Plex Mono',monospace;background:var(--parchment2);border-radius:3px;color:var(--ink2);">6</td><td style="padding:6px 8px;color:var(--ink2);">Focus the "Other" mistake type field</td></tr>
+            <tr style="border-bottom:.5px solid var(--border);"><td style="padding:6px 8px;font-family:'IBM Plex Mono',monospace;background:var(--parchment2);border-radius:3px;color:var(--ink2);">Shift + 1 – 6</td><td style="padding:6px 8px;color:var(--ink2);">Pick from that other category directly. The tab switches to it for that one mistake and hands back once you Add or Cancel \u2014 unless you tapped the tab yourself, which sticks.</td></tr>
+            <tr style="border-bottom:.5px solid var(--border);"><td style="padding:6px 8px;font-family:'IBM Plex Mono',monospace;background:var(--parchment2);border-radius:3px;color:var(--ink2);">7</td><td style="padding:6px 8px;color:var(--ink2);">Write your own mistake type</td></tr>
             <tr style="border-bottom:.5px solid var(--border);"><td style="padding:6px 8px;font-family:'IBM Plex Mono',monospace;background:var(--parchment2);border-radius:3px;color:var(--ink2);">q</td><td style="padding:6px 8px;color:var(--ink2);"><span style="color:var(--lvl1-ink);font-weight:600;">Lvl 1 · Repeat</span></td></tr>
             <tr style="border-bottom:.5px solid var(--border);"><td style="padding:6px 8px;font-family:'IBM Plex Mono',monospace;background:var(--parchment2);border-radius:3px;color:var(--ink2);">w</td><td style="padding:6px 8px;color:var(--ink2);"><span style="color:var(--lvl2-orange);font-weight:600;">Lvl 2 · Hint</span></td></tr>
             <tr style="border-bottom:.5px solid var(--border);"><td style="padding:6px 8px;font-family:'IBM Plex Mono',monospace;background:var(--parchment2);border-radius:3px;color:var(--ink2);">e</td><td style="padding:6px 8px;color:var(--ink2);"><span style="color:var(--red);font-weight:600;">Lvl 3 · Taught</span></td></tr>
-            <tr><td style="padding:6px 8px;font-family:'IBM Plex Mono',monospace;background:var(--parchment2);border-radius:3px;color:var(--ink2);">r</td><td style="padding:6px 8px;color:var(--ink2);">Focus the "Other" correction field</td></tr>
+            <tr><td style="padding:6px 8px;font-family:'IBM Plex Mono',monospace;background:var(--parchment2);border-radius:3px;color:var(--ink2);">r</td><td style="padding:6px 8px;color:var(--ink2);">Lvl 0 · None</td></tr>
+            <tr><td style="padding:6px 8px;font-family:'IBM Plex Mono',monospace;background:var(--parchment2);border-radius:3px;color:var(--ink2);">t</td><td style="padding:6px 8px;color:var(--ink2);">Write your own intervention</td></tr>
           </tbody>
         </table>
         <table style="width:100%;border-collapse:collapse;font-size:13px;margin-top:10px;">
           <tbody>
-            <tr style="background:var(--gold-pale);"><td colspan="2" style="padding:5px 8px;font-size:11px;color:var(--gold-ink);font-weight:600;text-transform:uppercase;letter-spacing:.05em;border-radius:4px;">Auto-scroll</td></tr>
-            <tr style="border-bottom:.5px solid var(--border);"><td style="padding:6px 8px;font-family:'IBM Plex Mono',monospace;background:var(--parchment2);border-radius:3px;color:var(--ink2);">a</td><td style="padding:6px 8px;color:var(--ink2);">Toggle auto-scroll on / off</td></tr>
-            <tr style="border-bottom:.5px solid var(--border);"><td style="padding:6px 8px;font-family:'IBM Plex Mono',monospace;background:var(--parchment2);border-radius:3px;color:var(--ink2);">Shift + A</td><td style="padding:6px 8px;color:var(--ink2);">Turn the auto-scroll setting on (and start it) or off, from anywhere</td></tr>
-            <tr style="border-bottom:.5px solid var(--border);"><td style="padding:6px 8px;font-family:'IBM Plex Mono',monospace;background:var(--parchment2);border-radius:3px;color:var(--ink2);">s</td><td style="padding:6px 8px;color:var(--ink2);">Slower</td></tr>
-            <tr style="border-bottom:.5px solid var(--border);"><td style="padding:6px 8px;font-family:'IBM Plex Mono',monospace;background:var(--parchment2);border-radius:3px;color:var(--ink2);">d</td><td style="padding:6px 8px;color:var(--ink2);">Faster</td></tr>
           </tbody>
         </table>
         <table style="width:100%;border-collapse:collapse;font-size:13px;margin-top:10px;">
           <tbody>
-            <tr style="background:var(--spot-blue-bg);"><td colspan="2" style="padding:5px 8px;font-size:11px;color:var(--spot-blue);font-weight:600;text-transform:uppercase;letter-spacing:.05em;border-radius:4px;">Spot Testing</td></tr>
-            <tr style="border-bottom:.5px solid var(--border);"><td style="padding:6px 8px;font-family:'IBM Plex Mono',monospace;background:var(--parchment2);border-radius:3px;color:var(--ink2);">Shift + S</td><td style="padding:6px 8px;color:var(--ink2);">Toggle Spot Testing on / off</td></tr>
-            <tr style="border-bottom:.5px solid var(--border);"><td style="padding:6px 8px;font-family:'IBM Plex Mono',monospace;background:var(--parchment2);border-radius:3px;color:var(--ink2);">Shift + P</td><td style="padding:6px 8px;color:var(--ink2);">Toggle Spot panel open / closed</td></tr>
-            <tr style="border-bottom:.5px solid var(--border);"><td style="padding:6px 8px;font-family:'IBM Plex Mono',monospace;background:var(--parchment2);border-radius:3px;color:var(--ink2);">[</td><td style="padding:6px 8px;color:var(--ink2);">← Previous spot</td></tr>
-            <tr style="border-bottom:.5px solid var(--border);"><td style="padding:6px 8px;font-family:'IBM Plex Mono',monospace;background:var(--parchment2);border-radius:3px;color:var(--ink2);">]</td><td style="padding:6px 8px;color:var(--ink2);">→ Next spot</td></tr>
           </tbody>
         </table>
       </div>
@@ -2697,7 +2701,7 @@ body.compact-ui .quick-form::before{
    console as APP_VERSION, or grep the deployed HTML for it. Bumped on every
    saved build; vcheck.py asserts it matches the filename, so a forgotten bump
    fails the integrity check rather than shipping a lie. */
-const APP_VERSION = 'v4_352';
+const APP_VERSION = 'v4_360';
 window.APP_VERSION = APP_VERSION;
 console.info('Tehfiz teacher app ' + APP_VERSION);
 
@@ -3531,8 +3535,8 @@ function setupKeyboardShortcuts(){
       switch(k){
       case 'arrowright': e.preventDefault(); changePage(-1); break;
       case 'arrowleft':  e.preventDefault(); changePage(1); break;
-      case '+': case '=': changeMushafZoom(1); break;
-      case '-': changeMushafZoom(-1); break;
+      /* + − (zoom), a s d (auto-scroll), Shift+A, Shift+P and [ ] are in
+         TehfizKeys since v4_358, so they can be changed in Settings → Keyboard. */
       case 'escape':
         if(_spotScopeWarn){ e.preventDefault(); dismissSpotScopeWarn(); break; }
         if(_segOrphanWarn){ e.preventDefault(); dismissOrphanWarn(); break; }
@@ -3572,10 +3576,8 @@ function setupKeyboardShortcuts(){
           const inp=document.getElementById('qfTypeOther'); if(inp){selTypeOther(inp);inp.focus();}
         }
         break;
-      case '?': case '/': openShortcuts(); break;
-      case 'a': toggleAutoScroll(); break;
-      case 's': changeAutoScrollSpeed(-AUTOSCROLL_STEP); break;
-      case 'd': changeAutoScrollSpeed(AUTOSCROLL_STEP); break;
+      // v4_357: '/' is Find a verse now (tehfiz-versefind.js), as search is in most apps.
+      case '?': openShortcuts(); break;
       // Spot testing shortcuts (Shift combos — not blocked by inInput guard above)
       }
     }
@@ -3590,14 +3592,7 @@ function setupKeyboardShortcuts(){
     if(e.key === 'Shift' && !inInput && !modalOpen) setTypePeek(true);
 
     if(e.shiftKey && !inInput && !modalOpen){
-      const sk=e.key.toLowerCase();
-      if(sk==='p' && spotState.enabled){ e.preventDefault(); toggleSpotPanel(); }
-      if(sk==='p'||sk==='a') setTypePeek(false);   // those re-render elsewhere
-      if(sk==='a'){
-        e.preventDefault();
-        if(appSettings.autoscrollEnabled){ _applyAutoscrollToggle(false); }
-        else { _applyAutoscrollToggle(true); startAutoScroll(); }
-      }
+      // Shift+P and Shift+A are TehfizKeys actions now (v4_358).
     }
   });
 
@@ -4585,10 +4580,10 @@ function renderMushafFromQuranCom(juzNum, pageMap, startPage, endPage, hizbByVer
     // and scroll code find them as before.
     let _openingWrap = false;
     if(firstSurahStartsHere){
-      html += `<div class="msl msl-surah-header" data-surah="${firstSurahOnPage}"><div class="msl-surah-ornament">${(window.TehfizOrnament?TehfizOrnament.cartSvg():'')}<span class="msl-surah-name">${AR_NAMES[firstSurahOnPage-1]||''}</span></div></div>`;
+      html += `<div class="msl msl-surah-header" data-surah="${firstSurahOnPage}"><div class="msl-surah-ornament">${(window.TehfizOrnament?TehfizOrnament.cartSvg():'')}${surahBannerInner(firstSurahOnPage)}</div></div>`;
       if(qpg <= 2){ html += `<div class="msl-opening">${(window.TehfizOrnament?TehfizOrnament.shamsaSvg():'')}`; _openingWrap = true; }
       if(firstSurahOnPage !== 9 && firstSurahOnPage !== 1){
-        html += `<div class="msl msl-basmala"><span class="msl-basmala-text">بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ</span></div>`;
+        html += basmalaHtml();
       }
     }
 
@@ -4610,9 +4605,9 @@ function renderMushafFromQuranCom(juzNum, pageMap, startPage, endPage, hizbByVer
 
       // Insert surah header + basmala when surah changes mid-page
       if(lineSurah !== prevSurah){
-        html += `<div class="msl msl-surah-header" data-surah="${lineSurah}"><div class="msl-surah-ornament">${(window.TehfizOrnament?TehfizOrnament.cartSvg():'')}<span class="msl-surah-name">${AR_NAMES[lineSurah-1]||''}</span></div></div>`;
+        html += `<div class="msl msl-surah-header" data-surah="${lineSurah}"><div class="msl-surah-ornament">${(window.TehfizOrnament?TehfizOrnament.cartSvg():'')}${surahBannerInner(lineSurah)}</div></div>`;
         if(lineSurah !== 9 && lineSurah !== 1){
-          html += `<div class="msl msl-basmala"><span class="msl-basmala-text">بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ</span></div>`;
+          html += basmalaHtml();
         }
       }
       prevSurah = lineSurah;
@@ -11914,7 +11909,7 @@ function _spotKeyHandler(e){
   if(e.key==='[') { e.preventDefault(); goToSpot(spotState.currentIndex - 1); }
   if(e.key===']') { e.preventDefault(); goToSpot(spotState.currentIndex + 1); }
 }
-document.addEventListener('keydown', _spotKeyHandler);
+// v4_358: [ and ] are TehfizKeys actions now (spotPrev / spotNext).
 
 document.addEventListener('click', e=>{
   if(!e.target.closest('#tzPickerWrap')) hideTzList();
@@ -12288,8 +12283,15 @@ function deleteCustomMistakeType(id){
 }
 
 // Settings grew past the point where one scroll made sense; same rail as Help.
+/* v4_359: Help → "Change shortcuts", and anything else that wants Settings
+   open on the Keyboard tab. */
+function openKeySettings(){
+  ['shortcutsModal'].forEach(id=>document.getElementById(id)?.classList.remove('open'));
+  openSettings(); switchSetTab('keys');
+}
 function switchSetTab(tab){
-  ['session','display','datetime','storage'].forEach(t=>{
+  if(tab==='keys' && window.TehfizKeys) TehfizKeys.renderSettings(document.getElementById('tzkSettings'));
+  ['session','display','datetime','storage','keys'].forEach(t=>{
     document.getElementById(`stt-${t}`)?.classList.toggle('active', t===tab);
     const p=document.getElementById(`stp-${t}`);
     if(p) p.style.display = t===tab ? '' : 'none';
@@ -12585,6 +12587,7 @@ document.querySelectorAll('.modal-bg').forEach(m=>m.addEventListener('click',e=>
         <button class="vtab-btn" id="stt-display" onclick="switchSetTab('display')"><span>◐</span>Display</button>
         <button class="vtab-btn" id="stt-datetime" onclick="switchSetTab('datetime')"><span>◷</span>Date &amp; time</button>
         <button class="vtab-btn" id="stt-storage" onclick="switchSetTab('storage')"><span>▤</span>Storage</button>
+        <button class="vtab-btn" id="stt-keys" onclick="switchSetTab('keys')"><span>⌨</span>Keyboard</button>
       </div>
       <div class="vtabs-panels">
         <div id="stp-session">
@@ -12714,6 +12717,8 @@ document.querySelectorAll('.modal-bg').forEach(m=>m.addEventListener('click',e=>
       <div style="font-size:12px;color:var(--ink3);margin-top:3px;" id="datePreview"></div>
     </div>
         </div>
+        <!-- v4_358: change or remove shortcut keys (TehfizKeys.renderSettings). -->
+        <div id="stp-keys" style="display:none;"><div id="tzkSettings"></div></div>
         <div id="stp-storage" style="display:none;">
 <div class="edit-form-group" style="padding-top:2px;">
       <label style="display:block;font-size:13px;color:var(--ink2);margin-bottom:4px;font-weight:600;">Import a session</label>
@@ -13790,6 +13795,7 @@ function stuCard(s) {
     ? '<div class="tsy-menu" role="menu">' +
         '<button type="button" role="menuitem" data-tsy="profile" data-id="' + esc(s.id) + '">Profile</button>' +
         '<button type="button" role="menuitem" data-tsy="review" data-id="' + esc(s.id) + '">Open in viewer</button>' +
+        (o && window.TehfizRemind ? '<button type="button" role="menuitem" data-tsy="remind" data-id="' + esc(s.id) + '">Remind about next lesson<small>' + esc(stuT() ? stuT().whenText(+o.at) : '') + '</small></button>' : '') +
         '<button type="button" role="menuitem" data-tsy="copycode" data-code="' + esc(s.code) + '">Copy code · ' + esc(s.code) + '</button>' +
         '<button type="button" role="menuitem" data-tsy="archive" data-id="' + esc(s.id) + '" data-a="' + (s.archived ? '0' : '1') + '">' + (s.archived ? 'Unarchive' : 'Archive') + '</button>' +
         '<button type="button" role="menuitem" class="tsy-rmi" data-tsy="askremove" data-id="' + esc(s.id) + '">Remove from this device…</button>' +
@@ -14630,7 +14636,15 @@ document.addEventListener('input', (e) => {
 document.addEventListener('keydown', (e) => {
   const c = e.target && e.target.classList && e.target.classList.contains('tsy-card') ? e.target : null;
   if (c && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); c.click(); }
-  if (e.key === 'Escape' && stuMenu) { stuMenu = null; render(); }
+  if (e.key === 'Escape' && stuMenu) { stuMenu = null; render(); return; }
+  /* v4_358: Escape closes the Students panel too, like every other window —
+     unless something over it took the key first (a window, the Profile, the
+     lesson editor), or a removal is waiting for an answer. */
+  if (e.key === 'Escape' && !e.defaultPrevented && !removingId && $('tsyOverlay').classList.contains('tsy-on')) {
+    if ((window.TehfizProfile && TehfizProfile.isOpen()) || (window.TehfizLesson && TehfizLesson.isOpen()) ||
+        (window.TehfizCalendar && TehfizCalendar.isOpen && TehfizCalendar.isOpen())) return;
+    e.preventDefault(); close();
+  }
 });
 document.addEventListener('click', async (e) => {
   // v4_349: a ⋯ menu closes on any tap outside it.
@@ -14647,6 +14661,12 @@ document.addEventListener('click', async (e) => {
   if (act === 'stugroup') { stuGroup = t.dataset.g; stuQ = ''; const q = $('tsyQ'); if (q) q.value = ''; stuPaintList(); return; }
   if (act === 'stuopen')  { if (removingId) return; if (window.TehfizProfile) window.TehfizProfile.open(id); return; }
   if (act === 'archive')  { await setArchivedFor(id, t.dataset.a === '1'); return; }
+  // v4_356: a message about the next lesson, to copy or send on WhatsApp (remind.js).
+  if (act === 'remind')   {
+    const s = studentById(id), o = s ? stuNext(s) : null;
+    if (o && window.TehfizRemind) window.TehfizRemind.open({ sid: id, at: +o.at, len: o.len, lesson: o });
+    render(); return;
+  }
   if (act === 'tzconv')   {
     const s = studentById(id);
     if (s && window.TehfizTzConv) {
@@ -15126,6 +15146,7 @@ window.TehfizSync = {
   border-radius:10px;box-shadow:var(--shadow-lg);padding:4px;display:flex;flex-direction:column;cursor:default;}
 .tsy-menu.top{top:calc(100% + 6px);right:0;}
 .tsy-menu button,.tsy-mlab{all:unset;box-sizing:border-box;padding:9px 10px;border-radius:7px;font:14px var(--ui-font);color:var(--ink);cursor:pointer;}
+.tsy-menu button small{display:block;margin-top:1px;font-size:12px;color:var(--ink3);}
 .tsy-menu button:hover,.tsy-mlab:hover,.tsy-menu button:focus-visible{background:var(--parchment2);}
 .tsy-menu .tsy-rmi{color:var(--red);}
 .tsy-empty{color:var(--ink3);font-size:13.5px;text-align:center;padding:18px 4px;}
@@ -19069,7 +19090,7 @@ span.seg-chip{display:flex;align-items:center;justify-content:center;box-sizing:
         { id: 'install', label: 'Install the app', icon: 'install', group: 'tools',
           hidden: !(window.TehfizPWA && window.TehfizPWA.canOffer()), run: () => window.TehfizPWA.install() },
         // v4_333: Import a .qrs file moved into Settings → Storage.
-        { id: 'settings', label: 'Settings', icon: 'settings', group: 'tools', run: () => openSettings() },
+        { id: 'settings', label: 'Settings', icon: 'settings', group: 'tools', kbd: (window.TehfizKeys && (TehfizKeys.list().find((x) => x.id === 'settings') || {}).key) || undefined, run: () => openSettings() },
         { id: 'help', label: 'Help & keyboard shortcuts', icon: 'help', group: 'tools', kbd: '?', run: () => openShortcuts() },
         { id: 'tour', label: 'Take the tour', icon: 'tour', group: 'tools',
           hidden: !window.TehfizTour, run: () => window.TehfizTour.start() },
@@ -19101,6 +19122,47 @@ span.seg-chip{display:flex;align-items:center;justify-content:center;box-sizing:
       return out.slice(0, 6);
     },
   });
+
+  /* v4_357: app-wide shortcuts (TehfizKeys, /app/shared/tehfiz-keys.js). Not
+     while the mistake form is open: its own keys (1–7, Q–P, `) are live. */
+  if (window.TehfizKeys) window.TehfizKeys.register([
+    { id: 'find',     key: '/',       group: 'Anywhere', label: 'Find a verse by how it sounds', run: () => window.TehfizVerseFind && TehfizVerseFind.open() },
+    { id: 'fit',      key: 'f',       group: 'Anywhere', label: 'Fit the page to the screen',    run: () => fitMushafToScreen() },
+    { id: 'goto',     key: 'g',       group: 'Anywhere', label: 'Go to a juz, page or verse',    run: () => goToShortcut() },
+    { id: 'calendar', key: 'c',       group: 'Anywhere', label: 'Calendar',                      run: () => window.TehfizCalendar && TehfizCalendar.open() },
+    { id: 'students', key: 'u',       group: 'Anywhere', label: 'Students',                      run: () => sync() && sync().open() },
+    { id: 'sessions', key: 'h',       group: 'Anywhere', label: 'Sessions',                      run: () => openSessions() },
+    { id: 'timer',    key: 'Shift+T', group: 'Anywhere', label: 'Start / pause the timer',       run: () => toggleTimer() },
+    { id: 'settings', key: ',',       group: 'Anywhere', label: 'Settings',                      run: () => openSettings() },
+    { id: 'finish',   key: 'Shift+F', group: 'Anywhere', label: 'Open Finish session', run: () => window.TehfizFinish && TehfizFinish.open() },
+    { id: 'zoomIn',   key: '+', alias: '=', group: 'Page', inForm: true, repeat: true, label: 'Zoom in',  run: () => changeMushafZoom(1) },
+    { id: 'zoomOut',  key: '-',             group: 'Page', inForm: true, repeat: true, label: 'Zoom out', run: () => changeMushafZoom(-1) },
+    { id: 'asToggle', key: 'a',       group: 'Auto-scroll', inForm: true, label: 'Auto-scroll on / off', run: () => toggleAutoScroll() },
+    { id: 'asSlower', key: 's',       group: 'Auto-scroll', inForm: true, repeat: true, label: 'Slower', run: () => changeAutoScrollSpeed(-AUTOSCROLL_STEP) },
+    { id: 'asFaster', key: 'd',       group: 'Auto-scroll', inForm: true, repeat: true, label: 'Faster', run: () => changeAutoScrollSpeed(AUTOSCROLL_STEP) },
+    { id: 'asSetting', key: 'Shift+A', group: 'Auto-scroll', inForm: true, label: 'Auto-scroll setting on / off', sub: 'Off hides the auto-scroll controls',
+      run: () => { setTypePeek(false); if (appSettings.autoscrollEnabled) _applyAutoscrollToggle(false); else { _applyAutoscrollToggle(true); startAutoScroll(); } } },
+    { id: 'spotPrev', key: '[', group: 'Spot testing', inForm: true, label: 'Previous spot', when: () => spotState.enabled && spotState.spots.length, run: () => goToSpot(spotState.currentIndex - 1) },
+    { id: 'spotNext', key: ']', group: 'Spot testing', inForm: true, label: 'Next spot',     when: () => spotState.enabled && spotState.spots.length, run: () => goToSpot(spotState.currentIndex + 1) },
+    { id: 'spotPanel', key: 'Shift+P', group: 'Spot testing', inForm: true, label: 'Spot panel open / closed', when: () => spotState.enabled, run: () => { setTypePeek(false); toggleSpotPanel(); } },
+  ], {
+    blocked: () => !document.getElementById('quickForm')?.classList.contains('hidden'),
+    formKeys: ['1', '2', '3', '4', '5', '6', '7', '!', '@', '#', '$', '%', '^', 'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '`'],
+    fixed: [
+      { label: 'Mistake type, by position', sub: '1–6 pick (Shift for the other category), 7 writes your own', keys: '1 – 7' },
+      { label: 'Intervention level', sub: 'q Lvl 1 · w Lvl 2 · e Lvl 3 · r Lvl 0 · t your own', keys: 'q – t' },
+      { label: 'Sub-rule, when that row is showing', keys: 'q – p' },
+      { label: 'Added / missing, on the sub-rule row', keys: '`' },
+    ],
+  });
+  /* g: the Go to sheet on a phone; on a wide screen the juz list in the bar. */
+  function goToShortcut() {
+    const sel = document.querySelector('#topbarNav select');
+    if (document.body.classList.contains('compact-ui') || !sel) { TehfizHeader.openGoto(); return; }
+    sel.focus(); if (sel.showPicker) { try { sel.showPicker(); } catch (e) {} }
+  }
+  document.addEventListener('DOMContentLoaded', () => window.TehfizKeys && TehfizKeys.mountHelp(document.getElementById('tzkHelp')));
+  if (document.readyState !== 'loading' && window.TehfizKeys) TehfizKeys.mountHelp(document.getElementById('tzkHelp'));
 })();
 </script>
 <script src="/app/teacher/sessions-sent.js?v=m5"></script>
@@ -19111,7 +19173,8 @@ span.seg-chip{display:flex;align-items:center;justify-content:center;box-sizing:
 <script src="/app/teacher/profile.js?v=p14"></script>
 <script src="/app/teacher/range-picker.js?v=rg5"></script>
 <script src="/app/teacher/lesson-editor.js?v=le5"></script>
-<script src="/app/teacher/calendar.js?v=c5"></script>
+<script src="/app/teacher/calendar.js?v=c6"></script>
+<script src="/app/teacher/remind.js?v=r2"></script>
 <script src="/app/teacher/tz-converter.js?v=tc1"></script>
 <script src="/app/teacher/grades.js?v=g5"></script>
 <script src="/app/teacher/name-sync.js?v=n4"></script>

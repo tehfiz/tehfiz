@@ -1,6 +1,10 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   journey.js — TehfizJourney — j5
-   Loaded by the student viewer only, from /app/student/journey.js?v=j6.
+   journey.js — TehfizJourney — j7
+   Loaded by the student viewer only, from /app/student/journey.js?v=j7.
+
+   j7: "Reminders" — lessons in the student's own calendar app, which then
+   reminds them (TehfizCalLink, shared/tehfiz-callink.js): a calendar link
+   that follows the teacher's changes, or the weekly times added once.
 
    j6: the map gets the memorised ayahs too, so By surah is exact.
 
@@ -44,7 +48,7 @@
    ═══════════════════════════════════════════════════════════════════════ */
 (function () {
 'use strict';
-const TEHFIZ_JOURNEY_VERSION = 'j6';
+const TEHFIZ_JOURNEY_VERSION = 'j7';
 const KEY_PLAN = 'tehfiz_journey_plan';
 const REFRESH_MS = 5 * 60 * 1000;
 const DAY_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -249,6 +253,10 @@ function bodyHtml() {
         : '<div class="tjy-card tjy-pad"><span class="tjy-mut">' + (review() ? 'No next lesson set yet.' : 'Your teacher hasn’t set your next lesson yet.') + '</span></div>') +
       comingHtml() +
       daysHtml() +
+      (!review() && window.TehfizCalLink && state !== 'signedout'
+        ? '<div class="tjy-h">Reminders</div>' +
+          '<button type="button" class="tjy-btn tjy-prog" data-tjy="callink">📅 Get reminders in your calendar<small>Your lessons in your phone’s calendar, with a reminder before each one</small></button>'
+        : '') +
       '<div class="tjy-h">Progress</div>' +
       '<button type="button" class="tjy-btn tjy-prog" data-tjy="progress">📈 Progress report<small>Every mistake, how each part is holding up, and what to work on next</small></button>' +
       (state === 'error' ? '<div class="tjy-mut tjy-stale">Offline — showing what was saved ' + esc(agoText(plan.at)) + '.</div>' : '') +
@@ -348,6 +356,7 @@ function onClick(e) {
     if (a === 'go') { e.stopPropagation(); return go(t); }
     if (a === 'retry') return fetchPlan();
     if (a === 'login') { close(); if (window.TehfizClaim) window.TehfizClaim.open(); return; }
+    if (a === 'callink') { openCalLink(); return; }
     if (a === 'progress') { close(true); if (typeof window.openReview === 'function') window.openReview(); return; }
     return;
   }
@@ -357,6 +366,23 @@ function onClick(e) {
     window.jumpToPageFromInput(pc.dataset.pg);
     close(true);
   }
+}
+
+/* j7: the calendar sheet. The weekly file is made here from the saved plan. */
+function openCalLink() {
+  if (!window.TehfizCalLink) return;
+  window.TehfizCalLink.open({
+    who: 'student', api: apiBase(), token: token(),
+    title: 'Get reminders in your calendar',
+    intro: 'Your lesson times show in your phone’s calendar, and it reminds you before each one.',
+    file: {
+      label: 'Just add my weekly lessons', button: 'Add weekly lessons',
+      note: 'Adds your regular weekly times once, with the reminder above. It won’t follow later changes.',
+      empty: 'Your teacher hasn’t set weekly lesson days yet.',
+      build: (alarm) => ({ name: 'quran-lessons.ics',
+        text: window.TehfizCalLink.weeklyIcs({ name: 'Quran lessons', timetables: (plan && plan.timetables) || [], alarm }) }),
+    },
+  });
 }
 
 function injectCss() {

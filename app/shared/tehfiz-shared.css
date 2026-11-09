@@ -209,6 +209,10 @@ body.compact-ui .tzh-bar .tzh-vsep{display:none;}
 body.compact-ui .tzh-bar .tzh-goto{display:inline-flex;}
 body.compact-ui .tzh-bar .tzh-btn{height:44px;}
 body.compact-ui .tzh-bar .tzh-menu-btn{width:44px;padding:0;border-color:transparent;background:transparent;}
+/* s20: Find a verse — the icon alone, square, beside the position button. */
+body.compact-ui .tzh-bar .tzh-find{width:44px;padding:0;}
+/* s21: on a narrower desktop window the word goes first, so the bar never overlaps (the viewer's bar holds more). */
+@media (max-width:1440px){ body:not(.compact-ui) .tzh-bar .tzh-find .tzh-wide{display:none;} body:not(.compact-ui) .tzh-bar .tzh-find{width:40px;padding:0;} }
 body.compact-ui .tzh-bar .tzh-timer{height:44px;}
 body.compact-ui .tzh-bar .tzh-timer .btn-t-label{display:none;}
 @media (max-width:700px){ body.compact-ui .tzh-bar .tzh-roomy{display:none;} }
@@ -708,3 +712,39 @@ body .mistake-item .m-corr.c0::before{background-image:var(--pr),var(--pr),var(-
 body .mistake-item .m-corr.c1::before{background-image:var(--pf),var(--pr),var(--pr);}
 body .mistake-item .m-corr.c2::before{background-image:var(--pf),var(--pf),var(--pr);}
 body .mistake-item .m-corr.c3::before{background-image:var(--pf),var(--pf),var(--pf);}
+
+/* ── s16: surah banner — the calligraphic name, verses and Makki / Madani ──
+   The plain name (.sn-txt) shows until the font has loaded; :root.tz-sn
+   (set by tehfiz-shared.js once it has) switches to the calligraphy.
+   Its glyphs sit in a private-use range browsers treat as left-to-right,
+   so the order is forced right to left: سورة first, on the right. */
+@font-face{font-family:"TehfizSurahNames";src:url("/app/shared/fonts/surah-names.woff2") format("woff2");font-display:swap;}
+.msl-surah-name .sn-cal{display:none;font-family:"TehfizSurahNames";font-weight:400;direction:rtl;unicode-bidi:bidi-override;white-space:nowrap;}
+:root.tz-sn .msl-surah-name .sn-cal{display:inline;font-size:1.75em;line-height:1;}
+/* s18: the calligraphy is taller than plain text. The oval is stretched (taller box) and the name
+   sized so the tallest of all 114 names, with its marks, sits inside the inner oval. */
+:root.tz-sn[data-tz-page="islimi"] .msl-surah-header{min-height:2.25em;}
+:root.tz-sn[data-tz-page="islimi"] .msl-surah-ornament{height:2.1em;}
+:root.tz-sn[data-tz-page="islimi"] .msl-surah-name .sn-cal{font-size:1.45em;position:relative;top:.1em;}
+:root.tz-sn .msl-surah-name .sn-txt{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;}
+.msl-surah-ornament .msl-surah-name{position:relative;}
+.msl-sn-side{position:absolute;top:50%;transform:translateY(-50%);z-index:2;font-family:'Amiri','Scheherazade New',serif;font-weight:700;
+  font-size:.42em;line-height:.97;direction:rtl;white-space:nowrap;color:var(--ink2);background:var(--parchment);
+  border:1px solid var(--ornament,var(--gold));border-radius:.5em;padding:.36em .5em .08em;}
+/* Amiri keeps a deep space under the line, so the letters sat high in the box: less line
+   height, more padding on top — the same box, the letters centred in it (s19). */
+.msl-sn-side.r{right:.35em;}
+.msl-sn-side.l{left:.35em;}
+/* The side boxes take the place of the two small rings at the ends. */
+.msl-surah-ornament::before,.msl-surah-ornament::after{display:none;}
+:root[data-tz-page="islimi"] .msl-sn-side{font-size:.42em;}
+:root[data-tz-page="islimi"] .msl-sn-side.r{right:.25em;}
+:root[data-tz-page="islimi"] .msl-sn-side.l{left:.25em;}
+@media (max-width:420px){.msl-sn-side{font-size:.36em;padding:.33em .35em .05em;}}
+
+/* ── s17: the basmala as calligraphy (fonts/bismillah.svg, from quran.com) ── */
+.msl-basmala-text .bs-cal{display:none;}
+:root.tz-bsm .msl-basmala-text .bs-txt{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;}
+:root.tz-bsm .msl-basmala-text .bs-cal{display:inline-block;vertical-align:middle;height:2em;width:calc(2em * 176 / 36);max-width:92%;background:currentColor;
+  -webkit-mask:url("/app/shared/fonts/bismillah.svg") center / contain no-repeat;mask:url("/app/shared/fonts/bismillah.svg") center / contain no-repeat;}
+

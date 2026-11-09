@@ -1,6 +1,11 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   calendar.js — TehfizCalendar — c5
-   Loaded by the teacher app only, from /app/teacher/calendar.js?v=c5.
+   calendar.js — TehfizCalendar — c6
+   Loaded by the teacher app only, from /app/teacher/calendar.js?v=c6.
+
+   c6: "Remind…" on a lesson still to come opens a message to copy or send on
+   WhatsApp (TehfizRemind, remind.js). "Add to my calendar" in the bar
+   subscribes the teacher's own calendar app to every lesson (calendar link,
+   server-built, codes not names).
 
    c5: archived students (v4_349) are not in the calendar or its pickers.
 
@@ -54,7 +59,7 @@
    ═══════════════════════════════════════════════════════════════════════ */
 (function () {
 'use strict';
-const TEHFIZ_CALENDAR_VERSION = 'c5';
+const TEHFIZ_CALENDAR_VERSION = 'c6';
 const MATCH_MS = 3 * 3600000;
 const K_PLANS = 'tehfiz_cal_plans';
 const K_DISMISS = 'tehfiz_cal_dismissed';
@@ -458,6 +463,7 @@ function actionsHtml(e) {
   if (e.status === 'next' || e.status === 'up') {
     acts.push(b('edit', 'Edit', 'pri'));
     acts.push(b('start', 'Start a session'));
+    if (e.sid && window.TehfizRemind) acts.push(b('remind', 'Remind…'));
     if (e.kind === 'single' && e.status === 'up') acts.push(b('remove', 'Remove'));
   }
   if (e.status === 'missed') { acts.push(b('log', 'Log it now', 'pri')); acts.push(b('dismiss', 'Didn’t happen')); }
@@ -503,6 +509,7 @@ function render() {
       (v === 'week' && !err.startsWith('signed') ? '<div class="tcal-seg" role="group" aria-label="Empty hours"><button type="button" data-tcal="fold" data-f="1" aria-pressed="' + fold + '">Fold empty hours</button>' +
         '<button type="button" data-tcal="fold" data-f="0" aria-pressed="' + !fold + '">Every hour</button></div>' : '') +
       '<span class="tcal-zone">Times in <b>' + esc(T().tzLabel(Z())) + '</b></span>' +
+      (window.TehfizCalLink && !String(err).startsWith('signed') ? '<button type="button" class="tcal-btn sm tcal-cl" data-tcal="callink">📅 Add to my calendar</button>' : '') +
     '</div>' +
     '<div class="tcal-main">' + body +
       (err && plans && err !== 'signedout' ? '<div class="tcal-mut tcal-pad">Offline — showing the schedules saved on this device.</div>' : '') + '</div>' +
@@ -516,6 +523,36 @@ function render() {
 }
 
 /* ── actions ────────────────────────────────────────────────────────────── */
+/* c6: every lesson in the teacher's own calendar app. The link (server-built)
+   shows no names or codes; the file, made here, has the names but does not
+   follow changes. */
+function openCalLink() {
+  let api = '', tok = null;
+  try { api = localStorage.getItem('tehfiz_sync_api') || ''; tok = localStorage.getItem('tehfiz_sync_token'); } catch (e) {}
+  window.TehfizCalLink.open({
+    who: 'teacher', api, token: tok, title: 'Add my lessons to my calendar',
+    intro: 'Every student’s lessons in your own calendar app, with a reminder before each one.',
+    file: {
+      label: 'Download with names', button: 'Download (next 8 weeks)',
+      note: 'A calendar file made on this device, with each student’s name. It doesn’t follow later changes; download it again after you change lessons.',
+      build: (alarm) => {
+        const now = Date.now(), nm = names(), ids = new Set(roster().map((x) => x.id)), events = [];
+        const list = ((plans && plans.plans) || []).slice(), have = new Set(list.map((p) => p.student_id));
+        roster().forEach((x) => { if (!have.has(x.id)) list.push({ student_id: x.id }); });
+        list.forEach((p) => {
+          if (!ids.has(p.student_id)) return;
+          T().occurrences(ttFor(p), now - 3600000, now + 56 * 86400000).forEach((o) => {
+            const what = T().planText(o, stageLabel);
+            events.push({ uid: 'tehfiz-' + p.student_id + '-' + o.at + '@tehfiz.com', start: o.at, end: o.at + (o.len || 30) * 60000,
+              summary: 'Lesson · ' + (nm[p.student_id] || 'Student'), desc: what });
+          });
+        });
+        events.sort((a, b) => a.start - b.start);
+        return { name: 'tehfiz-lessons.ics', text: window.TehfizCalLink.eventsIcs({ name: 'Tehfiz lessons', events, alarm }) };
+      },
+    },
+  });
+}
 async function review(e) {
   if (e.local && typeof reviewSessionObject === 'function') { close(); reviewSessionObject(e.local); return; }
   if (!e.row) return;
@@ -569,10 +606,13 @@ function onClick(ev) {
   if (a === 'view') { view = t.dataset.v; writeJ(K_VIEW, view); pick = null; slot = null; return render(); }
   if (a === 'ev') { const i = +t.dataset.i; slot = null; pick = pick === i ? null : i; return render(); }
   if (a === 'unpick') { pick = null; return render(); }
+  if (a === 'callink') { openCalLink(); return; }
   const e = pick != null ? lastEvs[pick] : null;
   if (!e) return;
   if (a === 'review') return review(e);
   if (a === 'profile') { const id = e.sid; close(); if (P()) P().open(id, 'timetable'); return; }
+  // c6: the calendar stays open under the message.
+  if (a === 'remind') { if (window.TehfizRemind) window.TehfizRemind.open({ sid: e.sid, at: e.at, len: e.len, lesson: e }); return; }
   if (a === 'start') return startFor(e, false);
   if (a === 'log') return startFor(e, true);
   if (a === 'dismiss') {
@@ -624,6 +664,8 @@ function close() { open_ = false; pick = null; slot = null; render(); }
 document.addEventListener('keydown', (e) => {
   if (!open_) return;
   if (window.TehfizLesson && window.TehfizLesson.isOpen()) return;   // the editor has its own keys
+  if (window.TehfizRemind && window.TehfizRemind.isOpen()) return;   // c6: so is the message
+  if (window.TehfizCalLink && window.TehfizCalLink.isOpen()) return;
   if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); if (slot) { slot = null; render(); } else if (pick != null) { pick = null; render(); } else close(); return; }
   if (e.key === 'Enter' && e.target && e.target.id === 'tcalPkq') return;   // handled on the root
   e.stopPropagation();   // the app's single-key shortcuts stay quiet behind this page
@@ -687,6 +729,7 @@ function injectCss() {
   background:color-mix(in srgb,var(--gold) 12%,transparent);font:600 11.5px 'IBM Plex Mono',monospace;color:var(--gold);padding:6px 7px;box-sizing:border-box;}
 .tcal-ghost.past{border-color:var(--border2);background:none;color:var(--ink3);}
 .tcal-zone{font-size:12.5px;color:var(--ink3);}
+.tcal-cl{margin-left:auto;}
 .tcal-zone b{color:var(--ink);font-weight:600;}
 .tcal-ev{all:unset;box-sizing:border-box;cursor:pointer;display:flex;flex-direction:column;gap:1px;padding:4px 7px;border-radius:7px;font-size:12px;line-height:1.3;
   border-left:3px solid;min-width:0;position:absolute;z-index:2;overflow:hidden;}

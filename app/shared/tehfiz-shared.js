@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   tehfiz-shared.js — s15
+   tehfiz-shared.js — s21
    Loaded by BOTH apps (teacher /app/teacher/, viewer /app/student/) before
    their own scripts, from /app/shared/tehfiz-shared.js?v=s4.
 
@@ -18,7 +18,47 @@
    · Nothing here may run against the page at load time: this file runs in the
      <head>, before <body> exists. Declarations and pure tables only.
    ═══════════════════════════════════════════════════════════════════════ */
-const TEHFIZ_SHARED_VERSION = 's15';
+const TEHFIZ_SHARED_VERSION = 's21';
+
+/* s16: the surah banner on the mushaf — the calligraphic name (fonts/surah-names
+   .woff2, from quran.com) with سورة, and at the sides the number of verses and
+   Makki / Madani, as a printed mushaf has it. The plain Arabic name is always in
+   the markup too: it shows until the font has loaded (and if it never does),
+   and screen readers read it. :root.tz-sn switches to the calligraphy. */
+function _arDigits(n){ return String(n).replace(/\d/g, (d)=>'٠١٢٣٤٥٦٧٨٩'[d]); }
+function surahBannerInner(n){
+  const cal = '\uE000 ' + String.fromCharCode(parseInt('E' + String(n).padStart(3,'0'), 16));
+  const mk = SURAH_REVEALED[n-1] === 'k' ? 'مكية' : 'مدنية';
+  return '<span class="msl-sn-side r" aria-hidden="true">آياتها ' + _arDigits(AYAH_COUNTS[n-1]) + '</span>' +
+    '<span class="msl-surah-name"><span class="sn-txt">' + (AR_NAMES[n-1]||'') + '</span>' +
+      '<span class="sn-cal" aria-hidden="true">' + cal + '</span></span>' +
+    '<span class="msl-sn-side l" aria-hidden="true">' + mk + '</span>';
+}
+/* s17: the basmala above each surah — quran.com's calligraphy (fonts/bismillah.svg),
+   drawn as a mask so it takes the page's ink colour in light and dark. The plain
+   text stays in the markup: it shows until the drawing has loaded (and if it
+   never does), and screen readers read it. :root.tz-bsm switches over. */
+const BASMALA_TEXT = 'بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ';
+function basmalaHtml(){
+  return '<div class="msl msl-basmala"><span class="msl-basmala-text"><span class="bs-txt">' + BASMALA_TEXT +
+    '</span><span class="bs-cal" aria-hidden="true"></span></span></div>';
+}
+(function(){
+  try{
+    const im = new Image();
+    im.onload = ()=>document.documentElement.classList.add('tz-bsm');
+    im.src = '/app/shared/fonts/bismillah.svg';
+  }catch(e){}
+})();
+(function(){
+  try{
+    if(!document.fonts || !document.fonts.load) return;
+    // After the stylesheet (and its @font-face) has been read.
+    const go = ()=>document.fonts.load('1em TehfizSurahNames', '\uE001')
+      .then((f)=>{ if(f && f.length) document.documentElement.classList.add('tz-sn'); }).catch(()=>{});
+    if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go); else go();
+  }catch(e){}
+})();
 
 // ── sessionName vs. the legacy `range` key ────────────────────────
 // v3 and earlier stored the (optional) session name under `range`, a leftover
@@ -35,7 +75,14 @@ const TEHFIZ_SHARED_VERSION = 's15';
 // sessionName — until then it is cheap insurance, not dead weight.
 function sessionNameOf(s){ return (s && (s.sessionName ?? s.range)) || ''; }
 
-const SURAH_NAMES = ["Al-Fatihah","Al-Baqarah","Ali 'Imran","An-Nisa","Al-Ma'idah","Al-An'am","Al-A'raf","Al-Anfal","At-Tawbah","Yunus","Hud","Yusuf","Ar-Ra'd","Ibrahim","Al-Hijr","An-Nahl","Al-Isra","Al-Kahf","Maryam","Ta-Ha","Al-Anbiya","Al-Hajj","Al-Mu'minun","An-Nur","Al-Furqan","Ash-Shu'ara","An-Naml","Al-Qasas","Al-'Ankabut","Ar-Rum","Luqman","As-Sajdah","Al-Ahzab","Saba","Fatir","Ya-Sin","As-Saffat","Sad","Az-Zumar","Ghafir","Fussilat","Ash-Shura","Az-Zukhruf","Ad-Dukhan","Al-Jathiyah","Al-Ahqaf","Muhammad","Al-Fath","Al-Hujurat","Qaf","Adh-Dhariyat","At-Tur","An-Najm","Al-Qamar","Ar-Rahman","Al-Waqi'ah","Al-Hadid","Al-Mujadila","Al-Hashr","Al-Mumtahanah","As-Saf","Al-Jumu'ah","Al-Munafiqun","At-Taghabun","At-Talaq","At-Tahrim","Al-Mulk","Al-Qalam","Al-Haqqah","Al-Ma'arij","Nuh","Al-Jinn","Al-Muzzammil","Al-Muddaththir","Al-Qiyamah","Al-Insan","Al-Mursalat","An-Naba","An-Nazi'at","'Abasa","At-Takwir","Al-Infitar","Al-Mutaffifin","Al-Inshiqaq","Al-Buruj","At-Tariq","Al-A'la","Al-Ghashiyah","Al-Fajr","Al-Balad","Ash-Shams","Al-Layl","Ad-Duha","Ash-Sharh","At-Tin","Al-'Alaq","Al-Qadr","Al-Bayyinah","Az-Zalzalah","Al-'Adiyat","Al-Qari'ah","At-Takathur","Al-'Asr","Al-Humazah","Al-Fil","Quraysh","Al-Ma'un","Al-Kawthar","Al-Kafirun","An-Nasr","Al-Masad","Al-Ikhlas","Al-Falaq","An-Nas"];
+// s16: the names as they are said — ā ī ū for long vowels, ʿ for ʿayn, ʾ for
+// hamza (An-Nāziʿāt, Āl ʿImrān). Search is not affected: _normName drops the
+// marks, so "naziat", "nazi'at" and "naziaat" still find it. The plain
+// spellings these replaced are kept below as SURAH_NAMES_PLAIN.
+const SURAH_NAMES = ["Al-Fātihah", "Al-Baqarah", "Āl ʿImrān", "An-Nisāʾ", "Al-Māʾidah", "Al-Anʿām", "Al-Aʿrāf", "Al-Anfāl", "At-Tawbah", "Yūnus", "Hūd", "Yūsuf", "Ar-Raʿd", "Ibrāhīm", "Al-Hijr", "An-Nahl", "Al-Isrāʾ", "Al-Kahf", "Maryam", "Tā-Hā", "Al-Anbiyāʾ", "Al-Hajj", "Al-Muʾminūn", "An-Nūr", "Al-Furqān", "Ash-Shuʿarāʾ", "An-Naml", "Al-Qasas", "Al-ʿAnkabūt", "Ar-Rūm", "Luqmān", "As-Sajdah", "Al-Ahzāb", "Sabaʾ", "Fātir", "Yā-Sīn", "As-Sāffāt", "Sād", "Az-Zumar", "Ghāfir", "Fussilat", "Ash-Shūrā", "Az-Zukhruf", "Ad-Dukhān", "Al-Jāthiyah", "Al-Ahqāf", "Muhammad", "Al-Fath", "Al-Hujurāt", "Qāf", "Adh-Dhāriyāt", "At-Tūr", "An-Najm", "Al-Qamar", "Ar-Rahmān", "Al-Wāqiʿah", "Al-Hadīd", "Al-Mujādilah", "Al-Hashr", "Al-Mumtahanah", "As-Saff", "Al-Jumuʿah", "Al-Munāfiqūn", "At-Taghābun", "At-Talāq", "At-Tahrīm", "Al-Mulk", "Al-Qalam", "Al-Hāqqah", "Al-Maʿārij", "Nūh", "Al-Jinn", "Al-Muzzammil", "Al-Muddaththir", "Al-Qiyāmah", "Al-Insān", "Al-Mursalāt", "An-Nabaʾ", "An-Nāziʿāt", "ʿAbasa", "At-Takwīr", "Al-Infitār", "Al-Mutaffifīn", "Al-Inshiqāq", "Al-Burūj", "At-Tāriq", "Al-Aʿlā", "Al-Ghāshiyah", "Al-Fajr", "Al-Balad", "Ash-Shams", "Al-Layl", "Ad-Duhā", "Ash-Sharh", "At-Tīn", "Al-ʿAlaq", "Al-Qadr", "Al-Bayyinah", "Az-Zalzalah", "Al-ʿĀdiyāt", "Al-Qāriʿah", "At-Takāthur", "Al-ʿAsr", "Al-Humazah", "Al-Fīl", "Quraysh", "Al-Māʿūn", "Al-Kawthar", "Al-Kāfirūn", "An-Nasr", "Al-Masad", "Al-Ikhlās", "Al-Falaq", "An-Nās"];
+const SURAH_NAMES_PLAIN = ["Al-Fatihah","Al-Baqarah","Ali 'Imran","An-Nisa","Al-Ma'idah","Al-An'am","Al-A'raf","Al-Anfal","At-Tawbah","Yunus","Hud","Yusuf","Ar-Ra'd","Ibrahim","Al-Hijr","An-Nahl","Al-Isra","Al-Kahf","Maryam","Ta-Ha","Al-Anbiya","Al-Hajj","Al-Mu'minun","An-Nur","Al-Furqan","Ash-Shu'ara","An-Naml","Al-Qasas","Al-'Ankabut","Ar-Rum","Luqman","As-Sajdah","Al-Ahzab","Saba","Fatir","Ya-Sin","As-Saffat","Sad","Az-Zumar","Ghafir","Fussilat","Ash-Shura","Az-Zukhruf","Ad-Dukhan","Al-Jathiyah","Al-Ahqaf","Muhammad","Al-Fath","Al-Hujurat","Qaf","Adh-Dhariyat","At-Tur","An-Najm","Al-Qamar","Ar-Rahman","Al-Waqi'ah","Al-Hadid","Al-Mujadila","Al-Hashr","Al-Mumtahanah","As-Saf","Al-Jumu'ah","Al-Munafiqun","At-Taghabun","At-Talaq","At-Tahrim","Al-Mulk","Al-Qalam","Al-Haqqah","Al-Ma'arij","Nuh","Al-Jinn","Al-Muzzammil","Al-Muddaththir","Al-Qiyamah","Al-Insan","Al-Mursalat","An-Naba","An-Nazi'at","'Abasa","At-Takwir","Al-Infitar","Al-Mutaffifin","Al-Inshiqaq","Al-Buruj","At-Tariq","Al-A'la","Al-Ghashiyah","Al-Fajr","Al-Balad","Ash-Shams","Al-Layl","Ad-Duha","Ash-Sharh","At-Tin","Al-'Alaq","Al-Qadr","Al-Bayyinah","Az-Zalzalah","Al-'Adiyat","Al-Qari'ah","At-Takathur","Al-'Asr","Al-Humazah","Al-Fil","Quraysh","Al-Ma'un","Al-Kawthar","Al-Kafirun","An-Nasr","Al-Masad","Al-Ikhlas","Al-Falaq","An-Nas"];
+// s16: where each surah was revealed (k Makkah, d Madinah), from quran.com.
+const SURAH_REVEALED = 'kddddkkddkkkdkkkkkkkkdkdkkkkkkkkdkkkkkkkkkkkkkdddkkkkkdkddddddddddkkkkkkkkkdkkkkkkkkkkkkkkkkkkkkkddkkkkkkkkkkdkkkk';
 
 const AR_NAMES = ["الفاتحة","البقرة","آل عمران","النساء","المائدة","الأنعام","الأعراف","الأنفال","التوبة","يونس","هود","يوسف","الرعد","إبراهيم","الحجر","النحل","الإسراء","الكهف","مريم","طه","الأنبياء","الحج","المؤمنون","النور","الفرقان","الشعراء","النمل","القصص","العنكبوت","الروم","لقمان","السجدة","الأحزاب","سبأ","فاطر","يس","الصافات","ص","الزمر","غافر","فصلت","الشورى","الزخرف","الدخان","الجاثية","الأحقاف","محمد","الفتح","الحجرات","ق","الذاريات","الطور","النجم","القمر","الرحمن","الواقعة","الحديد","المجادلة","الحشر","الممتحنة","الصف","الجمعة","المنافقون","التغابن","الطلاق","التحريم","الملك","القلم","الحاقة","المعارج","نوح","الجن","المزمل","المدثر","القيامة","الإنسان","المرسلات","النبأ","النازعات","عبس","التكوير","الانفطار","المطففين","الانشقاق","البروج","الطارق","الأعلى","الغاشية","الفجر","البلد","الشمس","الليل","الضحى","الشرح","التين","العلق","القدر","البينة","الزلزلة","العاديات","القارعة","التكاثر","العصر","الهمزة","الفيل","قريش","الماعون","الكوثر","الكافرون","النصر","المسد","الإخلاص","الفلق","الناس"];
 
@@ -356,7 +403,9 @@ function keyFromAbs(n){ const v=verseFromAbs(n); return v?`${v.surah}:${v.ayah}`
 // Loose match for surah names: case-insensitive and punctuation-blind, so
 // "alkahf", "Al-Kahf" and "kahf" all resolve. Names carry apostrophes, hyphens
 // and inconsistent transliteration, so exact matching is useless here.
-function _normName(x){ return (x||'').toLowerCase().replace(/[^a-z0-9\u0600-\u06FF]/g,''); }
+// s16: marks over Latin letters go first (ā → a), so the names with long
+// vowels search exactly as the plain ones did.
+function _normName(x){ return String(x||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9\u0600-\u06FF]/g,''); }
 
 function surahMatches(query, limit){
   const q=_normName(query);
@@ -436,7 +485,8 @@ let _surahKeyCache=null;
 function _surahKeys(){
   if(_surahKeyCache) return _surahKeyCache;
   _surahKeyCache=SURAH_NAMES.map((nm,i)=>{
-    const latin=[nm, nm.replace(/^[A-Za-z]{1,3}-/,'')].concat(SURAH_ALT[i]||[]);
+    const plain=SURAH_NAMES_PLAIN[i];
+    const latin=[nm, nm.replace(/^[A-Za-z]{1,3}-/,''), plain, plain.replace(/^[A-Za-z]{1,3}-/,'')].concat(SURAH_ALT[i]||[]);
     const sk=new Set();
     latin.forEach(x=>{ const n=_normName(x); if(n){ sk.add(_surahSkel(n)); sk.add(_surahSkel(n.replace(_ART_RE,''))); } });
     sk.delete('');

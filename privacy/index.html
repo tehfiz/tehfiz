@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-     Tehfiz privacy & terms — v0_10
+     Tehfiz privacy & terms — v0_12
      Deploys to privacy/index.html in the `tehfiz` repo.
      Two version strings, not three: filename and the line above. There is no
      APP_VERSION const because there is no script on this page.
@@ -98,7 +98,7 @@ footer{margin-top:52px;padding-top:22px;border-top:1px solid var(--border);
   <h1>Privacy &amp; Terms</h1>
   <p class="sub">Tehfīz is used by children. This page explains what that means for the
   information we hold — and, more importantly, what we have deliberately arranged not to hold.</p>
-  <p class="updated">Last updated: 4 October 2026</p>
+  <p class="updated">Last updated: 9 November 2026</p>
 </header>
 
 <div class="toc">
@@ -113,6 +113,7 @@ footer{margin-top:52px;padding-top:22px;border-top:1px solid var(--border);
     <li><a href="#aggregate">Anonymous statistics</a></li>
     <li><a href="#who">Who else can see it</a></li>
     <li><a href="#terms">Terms of use</a></li>
+    <li><a href="#credits">Credits</a></li>
     <li><a href="#contact">Contact</a></li>
   </ul>
 </div>
@@ -200,6 +201,11 @@ code by their teacher and choose a 4-digit PIN.</p>
       mistake, how much help the teacher gave, and any notes the teacher wrote</td></tr>
   <tr><td>Devices signed in</td><td>Stored as a one-way fingerprint, so that resetting a student's PIN
       signs out every device they use. The actual sign-in token is never stored</td></tr>
+  <tr><td>A calendar link, if turned on</td><td>Optional. A private link a calendar app (Apple, Google,
+      Outlook) can subscribe to, so the student's lessons show there with a reminder. We keep the link,
+      the reminder time chosen, and when a calendar app last read it. The calendar shows "Quran lesson",
+      the time and what to prepare: never a name or a student code. Teachers can have one too, for all
+      their lessons, on the same terms. Making a new link, or turning it off, stops the old one</td></tr>
 </table>
 
 <p><strong>What is deliberately absent:</strong> no name, no age, no school, no email
@@ -359,6 +365,13 @@ Suspension keeps your records intact.</p>
 <h3>Changes</h3>
 <p>If we change this page in a way that affects what we store or who can see it, we will
 say so on the site before the change takes effect.</p>
+
+<h2 id="credits">Credits</h2>
+<p>The Quran text, page layout and word data come from
+<a href="https://quran.com">quran.com</a> and the Quran Foundation.</p>
+<p>The calligraphic surah names and the basmala at the top of each surah come from the
+<a href="https://github.com/quran/quran.com-frontend-next">quran.com frontend</a>, used under its
+MIT licence. If they cannot load, the app shows them in plain Arabic text instead.</p>
 
 <h2 id="contact">Contact</h2>
 <p>Questions, deletion requests, or concerns about a child's safety:
