@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-     Tehfiz privacy & terms — v0_12
+     Tehfiz privacy & terms — v0_13
      Deploys to privacy/index.html in the `tehfiz` repo.
      Two version strings, not three: filename and the line above. There is no
      APP_VERSION const because there is no script on this page.
@@ -98,7 +98,7 @@ footer{margin-top:52px;padding-top:22px;border-top:1px solid var(--border);
   <h1>Privacy &amp; Terms</h1>
   <p class="sub">Tehfīz is used by children. This page explains what that means for the
   information we hold — and, more importantly, what we have deliberately arranged not to hold.</p>
-  <p class="updated">Last updated: 9 November 2026</p>
+  <p class="updated">Last updated: 12 November 2026</p>
 </header>
 
 <div class="toc">
@@ -148,11 +148,21 @@ Google's sign-in for teachers and the Quran text and fonts described below.</p>
   <tr><td>Name from your Google profile</td><td>Shown so you can recognise your own account</td></tr>
   <tr><td>Account status and dates</td><td>Whether your account is approved, and when it was last used</td></tr>
   <tr><td>Name sync setting</td><td>Whether you have turned name sync on, and when that last changed. A yes/no only &mdash; never any names</td></tr>
+  <tr><td>Your teaching profile, if you fill it in</td><td>Gender, phone number, country, teaching background,
+      languages, hourly rate and any comments you add. It tells us who is teaching with Tehf&#299;z and fills in
+      your own invoices. It is seen only by you and by us</td></tr>
+  <tr><td>Whether you have unsubscribed</td><td>If you unsubscribe from our update emails we keep your email
+      address and the date, so that we do not write to you again</td></tr>
 </table>
 
 <p>We email you when your account is approved, and we email ourselves when
 someone new signs up. Those are the only automatic emails we send, and they
 contain nothing but the teacher's own name and email address.</p>
+
+<p>From time to time we also write to teachers about changes to Tehf&#299;z.
+Every such email has an unsubscribe link. For each one we keep what was sent
+and the list of addresses it went to, so that nobody is sent the same message
+twice.</p>
 
 <p>To sign you in, we request only your email address and basic profile from Google. We do
 not request access to your Gmail, contacts, calendar or files.</p>
@@ -198,7 +208,13 @@ code by their teacher and choose a 4-digit PIN.</p>
       outside the database. We cannot read a student's PIN, and neither could anyone who obtained a copy
       of the database alone</td></tr>
   <tr><td>Recitation sessions</td><td>Which verses were recited, which words were mistaken, the type of
-      mistake, how much help the teacher gave, and any notes the teacher wrote</td></tr>
+      mistake, how much help the teacher gave, any notes the teacher wrote, and a grade if the teacher
+      gives one</td></tr>
+  <tr><td>What has been memorised</td><td>A map of the Quran's pages marking which the student has
+      memorised, and which of those are new, recent or older. The teacher marks it; the student sees it</td></tr>
+  <tr><td>Lesson times</td><td>The student's weekly lesson days and times, the time zone they are shown in,
+      and the next lesson: when it is, how long, what to prepare, and a short note from the teacher. The
+      student sees these too</td></tr>
   <tr><td>Devices signed in</td><td>Stored as a one-way fingerprint, so that resetting a student's PIN
       signs out every device they use. The actual sign-in token is never stored</td></tr>
   <tr><td>A calendar link, if turned on</td><td>Optional. A private link a calendar app (Apple, Google,

@@ -1,6 +1,9 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   finish-session.js — TehfizFinish — f15
-   Loaded by the teacher app only, from /app/teacher/finish-session.js?v=f15.
+   finish-session.js — TehfizFinish — f16
+   Loaded by the teacher app only, from /app/teacher/finish-session.js?v=f16.
+
+   f16: editing the next lesson shows the map with this session's new lesson
+   already added (when Map is on). New lessons default to 30 minutes.
 
    f15: the next lesson's plan is not filled in from the map any more; a
    lesson already planned keeps its plan, otherwise "Suggest from the map".
@@ -37,7 +40,7 @@
    ═══════════════════════════════════════════════════════════════════════ */
 (function () {
 'use strict';
-const TEHFIZ_FINISH_VERSION = 'f15';
+const TEHFIZ_FINISH_VERSION = 'f16';
 
 let open_ = false, view = 'form', moreOpen = false;
 let st = null;   // the sheet's working state, see begin()
@@ -429,13 +432,13 @@ function planState() {
   const pages = pv ? pv.pages : (plan && plan.map ? plan.map.pages : null);
   if (!st.next) {
     const s = suggestFor(P, b.id, pages);
-    st.next = { on: !!s.at, fromTimetable: s.fromTimetable, noPlan: !plan, at: s.at || 0, len: s.len || 45, plan: s.plan, note: s.note, replaces: null };
+    st.next = { on: !!s.at, fromTimetable: s.fromTimetable, noPlan: !plan, at: s.at || 0, len: s.len || 30, plan: s.plan, note: s.note, replaces: null };
   } else if (st.next.noPlan && plan) {
     // The plan arrived after the form opened: fill whatever is still empty.
     const s = suggestFor(P, b.id, pages);
     st.next.noPlan = false;
     if (!st.next.plan.length) st.next.plan = s.plan;
-    if (!st.next.at && s.at) { st.next.on = true; st.next.fromTimetable = true; st.next.at = s.at; st.next.len = s.len || 45; }
+    if (!st.next.at && s.at) { st.next.on = true; st.next.fromTimetable = true; st.next.at = s.at; st.next.len = s.len || 30; }
   }
   return { pv };
 }
@@ -478,9 +481,13 @@ function openNextEditor() {
       from = occs.find((o) => Math.abs(o.at - want) < 60000) || null;
     }
   }
+  // f16: the editor's range picker and Suggest see the map as it will be once
+  // this lesson is added, not as it was before the session.
+  const ps = planState(), pv = ps && ps.pv;
   window.TehfizLesson.open({ sid: b.id, mode: 'draft', title: 'Next lesson · ' + (b.name || b.code), moveFrom: from,
+    pages: pv && st.mapOn ? pv.pages : null,
     onClear: () => { if (!st) return; st.next.on = false; st.open.next = false; render(); },
-    draft: { at: n.at || null, len: n.len || 45, plan: n.plan, note: n.note, replaces: n.replaces },
+    draft: { at: n.at || null, len: n.len || 30, plan: n.plan, note: n.note, replaces: n.replaces },
     onDone: (r) => {
       if (!st || !r) return;
       Object.assign(st.next, { on: true, at: r.at, len: r.len, plan: r.plan, note: r.note, replaces: r.replaces || null });
@@ -927,7 +934,7 @@ document.addEventListener('click', (e) => {
   if (a === 'nxsuggest' && st.next) {
     readForm();
     const P = window.TehfizProfile, b = bound(), ps = planState();
-    const pages = ps && ps.pv ? ps.pv.pages : null;
+    const pages = ps && ps.pv && st.mapOn ? ps.pv.pages : null;
     const plan = P && b ? P.suggestPlan(b.id, pages) : [];
     if (!plan.length) { toast('Mark what ' + (b.name || b.code) + ' has memorised on the map to get suggestions'); return; }
     st.next.plan = plan; render(); return;

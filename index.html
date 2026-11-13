@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Tehfīz landing page — v0_57 (Graphite). Deploys to index.html at the root of the `tehfiz` repo. -->
+<!-- Tehfīz landing page — v0_61 (Graphite; redesigned 13 Nov 2026; hero tour video, square cut on phones). Deploys to index.html at the root of the `tehfiz` repo. -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -8,8 +8,7 @@
 <title>Tehfīz — Hifz Feedback Tools for Quran Teachers</title>
 <link rel="icon" type="image/png" sizes="32x32" href="/app/shared/icons/teacher-32.png">
 <link rel="apple-touch-icon" href="/app/shared/icons/teacher-180.png">
-<meta name="theme-color" content="#17191c">
-<meta name="description" content="Free hifz feedback tools for Quran teachers. Mark mistakes on the mushaf, track sabaq, sabqi and manzil, and send the session to your student.">
+<meta name="description" content="A free web app for Quran teachers. Mark mistakes on the mushaf as your student recites, keep a map of what is memorised, plan the next lesson, and send the feedback to your student.">
 <meta name="keywords" content="hifz feedback, quran memorisation app, hifz tracker, quran recitation mistakes, tajweed tracker, hifz teacher tool, quran memorization, hifz review">
 <meta name="author" content="Tehfīz">
 <meta name="robots" content="index, follow">
@@ -17,7 +16,7 @@
 
 <!-- Open Graph -->
 <meta property="og:title" content="Tehfīz — Quran Hifz Feedback Tools">
-<meta property="og:description" content="Mark a hifz lesson on the mushaf itself. Sabaq, sabqi and manzil in one session. Free, and we never receive your students' names.">
+<meta property="og:description" content="Mark a hifz lesson on the mushaf itself. A map of what is memorised, the next lesson planned. Free, and we never receive your students' names.">
 <meta property="og:url" content="https://tehfiz.com/">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Tehfīz">
@@ -29,10 +28,10 @@
 <!-- Twitter Card -->
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Tehfīz — Quran Hifz Feedback Tools">
-<meta name="twitter:description" content="Free tools for hifz teachers and students. Log mistakes, track intervention levels, review sessions.">
+<meta name="twitter:description" content="A free web app for Quran teachers: mark mistakes on the mushaf, map what is memorised, plan the next lesson.">
 <meta name="twitter:image" content="https://tehfiz.com/og-home.jpg">
 
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&family=Amiri&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Amiri&display=swap" rel="stylesheet">
 
 <script type="application/ld+json">
 {
@@ -48,598 +47,300 @@
 </script>
 
 <style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-:root{
-  /* Graphite — the same palette as the apps (teacher v4_301, viewer v1_152).
-     Names kept from the parchment era so every rule below still resolves:
-       --gold        the accent on LIGHT surfaces (fills, borders, labels)
-       --gold-light  text on DARK surfaces (nav, hero, footer)
-       --gold-pale   a raised light surface (callouts, featured card)
-       --on-dark     the accent on DARK surfaces (hero button, nav button)
-     Mistake-level colours are data and are unchanged. */
-  --ink:#17191c;--ink2:#3f444b;--ink3:#626973;
-  --parchment:#f5f5f3;--parchment2:#ecece8;--parchment3:#dcdcd7;
-  --gold:#17191c;--gold-light:#e8e9ea;--gold-pale:#ffffff;--on-dark:#e8e9ea;
-  --green:#2d6a4f;--green-bg:#d8f3dc;
-  --lvl1-yellow:#c9a227;--lvl1-yellow-bg:#fdf3d4;
-  --lvl2-orange:#b8560c;--lvl2-orange-bg:#ffe2c2;
-  --amber:#7d4e00;--amber-bg:#fff3cd;
-  --red:#7d1f1f;--red-bg:#fde8e8;
-  --border:rgba(23,25,28,0.13);--border2:rgba(23,25,28,0.25);
-  --shadow:0 8px 40px rgba(23,25,28,0.10);
-}
-html{scroll-behavior:smooth;}
-body{font-family:'IBM Plex Sans','Amiri',system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--parchment);color:var(--ink);font-size:16px;line-height:1.7;overflow-x:hidden;}
-
-/* NAV
-   Wide: one row — brand, section links, Sign in.
-   Below 1100px: two rows. Brand and the call to action stay on top; the section
-   links move to a second row that scrolls sideways, with a fade on the right
-   edge to show there is more. The links used to be display:none on phones,
-   which left no way to reach any section, and between ~600px and 1100px they
-   wrapped and ran off the edge, clipping Sign in itself. */
-nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;flex-wrap:wrap;gap:6px 24px;padding:14px 40px;background:rgba(23,25,28,0.96);border-bottom:1px solid rgba(255,255,255,0.08);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);}
-.nav-brand{order:1;}
-.nav-links{order:2;display:flex;align-items:center;gap:24px;margin-left:auto;}
-.nav-cta{order:3;}
-@media(max-width:1100px){
-  nav{padding:10px 16px 0;}
-  .nav-cta{order:2;margin-left:auto;}
-  .nav-links{order:3;flex-basis:100%;margin:0 -16px;padding:0 16px;gap:20px;overflow-x:auto;overscroll-behavior-x:contain;
-    scrollbar-width:none;-webkit-overflow-scrolling:touch;
-    -webkit-mask-image:linear-gradient(90deg,#000 85%,transparent);mask-image:linear-gradient(90deg,#000 85%,transparent);}
-  .nav-links::-webkit-scrollbar{display:none;}
-  .nav-link{white-space:nowrap;font-size:12px;padding:10px 0 11px;}
-}
-/* Anchor jumps land below the fixed nav, not under it. */
-section[id]{scroll-margin-top:72px;}
-@media(max-width:1100px){section[id]{scroll-margin-top:100px;}}
-.nav-brand{font-size:20px;font-weight:700;color:var(--gold-light);letter-spacing:.02em;}
-.nav-ar{font-family:'Amiri',serif;font-weight:400;font-size:1.15em;}
-.nav-brand em{color:rgba(232,233,234,.45);font-style:normal;}
-.nav-link{color:rgba(255,255,255,.6);font-size:13px;text-decoration:none;font-family:'IBM Plex Mono',monospace;letter-spacing:.06em;text-transform:uppercase;transition:color .15s;}
-.nav-link:hover{color:var(--gold-light);}
-.nav-cta{background:var(--on-dark);color:var(--ink);border:none;border-radius:5px;padding:7px 16px;font-size:12px;font-family:inherit;font-weight:600;cursor:pointer;text-decoration:none;letter-spacing:.03em;transition:opacity .15s;}
-.nav-cta:hover{opacity:.88;}
-
-/* HERO */
-.hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:120px 24px 80px;text-align:center;position:relative;background:var(--ink);overflow:hidden;}
-.hero::after{content:'';position:absolute;width:700px;height:700px;background:radial-gradient(ellipse,rgba(255,255,255,.05) 0%,transparent 70%);top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;}
-.hero-ornament{width:280px;height:1px;background:linear-gradient(90deg,transparent,rgba(232,233,234,.5),transparent);margin:0 auto 32px;position:relative;}
-.hero-ornament::before,.hero-ornament::after{content:'';position:absolute;top:50%;width:6px;height:6px;border:1px solid rgba(232,233,234,.6);transform:translateY(-50%) rotate(45deg);background:var(--ink);}
-.hero-ornament::before{left:50%;margin-left:-3px;}
-.hero-ornament::after{right:50%;margin-right:-3px;}
-.hero-arabic{font-family:'Amiri','Scheherazade New',serif;font-size:clamp(32px,6vw,56px);color:var(--gold-light);letter-spacing:.04em;margin-bottom:8px;direction:rtl;animation:fadeUp .9s ease both;}
-.hero-title{font-size:clamp(13px,2vw,16px);font-family:'IBM Plex Mono',monospace;letter-spacing:.22em;text-transform:uppercase;color:rgba(232,233,234,.55);margin-bottom:24px;animation:fadeUp .9s .1s ease both;}
-.hero-tagline{font-size:clamp(20px,3.5vw,34px);font-weight:600;color:var(--gold-light);max-width:640px;line-height:1.35;margin:0 auto 16px;animation:fadeUp .9s .2s ease both;}
-.hero-sub{font-size:clamp(14px,1.8vw,17px);color:rgba(232,233,234,.55);max-width:520px;margin:0 auto 48px;font-style:italic;line-height:1.7;animation:fadeUp .9s .3s ease both;}
-.hero-btns{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;animation:fadeUp .9s .4s ease both;}
-.btn-hero-primary{background:var(--on-dark);color:var(--ink);border:none;border-radius:6px;padding:14px 28px;font-family:inherit;font-size:15px;font-weight:600;cursor:pointer;text-decoration:none;transition:all .15s;letter-spacing:.02em;display:inline-flex;align-items:center;gap:8px;}
-.btn-hero-primary:hover{opacity:.88;transform:translateY(-1px);box-shadow:0 6px 20px rgba(0,0,0,.35);}
-.btn-hero-secondary{background:transparent;border:1px solid rgba(232,233,234,.3);color:var(--gold-light);border-radius:6px;padding:14px 28px;font-family:inherit;font-size:15px;cursor:pointer;text-decoration:none;transition:all .15s;letter-spacing:.02em;display:inline-flex;align-items:center;gap:8px;}
-.btn-hero-secondary:hover{border-color:var(--gold-light);color:#fff;transform:translateY(-1px);}
-
-/* .btn-hero-secondary was written for the DARK hero: a pale cream border at
-   30% opacity and light-gold text. On the parchment sections it is nearly
-   invisible until hovered, which is how a call to action gets missed
-   entirely. This is the same button for light backgrounds — gold on a tinted
-   fill, legible without a mouse anywhere near it.
-
-   Kept as a separate class rather than making the original responsive to its
-   background, because the hero genuinely needs the quiet version: there it
-   sits beside the primary button and must not compete with it. */
-.btn-light{background:var(--gold-pale);border:1px solid var(--gold);color:var(--ink);
-  border-radius:6px;padding:14px 28px;font-family:inherit;font-size:15px;font-weight:600;
-  cursor:pointer;text-decoration:none;transition:all .15s;letter-spacing:.02em;
-  display:inline-flex;align-items:center;gap:8px;}
-.btn-light:hover{background:var(--gold);color:#fff;transform:translateY(-1px);}
-
-/* SECTIONS */
-section{padding:80px 24px;}
-.container{max-width:980px;margin:0 auto;}
-/* Section headers were max-width:680px with no auto margin, so they sat hard
-   against the left edge of a 980px container while the .steps grid beneath
-   them filled the full width — the text and the cards below it did not share
-   an axis. This centres the block and its italic sub-line, which has its own
-   max-width and would otherwise stay left inside a centred parent. */
-.sec-head{max-width:700px;margin:0 auto;text-align:center;}
-.sec-head .section-sub{margin-left:auto;margin-right:auto;}
-.sec-head .levels-grid{text-align:left;}
-.sec-head .section-title,.sec-head .section-label{text-align:center;}
-/* .steps is repeat(3,1fr). With two cards they fill columns one and two and
-   leave the third empty, which reads as a missing card rather than a pair.
-   A two-column variant, narrowed and centred so the pair sits under the
-   heading rather than hugging the left edge. */
-/* Two columns at the FULL container width, not narrowed.
-   
-   Narrowing the pair to 720px centred it, but the callout directly beneath is
-   980px — so the two blocks had different left and right edges and the pair
-   read as floating rather than aligned. Sharing the container's edges is what
-   actually makes a section look composed; centring a narrower block inside a
-   wider one does the opposite. */
-/* .steps.steps-2, not .steps-2 — DOUBLE class on purpose.
-   
-   `.steps` sets repeat(3,1fr) and is declared further down this stylesheet.
-   At equal specificity the later rule wins, so a single-class .steps-2 up here
-   was silently ignored and the pair kept rendering as three columns with an
-   empty third. Two classes raise specificity to (0,2,0) and the rule holds
-   wherever either one sits in the file. */
-.steps.steps-2{grid-template-columns:repeat(2,1fr);}
-/* CTAs that follow a centred section have to be centred too — left-aligned in
-   a 980px container they end up nowhere near the text that motivated them. */
-.cta-row{text-align:center;margin-top:28px;}
-@media(max-width:760px){.steps.steps-2{grid-template-columns:1fr;}}
-.section-label{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink3);margin-bottom:12px;display:block;}
-.section-title{font-size:clamp(22px,3vw,32px);font-weight:700;color:var(--ink);margin-bottom:14px;line-height:1.3;}
-.section-sub{font-size:15px;color:var(--ink2);max-width:560px;line-height:1.8;font-style:italic;}
-.ornament-divider{display:flex;align-items:center;gap:16px;margin:0 auto 56px;max-width:400px;}
-.ornament-divider::before,.ornament-divider::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,transparent,var(--border2));}
-.ornament-divider::after{background:linear-gradient(90deg,var(--border2),transparent);}
-.ornament-divider span{font-size:18px;color:var(--ink3);opacity:.6;}
-.callout{background:var(--gold-pale);border:1px solid var(--border);border-left:3px solid var(--gold);border-radius:0 8px 8px 0;padding:20px 24px;margin:40px 0;font-style:italic;color:var(--ink2);font-size:15px;line-height:1.8;}
-
-/* APPS GRID */
-.apps-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:48px;}
-@media(max-width:640px){.apps-grid{grid-template-columns:1fr;}}
-.app-card{border:1px solid var(--border2);border-radius:12px;padding:32px;background:var(--parchment2);position:relative;overflow:hidden;transition:box-shadow .2s,transform .2s;}
-.app-card:hover{box-shadow:var(--shadow);transform:translateY(-2px);}
-.app-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--gold),rgba(23,25,28,.15));}
-.app-card-icon{font-size:28px;margin-bottom:16px;display:block;}
-.app-card-name{font-size:11px;font-family:'IBM Plex Mono',monospace;letter-spacing:.18em;text-transform:uppercase;color:var(--ink3);margin-bottom:8px;}
-.app-card-title{font-size:20px;font-weight:700;color:var(--ink);margin-bottom:12px;line-height:1.3;}
-.app-card-desc{font-size:14px;color:var(--ink2);line-height:1.8;margin-bottom:24px;}
-.app-card-features{list-style:none;margin-bottom:24px;display:flex;flex-direction:column;gap:7px;}
-.app-card-features li{font-size:13px;color:var(--ink2);display:flex;align-items:flex-start;gap:8px;line-height:1.5;}
-.app-card-features li::before{content:'›';color:var(--gold);font-size:16px;flex-shrink:0;margin-top:-1px;font-weight:700;}
-.btn-card{display:inline-flex;align-items:center;gap:7px;border-radius:6px;padding:10px 20px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;transition:all .15s;letter-spacing:.02em;width:100%;justify-content:center;text-align:center;}
-.btn-card-primary{background:var(--gold);color:#fff;border:none;}
-.btn-card-primary:hover{opacity:.88;box-shadow:0 4px 14px rgba(23,25,28,.25);}
-.app-card-teacher{background:linear-gradient(135deg,var(--parchment2),var(--gold-pale));}
-
-/* INTERVENTION LEVELS MINI GRID */
-.levels-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 0 24px;}
-@media(max-width:480px){.levels-grid{grid-template-columns:1fr;}}
-.level-pill{border-radius:6px;padding:9px 12px;font-size:11px;line-height:1.5;}
-.level-pill strong{display:block;font-size:10px;font-family:'IBM Plex Mono',monospace;letter-spacing:.06em;margin-bottom:2px;}
-
-/* VIDEO */
-.video-section{background:var(--ink);padding:80px 24px;}
-.video-section .section-title{color:var(--gold-light);}
-.video-section .section-label{color:rgba(232,233,234,.62);}
-.video-section .section-sub{color:rgba(232,233,234,.55);}
-.video-wrap{margin-top:44px;border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,.1);box-shadow:0 24px 64px rgba(0,0,0,.5);position:relative;aspect-ratio:16/9;max-width:820px;}
-.video-wrap iframe{width:100%;height:100%;position:absolute;top:0;left:0;border:none;}
-
-/* HOW IT WORKS */
-.how-section{background:var(--parchment2);}
-.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:32px;margin-top:48px;}
-@media(max-width:640px){.steps{grid-template-columns:1fr;}}
-.step{text-align:center;padding:28px 20px;border-radius:10px;background:var(--parchment);border:1px solid var(--border);}
-.step-num{width:40px;height:40px;border-radius:50%;background:var(--gold);color:#fff;font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;}
-.step-icon{font-size:24px;margin-bottom:12px;display:block;}
-.step-title{font-size:15px;font-weight:600;color:var(--ink);margin-bottom:8px;}
-.step-desc{font-size:13px;color:var(--ink2);line-height:1.7;}
-
-/* FOOTER */
-footer{background:var(--ink);border-top:1px solid rgba(255,255,255,.08);padding:48px 24px 32px;text-align:center;}
-.footer-arabic{font-family:'Amiri','Scheherazade New',serif;font-size:22px;color:rgba(232,233,234,.4);margin-bottom:24px;direction:rtl;}
-.footer-brand{font-size:22px;font-weight:700;color:var(--gold-light);margin-bottom:6px;}
-.footer-tagline{font-size:13px;color:rgba(232,233,234,.62);font-style:italic;margin-bottom:28px;}
-.footer-contact{font-size:13px;color:rgba(232,233,234,.55);margin-bottom:28px;line-height:1.8;}
-.footer-contact a{color:var(--gold-light);text-decoration:none;border-bottom:1px solid rgba(232,233,234,.4);padding-bottom:1px;transition:border-color .15s;}
-.footer-contact a:hover{border-color:var(--gold-light);}
-.footer-links{display:flex;align-items:center;justify-content:center;gap:20px;margin-bottom:28px;flex-wrap:wrap;}
-.footer-link{font-size:12px;font-family:'IBM Plex Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:rgba(232,233,234,.62);text-decoration:none;transition:color .15s;}
-.footer-link:hover{color:var(--gold-light);}
-.footer-copy{font-size:11px;color:rgba(232,233,234,.5);font-family:'IBM Plex Mono',monospace;letter-spacing:.05em;}
-
-/* ANIMATIONS */
-@keyframes fadeUp{from{opacity:0;transform:translateY(18px);}to{opacity:1;transform:translateY(0);}}
-.fade-in{opacity:0;transform:translateY(20px);transition:opacity .6s ease,transform .6s ease;}
-.fade-in.visible{opacity:1;transform:translateY(0);}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{margin:0;background:#f5f5f3}
+a{color:#17191c}a:hover{color:#3f444b}
+header a:hover,footer a:hover{color:#ffffff}
+section[id]{scroll-margin-top:12px}
+img{max-width:100%;height:auto}
+#tour{aspect-ratio:16/9}
+@media (max-width:640px){.nv{display:none}#tour{aspect-ratio:1/1}}
+:focus-visible{outline:2px solid #6ea8fe;outline-offset:2px}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
 </style>
 </head>
 <body>
+<div style="font-family: 'IBM Plex Sans', system-ui, sans-serif; color: #17191c; background: #f5f5f3; font-size: 17px; line-height: 1.6">
 
-<!-- NAV -->
-<nav aria-label="Main navigation">
-  <div class="nav-brand">Tehfīz <em>·</em> <span class="nav-ar" lang="ar">تحفيظ</span></div>
-  <div class="nav-links">
-    <a href="#how" class="nav-link">How it works</a>
-    <a href="#progress" class="nav-link">Progress</a>
-    <a href="#detail" class="nav-link">Features</a>
-    <a href="#privacy" class="nav-link">Privacy</a>
-    <a href="#connect" class="nav-link">Find a teacher</a>
-    <a href="#support" class="nav-link">Support</a>
-    <a href="/dhor/" class="nav-link">Dhor with me</a>
-  </div>
-  <a href="/app/teacher" class="nav-cta">Sign in →</a>
+<header style="background: #17191c; color: #e8e9ea">
+<nav aria-label="Main" style="max-width: 1120px; margin: 0 auto; padding: 14px 24px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 28px">
+<a href="/" style="color: #ffffff; text-decoration: none; font-size: 20px; font-weight: 600; margin-right: auto">Tehfīz <span lang="ar" style="font-family: 'Amiri', serif; font-weight: 400; color: #b6bac1">تحفيظ</span></a>
+<a class="nv" href="#lesson" style="color: #d6d8dc; text-decoration: none; font-size: 15px; padding: 10px 0">How it works</a>
+<a class="nv" href="#between" style="color: #d6d8dc; text-decoration: none; font-size: 15px; padding: 10px 0">Features</a>
+<a class="nv" href="#privacy" style="color: #d6d8dc; text-decoration: none; font-size: 15px; padding: 10px 0">Privacy</a>
+<a class="nv" href="#organisations" style="color: #d6d8dc; text-decoration: none; font-size: 15px; padding: 10px 0">Organisations</a>
+<a href="/help/" style="color: #d6d8dc; text-decoration: none; font-size: 15px; padding: 10px 0">Help</a>
+<a href="/app/teacher/" style="background: #ffffff; color: #17191c; text-decoration: none; font-size: 15px; font-weight: 600; padding: 10px 18px; border-radius: 8px">Sign in</a>
 </nav>
+<div style="max-width: 1120px; margin: 0 auto; padding: clamp(40px, 7vw, 72px) 24px clamp(48px, 7vw, 80px); display: flex; flex-direction: column; gap: 40px">
+<div style="display: flex; flex-direction: column; gap: 20px; max-width: 760px">
+<div style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; letter-spacing: 0.16em; text-transform: uppercase; color: #b6bac1">For Quran teachers and their students</div>
+<h1 style="margin: 0; font-size: clamp(34px, 7vw, 56px); line-height: 1.08; font-weight: 600; letter-spacing: -0.02em; color: #ffffff; text-wrap: balance">Mark a hifz lesson on the mushaf itself</h1>
+<p style="margin: 0; font-size: clamp(17px, 2.6vw, 20px); line-height: 1.55; color: #d6d8dc">Tehfīz is a free web app for Quran teachers. Use it while you listen to a student recite, online or in person: tap the word they stumbled on, record how much help you gave, and send them the lesson when you finish.</p>
+<div style="display: flex; flex-wrap: wrap; gap: 12px; margin-top: 8px">
+<a href="/app/teacher/" style="background: #ffffff; color: #17191c; text-decoration: none; font-weight: 600; padding: 14px 24px; border-radius: 8px">Sign in as a teacher</a>
+<a href="/app/student/" style="border: 1px solid #626973; color: #ffffff; text-decoration: none; font-weight: 500; padding: 13px 24px; border-radius: 8px">Student? Open your viewer</a>
+</div>
+<p style="margin: 0; font-size: 15px; color: #b6bac1">Free. Nothing to install. Students never need an account, and we never learn their names.</p>
+</div>
+<div style="display: flex; flex-direction: column; gap: 12px">
+<div style="position: relative; border-radius: 16px; overflow: hidden; box-shadow: 0 0 0 1px rgba(255,255,255,.12); background: #0f1113">
+<video id="tour" muted loop playsinline preload="none" aria-label="A silent 56-second tour of Tehfīz: marking mistakes on the mushaf, sending the lesson, the student's view, the progress report, and scheduling" style="width: 100%; height: auto; display: block">
+</video>
+<script>
+/* Phones get the square cut, wider screens the wide one. Set here, straight
+   after the tag, so only one file is ever requested. */
+(function(){var v=document.getElementById('tour'),sq=window.matchMedia&&matchMedia('(max-width: 640px)').matches;
+v.poster=sq?'/img/home-tour-square-poster.jpg':'/img/home-tour-poster.jpg';
+v.src=sq?'/img/home-tour-square.mp4':'/img/home-tour.mp4';})();
+</script>
+<button id="tourBtn" type="button" style="position: absolute; right: 12px; bottom: 12px; min-height: 40px; padding: 8px 16px; border-radius: 8px; border: 1px solid rgba(255,255,255,.3); background: rgba(23,25,28,.82); color: #ffffff; font: 600 14px 'IBM Plex Sans', system-ui, sans-serif; cursor: pointer">Play</button>
+</div>
+<p style="margin: 0; font-size: 15px; color: #b6bac1">A 56-second tour with a sample student. No sound. Want the full walkthrough? <a target="_blank" rel="noopener" href="https://www.youtube.com/watch?v=3KipPz4yiUc" style="color: #ffffff">Watch the walkthrough on YouTube</a>.</p>
+</div>
+</div>
+</header>
 
-<!-- HERO -->
-<section class="hero" aria-label="Introduction">
-  <div class="hero-ornament"></div>
-  <div class="hero-arabic" aria-hidden="true">تحفيظ</div>
-  <div class="hero-title">Hifz Feedback Tools</div>
-  <h1 class="hero-tagline">Mark a hifz lesson on the mushaf itself</h1>
-  <p class="hero-sub">Tap the word your student stumbled on. Record how much help you gave.
-  Separate sabaq from sabqi from manzil in the same sitting — then watch, over a term,
-  which passages are holding and which are quietly slipping.</p>
-  <div class="hero-btns">
-    <a href="/app/teacher" class="btn-hero-primary">Sign in as a teacher</a>
-    <a href="/app/student" class="btn-hero-secondary">📖 Student? Open your viewer</a>
-  </div>
-  <p style="font-size:13px;color:rgba(232,233,234,.62);margin-top:16px;">Free. Nothing to install.
-  Your students never need an account — and we never learn their names.<br>
-  New teacher accounts are approved by hand before they can send sessions.</p>
+<section id="basics" aria-label="The basics" style="background: #ffffff; border-bottom: 1px solid #dcdcd7">
+<div style="max-width: 1120px; margin: 0 auto; padding: 40px 24px; display: flex; flex-wrap: wrap; gap: 28px 40px">
+<div style="flex: 1 1 280px; display: flex; flex-direction: column; gap: 6px">
+<h2 style="margin: 0; font-family: 'IBM Plex Mono', monospace; font-size: 14px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: #626973">Who it is for</h2>
+<p style="margin: 0; color: #17191c">Teachers of hifz, tajweed and revision, with one student or many. Students and parents see the feedback in their own viewer.</p>
+</div>
+<div style="flex: 1 1 280px; display: flex; flex-direction: column; gap: 6px">
+<h2 style="margin: 0; font-family: 'IBM Plex Mono', monospace; font-size: 14px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: #626973">When to use it</h2>
+<p style="margin: 0; color: #17191c">During the lesson, as you listen: on a video call or in the same room. You mark on the mushaf as they recite, with nothing to type.</p>
+</div>
+<div style="flex: 1 1 280px; display: flex; flex-direction: column; gap: 6px">
+<h2 style="margin: 0; font-family: 'IBM Plex Mono', monospace; font-size: 14px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: #626973">What you need</h2>
+<p style="margin: 0; color: #17191c">A phone, tablet or computer with a browser. Teachers sign in with Google; students use a code and a PIN.</p>
+</div>
+</div>
 </section>
 
-<!-- THE LESSON -->
-<section id="how">
-  <div class="container">
-    <div class="ornament-divider"><span>✦</span></div>
-    <div class="sec-head fade-in">
-      <span class="section-label">The lesson</span>
-      <h2 class="section-title">Built around how hifz is actually taught</h2>
-      <p class="section-sub" style="margin:0 auto;">One sitting is rarely one thing. A student
-      brings new memorisation, revises what they learned this week, and recites older portions to
-      keep them alive. Tehfīz records all three separately, in one session.</p>
-    </div>
-
-    <div class="steps" style="margin-top:40px;">
-      <div class="step fade-in">
-        <span class="step-icon" aria-hidden="true">١</span>
-        <div class="step-title">Set your ranges</div>
-        <p class="step-desc">Mark each passage the student recites and tag what kind of revision it
-        was — <strong>new</strong>, <strong>recent</strong> or <strong>old</strong>. Taught with
-        the traditional names? Switch the preset to sabaq, sabqi and manzil. The labels change; what
-        your past sessions meant does not.</p>
-      </div>
-      <div class="step fade-in">
-        <span class="step-icon" aria-hidden="true">٢</span>
-        <div class="step-title">Tap the mistake</div>
-        <p class="step-desc">Tap the word itself on the mushaf, or drag across a skipped phrase.
-        Choose what kind of slip it was and how much help you ended up giving. Nothing to type
-        while a child is waiting.</p>
-      </div>
-      <div class="step fade-in">
-        <span class="step-icon" aria-hidden="true">٣</span>
-        <div class="step-title">Send it</div>
-        <p class="step-desc">One tap. The session appears in your student's viewer with every
-        mistake highlighted where it happened. No signal? It queues and goes when you are back.</p>
-      </div>
-    </div>
-  </div>
+<section id="lesson" style="max-width: 1120px; margin: 0 auto; padding: 88px 24px 0; display: flex; flex-direction: column; gap: 36px">
+<div style="display: flex; flex-direction: column; gap: 12px; max-width: 720px">
+<div style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; letter-spacing: 0.16em; text-transform: uppercase; color: #626973">The lesson</div>
+<h2 style="margin: 0; font-size: clamp(27px, 5.2vw, 38px); line-height: 1.15; font-weight: 600; letter-spacing: -0.01em">Built around how hifz is actually taught</h2>
+<p style="margin: 0; color: #3f444b">One sitting is rarely one thing: new memorisation, this week's revision, and older portions kept alive. Tehfīz records all three separately, in one session.</p>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 20px">
+<div style="flex: 1 1 280px; background: #ffffff; border: 1px solid #dcdcd7; border-radius: 14px; padding: 28px; display: flex; flex-direction: column; gap: 10px">
+<div style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; color: #626973">01</div>
+<h3 style="margin: 0; font-size: 22px; font-weight: 600">Set your ranges</h3>
+<p style="margin: 0; color: #3f444b">Mark each passage and tag it new, recent or old. Prefer sabaq, sabqi and manzil? Switch the labels; your past sessions keep their meaning.</p>
+</div>
+<div style="flex: 1 1 280px; background: #ffffff; border: 1px solid #dcdcd7; border-radius: 14px; padding: 28px; display: flex; flex-direction: column; gap: 10px">
+<div style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; color: #626973">02</div>
+<h3 style="margin: 0; font-size: 22px; font-weight: 600">Tap the mistake</h3>
+<p style="margin: 0; color: #3f444b">Tap the word on the mushaf, or drag across a skipped phrase. Choose the kind of slip and how much help you gave. For tajweed, name the exact rule.</p>
+</div>
+<div style="flex: 1 1 280px; background: #ffffff; border: 1px solid #dcdcd7; border-radius: 14px; padding: 28px; display: flex; flex-direction: column; gap: 10px">
+<div style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; color: #626973">03</div>
+<h3 style="margin: 0; font-size: 22px; font-weight: 600">Finish and send</h3>
+<p style="margin: 0; color: #3f444b">One screen ends the lesson: send it to the student, update their map and set the next lesson. No signal? It queues and goes when you are back.</p>
+</div>
+</div>
+<img src="/img/home-lesson.jpg" width="1600" height="965" loading="lazy" alt="The teacher app during a lesson: the mushaf page with four words marked, and the four mistakes listed with their levels of help" style="width: 100%; border-radius: 14px; border: 1px solid #dcdcd7; display: block">
+<p style="margin: 0; font-size: 15px; color: #626973">The teacher app during a lesson, with a sample student.</p>
 </section>
 
-<!-- PROGRESS -->
-<section class="how-section" id="progress">
-  <div class="container">
-    <div class="sec-head fade-in">
-      <span class="section-label">Why it is worth logging</span>
-      <h2 class="section-title">One lesson tells you little. Thirty tell you everything.</h2>
-      <p class="section-sub">A written note says what happened on Tuesday. A term of
-      sessions says whether the sabaq is being retained, which passages are quietly
-      slipping, and which words a student has been missing since March.</p>
-    </div>
-
-    <div class="steps" style="margin-top:44px;">
-      <div class="step fade-in">
-        <span class="step-icon" aria-hidden="true">📈</span>
-        <div class="step-title">Condition over time</div>
-        <p class="step-desc">A separate line for sabaq, sabqi and manzil — because they
-        answer different questions. New memorisation improving while manzil declines is
-        the single most useful thing a hifz teacher can see, and it is invisible in any
-        notebook.</p>
-      </div>
-      <div class="step fade-in">
-        <span class="step-icon" aria-hidden="true">🔁</span>
-        <div class="step-title">What keeps coming back</div>
-        <p class="step-desc">The words missed in three separate sessions, months apart —
-        not three in a row. That is the list actually worth drilling. Alongside it: what
-        used to recur and has now stopped, so effort that worked is visible as
-        <em>resolved</em> rather than just absent.</p>
-      </div>
-      <div class="step fade-in">
-        <span class="step-icon" aria-hidden="true">⏳</span>
-        <div class="step-title">Pace and retention</div>
-        <p class="step-desc">Verses or pages added per week, and what happens when a
-        passage comes back weeks later — learned at one score, returned at another. The
-        gap between those two numbers is retention, measured rather than guessed.</p>
-      </div>
-      <div class="step fade-in">
-        <span class="step-icon" aria-hidden="true">🎯</span>
-        <div class="step-title">Spot-test pass rate</div>
-        <p class="step-desc">Tracked over time, so a run of confident lessons that does
-        not survive random testing shows up as a diverging line rather than a surprise
-        at the next exam.</p>
-      </div>
-      <div class="step fade-in">
-        <span class="step-icon" aria-hidden="true">📉</span>
-        <div class="step-title">Climbing or declining</div>
-        <p class="step-desc">Each revised passage carries its own recent sequence of
-        scores, marked as climbing, steady or declining — so you can see which portions
-        need attention before the student notices they are gone.</p>
-      </div>
-      <div class="step fade-in">
-        <span class="step-icon" aria-hidden="true">📄</span>
-        <div class="step-title">A report you can send</div>
-        <p class="step-desc">Any session becomes a shareable summary for a parent, and the
-        full session log exports as a spreadsheet or prints to PDF. Everything exports as a
-        file you keep.</p>
-      </div>
-    </div>
-
-    <div class="callout" style="max-width:700px;margin:36px auto 0;text-align:left;">
-      This is the reason to log a lesson properly rather than remember it. Tag the
-      segments and mark the intervention level, and the picture builds itself — and your
-      student sees the same picture from their own side.
-    </div>
-  </div>
+<section id="levels" style="max-width: 1120px; margin: 0 auto; padding: 96px 24px 0; display: flex; flex-direction: column; gap: 28px">
+<div style="display: flex; flex-direction: column; gap: 12px; max-width: 720px">
+<div style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; letter-spacing: 0.16em; text-transform: uppercase; color: #626973">The part that matters</div>
+<h2 style="margin: 0; font-size: clamp(27px, 5.2vw, 38px); line-height: 1.15; font-weight: 600; letter-spacing: -0.01em">How much help did you give?</h2>
+<p style="margin: 0; color: #3f444b">A student who paused and recovered has not made the same mistake as one who had to be told the verse. Tehfīz records the difference every time.</p>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 14px">
+<div style="flex: 1 1 220px; background: #d8f3dc; border-left: 6px solid #2d6a4f; border-radius: 10px; padding: 18px 20px"><div style="font-weight: 600">Level 0 · None</div><div style="font-size: 16px; color: #3f444b">No help given</div></div>
+<div style="flex: 1 1 220px; background: #fdf3d4; border-left: 6px solid #c9a227; border-radius: 10px; padding: 18px 20px"><div style="font-weight: 600">Level 1 · Repeat</div><div style="font-size: 16px; color: #3f444b">Asked to stop and redo</div></div>
+<div style="flex: 1 1 220px; background: #ffe2c2; border-left: 6px solid #b8560c; border-radius: 10px; padding: 18px 20px"><div style="font-weight: 600">Level 2 · Hint</div><div style="font-size: 16px; color: #3f444b">Given the next word</div></div>
+<div style="flex: 1 1 220px; background: #fde8e8; border-left: 6px solid #7d1f1f; border-radius: 10px; padding: 18px 20px"><div style="font-weight: 600">Level 3 · Taught</div><div style="font-size: 16px; color: #3f444b">You recited it for them</div></div>
+</div>
 </section>
 
-<!-- INTERVENTION -->
-<section style="background:var(--parchment);padding:0 24px 80px;" id="levels">
-  <div class="container">
-    <div class="sec-head fade-in">
-      <span class="section-label">The part that matters</span>
-      <h2 class="section-title">How much help did you give?</h2>
-      <p style="color:var(--ink2);margin-top:14px;">A mistake on its own says little. A student
-      who paused and recovered has not made the same mistake as one who had to be told the verse.
-      Tehfīz records the difference every time, because that difference is what tells you whether
-      a passage is actually secure.</p>
-      <div class="levels-grid" style="margin-top:26px;">
-        <div class="level-pill" style="background:var(--green-bg);border:1px solid var(--green);">
-          <strong style="color:var(--green);">Level 0 · None</strong>No help given
-        </div>
-        <div class="level-pill" style="background:var(--lvl1-yellow-bg);border:1px solid var(--lvl1-yellow);">
-          <strong style="color:var(--lvl1-yellow);">Level 1 · Repeat</strong>Asked to stop and redo
-        </div>
-        <div class="level-pill" style="background:var(--lvl2-orange-bg);border:1px solid var(--lvl2-orange);">
-          <strong style="color:var(--lvl2-orange);">Level 2 · Hint</strong>Given the next word
-        </div>
-        <div class="level-pill" style="background:var(--red-bg);border:1px solid var(--red);">
-          <strong style="color:var(--red);">Level 3 · Taught</strong>You recited it for them
-        </div>
-      </div>
-      <p style="color:var(--ink3);font-size:14px;margin-top:18px;font-style:italic;">
-        Eleven mistake types across two families — hesitation, wrong word, skipped, added word, word
-        order, wrong harakah; makhraj, tajweed, madd, ghunnah, qalqalah — plus your own, if you name
-        things differently. For tajweed you can name the exact rule and whether it was missed or
-        applied where it does not belong, and for makhraj, the letter.</p>
-    </div>
-  </div>
+<section id="student" style="max-width: 1120px; margin: 0 auto; padding: 96px 24px 0; display: flex; flex-direction: column; gap: 28px">
+<div style="display: flex; flex-direction: column; gap: 12px; max-width: 720px">
+<div style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; letter-spacing: 0.16em; text-transform: uppercase; color: #626973">What your student sees</div>
+<h2 style="margin: 0; font-size: clamp(27px, 5.2vw, 38px); line-height: 1.15; font-weight: 600; letter-spacing: -0.01em">The same page, from the other side</h2>
+<p style="margin: 0; color: #3f444b">Every mistake highlighted on the mushaf where it happened, with the level of help and your note. Their progress report, their memorised portions and their next lesson, in one place.</p>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 12px">
+<a href="/app/student/" style="background: #17191c; color: #ffffff; text-decoration: none; font-weight: 600; padding: 14px 24px; border-radius: 8px">Open the viewer</a>
+<span style="align-self: center; font-size: 16px; color: #3f444b">Installs like an app. Works offline. Light and dark.</span>
+</div>
 </section>
 
-<!-- PRIVACY -->
-<section class="how-section" id="privacy" style="background:var(--parchment2);">
-  <div class="container">
-    <div class="sec-head fade-in">
-      <span class="section-label">Your students are children</span>
-      <h2 class="section-title">We do not know their names</h2>
-      <p style="color:var(--ink2);margin-top:14px;">There is no name field in our database. Not
-      hidden, not encrypted — <strong>absent</strong>. A student is a code we generate, like
-      <code style="font-family:'IBM Plex Mono',monospace;font-size:13px;background:var(--gold-pale);
-      padding:2px 6px;border-radius:4px;border:1px solid var(--border);color:var(--ink);">HUDHUD-S6PX</code>. The name beside
-      that code lives in your browser and is never sent to us.</p>
-      <p style="color:var(--ink2);margin-top:14px;">This is a decision, not an oversight, and it
-      cost us something real: clear your browser data and you lose your name list. We accepted that
-      trade, because a record we never receive is one we cannot lose in a breach, disclose, or be
-      compelled to hand over.</p>
-      <div class="callout" style="text-align:left;margin-top:26px;">
-        No advertising. No analytics. No tracking of any kind. Nothing sold or shared with anyone.
-        Your students sign in with a code and a PIN they choose themselves.
-      </div>
-      <div class="cta-row">
-        <a href="/privacy" class="btn-light">Read the full privacy page →</a>
-      </div>
-    </div>
-  </div>
+<section id="progress" style="max-width: 1120px; margin: 0 auto; padding: 96px 24px 0; display: flex; flex-wrap: wrap; gap: 40px; align-items: center">
+<div style="flex: 1 1 400px; max-width: 760px; display: flex; flex-direction: column; gap: 16px">
+<div style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; letter-spacing: 0.16em; text-transform: uppercase; color: #626973">Why it is worth logging</div>
+<h2 style="margin: 0; font-size: clamp(27px, 5.2vw, 38px); line-height: 1.15; font-weight: 600; letter-spacing: -0.01em">One lesson tells you little. Thirty tell you everything.</h2>
+<ul style="margin: 0; padding-left: 20px; color: #3f444b; display: flex; flex-direction: column; gap: 10px">
+<li><strong style="color: #17191c">Condition over time.</strong> A separate line for new, recent and old, because they answer different questions.</li>
+<li><strong style="color: #17191c">What keeps coming back.</strong> The words missed in three sessions months apart. That is the list worth drilling.</li>
+<li><strong style="color: #17191c">Climbing or declining.</strong> Each revised passage is marked, so you see what needs attention before it is gone.</li>
+<li><strong style="color: #17191c">Spot tests.</strong> Random verses from any range, tracked over time.</li>
+<li><strong style="color: #17191c">A report you can send.</strong> A summary for a parent, a spreadsheet, or a PDF.</li>
+</ul>
+</div>
+<img src="/img/home-report.png" width="954" height="812" loading="lazy" alt="A progress report for a sample student: the condition of new memorisation rising from 37 to 88 over three months, with pace and retention below" style="flex: 1 1 440px; min-width: 0; width: 100%; height: auto; border-radius: 14px; border: 1px solid #dcdcd7; display: block">
 </section>
 
-<!-- DETAIL -->
-<section class="how-section" id="detail">
-  <div class="container">
-    <div class="sec-head fade-in">
-      <span class="section-label">In the app</span>
-      <h2 class="section-title">Everything else it does</h2>
-    </div>
-    <div class="steps" style="margin-top:30px;">
-      <div class="step fade-in">
-        <span class="step-icon" aria-hidden="true">📖</span>
-        <div class="step-title">The real mushaf</div>
-        <p class="step-desc">Authentic Madinah page layout in QCF v2, with adjustable zoom.
-        Juz, surah and page navigation, and live verse tracking as you go.</p>
-      </div>
-      <div class="step fade-in">
-        <span class="step-icon" aria-hidden="true">🎲</span>
-        <div class="step-title">Spot testing</div>
-        <p class="step-desc">Pull random verses from any juz, surah or page range to check
-        retention — and record how each one went, the same way as the rest of the lesson.</p>
-      </div>
-      <div class="step fade-in">
-        <span class="step-icon" aria-hidden="true">📊</span>
-        <div class="step-title">Strength over time</div>
-        <p class="step-desc">Each passage scores from how much help it needed and how much ground
-        it covered, so you can see what is holding and what is slipping.</p>
-      </div>
-      <div class="step fade-in">
-        <span class="step-icon" aria-hidden="true">⏱</span>
-        <div class="step-title">Teaching hours</div>
-        <p class="step-desc">Sessions are timed and totalled by month, per student, and any month
-        prints as an invoice with the sessions, times and amount due.</p>
-      </div>
-      <div class="step fade-in">
-        <span class="step-icon" aria-hidden="true">👥</span>
-        <div class="step-title">More than one teacher</div>
-        <p class="step-desc">A student can be taught by several teachers, each seeing the full
-        history. Useful when a madrasah shares students, or a hifz teacher works alongside a
-        tajweed one.</p>
-      </div>
-      <div class="step fade-in">
-        <span class="step-icon" aria-hidden="true">💾</span>
-        <div class="step-title">Your data, portable</div>
-        <p class="step-desc">Export any session as a <strong>.qrs</strong> file to keep or send by
-        WhatsApp, and export your roster so a new device is a two-minute job.</p>
-      </div>
-    </div>
-  </div>
+<section id="between" style="max-width: 1120px; margin: 0 auto; padding: 96px 24px 0; display: flex; flex-direction: column; gap: 36px">
+<div style="display: flex; flex-direction: column; gap: 12px; max-width: 720px">
+<div style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; letter-spacing: 0.16em; text-transform: uppercase; color: #626973">Between lessons</div>
+<h2 style="margin: 0; font-size: clamp(27px, 5.2vw, 38px); line-height: 1.15; font-weight: 600; letter-spacing: -0.01em">Every student, kept in order</h2>
+<p style="margin: 0; color: #3f444b">Teaching several students means remembering who knows what and when each one is next. Tehfīz now keeps that for you.</p>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 20px">
+<div style="flex: 1 1 420px; background: #ffffff; border: 1px solid #dcdcd7; border-radius: 14px; overflow: hidden; display: flex; flex-direction: column">
+<img src="/mail/profile-map.png" loading="lazy" alt="A student's memorisation map: the Quran's juz as rows of pages, shaded old, recent and new" style="width: 100%; height: 300px; object-fit: cover; object-position: top; display: block; border-bottom: 1px solid #dcdcd7">
+<div style="padding: 24px 28px 28px; display: flex; flex-direction: column; gap: 8px">
+<h3 style="margin: 0; font-size: 22px; font-weight: 600">A map of what is memorised</h3>
+<p style="margin: 0; color: #3f444b">Page by page, juz by juz: old, recent and new. Each new lesson is added as you finish, and the next old portion is suggested by rotation.</p>
+</div>
+</div>
+<div style="flex: 1 1 420px; background: #ffffff; border: 1px solid #dcdcd7; border-radius: 14px; overflow: hidden; display: flex; flex-direction: column">
+<img src="/mail/next-lesson.png" loading="lazy" alt="The next-lesson editor: date, time, length and what to prepare" style="width: 100%; height: 300px; object-fit: cover; object-position: top; display: block; border-bottom: 1px solid #dcdcd7">
+<div style="padding: 24px 28px 28px; display: flex; flex-direction: column; gap: 8px">
+<h3 style="margin: 0; font-size: 22px; font-weight: 600">The next lesson, already planned</h3>
+<p style="margin: 0; color: #3f444b">Weekly days and times per student, in their time zone and yours. The next lesson fills itself in, with what to prepare, and the student sees it too.</p>
+</div>
+</div>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 20px">
+<div style="flex: 1 1 240px; border-top: 2px solid #17191c; padding-top: 16px; display: flex; flex-direction: column; gap: 6px">
+<h3 style="margin: 0; font-size: 19px; font-weight: 600">One calendar for all students</h3>
+<p style="margin: 0; font-size: 16px; color: #3f444b">The whole week at a glance, and a private link that puts lessons in your own calendar app, and your students' in theirs.</p>
+</div>
+<div style="flex: 1 1 240px; border-top: 2px solid #17191c; padding-top: 16px; display: flex; flex-direction: column; gap: 6px">
+<h3 style="margin: 0; font-size: 19px; font-weight: 600">Reminders, ready for WhatsApp</h3>
+<p style="margin: 0; font-size: 16px; color: #3f444b">Reminder, running late or cancelled: the message is already written. Copy it or open it in WhatsApp.</p>
+</div>
+<div style="flex: 1 1 240px; border-top: 2px solid #17191c; padding-top: 16px; display: flex; flex-direction: column; gap: 6px">
+<h3 style="margin: 0; font-size: 19px; font-weight: 600">Hours and invoices</h3>
+<p style="margin: 0; font-size: 16px; color: #3f444b">Lessons are timed and totalled per student, by month or any dates you choose. Print the invoice or mark it paid.</p>
+</div>
+<div style="flex: 1 1 240px; border-top: 2px solid #17191c; padding-top: 16px; display: flex; flex-direction: column; gap: 6px">
+<h3 style="margin: 0; font-size: 19px; font-weight: 600">Your own grade</h3>
+<p style="margin: 0; font-size: 16px; color: #3f444b">Add a grade to a lesson or to each part of it. Where you give one, it leads the report.</p>
+</div>
+</div>
 </section>
 
-<!-- STUDENT SIDE -->
-<section style="background:var(--parchment);padding:0 24px 80px;" id="apps">
-  <div class="container">
-    <div class="sec-head fade-in">
-      <span class="section-label">What your student sees</span>
-      <h2 class="section-title">The same page, from the other side</h2>
-      <p style="color:var(--ink2);margin-top:14px;">Your student opens the viewer with the code you
-      gave them and a PIN they choose. Every mistake is highlighted on the mushaf exactly where it
-      happened, with the level of help and your note attached.</p>
-    </div>
-    <div class="steps" style="margin-top:30px;">
-      <div class="step fade-in">
-        <div class="step-title">Grouped how they need it</div>
-        <p class="step-desc">By juz or surah, filtered by mistake type, or narrowed to the words they keep
-        getting wrong across sessions — which is usually the list worth practising from.</p>
-      </div>
-      <div class="step fade-in">
-        <div class="step-title">Their own history</div>
-        <p class="step-desc">Sessions build up over time, with charts, spot-test results and
-        trends. They can also see which teachers have taught them.</p>
-      </div>
-      <div class="step fade-in">
-        <div class="step-title">No account, ever</div>
-        <p class="step-desc">No email address, no sign-up form, nothing for a parent to consent to
-        on a child's behalf. A code and a PIN.</p>
-      </div>
-    </div>
-    <div class="cta-row">
-      <a href="/app/student" class="btn-light">Open the Viewer →</a>
-    </div>
-  </div>
+<section id="privacy" style="margin-top: 96px; background: #17191c; color: #e8e9ea">
+<div style="max-width: 1120px; margin: 0 auto; padding: 80px 24px; display: flex; flex-wrap: wrap; gap: 40px">
+<div style="flex: 1 1 420px; display: flex; flex-direction: column; gap: 14px">
+<div style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; letter-spacing: 0.16em; text-transform: uppercase; color: #b6bac1">Your students are children</div>
+<h2 style="margin: 0; font-size: clamp(27px, 5.2vw, 38px); line-height: 1.15; font-weight: 600; color: #ffffff">We do not know their names</h2>
+<p style="margin: 0; color: #d6d8dc">There is no name field in our database. A student is a code we generate, like <span style="font-family: 'IBM Plex Mono', monospace; color: #ffffff">HUDHUD-S6PX</span>. The name beside it stays on your device, or in your own Google Drive if you turn on name sync.</p>
+<a href="/privacy/" style="color: #ffffff; font-weight: 500; padding: 10px 0">Read the full privacy page</a>
+</div>
+<ul style="flex: 1 1 320px; margin: 0; padding-left: 20px; color: #d6d8dc; display: flex; flex-direction: column; gap: 10px; align-self: center">
+<li>No advertising, no analytics, no tracking.</li>
+<li>Nothing sold or shared with anyone.</li>
+<li>Students sign in with a code and a PIN they choose.</li>
+<li>New teacher accounts are approved by hand.</li>
+</ul>
+</div>
 </section>
 
-<!-- VIDEO -->
-<section class="video-section" id="video">
-  <div class="container">
-    <span class="section-label">See it in action</span>
-    <h2 class="section-title">A quick walkthrough of both apps</h2>
-    <p class="section-sub">Watch how a teacher logs a session and how a student reviews their mistakes in the Viewer.</p>
-    <div style="max-width:820px;margin:44px auto 0;">
-      <div class="video-wrap fade-in">
-        <iframe
-          src="https://www.youtube-nocookie.com/embed/3KipPz4yiUc"
-          title="Tehfīz — Hifz Feedback Logger and Viewer walkthrough"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowfullscreen
-          loading="lazy">
-        </iframe>
-      </div>
-    </div>
-  </div>
+<section id="start" aria-label="Get started" style="background: #ffffff; border-bottom: 1px solid #dcdcd7">
+<div style="max-width: 1120px; margin: 0 auto; padding: 56px 24px; display: flex; flex-wrap: wrap; gap: 20px 40px; align-items: center; justify-content: space-between">
+<div style="flex: 1 1 420px; display: flex; flex-direction: column; gap: 6px">
+<h2 style="margin: 0; font-size: clamp(24px, 4.4vw, 30px); line-height: 1.2; font-weight: 600">Try it in your next lesson</h2>
+<p style="margin: 0; color: #3f444b">Free for teachers and students. New teacher accounts are approved by hand.</p>
+</div>
+<a href="/app/teacher/" style="background: #17191c; color: #ffffff; text-decoration: none; font-weight: 600; padding: 14px 24px; border-radius: 8px">Sign in as a teacher</a>
+</div>
 </section>
 
-<!-- CONNECT -->
-<section class="how-section" id="connect" style="background:var(--parchment2);">
-  <div class="container">
-    <div class="sec-head fade-in">
-      <span class="section-label">Finding each other</span>
-      <h2 class="section-title">Looking for a teacher, or for students?</h2>
-      <p style="color:var(--ink2);margin-top:14px;">Tehfīz is a tool, not an academy — but teachers
-      and families keep asking us to put them in touch. So we do it by hand. Tell us what you are
-      looking for and we will introduce you when there is a good match.</p>
-    </div>
-
-    <div class="steps steps-2" style="margin-top:30px;">
-      <div class="step fade-in">
-        <span class="step-icon" aria-hidden="true">🔎</span>
-        <div class="step-title">I'm looking for a teacher</div>
-        <p class="step-desc">For a parent seeking a tutor for their child, an adult consolidating
-        their own hifz, or a student old enough to arrange it themselves. Tell us the age group,
-        city, language and what you want to work on.</p>
-        <p style="margin-top:14px;">
-          <a href="https://docs.google.com/forms/d/e/1FAIpQLSfNCLnyFK47HuW7mGVdMQuWMt1RU0sj_Lm8Xgqvk6sg5eYl5w/viewform" target="_blank" rel="noopener" class="btn-light">Send an enquiry →</a>
-        </p>
-      </div>
-
-      <div class="step fade-in">
-        <span class="step-icon" aria-hidden="true">🧑‍🏫</span>
-        <div class="step-title">I teach, and have room for students</div>
-        <p class="step-desc">Tell us where you teach, in which languages, online or in person, and
-        a little about your background. We will pass suitable enquiries your way.</p>
-        <p style="margin-top:14px;">
-          <a href="https://docs.google.com/forms/d/e/1FAIpQLScftHflWSx1kK4n_juVqKwCDWtwFx_eb88XVO9tsdNsJxZ96Q/viewform" target="_blank" rel="noopener" class="btn-light">Register your details →</a>
-        </p>
-      </div>
-    </div>
-
-    <div class="fade-in" style="margin-top:32px;padding:14px 18px;
-         background:var(--lvl1-yellow-bg);border-left:3px solid var(--amber);border-radius:0 8px 8px 0;">
-      <p style="color:var(--amber);font-size:14px;margin:0 0 12px;line-height:1.65;">
-        <strong>Who runs this.</strong> Tehfīz is run by Qazi Emaduddin, who also listens to
-        dhor himself — for adult men, in English or Urdu. If you enquire here you may be
-        introduced to him, and he will say so. If you would rather go direct, that is
-        <a href="/dhor/" style="color:var(--amber);font-weight:600;text-decoration:underline;">Dhor with me</a>.
-      </p>
-      <p style="color:var(--amber);font-size:14px;margin:0;line-height:1.65;">
-        <strong>Please read.</strong> Nothing you send is published anywhere — these go to us
-        privately by email. We ask enquiries about a child to come from a parent or guardian, and
-        we never ask for a child's own contact details. <strong>We do not verify anyone's
-        qualifications and we do not vouch for teachers or families</strong> — please make your own
-        checks before arranging lessons, and never leave a child unsupervised with someone you have
-        not verified yourself.
-      </p>
-    </div>
-  </div>
+<section id="organisations" style="max-width: 1120px; margin: 0 auto; padding: 96px 24px 0">
+<div style="background: #ffffff; border: 1px solid #dcdcd7; border-radius: 16px; padding: clamp(24px, 4vw, 40px); display: flex; flex-wrap: wrap; gap: 32px">
+<div style="flex: 1 1 380px; display: flex; flex-direction: column; gap: 12px">
+<div style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; letter-spacing: 0.16em; text-transform: uppercase; color: #626973">Schools and academies</div>
+<h2 style="margin: 0; font-size: clamp(25px, 4.6vw, 32px); line-height: 1.2; font-weight: 600">Teaching as an organisation?</h2>
+<p style="margin: 0; color: #3f444b">Tell us how your institution works and what it needs. We build features for organisations on request.</p>
+<a href="mailto:contact@tehfiz.com" style="align-self: flex-start; background: #17191c; color: #ffffff; text-decoration: none; font-weight: 600; padding: 14px 24px; border-radius: 8px; margin-top: 8px">Write to contact@tehfiz.com</a>
+</div>
+<ul style="flex: 1 1 320px; margin: 0; padding-left: 20px; color: #3f444b; display: flex; flex-direction: column; gap: 10px; align-self: center">
+<li>An organisation account that adds and removes teachers.</li>
+<li>Assign students to teachers, several at a time.</li>
+<li>See all of your organisation's data together.</li>
+</ul>
+</div>
 </section>
 
-<!-- SUPPORT -->
-<section class="how-section" id="support">
-  <div class="container">
-    <div class="sec-head fade-in">
-      <span class="section-label">Support Tehfīz</span>
-      <h2 class="section-title">Free, and staying that way</h2>
-      <p style="color:var(--ink2);margin-top:14px;">Tehfīz is free for every teacher and every
-      student, with no adverts and no data sold to anyone. Running and improving it does cost
-      something — if you would like to help carry that, we would be grateful.</p>
-      <div class="cta-row" style="margin-top:18px;">
-        <a href="https://patreon.com/tehfiz" target="_blank" rel="noopener" class="btn-light">♥ Support Tehfīz on Patreon</a>
-      </div>
-      <p style="color:var(--ink3);font-size:13px;margin-top:14px;">
-        Contributions are not zakat-eligible.
-      </p>
-    </div>
-  </div>
+<section id="connect" style="max-width: 1120px; margin: 0 auto; padding: 96px 24px 0; display: flex; flex-direction: column; gap: 28px">
+<div style="display: flex; flex-direction: column; gap: 12px; max-width: 720px">
+<div style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; letter-spacing: 0.16em; text-transform: uppercase; color: #626973">Finding each other</div>
+<h2 style="margin: 0; font-size: clamp(27px, 5.2vw, 38px); line-height: 1.15; font-weight: 600; letter-spacing: -0.01em">Looking for a teacher, or for students?</h2>
+<p style="margin: 0; color: #3f444b">Tehfīz is a tool, not an academy, but we introduce teachers and families by hand when there is a good match.</p>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 20px">
+<div style="flex: 1 1 360px; background: #ffffff; border: 1px solid #dcdcd7; border-radius: 14px; padding: 28px; display: flex; flex-direction: column; gap: 10px">
+<h3 style="margin: 0; font-size: 22px; font-weight: 600">I'm looking for a teacher</h3>
+<p style="margin: 0; color: #3f444b">For a parent, an adult consolidating their own hifz, or an older student. Tell us the age group, country, language and what you want to work on.</p>
+<a href="https://docs.google.com/forms/d/e/1FAIpQLSfNCLnyFK47HuW7mGVdMQuWMt1RU0sj_Lm8Xgqvk6sg5eYl5w/viewform" target="_blank" rel="noopener" style="font-weight: 600; padding: 10px 0">Send an enquiry</a>
+</div>
+<div style="flex: 1 1 360px; background: #ffffff; border: 1px solid #dcdcd7; border-radius: 14px; padding: 28px; display: flex; flex-direction: column; gap: 10px">
+<h3 style="margin: 0; font-size: 22px; font-weight: 600">I teach, and have room for students</h3>
+<p style="margin: 0; color: #3f444b">Tell us where you teach, in which languages, online or in person, and a little about your background. We will pass suitable enquiries your way.</p>
+<a href="https://docs.google.com/forms/d/e/1FAIpQLScftHflWSx1kK4n_juVqKwCDWtwFx_eb88XVO9tsdNsJxZ96Q/viewform" target="_blank" rel="noopener" style="font-weight: 600; padding: 10px 0">Register your details</a>
+</div>
+</div>
+<p style="margin: 0; font-size: 15px; color: #626973; max-width: 820px">We do not verify qualifications or vouch for teachers or families. Please make your own checks, and never leave a child unsupervised with someone you have not verified yourself.</p>
 </section>
 
-<!-- FOOTER -->
-<footer>
-  <div class="footer-arabic" aria-hidden="true">تحفيظ القرآن الكريم</div>
-  <div class="footer-brand">Tehfīz</div>
-  <div class="footer-tagline">Hifz Feedback Tools for Teachers &amp; Students</div>
-  <div class="footer-contact">
-    Questions, feedback, or a request to remove a student's records?<br>
-    Write to us at <a href="mailto:contact@tehfiz.com">contact@tehfiz.com</a>
-  </div>
-  <div class="footer-links">
-    <a href="/app/student" class="footer-link">Feedback Viewer</a>
-    <a href="/app/teacher" class="footer-link">Feedback Logger</a>
-    <a href="#connect" class="footer-link">Find a teacher</a>
-    <a href="https://patreon.com/tehfiz" target="_blank" rel="noopener" class="footer-link">Support</a>
-    <a href="/dhor/" class="footer-link">Dhor with me</a>
-    <a href="/privacy" class="footer-link">Privacy &amp; Terms</a>
-    <a href="mailto:contact@tehfiz.com" class="footer-link">Contact</a>
-  </div>
-  <div class="footer-copy">tehfiz.com</div>
+<section id="updates" style="max-width: 1120px; margin: 0 auto; padding: 96px 24px 0; display: flex; flex-direction: column; gap: 8px; align-items: flex-start">
+<h2 style="margin: 0; font-size: clamp(25px, 4.6vw, 32px); line-height: 1.2; font-weight: 600">Follow along</h2>
+<p style="margin: 0; color: #3f444b">Tehfīz is on Instagram.</p>
+<a href="https://www.instagram.com/tehfiz.hifz/" target="_blank" rel="noopener" style="font-weight: 600; padding: 10px 0">@tehfiz.hifz</a>
+</section>
+
+<section id="support" style="max-width: 1120px; margin: 0 auto; padding: 96px 24px 88px; display: flex; flex-direction: column; gap: 12px; align-items: flex-start">
+<h2 style="margin: 0; font-size: clamp(25px, 4.6vw, 32px); line-height: 1.2; font-weight: 600">Free, and staying that way</h2>
+<p style="margin: 0; color: #3f444b; max-width: 680px">Tehfīz is free for every teacher and every student, with no adverts and no data sold. Running it does cost something; if you would like to help carry that, we would be grateful.</p>
+<a target="_blank" rel="noopener" href="https://patreon.com/tehfiz" style="border: 1px solid #17191c; text-decoration: none; font-weight: 600; padding: 13px 24px; border-radius: 8px; margin-top: 8px">Support Tehfīz on Patreon</a>
+<p style="margin: 0; font-size: 15px; color: #626973">Contributions are not zakat-eligible.</p>
+</section>
+
+<footer style="background: #17191c; color: #b6bac1">
+<div style="max-width: 1120px; margin: 0 auto; padding: 48px 24px; display: flex; flex-wrap: wrap; gap: 24px 48px; align-items: baseline">
+<div style="margin-right: auto; display: flex; flex-direction: column; gap: 4px">
+<div style="font-size: 20px; font-weight: 600; color: #ffffff">Tehfīz</div>
+<div lang="ar" style="font-family: 'Amiri', serif; font-size: 20px">تحفيظ القرآن الكريم</div>
+</div>
+<a href="/help/" style="color: #e8e9ea; padding: 10px 0">Help and FAQ</a>
+<a target="_blank" rel="noopener" href="https://www.youtube.com/watch?v=3KipPz4yiUc" style="color: #e8e9ea; padding: 10px 0">Walkthrough video</a>
+<a href="/dhor/" style="color: #e8e9ea; padding: 10px 0">Dhor with me</a>
+<a href="/privacy/" style="color: #e8e9ea; padding: 10px 0">Privacy</a>
+<a target="_blank" rel="noopener" href="https://www.instagram.com/tehfiz.hifz/" style="color: #e8e9ea; padding: 10px 0">Instagram</a>
+<a href="mailto:contact@tehfiz.com" style="color: #e8e9ea; padding: 10px 0">contact@tehfiz.com</a>
+</div>
 </footer>
 
+</div>
 <script>
-
-const observer = new IntersectionObserver((entries) => {
-  entries.forEach(e => { if(e.isIntersecting) e.target.classList.add('visible'); });
-}, { threshold: 0.12 });
-document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+/* Hero tour: plays only while it is on screen; never starts by itself for
+   visitors who asked for reduced motion or reduced data. */
+(function(){
+  var v=document.getElementById('tour'),b=document.getElementById('tourBtn');
+  if(!v||!b) return;
+  var userPaused=false;
+  var quiet=(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)||(navigator.connection&&navigator.connection.saveData);
+  function label(){b.textContent=v.paused?'Play':'Pause';}
+  function play(){var p=v.play();if(p&&p.catch)p.catch(function(){});}
+  v.addEventListener('play',label);v.addEventListener('pause',label);
+  b.addEventListener('click',function(){if(v.paused){userPaused=false;play();}else{userPaused=true;v.pause();}});
+  if(quiet){userPaused=true;return;}
+  if('IntersectionObserver' in window){
+    new IntersectionObserver(function(es){es.forEach(function(e){
+      if(e.isIntersecting){if(!userPaused)play();}else v.pause();
+    });},{threshold:0.35}).observe(v);
+  } else play();
+})();
 </script>
-
 </body>
 </html>

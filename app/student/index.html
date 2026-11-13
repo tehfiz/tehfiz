@@ -14,8 +14,8 @@
 (function(){try{var d=document.documentElement,t=localStorage.getItem('tehfiz_theme'),m=localStorage.getItem('tehfiz_mode');
 if(t==='classic'||t==='lapis'||t==='mulberry')d.setAttribute('data-tz-theme',t);
 if(m==='dark'||(m==='device'&&window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches))d.setAttribute('data-tz-mode','dark');}catch(e){}})();</script>
-<link rel="stylesheet" href="/app/shared/tehfiz-shared.css?v=s21">
-<script src="/app/shared/tehfiz-shared.js?v=s21"></script>
+<link rel="stylesheet" href="/app/shared/tehfiz-shared.css?v=s24">
+<script src="/app/shared/tehfiz-shared.js?v=s24"></script>
 <script src="/app/shared/tehfiz-ornament.js?v=o2"></script>
 <script src="/app/shared/tehfiz-header.js?v=h7"></script>
 <script src="/app/shared/tehfiz-pwa.js?v=p2"></script>
@@ -32,7 +32,7 @@ if(m==='dark'||(m==='device'&&window.matchMedia&&matchMedia('(prefers-color-sche
 <meta name="apple-mobile-web-app-title" content="Tehf&#299;z">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <title>Tehfīz: Feedback Viewer — for students &amp; parents</title>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=Lora:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@700&text=%D8%A2%D9%8A%D8%A7%D8%AA%D9%87%D8%A7%D9%85%D9%83%D9%8A%D8%A9%D9%85%D8%AF%D9%86%D9%8A%D8%A9%D9%A0%D9%A1%D9%A2%D9%A3%D9%A4%D9%A5%D9%A6%D9%A7%D9%A8%D9%A9%20&display=swap" rel="stylesheet"><!-- surah banner side labels only -->
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
@@ -1756,7 +1756,7 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
    console as APP_VERSION, or grep the deployed HTML for it. Bumped on every
    saved build; vcheck.py asserts it matches the filename, so a forgotten bump
    fails the integrity check rather than shipping a lie. */
-const APP_VERSION = 'v1_191';
+const APP_VERSION = 'v1_194';
 window.APP_VERSION = APP_VERSION;
 console.info('Tehfiz student viewer ' + APP_VERSION);
 
@@ -2980,22 +2980,6 @@ function buildTopbarNav(){
     `<button class="tzh-pgbtn" type="button" onclick="TehfizHeader.stepPage(1)" aria-label="Next page" title="Next page">&#8250;</button>`+
     `<span class="tzh-nav-sep"></span><div class="pos-nav" id="posNav"><span class="pos-nav-label" id="posNavLabel" onclick="openPosNavEdit()" title="Click to jump to a specific Surah:Ayah">—</span></div>`;
 }
-// Surah stepping now just navigates the mushaf to that surah's first ayah.
-function changeSurah(d){
-  const n=Math.max(1,Math.min(114,(currentSurah||1)+d));
-  currentSurah=n;
-  navigateToVerse(n,1,1);
-}
-// Only one view survives. Kept as a function because several call sites still
-// ask to "go to the mushaf", and viewMode is still written into session data.
-function switchView(mode){
-  viewMode='mushaf';
-  const mc=document.getElementById('mushafControls'); if(mc) mc.style.display='';
-  buildTopbarNav();
-  const sel=document.getElementById('juzSel');
-  _resetScroll=true;
-  loadJuz(sel?(+sel.value||currentJuz||1):(currentJuz||1));
-}
 
 // ── JUZ LOADING
 function goToJuz(n){if(!n)return;currentJuz=+n;_resetScroll=true;loadJuz(+n);}
@@ -3108,6 +3092,7 @@ async function loadJuz(juzNum, appendMode='replace', scrollToPage=null){
 function changePage(d){const sel=document.getElementById('juzSel');const c=sel?+sel.value||currentJuz:currentJuz;const nj=c+d;if(nj<1||nj>30)return;if(sel)sel.value=nj;_resetScroll=true;loadJuz(nj);}
 async function jumpToPageFromInput(val){
   const pg=parseInt(val);if(isNaN(pg)||pg<1||pg>604)return;
+  _autoScrollHoldForJump(2500);
   let jn=1;for(let i=JUZ_PAGES.length-1;i>=0;i--){if(pg>=JUZ_PAGES[i]){jn=i+1;break;}}
   const sel=document.getElementById('juzSel');if(sel)sel.value=jn;
 
@@ -3155,6 +3140,7 @@ function _svScrollToPageWhenReady(pg){
   }
 
   function poll(){
+    _autoScrollHoldForJump();
     let target = findTargetEl();
     if(!target){
       if(Date.now()-started < POLL_CAP) requestAnimationFrame(poll);
@@ -3197,35 +3183,9 @@ function _svScrollToPageWhenReady(pg){
   requestAnimationFrame(poll);
 }
 
-function hizbSpan(rub){const m=rub%4;if(m===1)return`<span class="hizb-marker full">حزب ${toAr(Math.ceil(rub/4))}</span>`;if(m===3)return`<span class="hizb-marker half">½ حزب</span>`;if(m===2)return`<span class="hizb-marker quarter">¼</span>`;if(m===0)return`<span class="hizb-marker quarter">¾</span>`;return'';}
 
-function cacheW(vv){vv.forEach(v=>{const w=(v.words||[]).filter(x=>x.char_type_name==='word');if(w.length)allVerseWords[v.verse_key]=w;if(v.ruku_number)rukuByVerse[v.verse_key]=v.ruku_number;});}
 
-function scrollToAyah(){
-  if(!currentSurah)return;
-  const a=+document.getElementById('startAyah')?.value||1;
-  // Expanded mode: verse-block has an id
-  const vb=document.getElementById(`vb-${currentSurah}-${a}`);
-  if(vb){scrollPC(vb,'start');vb.classList.remove('flash');void vb.offsetWidth;vb.classList.add('flash');setTimeout(()=>vb.classList.remove('flash'),900);return;}
-  // Flow/compact mode: find word spans with data-s / data-a
-  const ws=document.querySelector(`[data-s="${currentSurah}"][data-a="${a}"]`);
-  if(ws){scrollPC(ws,'center');ws.classList.remove('flash-word');void ws.offsetWidth;ws.classList.add('flash-word');setTimeout(()=>ws.classList.remove('flash-word'),900);}
-}
 
-// ── WORD SPAN HTML (page/surah view)
-function wsHTML(text,sN,aN,pos){
-  const wk=`${sN}:${aN}:${pos}`;
-  // Match single-word mistakes AND range mistakes that cover this position
-  const mList=activeMistakes.filter(m=>m.surah===sN&&m.ayah===aN&&
-    (m.wordPos===pos||(m.wordPosEnd&&pos>=m.wordPos&&pos<=m.wordPosEnd)));
-  if(!mList.length)return`<span class="word-span" data-s="${sN}" data-a="${aN}">${text}</span>`;
-  // Word styling is severity-only, so there's no longer any need to pick a
-  // "primary" type when several cover the same word — the tooltip lists them all.
-  const sevCls=_worstSevClass(mList);
-  const isRep=repeatWordKeys.has(wk);
-  const enc=encodeURIComponent(JSON.stringify(mList.map(m=>({type:m.type,correction:m.correction,note:m.note||'',sessionRange:m.sessionRange||'',sessionDate:m.sessionDate||'',ref:m.wordPosEnd&&m.wordPosEnd!==m.wordPos?`${sN}:${aN} words ${m.wordPos}–${m.wordPosEnd}`:`${sN}:${aN}`,word:m.word||text,typeConfig:m.typeConfig||null})))).replace(/'/g,'%27');
-  return`<span id="ws-${sN}-${aN}-${pos}" class="word-span type-tag ${sevCls}${isRep?' repeated':''}" data-s="${sN}" data-a="${aN}" onclick="showTT(event,this,'${enc}')">${text}</span>`;
-}
 
 
 
@@ -3742,7 +3702,7 @@ function renderMushafFromQuranCom(juzNum,pageMap,startPage,endPage,hizbByVerse={
         const fs=(w.v2page!==defaultV2page?`font-family:'${wFont}','UthmanicHafs',serif;`:'');
         if(mList.length){
           // Pass w.text (text_uthmani) so the tooltip shows readable Arabic, not PUA glyphs
-          const enc=encodeURIComponent(JSON.stringify(mList.map(m=>({type:m.type,correction:m.correction,note:m.note||'',sessionRange:m.sessionRange||'',sessionDate:m.sessionDate||'',ref:`${w.sNum}:${w.aNum}`,word:w.text,typeConfig:m.typeConfig||null})))).replace(/'/g,'%27');
+          const enc=encodeURIComponent(JSON.stringify(mList.map(m=>({type:m.type,correction:m.correction,note:m.note||'',sessionRange:m.sessionRange||'',sessionDate:m.sessionDate||'',ref:`${w.sNum}:${w.aNum}`,word:w.text,typeConfig:m.typeConfig||null,subrule:m.subrule||null,typeLabel:m.typeLabel||'',corrLabel:m.corrLabel||''})))).replace(/'/g,'%27');
           return`<span class="${cls}" style="${fs}" data-s="${w.sNum}" data-a="${w.aNum}" data-pos="${w.position}" onclick="showTT(event,this,'${enc}')">${w.code}</span>`;
         }
         return`<span class="${cls}" style="${fs}" data-s="${w.sNum}" data-a="${w.aNum}" data-pos="${w.position}">${w.code}</span>`;
@@ -3985,8 +3945,6 @@ function scrollPC(el, block){
   if(block === 'center') target = offsetTop - (pcH / 2) + (elH / 2);
   pc.scrollTo({top: Math.max(0, target), behavior: 'smooth'});
 }
-// Wait for n animation frames (ensures DOM has painted)
-function wf(n){return new Promise(r=>{let c=0;const f=()=>{if(++c>=n)r();else requestAnimationFrame(f);};requestAnimationFrame(f);});}
 // Wait ms milliseconds
 function delay(ms){return new Promise(r=>setTimeout(r,ms));}
 
@@ -3994,6 +3952,7 @@ function delay(ms){return new Promise(r=>setTimeout(r,ms));}
 
 async function navigateToVerse(surah,ayah,wordPos){
   if(_navBusy)return;_navBusy=true;
+  _autoScrollHoldForJump(2500);
   // On mobile, close the sessions panel so the Quran is visible
   if(isMobileUI()&&panelOpen){
     panelOpen=false;
@@ -4023,6 +3982,7 @@ async function _nav(surah,ayah,wordPos){
     }
   }
   // 2. Find the verse element and scroll to it (mushaf mode polls for DOM readiness)
+  _autoScrollHoldForJump(2500);
   _scrollToVerse(surah, ayah, wordPos);
 }
 
@@ -4048,6 +4008,7 @@ function _scrollToVerse(surah, ayah, wordPos){
     let stableFrames = 0;
 
     function pollForWord(){
+      _autoScrollHoldForJump();
       const ws = document.querySelector(primarySel) || document.querySelector(fallbackSel);
 
       if(!ws){
@@ -5535,154 +5496,12 @@ function closeReviewGoto(su,ay){
   navigateToVerse(su,ay,1);
 }
 
-// ── Header: who/what/when, remarks, and the level badge strip ──────
-// With several sessions loaded each one's remarks get its own colour-coded
-// line, keyed to the same SESSION_COLORS used everywhere else.
-function _mrvHeader(s, t, sessions){
-  const remarks = sessions.length===1 && s.remarks
-    ? `<p class="rv-remarks">${esc(s.remarks)}</p>`
-    : sessions.length>1
-      ? `<div class="rv-remarks-multi">${sessions.map((sess,i)=>sess.remarks
-          ? `<div class="rv-remark-line" style="border-left-color:${SESSION_COLORS[i%SESSION_COLORS.length]};"><span class="rv-remark-who">${esc(sessionNameOf(sess)||sess.student)} (${sess.date}):</span> <span class="rv-remark-text">${esc(sess.remarks)}</span></div>`
-          : '').filter(Boolean).join('')}</div>`
-      : '';
-  return `<div class="rv-head">
-    <h2>${esc(s.student)}</h2>
-    <p class="rv-sub">${esc(s.range||'')} · ${s.date||''}</p>
-    ${remarks}
-    <div class="rv-badges">
-      <span class="m-badge" style="background:var(--parchment3);color:var(--ink2);">${t.total} mistakes</span>
-      ${t.c0?`<span class="m-badge" style="background:var(--green-bg);color:var(--green);">Lvl 0 · ${t.c0}</span>`:''}
-      <span class="m-badge" style="background:var(--lvl1-yellow-bg);color:var(--lvl1-ink);">Lvl 1 · ${t.c1}</span>
-      <span class="m-badge" style="background:var(--lvl2-orange-bg);color:var(--lvl2-orange);">Lvl 2 · ${t.c2}</span>
-      <span class="m-badge" style="background:var(--red-bg);color:var(--red);">Lvl 3 · ${t.c3}</span>
-      ${t.c4?`<span class="m-badge" style="background:var(--parchment3);color:var(--ink2);">◌ ${t.c4}</span>`:''}
-    </div>
-  </div>`;
-}
 
-// ── Charts: type frequency bars + intervention donut ──────────────
-// Labels resolve through getCfg on a representative mistake rather than the
-// session config, which is null whenever more than one session is loaded.
-function _mrvCharts(ml, sessionCfg, getCfg, types, t){
-  const cfgForType = id => getCfg(ml.find(m=>m.type===id) || {});
-  const tc   = Object.fromEntries(types.map(id=>[id, ml.filter(m=>m.type===id).length]));
-  const maxT = Math.max(1, ...Object.values(tc));
-  const cD = [
-    {label:'Lvl 0 · None',   val:t.c0, color:sev('c0').color},
-    {label:'Lvl 1 · Repeat', val:t.c1, color:sev('c1').color},
-    {label:'Lvl 2 · Hint',   val:t.c2, color:sev('c2').color},
-    {label:'Lvl 3 · Taught', val:t.c3, color:sev('c3').color},
-    {label:'Other',          val:t.c4, color:'var(--ink2)'},
-  ];
-  return `<div class="charts-row">
-    <div class="chart-box"><h4>Mistake types</h4><div class="bar-chart">
-      ${types.map(id=>`<div class="bar-row"><div class="bar-label">${typeLabelFor(cfgForType(id),id)}</div><div class="bar-track"><div class="bar-fill" style="width:${t.total?Math.round(tc[id]/maxT*100):0}%;background:${typeFill(cfgForType(id),id)};"></div></div><div class="bar-count">${tc[id]}</div></div>`).join('')}
-    </div></div>
-    <div class="chart-box"><h4>Teacher intervention</h4><div class="chart-note">How much help was needed per mistake</div>
-      <div class="donut-wrap">${donutSVG(cD,t.total)}<div class="donut-center"><span class="big">${t.total}</span><span class="lbl">total</span></div></div>
-      <div class="donut-legend">${cD.map(d=>`<div class="dl-row"><div class="dl-dot" style="background:${d.color};"></div><span>${d.label} — ${d.val}</span></div>`).join('')}</div>
-    </div>
-  </div>`;
-}
 
-// ── Words missed in more than one session — the highest-value signal ──
-function _mrvRepeatNotice(repeats){
-  if(!repeats.size) return '';
-  return `<div class="chart-box rv-repeat-notice"><h4>⚠ ${repeats.size} word${repeats.size>1?'s':''} repeated across sessions — focus here</h4></div>`;
-}
 
-// ── Timeline: every mistake as a dot, in recitation order ─────────
-function _mrvTimeline(ml, sessionCfg, getCfg, types){
-  if(!ml.length) return '';
-  const cfgForType = id => getCfg(ml.find(m=>m.type===id) || {});
-  const sorted=[...ml].sort((a,b)=>a.surah-b.surah||a.ayah-b.ayah||a.wordPos-b.wordPos);
-  return `<div class="chart-box" style="margin-bottom:10px;">
-    <h4>Mistake map</h4>
-    <div class="legend-row">${types.map(id=>`<div class="leg-item"><div class="leg-dot" style="${typeDotStyle(cfgForType(id),id)}"></div>${typeLabelFor(cfgForType(id),id)}</div>`).join('')}</div>
-    <div class="timeline">${sorted.map((m,i)=>`<div class="tl-dot" style="${typeDotStyle(getCfg(m),m.type)}" title="${m.surah}:${m.ayah} — ${typeLabelFor(getCfg(m),m.type)}\n${corrLabelFor(getCfg(m),m.correction)}${m.note?'\n'+m.note:''}">${i+1}</div>`).join('')}</div>
-  </div>`;
-}
 
-// ── Spot test: outcome tally and a row per spot ───────────────────
-function _mrvSpotTest(spotTest, ml, cfg){
-  if(!spotTest?.enabled || !spotTest.spots?.length) return '';
-  const spots = spotTest.spots;
-  const {pass,partial,fail,none} = spotTally(spots);
-  return `<div class="spot-card">
-    <div class="spot-card-title">🎲 Spot Test Results</div>
-    <div class="spot-badges">
-      <span class="m-badge" style="background:var(--green-bg);color:var(--green);">✓ ${pass} passed</span>
-      <span class="m-badge" style="background:var(--amber-bg);color:var(--amber);">~ ${partial} partial</span>
-      <span class="m-badge" style="background:var(--red-bg);color:var(--red);">✗ ${fail} failed</span>
-      ${none?`<span class="m-badge" style="background:var(--parchment3);color:var(--ink3);">○ ${none} not assessed</span>`:''}
-    </div>
-    <div class="spot-rows">${spots.map((sp,i)=>{
-      const sm = ml.filter(m=>m.spotId===sp.id);
-      const mc = sm.length;
-      const color = {pass:'var(--green)',partial:'var(--amber)',fail:'var(--red)'}[sp.outcome]||'var(--ink3)';
-      const label = {pass:'✓ Pass',partial:'~ Partial',fail:'✗ Fail'}[sp.outcome]||'○ —';
-      // Read from what the teacher app STORED. The viewer never recomputes a
-      // score: it has no calibration model of its own, and recomputing would
-      // silently restate history under whatever formula shipped last.
-      const reach = sp.reached && sp.reached.key ? sp.reached.key : null;
-      const st = sp.strength || null;
-      // Mistakes first and always shown: "Mistakes: 0" is a result, and hiding
-      // it made a clean spot look unassessed. Outcome last, as the conclusion.
-      const head = `<span class="spot-row-n">#${i+1}</span>
-        <span class="spot-row-ref">${sp.surahName} <span>${sp.surah}:${sp.ayah}${reach?` → ${reach}`:''}</span></span>
-        <span class="spot-row-count">Mistakes: ${mc}</span>
-        ${st?`<span class="spot-row-score" style="color:${strengthBand(st.score).color};" title="Only comparable with other spot checks">${st.score}%</span>`:''}
-        <span class="spot-row-outcome" style="color:${color};">${label}</span>`;
-      if(!mc) return `<div class="spot-row">${head}</div>`;
-      return `<details class="spot-row-det"><summary class="spot-row">${head}
-        <span class="spot-row-chev">▾</span></summary>
-        <div class="spot-row-body">${sm
-          .sort((a,b)=>a.surah-b.surah||a.ayah-b.ayah||a.wordPos-b.wordPos)
-          .map(m=>_rvMistakeRow(m,cfg)).join('')}</div></details>`;
-    }).join('')}</div>
-  </div>`;
-}
 
-// ── Several sessions with spot tests — offer the comparison view ──
-function _mrvMultiSpotTests(allSpotTests){
-  if(!(allSpotTests?.length > 1)) return '';
-  return `<div class="spot-card">
-    <div class="spot-card-title">🎲 Spot Tests Across Sessions</div>
-    <div class="spot-card-sub">${allSpotTests.length} sessions with spot tests — click to compare</div>
-    <button class="btn-m spot-cta" onclick="openSpotPopupMulti()">📊 View Spot Test Performance</button>
-  </div>`;
-}
 
-// ── Mistakes grouped by verse, each with its RTL context strip ────
-function _mrvVerses(ml, getCfg, repeats, sessions){
-  const byAyah={};
-  ml.forEach(m=>{const k=`${m.surah}:${m.ayah}`;(byAyah[k]=byAyah[k]||[]).push(m);});
-  const keys=Object.keys(byAyah).sort((a,b)=>{
-    const[as,aa]=a.split(':').map(Number),[bs,ba]=b.split(':').map(Number);
-    return as-bs||aa-ba;
-  });
-  let h=`<div class="review-verses-title">Mistakes by verse</div>`;
-  keys.forEach(key=>{
-    const[sn,an]=key.split(':').map(Number);
-    const ayahM=[...byAyah[key]].sort((a,b)=>a.wordPos-b.wordPos);
-    // Header line: just the mistaken words, with … standing in for the gaps.
-    // A gold ring marks words also missed in another loaded session.
-    let wH='', lp=0;
-    ayahM.forEach(m=>{
-      if(m.wordPos>lp+1) wH+=`<span class="rv-gap">…</span>`;
-      const isRep=repeats.has(`${sn}:${an}:${m.wordPos}`);
-      wH+=`<span class="rw-type-tag ${sevForMistake(m,getCfg(m)).cls}${isRep?' rw-repeated':''}" style="font-size:1.1em;font-weight:700;${levelWordStyle(m,getCfg(m))}">${m.word}</span> `;
-      lp=m.wordPos;
-    });
-    h+=`<div class="review-verse">
-      <div class="review-verse-ref">${key} — ${SURAH_NAMES[sn-1]||''}</div>
-      <div class="review-verse-arabic">${wH}</div>
-      <div>${ayahM.map(m=>_mrvMistakeRow(m,getCfg(m),sessions)).join('')}</div>
-    </div>`;
-  });
-  return h;
-}
 
 // ── One mistake: badges, then the word in context ─────────────────
 // Severity drives the background (via the shared .sev-N classes) and the
@@ -6187,10 +6006,6 @@ function revealSessions(){
   return opened;
 }
 
-/* Used to decide whether a first-time student should be shown the login panel
-   on boot. A student who has imported a .qrs by hand is not a first-time
-   student, even though they have never paired. */
-function localSessionCount(){ return savedSessions.length; }
 
 /** A session the teacher sent is the teacher's record, not the student's copy
  *  to discard — and deleting it would achieve nothing, since the next sync

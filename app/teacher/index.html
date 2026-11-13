@@ -15,8 +15,8 @@
 (function(){try{var d=document.documentElement,t=localStorage.getItem('tehfiz_theme'),m=localStorage.getItem('tehfiz_mode');
 if(t==='classic'||t==='lapis'||t==='mulberry')d.setAttribute('data-tz-theme',t);
 if(m==='dark'||(m==='device'&&window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches))d.setAttribute('data-tz-mode','dark');}catch(e){}})();</script>
-<link rel="stylesheet" href="/app/shared/tehfiz-shared.css?v=s21">
-<script src="/app/shared/tehfiz-shared.js?v=s21"></script>
+<link rel="stylesheet" href="/app/shared/tehfiz-shared.css?v=s24">
+<script src="/app/shared/tehfiz-shared.js?v=s24"></script>
 <script src="/app/shared/tehfiz-ornament.js?v=o2"></script>
 <script src="/app/shared/tehfiz-header.js?v=h7"></script>
 <script src="/app/shared/tehfiz-callink.js?v=cl1"></script>
@@ -33,7 +33,7 @@ if(m==='dark'||(m==='device'&&window.matchMedia&&matchMedia('(prefers-color-sche
 <meta name="apple-mobile-web-app-title" content="Tehf&#299;z">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <title>Tehfīz: Feedback Logger — for teachers</title>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=Lora:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@700&text=%D8%A2%D9%8A%D8%A7%D8%AA%D9%87%D8%A7%D9%85%D9%83%D9%8A%D8%A9%D9%85%D8%AF%D9%86%D9%8A%D8%A9%D9%A0%D9%A1%D9%A2%D9%A3%D9%A4%D9%A5%D9%A6%D9%A7%D9%A8%D9%A9%20&display=swap" rel="stylesheet"><!-- surah banner side labels only -->
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
@@ -2578,108 +2578,6 @@ body.compact-ui .quick-form::before{
         </div>
       </div>
 
-      <!-- TAB: Segments -->
-      <div id="scp-segments" style="display:none;">
-        <p style="font-size:13px;color:var(--ink2);margin-bottom:10px;line-height:1.7;">
-          A <strong>segment</strong> is one passage covered in a session, and how it was covered.
-          A sitting can hold several — a new lesson and an old revision are different things and
-          shouldn't be judged by the same standard, so they're recorded separately.
-        </p>
-        <div style="display:flex;flex-direction:column;gap:7px;font-size:13px;">
-          <div style="padding:8px 10px;background:var(--parchment2);border-radius:6px;border-left:3px solid var(--ink3);">
-            <strong style="display:block;color:var(--ink);margin-bottom:3px;">📖 Recite — the student reads it all</strong>
-            The range is an <em>output</em>: the app fills it in for you. The start is captured when
-            you begin the timer (or log your first mistake), the end when you save. Both show dashed
-            until you confirm them — tap either to correct it.<br>
-            Because every verse was actually recited, these earn a strength score and a clean-verse count.
-          </div>
-          <div style="padding:8px 10px;background:var(--spot-blue-bg);border-radius:6px;border-left:3px solid var(--spot-blue);">
-            <strong style="display:block;color:var(--spot-blue);margin-bottom:3px;">🎲 Spot test — you sample it</strong>
-            The range is an <em>input</em>: set it first, choose how many spots, then
-            <strong>Populate spots</strong>. The app picks evenly-spaced starting points across the range
-            and you ask the student to continue from each.<br>
-            Only a fraction was recited, so there's no verse rate — the honest measure is the pass rate.
-          </div>
-          <div style="padding:8px 10px;background:var(--parchment2);border-radius:6px;border-left:3px solid var(--gold);">
-            <strong style="display:block;color:var(--ink);margin-bottom:3px;">The active segment</strong>
-            One segment is active at a time, marked with <span style="color:var(--gold-ink);">●</span> and a gold edge.
-            New mistakes are logged against it, and it's the one that stretches if recitation runs past
-            its end. Tap any other segment to switch — inactive ones collapse to a single line to save room.
-          </div>
-          <div style="padding:8px 10px;background:var(--parchment2);border-radius:6px;">
-            <strong style="display:block;color:var(--ink);margin-bottom:3px;">Setting a range</strong>
-            Tap a range chip for the picker: <strong>Juz</strong>, <strong>Page</strong>,
-            <strong>Surah</strong> or <strong>Ayah</strong>. Type a number, a span like
-            <code>2-3</code>, or a surah name — "kahf", "Al-Kahf" and "yaseen" all work.
-            Or choose <strong>⌖ Tap words instead</strong> and tap the first and last word in the mushaf.
-          </div>
-          <div style="padding:8px 10px;background:var(--amber-bg);border-radius:6px;font-size:12px;color:var(--amber);line-height:1.6;">
-            ⚠ Every mistake must belong to a segment. If one can't be placed — outside the active
-            spot segment's range, or inside a spot segment whose spots aren't generated yet — it
-            won't be logged, and you'll be offered the ways to fix it. Deleting a segment deletes
-            its mistakes with it.
-          </div>
-        </div>
-      </div>
-
-      <!-- TAB: Strength -->
-      <div id="scp-strength" style="display:none;">
-        <p style="font-size:13px;color:var(--ink2);margin-bottom:10px;line-height:1.7;">
-          <strong>Memorization strength</strong> is a single 0–100 figure for how solid a passage was.
-          It combines <em>how often</em> the student slipped with <em>how much help</em> each slip needed,
-          measured per verse recited — so a whole juz and half a page can be compared fairly.
-        </p>
-        <div style="display:flex;flex-direction:column;gap:7px;font-size:13px;">
-          <div style="padding:7px 10px;background:var(--parchment2);border-radius:6px;border-left:3px solid var(--gold);">
-            <strong style="display:block;color:var(--ink);margin-bottom:3px;">How each mistake counts</strong>
-            Lvl 0 self-corrected — <strong>0.25</strong> · Lvl 1 repeat — <strong>1</strong> ·
-            Lvl 2 hint — <strong>2</strong> · Lvl 3 taught — <strong>3</strong>.<br>
-            Level 0 counts a little rather than nothing on purpose: otherwise a recitation full of
-            self-corrections would score exactly the same as a flawless one.
-          </div>
-          <div style="padding:7px 10px;background:var(--parchment2);border-radius:6px;border-left:3px solid var(--gold);">
-            <strong style="display:block;color:var(--ink);margin-bottom:3px;">Reading the bands</strong>
-            <span style="color:var(--green);font-weight:600;">90+ Very strong</span> ·
-            <span style="color:var(--teal);font-weight:600;">75+ Strong</span> ·
-            <span style="color:var(--lvl1-ink);font-weight:600;">55+ Steady</span> ·
-            <span style="color:var(--lvl2-orange);font-weight:600;">35+ Shaky</span> ·
-            <span style="color:var(--red);font-weight:600;">below 35 Needs work</span>
-          </div>
-          <div style="padding:7px 10px;background:var(--amber-bg);border-radius:6px;font-size:12px;color:var(--amber);line-height:1.6;">
-            ⚠ Shown as <strong>—</strong> when it can't be measured honestly: spot-test segments
-            (which sample rather than recite), ranges estimated from older files, and anything
-            under 10 verses, where a single mistake would swing the score wildly.
-          </div>
-          <div style="padding:7px 10px;background:var(--parchment2);border-radius:6px;font-size:12px;color:var(--ink3);line-height:1.6;">
-            New memorization naturally carries more mistakes per verse than long-term revision,
-            so compare a score against the same stage — sabaq with sabaq, manzil with manzil —
-            rather than across them.
-          </div>
-        </div>
-      </div>
-
-      <!-- TAB: Multi-word -->
-      <div id="scp-multi" style="display:none;">
-        <p style="font-size:13px;color:var(--ink2);margin-bottom:10px;line-height:1.7;">To log a mistake spanning more than one word (e.g. a skipped phrase or multi-word makhraj error), select a range of words within the same verse.</p>
-        <div style="display:flex;flex-direction:column;gap:7px;font-size:13px;">
-          <div style="padding:7px 10px;background:var(--parchment2);border-radius:6px;border-left:3px solid var(--gold);">
-            <strong style="display:block;color:var(--ink);margin-bottom:3px;">📱 Mobile — long press</strong>
-            Long-press the <strong>first word</strong> until the pulse animation and "Multi-word mode" notice appear. Then tap the <strong>last word</strong> in the same verse to confirm.
-          </div>
-          <div style="padding:7px 10px;background:var(--parchment2);border-radius:6px;border-left:3px solid var(--gold);">
-            <strong style="display:block;color:var(--ink);margin-bottom:3px;">🖥 Desktop — Shift + click</strong>
-            Hold <strong>Shift</strong> and click the <strong>first word</strong>. Words between start and cursor are previewed as you hover. Click the <strong>last word</strong> to confirm.
-          </div>
-          <div style="padding:7px 10px;background:var(--gold-pale);border-radius:6px;border-left:3px solid var(--gold);">
-            <strong style="display:block;color:var(--amber);margin-bottom:3px;">🔵 Whole verse — tap the verse number</strong>
-            Tap the <strong>gold circle</strong> at the end of any verse to instantly select the entire verse. On desktop, hovering the circle previews all words highlighted.
-          </div>
-          <div style="padding:7px 10px;background:var(--amber-bg);border-radius:6px;font-size:12px;color:var(--amber);">
-            ⚠ Manual range selection must stay within a single verse. Press Escape or tap a word from a different verse to cancel range mode.
-          </div>
-        </div>
-      </div>
-
       </div><!-- end vtabs-panels -->
     </div><!-- end vtabs-wrap -->
 
@@ -2701,7 +2599,7 @@ body.compact-ui .quick-form::before{
    console as APP_VERSION, or grep the deployed HTML for it. Bumped on every
    saved build; vcheck.py asserts it matches the filename, so a forgotten bump
    fails the integrity check rather than shipping a lie. */
-const APP_VERSION = 'v4_360';
+const APP_VERSION = 'v4_363';
 window.APP_VERSION = APP_VERSION;
 console.info('Tehfiz teacher app ' + APP_VERSION);
 
@@ -4954,6 +4852,7 @@ function changePage(d) {
 async function jumpToPageFromInput(val) {
   const pg = parseInt(val);
   if(isNaN(pg)||pg<1||pg>604) return;
+  _autoScrollHoldForJump(2500);
   let juzNum = 1;
   for(let i=JUZ_PAGES.length-1;i>=0;i--){ if(pg>=JUZ_PAGES[i]){juzNum=i+1;break;} }
   _jumpTargetPage = pg; // prevent loadJuz from resetting the input field
@@ -4995,6 +4894,7 @@ async function jumpToPageFromInput(val) {
   }
 
   function poll(){
+    _autoScrollHoldForJump();
     let target = findTargetEl();
 
     if(!target){
@@ -5046,20 +4946,13 @@ async function jumpToPageFromInput(val) {
   requestAnimationFrame(poll);
 }
 
-function hizbSpan(rub){
-  const mod=rub%4;
-  if(mod===1){const hn=Math.ceil(rub/4);return`<span class="hizb-marker full">حزب ${toAr(hn)}</span>`;}
-  if(mod===3) return`<span class="hizb-marker half">½ حزب</span>`;
-  if(mod===2) return`<span class="hizb-marker quarter">¼</span>`;
-  if(mod===0) return`<span class="hizb-marker quarter">¾</span>`;
-  return'';
-}
 
 
 // ═══════════════════════════════════════════════════════════════════
 // NAVIGATE TO A VERSE — works from any view
 // ═══════════════════════════════════════════════════════════════════
 async function navigateToVerse(surah, ayah, wordPos, onSettled) {
+  _autoScrollHoldForJump(2500);
   // On mobile: close the sidebar first so the quran panel is visible,
   // then wait for the slide-out transition before scrolling.
   if(isMobile()){
@@ -5106,6 +4999,7 @@ async function navigateToVerse(surah, ayah, wordPos, onSettled) {
       const UPGRADE_INTERVAL_MS = 200;
 
       function pollForWord(){
+        _autoScrollHoldForJump();
         const wordEl = document.querySelector(wordSel)
                     || document.querySelector(`.qcf-word[data-surah="${surah}"][data-ayah="${ayah}"]`);
         if(!wordEl){
@@ -5216,6 +5110,7 @@ async function navigateToVerse(surah, ayah, wordPos, onSettled) {
     // It may have arrived meanwhile — the scroller could have appended the very
     // juz being asked for. Re-check rather than reloading and losing the rest.
     if(!pageVerses.find(v=>v.verse_key===`${surah}:${ayah}`)) await loadJuz(juzNum);
+    _autoScrollHoldForJump(2500);
     doScroll();
   }
 }
@@ -5553,7 +5448,7 @@ function openRangePickerFor(cb, anchorEl, unit, text, opts){
   cancelSegmentArm();
   // v4_339: the new picker (range-picker.js) when it is loaded.
   if(window.TehfizRange){
-    const o = opts || {}, pages = _studentMapPages(o.sid);
+    const o = opts || {}, pages = o.pages || _studentMapPages(o.sid);
     const rot = pages && o.stage==='old' && window.TehfizProfile && TehfizProfile.oldRotation ? TehfizProfile.oldRotation(o.sid, pages) : null;
     TehfizRange.open({ title: o.title || 'Set range', start: o.start, end: o.end, unit, pages, stage: o.stage,
       oldJuz: rot ? rot.juz : null, onSet: (r)=>cb(r, r.unit, r.text) });
@@ -8758,30 +8653,6 @@ function reApplyHighlights(list){
 
 let _printCleanup = null;
 
-// Pages the session actually touched. Recite segments contribute their whole
-// range; spot segments do NOT — their segment range is the scope the spots were
-// drawn from (often a whole juz), not what was recited. Each spot contributes
-// only its own start→reached span.
-function sessionRecitedPages(s){
-  const set = new Set();
-  const add = (aKey, bKey) => {
-    if(!keyValid(aKey) || !keyValid(bKey)) return;
-    let a = keyAbs(aKey), b = keyAbs(bKey);
-    if(a > b) [a, b] = [b, a];
-    const p1 = pageForAbs(a), p2 = pageForAbs(b);
-    for(let p = p1; p <= p2; p++) set.add(p);
-  };
-  (s.segments || []).forEach(sg => {
-    if(sg.mode === 'spot') return;
-    const o = segOrdered(sg);
-    add(o.startKey, o.endKey);
-  });
-  ((s.spotTest && s.spotTest.spots) || []).forEach(sp => {
-    if(!sp.reached || !sp.reached.key) return;
-    add(`${sp.surah}:${sp.ayah}`, sp.reached.key);
-  });
-  return [...set].sort((a,b) => a-b);
-}
 
 // Which of those pages are actually renderable right now. A page that is not in
 // the DOM cannot be printed: the mushaf holds the juz currently loaded, which
@@ -9247,12 +9118,6 @@ function deleteSession(id){
 // ═══════════════════════════════════════════════════════════════════
 // EXPORT / IMPORT QRS — friendly filenames
 // ═══════════════════════════════════════════════════════════════════
-function exportQRS(){
-  // Same reasoning as openShare().
-  finalizeSegments();
-  const sess=buildSessionObj();
-  downloadQRS(sess,makeFileName(sess));
-}
 function exportSingleQRS(id){
   const s=getSessions().find(x=>x.id===id); if(!s) return;
   downloadQRS(s,makeFileName(s));
@@ -9899,17 +9764,7 @@ function closeMobilePanel(){
   const fab=document.getElementById('panelToggleBtn');
   fab.classList.remove('panel-open');
 }
-function openMobilePanel(){
-  if(!isMobile()) return;
-  const panel=document.getElementById('trackerPanel');
-  panel.classList.add('panel-open');
-  document.getElementById('panelBackdrop').classList.add('open');
-  const fab=document.getElementById('panelToggleBtn');
-  fab.classList.add('panel-open');
-}
 
-function hideTopbar(){ setTopbarHidden(true); }
-function showTopbar(){ setTopbarHidden(false); }
 
 // ═══════════════════════════════════════════════════════════════════
 // SETTINGS
@@ -10587,31 +10442,6 @@ function surahForPage(pageNum){
 
 
 
-// Given a juz number, pick a random {surah,ayah} strictly within that juz.
-// Uses exact start/end verse boundaries, not page estimation.
-function randomSpotFromJuz(juzNum){
-  const start = JUZ_START_VERSES[juzNum-1];
-  const end   = juzNum < 30 ? JUZ_START_VERSES[juzNum] : {s:114, a:AYAH_COUNTS[113]};
-  // Build a flat list of all {surah,ayah} pairs in this juz
-  // For efficiency, pick a random surah proportional to its ayah count in this juz
-  const candidates = [];
-  for(let s = start.s; s <= end.s; s++){
-    const aLo = (s === start.s) ? start.a : 1;
-    const aHi = (s === end.s)   ? end.a - 1 : AYAH_COUNTS[s-1];
-    if(aHi >= aLo) candidates.push({s, aLo, aHi, count: aHi - aLo + 1});
-  }
-  if(!candidates.length) return {surah: start.s, ayah: start.a};
-  // Weight by ayah count so each ayah has equal probability
-  const total = candidates.reduce((n,c)=>n+c.count, 0);
-  let pick = Math.floor(Math.random() * total);
-  for(const c of candidates){
-    if(pick < c.count){
-      return {surah: c.s, ayah: c.aLo + pick};
-    }
-    pick -= c.count;
-  }
-  return {surah: start.s, ayah: start.a};
-}
 
 // Given a specific page number, return a random {surah, ayah} on that page.
 function randomSpotFromPage(pageNum){
@@ -10632,11 +10462,6 @@ function randomSpotFromPage(pageNum){
   return {surah, ayah: Math.min(Math.max(1, ayah), totalAyahs)};
 }
 
-function randomSpotFromSurah(surahNum){
-  const maxAyah = AYAH_COUNTS[surahNum-1] || 1;
-  const ayah = 1 + Math.floor(Math.random() * maxAyah);
-  return {surah: surahNum, ayah};
-}
 
 // Build a flat ordered array of all {surah, ayah} pairs in the parsed scope.
 // Used for constrained spot placement.
@@ -10697,20 +10522,6 @@ function verseListForRange(startKey, endKey){
   return out;
 }
 
-// Pages a verse range touches — the segment-era replacement for
-// getSpotScopePageRange(). Exact wherever the page index knows the answer.
-function pageRangeForVerseRange(startKey, endKey){
-  const [s1,a1] = startKey.split(':').map(Number);
-  const [s2,a2] = endKey.split(':').map(Number);
-  let p1 = _versePageMap.get(startKey) ?? pageForVerse(s1,a1);
-  let p2 = _versePageMap.get(endKey)   ?? pageForVerse(s2,a2);
-  if(p1 > p2) [p1,p2] = [p2,p1];
-  // Boundary padding: the same +/-3 the juz loader uses, so a spot sitting near
-  // a page edge still has its surrounding context rendered.
-  p1 = Math.max(1, p1-3); p2 = Math.min(604, p2+3);
-  const pages=[]; for(let p=p1;p<=p2;p++) pages.push(p);
-  return pages;
-}
 
 function buildAllSpots(count, minVerses, verses){
   verses = verses || buildScopeVerseList(spotState.parsedScope, spotState.scopeType);
@@ -11899,16 +11710,6 @@ function _offsetWithinBody(el, body){
 }
 
 
-// [ = prev spot, ] = next spot — added to existing keydown handler
-// (injected via the setupKeyboardShortcuts function extension below)
-function _spotKeyHandler(e){
-  const tag = document.activeElement?.tagName;
-  if(tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT') return;
-  if(document.querySelector('.modal-bg.open')) return;
-  if(!spotState.enabled || !spotState.spots.length) return;
-  if(e.key==='[') { e.preventDefault(); goToSpot(spotState.currentIndex - 1); }
-  if(e.key===']') { e.preventDefault(); goToSpot(spotState.currentIndex + 1); }
-}
 // v4_358: [ and ] are TehfizKeys actions now (spotPrev / spotNext).
 
 document.addEventListener('click', e=>{
@@ -11957,10 +11758,6 @@ function showSpotPassWarning(nextIdx){
   document.body.appendChild(div);
   // Auto-dismiss after 8 seconds
   setTimeout(()=>div.remove(), 8000);
-}
-function activeSpotIndex(){
-  if(!spotState.enabled || spotState.currentIndex < 0) return -1;
-  return spotState.currentIndex;
 }
 
 /* Matches the mushaf's range-select gesture so the two feel the same. */
@@ -13065,13 +12862,7 @@ function saveRoster() {
 }
 
 /* Owner administration lives in TehfizAdmin — a different job for a different
-   person, and not worth carrying in this module. All that belongs here is the
-   way in. */
-function adminPanel() {
-  if (!(window.TehfizAdmin && TehfizAdmin.available())) return '';
-  return '<div class="tsy-admin-bar">' +
-    '<button class="tsy-btn" data-tad="open">Admin</button></div>';
-}
+   person, and not worth carrying in this module. The way in is Menu → Admin. */
 
 
 function studentById(id)   { return roster.find((s) => s.id === id) || null; }
@@ -15286,8 +15077,6 @@ window.TehfizSync = {
 .tsy-pending-cta{background:var(--gold-pale);border:.5px solid var(--gold);}
 .tsy-pending-cta strong{color:var(--gold-ink);}
 .tsy-pending-cta .tsy-btn{display:inline-block;width:auto;margin-top:9px;text-decoration:none;}
-.tsy-admin-bar{margin-bottom:9px;}
-.tsy-admin-bar .tsy-btn{width:auto;margin:0;}
 .tsy-manage{margin-top:8px;border:.5px solid var(--border2);border-radius:6px;
   padding:8px 10px;background:var(--parchment);}
 .tsy-manage-row{display:flex;align-items:center;gap:9px;justify-content:space-between;
@@ -17193,7 +16982,7 @@ function mount() {
            down the side on a wide screen (one row that scrolls sideways on a
            phone), and the section itself. CSV and Broadcast used to sit among
            the tabs as buttons; they now live in their sections. */
-        '<div class="tad-top"><span class="tad-brand">TEH\u012aZ</span><span class="tad-crumb">Admin</span>' +
+        '<div class="tad-top"><span class="tad-brand">TEHF\u012aZ</span><span class="tad-crumb">Admin</span>' +
           '<span class="tad-sp"></span>' +
           '<button class="tad-chip-btn" data-tad="refresh" id="tadRefresh">Refresh</button>' +
           '<button class="tad-back" data-tad="close" aria-label="Close admin">\u2715<span> Back to the app</span></button>' +
@@ -19166,14 +18955,14 @@ span.seg-chip{display:flex;align-items:center;justify-content:center;box-sizing:
 })();
 </script>
 <script src="/app/teacher/sessions-sent.js?v=m5"></script>
-<script src="/app/teacher/finish-session.js?v=f15"></script>
+<script src="/app/teacher/finish-session.js?v=f16"></script>
 <script src="/app/teacher/invoices.js?v=i7"></script>
 <script src="/app/shared/tehfiz-map.js?v=mp6"></script>
 <script src="/app/shared/tehfiz-time.js?v=t4"></script>
-<script src="/app/teacher/profile.js?v=p14"></script>
+<script src="/app/teacher/profile.js?v=p15"></script>
 <script src="/app/teacher/range-picker.js?v=rg5"></script>
-<script src="/app/teacher/lesson-editor.js?v=le5"></script>
-<script src="/app/teacher/calendar.js?v=c6"></script>
+<script src="/app/teacher/lesson-editor.js?v=le6"></script>
+<script src="/app/teacher/calendar.js?v=c7"></script>
 <script src="/app/teacher/remind.js?v=r2"></script>
 <script src="/app/teacher/tz-converter.js?v=tc1"></script>
 <script src="/app/teacher/grades.js?v=g5"></script>

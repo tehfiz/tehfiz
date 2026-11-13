@@ -1,6 +1,8 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   profile.js — TehfizProfile — p14
-   Loaded by the teacher app only, from /app/teacher/profile.js?v=p14.
+   profile.js — TehfizProfile — p15
+   Loaded by the teacher app only, from /app/teacher/profile.js?v=p15.
+
+   p15: a new weekly slot defaults to 30 minutes.
 
    p14: the student's time zone can be found by country.
 
@@ -58,7 +60,7 @@
    ═══════════════════════════════════════════════════════════════════════ */
 (function () {
 'use strict';
-const TEHFIZ_PROFILE_VERSION = 'p14';
+const TEHFIZ_PROFILE_VERSION = 'p15';
 const K_TT = 'tehfiz_prof_tt';            // {sid: {days: {'1': {t:'17:00', len:45}, …}, lessons: [{at, len}]}}, 0 = Sunday — a cache
 const K_LSQ = 'tehfiz_prof_lsq';          // {sid: true} single lessons not yet on the server (p7)
 const K_MAPQ = 'tehfiz_prof_mapq';        // {sid: {pages, recent_auto, ayahs}} not yet on the server
@@ -165,7 +167,7 @@ function setDay(id, dow, patch) {
   const t = all[id] || { days: {} };
   t.days = t.days || {};
   if (patch === null) delete t.days[dow];
-  else t.days[dow] = { t: '17:00', len: 45, ...(t.days[dow] || {}), ...patch };
+  else t.days[dow] = { t: '17:00', len: 30, ...(t.days[dow] || {}), ...patch };
   all[id] = t; writeJ(K_TT, all);
   const q = readJ(K_TTQ, {}); q[id] = true; writeJ(K_TTQ, q);
   scheduleSave();
@@ -848,7 +850,7 @@ function onChange(e) {
   if (f === 'tzq') return;
   if (f === 'name') return;
   if (f === 't' || f === 'len') {
-    const v = f === 'len' ? Math.max(5, Math.min(240, parseInt(el.value, 10) || 45)) : (el.value || '17:00');
+    const v = f === 'len' ? Math.max(5, Math.min(240, parseInt(el.value, 10) || 30)) : (el.value || '17:00');
     setDay(sid, el.dataset.d, { [f]: v });
     return render();
   }

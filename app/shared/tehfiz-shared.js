@@ -1,7 +1,7 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   tehfiz-shared.js — s21
+   tehfiz-shared.js — s24
    Loaded by BOTH apps (teacher /app/teacher/, viewer /app/student/) before
-   their own scripts, from /app/shared/tehfiz-shared.js?v=s4.
+   their own scripts, from /app/shared/tehfiz-shared.js?v=<version>.
 
    What is here: every top-level `function` and `const` that was identical
    (token for token) in the two apps — the tajweed tables and rule helpers,
@@ -18,7 +18,7 @@
    · Nothing here may run against the page at load time: this file runs in the
      <head>, before <body> exists. Declarations and pure tables only.
    ═══════════════════════════════════════════════════════════════════════ */
-const TEHFIZ_SHARED_VERSION = 's21';
+const TEHFIZ_SHARED_VERSION = 's24';
 
 /* s16: the surah banner on the mushaf — the calligraphic name (fonts/surah-names
    .woff2, from quran.com) with سورة, and at the sides the number of verses and
@@ -1481,12 +1481,15 @@ function _posNavWaitForScrollArrival(targetSurah, targetAyah){
     const topEl = _posNavTopPage();
     if(panel && topEl){
       const panelRect = panel.getBoundingClientRect();
-      const words = topEl.querySelectorAll('.qcf-word[data-surah][data-ayah][data-pos]');
+      // s22: the teacher app marks words data-surah/data-ayah, the viewer
+      // data-s/data-a. Reading only the first meant the viewer never saw the
+      // arrival and live tracking stayed paused for the full hard cap.
+      const words = topEl.querySelectorAll('.qcf-word[data-pos]');
       for(const w of words){
         if(+w.dataset.pos !== 1) continue;
         const r = w.getBoundingClientRect();
         if(r.top >= panelRect.top - 2){
-          if(+w.dataset.surah === targetSurah && +w.dataset.ayah === targetAyah){
+          if(+(w.dataset.surah ?? w.dataset.s) === targetSurah && +(w.dataset.ayah ?? w.dataset.a) === targetAyah){
             // Viewport has arrived — resume live tracking
             _posNavNavigating = false;
             return;
@@ -1722,13 +1725,32 @@ const autoScrollState = {
   pausedManual:false,    // temporary — clears once the page has been still a moment
   pausedQuickForm:false, // teacher: clears when the mark-mistake form closes
   touching:false,        // a finger is on the page: never resume under it
+  jumpUntil:0,           // s23: a jump is scrolling the page; hold until this time
   rampFrom:0,            // performance.now() of the last resume, for the ease-in
 };
 let _autoScrollAdvancing=false;
 let _autoScrollFabIdleTimer=null;
 
 function _isAutoScrollSuspended(){
+  if(autoScrollState.jumpUntil){
+    if(performance.now() < autoScrollState.jumpUntil) return true;
+    // The jump has finished: ease back in, as after a manual scroll.
+    autoScrollState.jumpUntil=0;
+    autoScrollState.rampFrom=performance.now();
+    autoScrollState._acc=0;
+  }
   return autoScrollState.pausedManual || autoScrollState.pausedQuickForm;
+}
+/* s23: a jump (Go to, a tapped mistake, a page number) scrolls the page
+   itself. Auto-scroll writing scrollTop every frame cancelled that smooth
+   scroll, so with auto-scroll on the jump never arrived. Each app calls this
+   when a jump starts (to cover the load) and on every frame of its arrival
+   poll; auto-scroll resumes AUTOSCROLL_JUMP_HOLD_MS after the last call. */
+const AUTOSCROLL_JUMP_HOLD_MS = 700;
+function _autoScrollHoldForJump(ms){
+  if(!autoScrollState.active) return;
+  const until = performance.now() + (ms || AUTOSCROLL_JUMP_HOLD_MS);
+  if(until > autoScrollState.jumpUntil) autoScrollState.jumpUntil = until;
 }
 
 function _autoScrollTick(ts){
@@ -1770,6 +1792,7 @@ function stopAutoScroll(){
   clearTimeout(autoScrollState.resumeTimer);
   autoScrollState.pausedManual=false;
   autoScrollState.pausedQuickForm=false;
+  autoScrollState.jumpUntil=0;
   _updateAutoScrollUI();
 }
 function setAutoScrollSpeed(val){
@@ -3212,7 +3235,7 @@ function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace
     { id:'graphite', name:'Graphite', note:'Default',  sw:['#17191c','#626973','#f5f5f3'] },
     { id:'lapis',    name:'Lapis',    note:'Blue accents',  sw:['#17191c','#3a5585','#f5f5f3'] },
     { id:'mulberry', name:'Mulberry', note:'Plum accents',  sw:['#17191c','#6a3f5c','#f5f5f3'] },
-    { id:'classic',  name:'Gold',     note:'Gold accents, serif type', sw:['#17191c','#a38759','#f5f5f3'] }
+    { id:'classic',  name:'Gold',     note:'Gold accents', sw:['#17191c','#a38759','#f5f5f3'] }
   ];
   function valid(id){ return THEMES.some(function(t){ return t.id === id; }); }
   function get(){

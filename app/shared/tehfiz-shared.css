@@ -1,8 +1,10 @@
-/* tehfiz-shared.css — s6
+/* tehfiz-shared.css — s24
+   (vcheck.py compares the tag on the line above with the ?v= each app loads
+   this file under: change them together.)
    Theme tokens, the theme picker, the one-row header and the mushaf page
    style (Illuminated / Quiet), shared by both apps.
    Loaded in <head> before each app's own <style>, from
-   /app/shared/tehfiz-shared.css?v=s6. Each app's own .topbar rules still
+   /app/shared/tehfiz-shared.css?v=<tag>. Each app's own .topbar rules still
    exist and load later, so header rules here are written one class stronger
    (.topbar.tzh-bar) to win without !important. */
 /* ═══ THEMES ════════════════════════════════════════════════════════════
@@ -69,7 +71,8 @@
   --chrome-accent:#d2aec6;--chrome-rule:#6a3f5c;--ornament:#6a3f5c;
   --ui-font:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
 }
-/* Gold accents on the neutral ground, keeping the original Lora face. Stored
+/* Gold accents on the neutral ground, in IBM Plex like the other themes (s24; it was Lora, whose different
+   proportions made sizes look inconsistent). Stored
    as 'classic' so existing choices carry over. Gold as TEXT is darker than gold
    as a fill (5.1:1 on the page).
    Muted in css s7 to match Lapis and Mulberry (3 Oct): the same treatment in
@@ -83,7 +86,7 @@
   --border:rgba(23,25,28,0.13);--border2:rgba(23,25,28,0.25);
   --gold:#a38759;--on-gold:#17191c;--gold-ink:#806434;--gold-light:#ece5d5;--gold-pale:#e9eaed;
   --chrome-accent:#c6aa78;--chrome-rule:#a38759;--ornament:#a38759;
-  --ui-font:'Lora',Georgia,serif;
+  --ui-font:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
 }
 /* Theme picker (Settings → Display) */
 .tz-theme-choice{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;}

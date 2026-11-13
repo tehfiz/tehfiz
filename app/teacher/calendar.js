@@ -1,6 +1,8 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   calendar.js — TehfizCalendar — c6
-   Loaded by the teacher app only, from /app/teacher/calendar.js?v=c6.
+   calendar.js — TehfizCalendar — c7
+   Loaded by the teacher app only, from /app/teacher/calendar.js?v=c7.
+
+   c7: removed a check for data-keep, which nothing ever set.
 
    c6: "Remind…" on a lesson still to come opens a message to copy or send on
    WhatsApp (TehfizRemind, remind.js). "Add to my calendar" in the bar
@@ -59,7 +61,7 @@
    ═══════════════════════════════════════════════════════════════════════ */
 (function () {
 'use strict';
-const TEHFIZ_CALENDAR_VERSION = 'c6';
+const TEHFIZ_CALENDAR_VERSION = 'c7';
 const MATCH_MS = 3 * 3600000;
 const K_PLANS = 'tehfiz_cal_plans';
 const K_DISMISS = 'tehfiz_cal_dismissed';
@@ -377,7 +379,7 @@ function slotFrom(col, clientY) {
 }
 function onMove(ev) {
   const root = $('tcalRoot'); if (!root || slot) return;
-  root.querySelectorAll('.tcal-ghost').forEach((g) => { if (!g.dataset.keep) g.hidden = true; });
+  root.querySelectorAll('.tcal-ghost').forEach((g) => { g.hidden = true; });
   const col = ev.target.closest && ev.target.closest('.tcal-col');
   if (!col || ev.target.closest('.tcal-ev')) return;
   const s0 = slotFrom(col, ev.clientY);

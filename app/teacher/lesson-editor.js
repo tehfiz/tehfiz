@@ -1,6 +1,9 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   lesson-editor.js — TehfizLesson — le5
-   Loaded by the teacher app only, from /app/teacher/lesson-editor.js?v=le5.
+   lesson-editor.js — TehfizLesson — le6
+   Loaded by the teacher app only, from /app/teacher/lesson-editor.js?v=le6.
+
+   le6: open() takes `pages`, a map to show in the range picker and to
+   suggest from, in place of the saved one. New lessons default to 30 minutes.
 
    le5: archived students' lessons are left out of the clash check.
 
@@ -54,7 +57,7 @@
    ═══════════════════════════════════════════════════════════════════════ */
 (function () {
 'use strict';
-const TEHFIZ_LESSON_VERSION = 'le5';
+const TEHFIZ_LESSON_VERSION = 'le6';
 const K_HOURS = 'tehfiz_teach_hours';     // {from:'15:00', to:'21:00'} — optional, set in Settings
 const K_PLANS = 'tehfiz_cal_plans';       // the calendar's copy of every student's timetable
 const SNAP = 15, DAY = 86400000;
@@ -144,7 +147,8 @@ function open(opts) {
   const start = d.at || (o && o.at) || defaultStart(opts.sid);
   ed = {
     sid: opts.sid, occ: o, mode: opts.mode || 'save', onDone: opts.onDone || null, title: opts.title || '',
-    at: start, len: d.len || (o && o.len) || 45,
+    pages: opts.pages || null,   // le6: a map to show instead of the saved one (Finish: with this lesson added)
+    at: start, len: d.len || (o && o.len) || 30,
     plan: (d.plan ? d.plan.map((x) => ({ ...x })) : T().planOf(o || {})),
     note: d.note != null ? d.note : ((o && o.note) || ''),
     replaces: d.replaces || null,
@@ -444,7 +448,7 @@ function onClick(e) {
   }
   if (a === 'segdel') { ed.plan.splice(+t.dataset.i, 1); return render(); }
   if (a === 'suggest') {
-    const s = P().suggestPlan(ed.sid);
+    const s = P().suggestPlan(ed.sid, ed.pages || undefined);
     if (!s || !s.length) { toast('Mark what ' + nameOf(ed.sid) + ' has memorised on the map to get suggestions'); return; }
     ed.plan = s; return render();
   }
@@ -455,7 +459,7 @@ function onClick(e) {
       if (!ed || !ed.plan[i]) return;
       Object.assign(ed.plan[i], { start: r.startKey, end: r.endKey, label: unit === 'ayah' ? '' : (r.label || ''), unit, utext: text });
       render();
-    }, t, p.unit || 'juz', p.utext || '', { sid: ed.sid, stage: p.type, start: p.start, end: p.end,
+    }, t, p.unit || 'juz', p.utext || '', { sid: ed.sid, pages: ed.pages || null, stage: p.type, start: p.start, end: p.end,
       title: (p.mode === 'spot' ? 'Spot test' : stage(p.type)) + ' \u00b7 range' });
     return;
   }
@@ -491,7 +495,7 @@ function onChange(e) {
     ed.at = T().zonedToMs(y, mo, dd, h, mi, z); ed.weekStart = mondayOf(ed.at); ed.keepBoth = false;
     return render();
   }
-  if (f === 'len') { ed.len = Math.max(5, Math.min(240, parseInt(el.value, 10) || 45)); return render(); }
+  if (f === 'len') { ed.len = Math.max(5, Math.min(240, parseInt(el.value, 10) || 30)); return render(); }
   if (f === 'type') { const p = ed.plan[+el.dataset.i]; if (p) p.type = el.value; return; }
   if (f === 'spots') { const p = ed.plan[+el.dataset.i]; if (p) p.spots = Math.max(1, Math.min(999, parseInt(el.value, 10) || 8)); }
 }
