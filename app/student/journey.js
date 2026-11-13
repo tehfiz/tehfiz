@@ -1,6 +1,11 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   journey.js — TehfizJourney — j7
-   Loaded by the student viewer only, from /app/student/journey.js?v=j7.
+   journey.js — TehfizJourney — j8
+   Loaded by the student viewer only, from /app/student/journey.js?v=j8.
+
+   j8: when the teacher changed the code or reset the PIN, the calendar link
+   stopped with it (server, 0016). Reminders says so and offers to add the
+   calendar again; the notice goes once a new link is made or links are
+   turned off.
 
    j7: "Reminders" — lessons in the student's own calendar app, which then
    reminds them (TehfizCalLink, shared/tehfiz-callink.js): a calendar link
@@ -48,7 +53,7 @@
    ═══════════════════════════════════════════════════════════════════════ */
 (function () {
 'use strict';
-const TEHFIZ_JOURNEY_VERSION = 'j7';
+const TEHFIZ_JOURNEY_VERSION = 'j8';
 const KEY_PLAN = 'tehfiz_journey_plan';
 const REFRESH_MS = 5 * 60 * 1000;
 const DAY_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -94,7 +99,7 @@ async function fetchPlan() {
     const tts = review()
       ? (d.timetable ? [{ teacher: 'Set by you', ...d.timetable }] : [])
       : (d.timetables || []);
-    plan = { map: d.map || null, timetables: tts, at: Date.now() };
+    plan = { map: d.map || null, timetables: tts, calendar_reset: !!d.calendar_reset, at: Date.now() };
     if (!review()) { try { localStorage.setItem(KEY_PLAN, JSON.stringify(plan)); } catch {} }
     state = 'ok';
     try { window.dispatchEvent(new CustomEvent('tehfiz-plan')); } catch {}
@@ -255,6 +260,12 @@ function bodyHtml() {
       daysHtml() +
       (!review() && window.TehfizCalLink && state !== 'signedout'
         ? '<div class="tjy-h">Reminders</div>' +
+          (plan.calendar_reset
+            ? '<div class="tjy-card tjy-pad tjy-calreset"><b>Your calendar link was reset</b>' +
+              '<span>Your teacher changed your code or reset your PIN, so the old calendar link stopped working. ' +
+              'Lessons already in your calendar will stop updating. Add your calendar again to keep getting reminders.</span>' +
+              '<button type="button" class="tjy-btn pri" data-tjy="callink">Add it again</button></div>'
+            : '') +
           '<button type="button" class="tjy-btn tjy-prog" data-tjy="callink">📅 Get reminders in your calendar<small>Your lessons in your phone’s calendar, with a reminder before each one</small></button>'
         : '') +
       '<div class="tjy-h">Progress</div>' +
@@ -373,6 +384,8 @@ function openCalLink() {
   if (!window.TehfizCalLink) return;
   window.TehfizCalLink.open({
     who: 'student', api: apiBase(), token: token(),
+    // j8: a new link (or none at all) settles the "link was reset" notice.
+    onLink: () => { if (plan && plan.calendar_reset) { plan.calendar_reset = false; render(); } },
     title: 'Get reminders in your calendar',
     intro: 'Your lesson times show in your phone’s calendar, and it reminds you before each one.',
     file: {

@@ -1,6 +1,9 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   tehfiz-callink.js — TehfizCalLink — cl1
-   Loaded by both apps, from /app/shared/tehfiz-callink.js?v=cl1.
+   tehfiz-callink.js — TehfizCalLink — cl2
+   Loaded by both apps, from /app/shared/tehfiz-callink.js?v=cl2.
+
+   cl2: open() takes onLink(link|null), called when a link is made, replaced
+   or turned off, so the opener can update what it shows.
 
    Lessons in your own calendar app (Apple, Google, Outlook), which then does
    the reminding. Two ways, side by side:
@@ -32,7 +35,7 @@
    ═══════════════════════════════════════════════════════════════════════ */
 (function () {
 'use strict';
-const TEHFIZ_CALLINK_VERSION = 'cl1';
+const TEHFIZ_CALLINK_VERSION = 'cl2';
 const T = () => window.TehfizTime;
 const $ = (id) => document.getElementById(id);
 const esc = (x) => String(x == null ? '' : x).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -260,7 +263,10 @@ async function copyText(text) {
 }
 async function post(body) {
   st.busy = true; st.err = ''; render();
-  try { const r = await call('POST', body); if (!st) return; st.link = r.path ? r : null; st.alarm = r.alarm_min; }
+  try {
+    const r = await call('POST', body); if (!st) return; st.link = r.path ? r : null; st.alarm = r.alarm_min;
+    if (typeof st.o.onLink === 'function') { try { st.o.onLink(st.link); } catch (e) {} }
+  }
   catch (e) { if (!st) return; st.err = String(e.message); }
   st.busy = false; st.confirm = null; render();
 }

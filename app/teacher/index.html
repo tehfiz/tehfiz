@@ -19,7 +19,7 @@ if(m==='dark'||(m==='device'&&window.matchMedia&&matchMedia('(prefers-color-sche
 <script src="/app/shared/tehfiz-shared.js?v=s24"></script>
 <script src="/app/shared/tehfiz-ornament.js?v=o2"></script>
 <script src="/app/shared/tehfiz-header.js?v=h7"></script>
-<script src="/app/shared/tehfiz-callink.js?v=cl1"></script>
+<script src="/app/shared/tehfiz-callink.js?v=cl2"></script>
 <script src="/app/shared/tehfiz-versefind.js?v=vf2"></script>
 <script src="/app/shared/tehfiz-keys.js?v=k2"></script>
 <script src="/app/shared/tehfiz-pwa.js?v=p2"></script>
@@ -2599,7 +2599,7 @@ body.compact-ui .quick-form::before{
    console as APP_VERSION, or grep the deployed HTML for it. Bumped on every
    saved build; vcheck.py asserts it matches the filename, so a forgotten bump
    fails the integrity check rather than shipping a lie. */
-const APP_VERSION = 'v4_363';
+const APP_VERSION = 'v4_365';
 window.APP_VERSION = APP_VERSION;
 console.info('Tehfiz teacher app ' + APP_VERSION);
 
@@ -13450,6 +13450,15 @@ function removeStudentLocally(id) {
   toast('Removed ' + (s && s.name ? s.name : 'student') + ' from this device');
 }
 
+/* v4_364: a code change or PIN reset also stops the student's calendar link
+   (the server says so). The words to add to the confirmation; kept for
+   TehfizProfile, whose own buttons do the same two things. */
+let lastCalReset = false;
+function calResetNote(r) {
+  lastCalReset = !!(r && r.calendar_reset);
+  return lastCalReset ? '. Their calendar link stopped too; the viewer asks them to add it again' : '';
+}
+
 function linkLocalSession(clientId, studentId) {
   const list = localSessions();
   const s = list.find((x) => String(x.id) === String(clientId));
@@ -13829,6 +13838,7 @@ async function saveProfile() {
     languages: langs, max_opposite_age: val('max_age'),
     hourly_rate: val('rate'), hourly_currency: val('currency'),
     comments: val('comments'),
+    recommend_students: !!($('pf_recommend') && $('pf_recommend').checked),
   };
 
   profileSaving = true; profileMsg = ''; render();
@@ -13940,6 +13950,10 @@ function profilePanel() {
     '</div>' +
     area('background', 'Your background', p.background, 'qualifications, ijazah, where you studied, years teaching') +
     area('comments', 'Comments', p.comments) +
+    /* v4_365 (0017): replaces the teacher registration form on the homepage. */
+    '<label class="pf-rec"><input type="checkbox" id="pf_recommend"' + (p.recommend_students ? ' checked' : '') + '>' +
+      '<span><b>Recommend students to me when available</b>' +
+      '<em>Tick this if you would like us to suggest you to families looking for a teacher.</em></span></label>' +
     '<div class="pf-actions">' +
       '<button class="tsy-btn" data-tsy="profile-save"' + (profileSaving ? ' disabled' : '') + '>' +
         (profileSaving ? 'Saving…' : 'Save profile') + '</button>' +
@@ -14534,11 +14548,11 @@ document.addEventListener('click', async (e) => {
   if (act === 'ask-code')    { managingAct = 'code'; render(); return; }
   if (act === 'do-pin') {
     try {
-      await api('/api/students/' + encodeURIComponent(id) + '/reset-pin', { method: 'POST' });
+      const r = await api('/api/students/' + encodeURIComponent(id) + '/reset-pin', { method: 'POST' });
       const s = studentById(id);
       if (s) s.claimed = false;
       saveRoster(); managingAct = null; render();
-      toast('PIN reset — they set a new one next time they log in');
+      toast('PIN reset — they set a new one next time they log in' + calResetNote(r));
     } catch (err) { showError('Could not reset the PIN: ' + err.message); }
     return;
   }
@@ -14548,7 +14562,7 @@ document.addEventListener('click', async (e) => {
       const s = studentById(id);
       if (s) { s.code = r.code; s.claimed = false; }
       saveRoster(); rebind(); managingAct = null; render();
-      toast('New code: ' + r.code + ' — PIN cleared, old code no longer works');
+      toast('New code: ' + r.code + ' — PIN cleared, old code no longer works' + calResetNote(r));
     } catch (err) { showError('Could not change the code: ' + err.message); }
     return;
   }
@@ -14682,13 +14696,62 @@ window.TehfizSync = {
     return s ? studentSessions(s).map((x) => ({ ...x })) : [];
   },
   async resetPin(id) {
-    await api('/api/students/' + encodeURIComponent(id) + '/reset-pin', { method: 'POST' });
+    const r = await api('/api/students/' + encodeURIComponent(id) + '/reset-pin', { method: 'POST' });
+    calResetNote(r);
     const s = studentById(id);
     if (s) s.claimed = false;
     saveRoster(); render();
   },
+  /* What to add to the confirmation after the resetPin or rotateCode just made. */
+  calResetNote: () => (lastCalReset ? '. Their calendar link stopped too; the viewer asks them to add it again' : ''),
+  /* v4_364: take a sent session back from the student. The copy on this device
+     stays. serverId is for a session this device holds no "sent" note for
+     (it was sent from another device). 'undone' | 'offline' | 'error'. */
+  async unsend(clientId, serverId) {
+    const rec = sent[String(clientId)];
+    const sid = (rec && rec.serverId) || serverId;
+    dequeue(clientId);
+    if (sid) {
+      try { await api('/api/sessions/' + encodeURIComponent(sid), { method: 'DELETE' }); }
+      // 404: already gone from the server, which is what was asked for.
+      catch (err) { if (err.status !== 404) return err.status ? 'error' : 'offline'; }
+    }
+    delete sent[String(clientId)];
+    writeJSON(K.sent, sent);
+    decorateSessionList(); footerState(); render();
+    return 'undone';
+  },
+  /* v4_364: it was sent to the wrong student — give it to another one. A
+     session already on the server is moved there; one not sent yet is linked
+     and sent. 'moved' | 'queued' | 'offline' | 'error' | 'nostudent'. */
+  async moveSession(clientId, studentId, serverId) {
+    const to = studentById(studentId);
+    if (!to) return 'nostudent';
+    const rec = sent[String(clientId)];
+    const sid = (rec && rec.serverId) || serverId;
+    if (sid) {
+      try { await api('/api/sessions/' + encodeURIComponent(sid) + '/move', { method: 'POST', body: { studentId } }); }
+      catch (err) { return err.status ? 'error' : 'offline'; }
+    }
+    // The copy on this device follows, name included (names stay on the device).
+    const list = localSessions();
+    const s = list.find((x) => String(x.id) === String(clientId));
+    if (s) { s.studentId = studentId; s.student = to.name || ''; saveLocalSessions(list); }
+    if (sid) {
+      sent[String(clientId)] = { ...(rec || { serverId: sid, at: Date.now() }), studentId };
+      writeJSON(K.sent, sent);
+      const qd = queue.find((x) => String(x.clientId) === String(clientId));
+      if (qd) { qd.studentId = studentId; writeJSON(K.queue, queue); }
+      decorateSessionList(); footerState(); render();
+      return 'moved';
+    }
+    if (!s) return 'error';
+    if (await send(clientId, studentId)) return 'moved';
+    return queue.some((x) => String(x.clientId) === String(clientId)) ? 'queued' : 'error';
+  },
   async rotateCode(id) {
     const r = await api('/api/students/' + encodeURIComponent(id) + '/rotate', { method: 'POST' });
+    calResetNote(r);
     const s = studentById(id);
     if (s) { s.code = r.code; s.claimed = false; }
     saveRoster(); rebind(); render();
@@ -14993,6 +15056,10 @@ window.TehfizSync = {
 .pf-hint{font-size:12px;color:var(--ink3);font-style:italic;margin-top:2px;}
 .tsy-who-em{color:var(--ink3);font-size:12px;}
 .pf-actions{display:flex;align-items:center;gap:10px;margin-top:10px;}
+.pf-rec{display:flex;align-items:flex-start;gap:10px;margin-top:12px;padding:10px 12px;border:1px solid var(--border2);border-radius:8px;cursor:pointer;}
+.pf-rec input{margin-top:3px;width:18px;height:18px;flex:none;}
+.pf-rec span{display:flex;flex-direction:column;gap:2px;font-size:14px;color:var(--ink);}
+.pf-rec em{font-style:normal;font-size:12px;color:var(--ink3);}
 .pf-msg{font-size:12px;color:var(--gold-ink);}
 .pf-when{font-size:12px;color:var(--ink3);margin-left:auto;}
 @media(max-width:560px){.pf-grid{grid-template-columns:1fr;}}
@@ -15500,7 +15567,64 @@ let bcExtra = '';
 let bcFooter = '', bcOptOut = new Set(), bcRun = null, bcHist = null, bcHistOpen = true;
 // The list stays open across re-renders once opened.
 document.addEventListener('toggle', (e) => { if (e.target && e.target.classList && e.target.classList.contains('bc-hist')) bcHistOpen = e.target.open; }, true);
-const BC_DEFAULT_FOOTER = 'You are receiving this because you have a Teh\u012bz teacher account.';
+const BC_DEFAULT_FOOTER = 'You are receiving this because you have a Tehf\u012bz teacher account.';
+/* v4_365: subscribers (0017) — people who asked for updates and are not
+   teachers. bcAud picks who the message is for; subscribers are ticked the
+   same way teachers are. */
+let bcAud = 'teachers', bcSubs = null, bcSubExcluded = new Set(), bcSubAdd = '', bcSubMsg = '', bcSubBusy = false, bcSubsOpen = true;
+document.addEventListener('toggle', (e) => { if (e.target && e.target.classList && e.target.classList.contains('bc-subs')) bcSubsOpen = e.target.open; }, true);
+function bcActiveSubs() { return (bcSubs || []).filter((s) => s.status === 'active' && !s.unsubscribed); }
+async function bcLoadSubs() {
+  try { bcSubs = (await api('/api/admin/subscribers')).subscribers || []; }
+  catch { bcSubs = bcSubs || []; }
+  renderList();
+}
+async function bcSubSubmit(mode) {
+  bcRead();
+  const emails = String(bcSubAdd || '').split(/[\s,;]+/).map((s) => s.trim()).filter(Boolean);
+  if (!emails.length) { toast('Type one or more addresses first'); return; }
+  if (mode === 'add' && !confirm('Add ' + emails.length + ' address' + (emails.length === 1 ? '' : 'es') +
+      ' without asking them to confirm?\n\nOnly do this for people who have already asked you for updates.')) return;
+  bcSubBusy = true; bcSubMsg = ''; renderList();
+  try {
+    const r = await api('/api/admin/subscribers', { method: 'POST', body: { emails, mode } });
+    const part = (list, words) => (list && list.length ? list.length + ' ' + words : '');
+    bcSubMsg = [part(r.invited, 'invited'), part(r.added, 'added'), part(r.already, 'already subscribed'),
+      part(r.waiting, 'invited in the last 10 minutes, not sent again'),
+      part(r.unsubscribed, 'unsubscribed earlier, so not added (only they can subscribe again)'),
+      part(r.failed, 'could not be emailed')].filter(Boolean).join(' \u00b7 ') || 'Nothing changed';
+    bcSubAdd = '';
+  } catch (err) { bcSubMsg = (err && err.message) === 'no_valid_emails' ? 'None of those look like email addresses.' : 'Failed: ' + ((err && err.message) || 'unknown'); }
+  bcSubBusy = false;
+  await bcLoadSubs();
+}
+async function bcSubRemove(email) {
+  if (!confirm('Take ' + email + ' off the subscriber list?')) return;
+  try { await api('/api/admin/subscribers?email=' + encodeURIComponent(email), { method: 'DELETE' }); }
+  catch (err) { toast('Could not remove: ' + ((err && err.message) || 'unknown')); }
+  await bcLoadSubs();
+}
+function bcSubsHtml() {
+  if (!bcSubs) return '<p class="tad-note">Loading subscribers\u2026</p>';
+  const act = bcActiveSubs().length, wait = bcSubs.filter((s) => s.status === 'pending').length;
+  const tag = (s) => s.unsubscribed ? '<span class="bc-tag">unsubscribed</span>'
+    : s.status === 'pending' ? '<span class="bc-tag bc-tag-q">waiting to confirm</span>' : '';
+  const src = { form: 'homepage', invite: 'invited', admin: 'added by you' };
+  return '<details class="bc-subs"' + (bcSubsOpen ? ' open' : '') + '><summary>Subscribers (' + act + (wait ? ' \u00b7 ' + wait + ' waiting' : '') + ')</summary>' +
+    '<p class="tad-note">People who asked for updates from the homepage, or who you invited or added. Not teachers.</p>' +
+    '<textarea id="bcSubAdd" class="bc-in" rows="3" placeholder="Addresses, one per line or separated by commas">' + esc(bcSubAdd) + '</textarea>' +
+    '<div class="bc-actions">' +
+      '<button class="tad-mini bc-send" data-tad="bcsubinvite"' + (bcSubBusy ? ' disabled' : '') + '>Send an invitation</button>' +
+      '<button class="tad-mini" data-tad="bcsubadd"' + (bcSubBusy ? ' disabled' : '') + '>Add without confirmation</button></div>' +
+    '<p class="tad-note">An invitation asks them to press a button to confirm. Add without confirmation only for people who already asked you.</p>' +
+    (bcSubMsg ? '<p class="tad-note bc-submsg">' + esc(bcSubMsg) + '</p>' : '') +
+    (bcSubs.length ? '<div class="bc-sublist">' + bcSubs.map((s) =>
+      '<div class="bc-subrow"><span class="bc-subem">' + esc(s.email) + '<small>' + esc(src[s.source] || '') +
+        (s.confirmed_at ? ' \u00b7 since ' + esc(new Date(s.confirmed_at).toLocaleDateString()) : '') + '</small></span>' + tag(s) +
+        '<button class="tad-mini" data-tad="bcsubrm" data-e="' + esc(s.email) + '" aria-label="Remove ' + esc(s.email) + '">Remove</button></div>').join('') + '</div>'
+      : '<p class="tad-note">No subscribers yet.</p>') +
+  '</details>';
+}
 
 function bcActiveTeachers() {
   return (teachers || []).filter((t) => t.status === 'active');
@@ -15508,7 +15632,8 @@ function bcActiveTeachers() {
 /* Ticked teachers plus anything typed. Deduping and validation happen on the
    server too — this copy is only so the count on the button is honest. */
 function bcRecipients() {
-  const picked = bcActiveTeachers().filter((t) => !bcExcluded.has(t.id) && !bcIsOut(t.email)).map((t) => t.email);
+  const picked = (bcAud === 'subscribers' ? [] : bcActiveTeachers().filter((t) => !bcExcluded.has(t.id) && !bcIsOut(t.email)).map((t) => t.email))
+    .concat(bcAud === 'teachers' ? [] : bcActiveSubs().filter((s) => !bcSubExcluded.has(s.email)).map((s) => s.email));
   const typed = String(bcExtra || '').split(/[,\n;]+/).map((s) => s.trim()).filter(Boolean);
   const all = [];
   for (const e of picked.concat(typed)) {
@@ -15538,6 +15663,7 @@ async function bcLoadAudience() {
   bcOptOut = new Set(((bcAudience && bcAudience.optedOut) || []).map((e) => String(e).toLowerCase()));
   renderList();
   bcLoadLog();
+  bcLoadSubs();
 }
 async function bcLoadLog() {
   try { bcHist = (await api('/api/admin/broadcast/log')).broadcasts || []; }
@@ -15563,7 +15689,12 @@ function bcPanel() {
         '<code>![What it shows](https://tehfiz.com/mail/\u2026.png)</code> on its own line for a picture \u00b7 ' +
         'links work as typed. A plain-text copy goes with it.</p>' : '') : '') +
     (ready ? '<div class="bc-who">' +
-      '<div class="bc-who-h"><span>Recipients</span>' +
+      '<div class="bc-aud" role="group" aria-label="Send to">' +
+        [['teachers', 'Teachers'], ['subscribers', 'Subscribers'], ['both', 'Both']].map(([v, l]) =>
+          '<button class="tad-mini' + (bcAud === v ? ' on' : '') + '" data-tad="bcaud" data-v="' + v + '" aria-pressed="' + (bcAud === v) + '">' + l + '</button>').join('') +
+      '</div>' +
+      (bcAud === 'subscribers' ? '' :
+      '<div class="bc-who-h"><span>Teachers</span>' +
         '<button class="tad-mini" data-tad="bcall">All</button>' +
         '<button class="tad-mini" data-tad="bcnone">None</button></div>' +
       '<div class="bc-list">' +
@@ -15576,7 +15707,17 @@ function bcPanel() {
           (out ? '<span class="bc-tag">unsubscribed</span>' : '') +
           '</label>'; }).join('') +
         (bcActiveTeachers().length ? '' : '<span class="tad-note">No active teachers.</span>') +
+      '</div>') +
+      (bcAud === 'teachers' ? '' :
+      '<div class="bc-who-h"><span>Subscribers</span>' +
+        '<button class="tad-mini" data-tad="bcsall">All</button>' +
+        '<button class="tad-mini" data-tad="bcsnone">None</button></div>' +
+      '<div class="bc-list">' +
+        bcActiveSubs().map((s) => '<label class="bc-chk"><input type="checkbox" data-tad="bcsone" data-e="' + esc(s.email) + '"' +
+          (bcSubExcluded.has(s.email) ? '' : ' checked') + '> ' + esc(s.email) + '</label>').join('') +
+        (bcSubs ? (bcActiveSubs().length ? '' : '<span class="tad-note">No subscribers yet.</span>') : '<span class="tad-note">Loading\u2026</span>') +
       '</div>' +
+      '<p class="tad-note">Subscribers are greeted as \u201cthere\u201d for <code>{{name}}</code>, and the standard footer tells them they asked for updates.</p>') +
       '<input id="bcExtra" class="bc-in bc-extra" value="' + esc(bcExtra) + '" ' +
         'placeholder="Also send to (comma-separated addresses)">' +
     '</div>' : '') +
@@ -15604,7 +15745,7 @@ function bcPanel() {
    on a wide screen (below it on a phone). */
 function bcPage() {
   return '<div class="bc-page"><div class="bc-main">' + bcPanel() + '</div>' +
-    '<aside class="bc-side">' + (bcHist ? bcHistoryHtml() : '<p class="tad-note">Loading past broadcasts\u2026</p>') + '</aside></div>' +
+    '<aside class="bc-side">' + bcSubsHtml() + (bcHist ? bcHistoryHtml() : '<p class="tad-note">Loading past broadcasts\u2026</p>') + '</aside></div>' +
     bcPreviewHtml();
 }
 
@@ -15673,6 +15814,8 @@ function bcRead() {
   const b = document.getElementById('bcBody');
   const x = document.getElementById('bcExtra');
   const f = document.getElementById('bcFooter');
+  const sa = document.getElementById('bcSubAdd');
+  if (sa) bcSubAdd = sa.value;
   if (x) bcExtra = x.value;
   if (f) bcFooter = f.value;
   if (s) bcSubject = s.value;
@@ -15794,6 +15937,7 @@ function teacherProfileBlock(t) {
         ? (t.hourly_rate + (t.hourly_currency ? ' ' + t.hourly_currency : '') + ' / hour') : '') +
       row('Background', t.background) +
       row('Comments', t.comments) +
+      row('Recommend students', t.recommend_students === 1 ? 'Yes, when available' : '') +
       '<p class="tad-note">Submitted ' + esc(new Date(t.profile_updated_at).toLocaleDateString()) + '.</p>';
   return '<div class="tad-panel">' + body + '</div>';
 }
@@ -15811,7 +15955,7 @@ function exportTeachersCSV() {
   // entry was that a rate can be sorted and a currency grouped.
   const head = ['Email','Name','Status','Gender','Phone','Country','Languages',
                 'Max opposite-gender age','Hourly rate','Currency','Background','Comments',
-                'Students','Sessions','Profile submitted','Last seen'];
+                'Recommend students','Students','Sessions','Profile submitted','Last seen'];
   const cell = (v) => {
     const s = String(v == null ? '' : v);
     return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
@@ -15822,7 +15966,7 @@ function exportTeachersCSV() {
     try { langs = t.languages ? JSON.parse(t.languages) : []; } catch { langs = []; }
     return [t.email, t.name, t.status, t.gender, t.phone, t.country, langs.join('; '),
             t.max_opposite_age, t.hourly_rate, t.hourly_currency, t.background, t.comments,
-            t.student_count || 0, t.session_count || 0,
+            t.recommend_students === 1 ? 'yes' : '', t.student_count || 0, t.session_count || 0,
             d(t.profile_updated_at), d(t.last_seen_at)].map(cell).join(',');
   }));
   const blob = new Blob(['\uFEFF' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
@@ -16770,8 +16914,8 @@ const TAB_META = {
     'How teachers\u2019 own grades compare with the computed strength, and the weights behind it. ' +
     'Changing a weight re-reads every session on this device \u2014 it does not only affect new ones.'],
   email: ['Email',
-    'One message to each teacher \u2014 nobody sees anyone else\u2019s address. ' +
-    'Teachers who unsubscribed are left out automatically.'],
+    'One message to each person \u2014 nobody sees anyone else\u2019s address. ' +
+    'Anyone who unsubscribed is left out automatically.'],
 };
 
 function renderShellChrome() {
@@ -16872,6 +17016,12 @@ document.addEventListener('click', async (e) => {
   if (act === 'bcall')    return bcSetAll(true);
   if (act === 'bcnone')   return bcSetAll(false);
   if (act === 'bcone')    return bcToggleOne(t.dataset.id);
+  if (act === 'bcaud')    { bcRead(); bcAud = t.dataset.v; bcTested = false; return renderList(); }
+  if (act === 'bcsone')   { bcRead(); const e = t.dataset.e; if (bcSubExcluded.has(e)) bcSubExcluded.delete(e); else bcSubExcluded.add(e); bcTested = false; return renderList(); }
+  if (act === 'bcsall' || act === 'bcsnone') { bcRead(); bcSubExcluded = act === 'bcsall' ? new Set() : new Set(bcActiveSubs().map((s) => s.email)); bcTested = false; return renderList(); }
+  if (act === 'bcsubinvite') return bcSubSubmit('invite');
+  if (act === 'bcsubadd')    return bcSubSubmit('add');
+  if (act === 'bcsubrm')     return bcSubRemove(t.dataset.e);
   if (act === 'bctest')   return bcSendTest();
   if (act === 'bcsend')   return bcSendAll();
   if (act === 'bcresume') { bcRead(); return bcResume(t.dataset.id); }
@@ -17376,6 +17526,17 @@ html.tad-lock,html.tad-lock body{overflow:hidden;}
 .bc-page{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(260px,1fr);gap:16px;align-items:start;}
 .bc-page .tad-panel{margin:0;}
 .bc-side .bc-hist{margin-top:0;border-top:0;padding-top:0;}
+.bc-aud{display:flex;gap:4px;margin-bottom:8px;}
+.bc-aud .tad-mini.on{background:var(--ink);color:var(--parchment);border-color:var(--ink);}
+.bc-subs{margin-bottom:14px;}
+.bc-subs summary{cursor:pointer;font-weight:600;font-size:14px;padding:4px 0;}
+.bc-subs .bc-in{width:100%;margin-top:6px;}
+.bc-sublist{display:flex;flex-direction:column;gap:2px;max-height:260px;overflow-y:auto;margin-top:6px;}
+.bc-subrow{display:flex;align-items:center;gap:8px;font-size:13px;padding:4px 0;border-bottom:1px solid var(--border2);}
+.bc-subem{flex:1;min-width:0;overflow-wrap:anywhere;}
+.bc-subem small{display:block;color:var(--ink3);font-size:11px;}
+.bc-tag.bc-tag-q{color:var(--ink3);border-color:var(--border2);}
+.bc-submsg{color:var(--ink);}
 @media(max-width:900px){.bc-page{grid-template-columns:minmax(0,1fr);}}
 .tad-overlay.tad-on{display:flex;}
 .tad-panel{background:var(--parchment);width:100%;max-width:1100px;
@@ -18954,12 +19115,12 @@ span.seg-chip{display:flex;align-items:center;justify-content:center;box-sizing:
   if (document.readyState !== 'loading' && window.TehfizKeys) TehfizKeys.mountHelp(document.getElementById('tzkHelp'));
 })();
 </script>
-<script src="/app/teacher/sessions-sent.js?v=m5"></script>
-<script src="/app/teacher/finish-session.js?v=f16"></script>
+<script src="/app/teacher/sessions-sent.js?v=m7"></script>
+<script src="/app/teacher/finish-session.js?v=f18"></script>
 <script src="/app/teacher/invoices.js?v=i7"></script>
 <script src="/app/shared/tehfiz-map.js?v=mp6"></script>
 <script src="/app/shared/tehfiz-time.js?v=t4"></script>
-<script src="/app/teacher/profile.js?v=p15"></script>
+<script src="/app/teacher/profile.js?v=p16"></script>
 <script src="/app/teacher/range-picker.js?v=rg5"></script>
 <script src="/app/teacher/lesson-editor.js?v=le6"></script>
 <script src="/app/teacher/calendar.js?v=c7"></script>

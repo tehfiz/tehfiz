@@ -1,6 +1,14 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   finish-session.js — TehfizFinish — f16
-   Loaded by the teacher app only, from /app/teacher/finish-session.js?v=f16.
+   finish-session.js — TehfizFinish — f18
+   Loaded by the teacher app only, from /app/teacher/finish-session.js?v=f18.
+
+   f18: after "Undo send" the sheet goes back to the Finish form, so the
+   lesson can be changed and sent again, or sent to someone else.
+
+   f17: the Sent screen can take the send back ("Undo send") or give the
+   lesson to another student ("Send to a different student"). Both put the
+   first student's map back as it was; a move adds the lesson to the other
+   student's map. The next lesson that was set is left alone.
 
    f16: editing the next lesson shows the map with this session's new lesson
    already added (when Map is on). New lessons default to 30 minutes.
@@ -30,7 +38,7 @@
    Self-contained: namespace window.TehfizFinish, DOM in #tfsRoot and the
    footer's #tfsMoreBtn, CSS prefixed .tfs-. It calls, and nothing else:
      TehfizSync.{isSignedIn,isActive,who,roster,currentStudent,pickStudent,
-                 createStudent,sendSession,sendState,billing}
+                 createStudent,sendSession,sendState,billing,unsend,moveSession}
      app: saveSession, finalizeSegments, autoSessionName, buildSessionObj,
           buildTextReport, exportCurrentQRS, openShare, clearResume,
           resetCurrent, getSessions, reviewSessionObject, startTimerTicking,
@@ -40,7 +48,7 @@
    ═══════════════════════════════════════════════════════════════════════ */
 (function () {
 'use strict';
-const TEHFIZ_FINISH_VERSION = 'f16';
+const TEHFIZ_FINISH_VERSION = 'f18';
 
 let open_ = false, view = 'form', moreOpen = false;
 let st = null;   // the sheet's working state, see begin()
@@ -142,6 +150,10 @@ body.compact-ui .tfs-body{padding:4px 16px 14px;gap:14px;}
 .tfs-their:empty{display:none;}
 .tfs-links{display:flex;justify-content:center;gap:18px;flex-wrap:wrap;}
 .tfs-links .tfs-link{min-height:36px;padding:4px;}
+.tfs-notice{font-size:13px;color:var(--ink);background:var(--parchment2);border:1px solid var(--border2);border-radius:10px;padding:10px 12px;margin-bottom:12px;}
+.tfs-fix{display:flex;flex-direction:column;gap:8px;padding:12px;border:1px solid var(--border2);border-radius:10px;font-size:13px;color:var(--ink2);}
+.tfs-fix label{font-weight:600;color:var(--ink);}
+.tfs-fixsel{font:400 15px var(--ui-font);min-height:44px;padding:6px 10px;border:1px solid var(--border2);border-radius:8px;background:var(--parchment);color:var(--ink);width:100%;}
 .tfs-bound > span:first-child{margin-right:auto;}
 .tfs-code{font:400 12px 'IBM Plex Mono',monospace;background:var(--gold-pale);color:var(--ink2);padding:2px 7px;border-radius:4px;}
 .tfs-change{height:36px;padding:0 10px;border:none;background:transparent;color:var(--ink2);font:500 13px var(--ui-font);
@@ -566,6 +578,7 @@ function formHtml() {
     '<div class="tfs-head"><h2 id="tfsTitle">Finish session</h2>' +
       '<button class="tfs-x" type="button" data-tfs="close" aria-label="Back to the session">' + ICON_X + '</button></div>' +
     '<div class="tfs-body">' +
+      (st.notice ? '<div class="tfs-notice" role="status">' + esc(st.notice) + '</div>' : '') +
       studentField() +
       durationAsk() +
       '<div class="tfs-card">' +
@@ -591,7 +604,7 @@ function doneHtml() {
   const r = st.result;
   const who = st.studentAfter;
   const nm = who ? (who.name || who.code) : '';
-  const head = r === 'sent' ? { t: 'Sent to ' + nm, p: 'It is in their viewer now, with every mistake on the page.', q: false }
+  const head = r === 'sent' ? { t: 'Sent to ' + nm, p: (st.movedFrom ? 'Moved from ' + st.movedFrom + '. ' : '') + 'It is in their viewer now, with every mistake on the page.', q: false }
     : r === 'queued' ? { t: 'Not sent yet — saved on this device',
         p: 'There is no connection right now. It sends to ' + nm + ' by itself as soon as the connection is back, ' +
            'even if you close this or start the next student. Sessions shows it as Queued until then.', q: true }
@@ -625,7 +638,71 @@ function doneHtml() {
         '<button class="tfs-sec" type="button" data-tfs="copy-done">Copy report for a parent</button>' +
       '</div>' +
       '<button class="tfs-link" type="button" data-tfs="review">Review this session</button>' +
+      fixHtml(r, who) +
     '</div>';
+}
+/* f17: sent to the wrong student, or sent too soon. */
+function fixHtml(r, who) {
+  if (!who || (r !== 'sent' && r !== 'queued') || !sync().unsend) return '';
+  const nm = who.name || who.code;
+  const mapNote = st.mapPv && st.mapPv.before ? ' It also comes off their map.' : '';
+  if (st.fix === 'undo') {
+    return '<div class="tfs-fix"><span>Take it back from ' + esc(nm) + '? It stays saved on this device.' + mapNote + '</span>' +
+      '<div class="tfs-sec2"><button class="tfs-sec strong" type="button" data-tfs="do-undo"' + (st.fixBusy ? ' disabled' : '') + '>' + (st.fixBusy ? 'Undoing…' : 'Undo send') + '</button>' +
+      '<button class="tfs-sec" type="button" data-tfs="fix-cancel">Keep it sent</button></div></div>';
+  }
+  if (st.fix === 'move') {
+    const others = rosterList().filter((s) => s.id !== who.id && !s.archived)
+      .sort((a, b) => (a.name || '~' + a.code).localeCompare(b.name || '~' + b.code));
+    if (!others.length) return '<div class="tfs-fix"><span>There is no other student to send it to yet.</span>' +
+      '<div class="tfs-sec2"><button class="tfs-sec" type="button" data-tfs="fix-cancel">Back</button></div></div>';
+    return '<div class="tfs-fix"><label for="tfsMoveTo">Send it to this student instead of ' + esc(nm) + '</label>' +
+      '<select id="tfsMoveTo" class="tfs-fixsel">' + others.map((s) => '<option value="' + esc(s.id) + '">' + esc(s.name ? s.name + ' · ' + s.code : s.code) + '</option>').join('') + '</select>' +
+      '<span>' + esc(nm) + ' stops seeing it.' + (mapNote ? ' It comes off their map and goes onto the other student’s.' : '') + ' A next lesson you set stays as it is.</span>' +
+      '<div class="tfs-sec2"><button class="tfs-sec strong" type="button" data-tfs="do-move"' + (st.fixBusy ? ' disabled' : '') + '>' + (st.fixBusy ? 'Moving…' : 'Send to them') + '</button>' +
+      '<button class="tfs-sec" type="button" data-tfs="fix-cancel">Cancel</button></div></div>';
+  }
+  return '<div class="tfs-links"><button class="tfs-link" type="button" data-tfs="fix-undo">Undo send</button>' +
+    '<button class="tfs-link" type="button" data-tfs="fix-move">Send to a different student…</button></div>';
+}
+async function doUndo() {
+  if (!st || st.fixBusy) return;
+  st.fixBusy = true; render();
+  let r = 'error';
+  try { r = await sync().unsend(st.sessId); } catch (e) { r = 'error'; }
+  if (!st) return;
+  st.fixBusy = false;
+  if (r !== 'undone') { toast(r === 'offline' ? 'No connection — it is still sent. Try again when you are online.' : 'Could not undo the send. Try again.'); render(); return; }
+  const who = st.studentAfter;
+  st.mapBack = !!(st.mapPv && st.mapPv.before && window.TehfizProfile && window.TehfizProfile.restoreMap && window.TehfizProfile.restoreMap(st.mapFor, st.mapPv.before));
+  st.mapPv = null;
+  // f18: back to the form, everything as it was when it was sent.
+  st.notice = 'Send undone. It is no longer in ' + (who ? (who.name || who.code) : 'the student') + '’s viewer' +
+    (st.mapBack ? ' or on their map' : '') + '. Change what you need and send it again, or choose another student.';
+  st.fix = null; st.result = null; st.movedFrom = ''; st.failed = false; st.error = '';
+  view = 'form'; render();
+}
+async function doMove() {
+  if (!st || st.fixBusy) return;
+  const sel = $('tfsMoveTo'), to = sel && rosterList().find((s) => s.id === sel.value);
+  if (!to) return;
+  st.fixBusy = true; render();
+  let r = 'error';
+  try { r = await sync().moveSession(st.sessId, to.id); } catch (e) { r = 'error'; }
+  if (!st) return;
+  st.fixBusy = false;
+  if (r !== 'moved' && r !== 'queued') { toast(r === 'offline' ? 'No connection — it has not moved. Try again when you are online.' : 'Could not move it. Try again.'); render(); return; }
+  const P = window.TehfizProfile, from = st.studentAfter;
+  // The first student's map goes back; the lesson joins the other student's.
+  const had = !!(st.mapPv && st.mapPv.before);
+  if (had && P && P.restoreMap) P.restoreMap(st.mapFor, st.mapPv.before);
+  st.mapPv = null;
+  if (had && P) { st.mapPv = P.applyLesson(to.id, recitedRanges()); st.mapFor = to.id; }
+  // The session still open in the app is this one: bind it to the new student too.
+  if (sync().pickStudent) sync().pickStudent(to.id);
+  st.movedFrom = from ? (from.name || from.code) : '';
+  st.studentAfter = { id: to.id, code: to.code, name: to.name || '' };
+  st.fix = null; st.result = r === 'queued' ? 'queued' : 'sent'; render();
 }
 
 /* Replacing the form blurs the focused field, and a blur can fire "change",
@@ -717,7 +794,8 @@ function commit() {
   // f6: the map and the next lesson, for a linked student.
   const b = bound();
   if (b && window.TehfizProfile && canSync()) {
-    if (st.mapOn) window.TehfizProfile.applyLesson(b.id, recitedRanges());
+    // f17: kept, so an undone or moved send can put this map back.
+    if (st.mapOn) { st.mapPv = window.TehfizProfile.applyLesson(b.id, recitedRanges()); st.mapFor = b.id; }
     const n = st.next;
     if (n && n.on && n.at) {
       // f12: the planned segments, with the older New/Recent/Old words beside
@@ -748,7 +826,7 @@ async function doSend() {
   let r = 'error';
   try { r = await sync().sendSession(st.sessId); } catch (e) { r = 'error'; }
   st.busy = false;
-  if (r === 'sent' || r === 'queued') { st.result = r; st.failed = false; view = 'done'; render(); return; }
+  if (r === 'sent' || r === 'queued') { st.result = r; st.failed = false; st.notice = ''; view = 'done'; render(); return; }
   st.failed = r === 'error';
   st.error = r === 'inactive' ? 'Your account is waiting for approval. The session is saved on this device.'
     : r === 'nostudent' ? 'Choose a student first.'
@@ -947,6 +1025,10 @@ document.addEventListener('click', (e) => {
   if (a === 'save') return doSave();
   if (a === 'copy') return doCopyForm();
   if (a === 'copy-done') return copyText(st.report);
+  if (a === 'fix-undo' || a === 'fix-move') { st.fix = a.slice(4); render(); return; }
+  if (a === 'fix-cancel') { st.fix = null; render(); return; }
+  if (a === 'do-undo') return doUndo();
+  if (a === 'do-move') return doMove();
   if (a === 'next') {
     closeDone(); resetCurrent();
     if (!compact()) { const n = $('studentName'); if (n) n.focus(); }

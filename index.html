@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Tehfīz landing page — v0_61 (Graphite; redesigned 13 Nov 2026; hero tour video, square cut on phones). Deploys to index.html at the root of the `tehfiz` repo. -->
+<!-- Tehfīz landing page — v0_62 (Graphite; redesigned 13 Nov 2026; hero tour video, square cut on phones; updates sign-up). Deploys to index.html at the root of the `tehfiz` repo. -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -286,17 +286,30 @@ v.src=sq?'/img/home-tour-square.mp4':'/img/home-tour.mp4';})();
 </div>
 <div style="flex: 1 1 360px; background: #ffffff; border: 1px solid #dcdcd7; border-radius: 14px; padding: 28px; display: flex; flex-direction: column; gap: 10px">
 <h3 style="margin: 0; font-size: 22px; font-weight: 600">I teach, and have room for students</h3>
-<p style="margin: 0; color: #3f444b">Tell us where you teach, in which languages, online or in person, and a little about your background. We will pass suitable enquiries your way.</p>
-<a href="https://docs.google.com/forms/d/e/1FAIpQLScftHflWSx1kK4n_juVqKwCDWtwFx_eb88XVO9tsdNsJxZ96Q/viewform" target="_blank" rel="noopener" style="font-weight: 600; padding: 10px 0">Register your details</a>
+<p style="margin: 0; color: #3f444b">No separate form. Sign in, fill in your teaching profile and tick <strong>Recommend students to me when available</strong>.</p>
+<a href="/app/teacher/" style="font-weight: 600; padding: 10px 0">Sign in to your profile</a>
 </div>
 </div>
 <p style="margin: 0; font-size: 15px; color: #626973; max-width: 820px">We do not verify qualifications or vouch for teachers or families. Please make your own checks, and never leave a child unsupervised with someone you have not verified yourself.</p>
 </section>
 
-<section id="updates" style="max-width: 1120px; margin: 0 auto; padding: 96px 24px 0; display: flex; flex-direction: column; gap: 8px; align-items: flex-start">
-<h2 style="margin: 0; font-size: clamp(25px, 4.6vw, 32px); line-height: 1.2; font-weight: 600">Follow along</h2>
-<p style="margin: 0; color: #3f444b">Tehfīz is on Instagram.</p>
+<section id="updates" style="max-width: 1120px; margin: 0 auto; padding: 96px 24px 0; display: flex; flex-wrap: wrap; gap: 32px; align-items: flex-end">
+<form id="updForm" novalidate style="flex: 1 1 420px; display: flex; flex-direction: column; gap: 12px">
+<h2 style="margin: 0; font-size: clamp(25px, 4.6vw, 32px); line-height: 1.2; font-weight: 600">Hear about what is new</h2>
+<input type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" style="position: absolute; left: -9999px; width: 1px; height: 1px">
+<p style="margin: 0; color: #3f444b">An occasional email when Tehfīz changes. We will ask you to confirm your address, and you can unsubscribe from any email.</p>
+<label for="upd-email" style="font-size: 15px; font-weight: 500">Email address</label>
+<div style="display: flex; flex-wrap: wrap; gap: 10px">
+<input id="upd-email" name="email" type="email" required autocomplete="email" placeholder="you@example.com" style="flex: 1 1 240px; min-width: 0; height: 48px; box-sizing: border-box; padding: 0 14px; border: 1px solid #626973; border-radius: 8px; font: inherit; background: #ffffff">
+<button id="updBtn" type="submit" style="height: 48px; padding: 0 22px; border: 0; border-radius: 8px; background: #17191c; color: #ffffff; font: inherit; font-weight: 600; cursor: pointer">Get updates</button>
+</div>
+<p id="updMsg" role="status" aria-live="polite" style="margin: 0; min-height: 1.5em; color: #3f444b"></p>
+</form>
+<div style="flex: 1 1 300px; display: flex; flex-direction: column; gap: 8px">
+<h3 style="margin: 0; font-size: 22px; font-weight: 600">On Instagram</h3>
+<p style="margin: 0; color: #3f444b">Short clips and tips for hifz teachers.</p>
 <a href="https://www.instagram.com/tehfiz.hifz/" target="_blank" rel="noopener" style="font-weight: 600; padding: 10px 0">@tehfiz.hifz</a>
+</div>
 </section>
 
 <section id="support" style="max-width: 1120px; margin: 0 auto; padding: 96px 24px 88px; display: flex; flex-direction: column; gap: 12px; align-items: flex-start">
@@ -340,6 +353,22 @@ v.src=sq?'/img/home-tour-square.mp4':'/img/home-tour.mp4';})();
       if(e.isIntersecting){if(!userPaused)play();}else v.pause();
     });},{threshold:0.35}).observe(v);
   } else play();
+})();
+/* Get updates (0017): the server answers the same either way, so the page
+   cannot tell anyone whether an address was already on the list. */
+(function(){
+  var f=document.getElementById('updForm'),i=document.getElementById('upd-email'),b=document.getElementById('updBtn'),m=document.getElementById('updMsg');
+  if(!f) return;
+  f.addEventListener('submit',function(e){
+    e.preventDefault();
+    var v=(i.value||'').trim();
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)){m.textContent='Please enter a full email address.';i.focus();return;}
+    b.disabled=true;m.textContent='Sending…';
+    fetch('/api/subscribe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:v,website:f.website.value})})
+      .then(function(r){if(!r.ok)throw new Error(r.status);m.textContent='Check your inbox for an email from Tehfīz, and press the button in it to confirm.';i.value='';})
+      .catch(function(){m.textContent='That did not go through. Check your connection and try again.';})
+      .then(function(){b.disabled=false;});
+  });
 })();
 </script>
 </body>

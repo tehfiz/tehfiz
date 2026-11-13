@@ -1,6 +1,13 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   sessions-sent.js — TehfizSent — m5
-   Loaded by the teacher app only, from /app/teacher/sessions-sent.js?v=m5.
+   sessions-sent.js — TehfizSent — m7
+   Loaded by the teacher app only, from /app/teacher/sessions-sent.js?v=m7.
+
+   m7: undoing the send of the lesson that is open in the app opens Finish
+   session on it, so it can be changed and sent again.
+
+   m6: a sent session's ⋯ menu can move it to another student or undo the
+   send (your own sessions only). Undo copies it to this device first if it
+   is not here, so nothing is lost. Maps are left as they are.
 
    Adds two tabs to the Sessions panel:
      · Sent to students   — every session on the server for this teacher's
@@ -18,14 +25,15 @@
    Self-contained: namespace window.TehfizSent, storage prefix 'tehfiz_sent_',
    DOM inside #sessionsOverlay (.tss-tabs, #tssPane), CSS prefixed .tss-.
    Narrow interface with the app — it calls, and nothing else:
-     TehfizSync.isSignedIn / api / roster / open     (sync module bridge)
+     TehfizSync.isSignedIn / api / roster / open /
+                unsend / moveSession                 (sync module bridge)
      getSessions, importSingle, migrateMistakes,
      reviewSessionObject, renderSessionsList,
      sessionTypeLabel, showToast                     (app globals)
    ═══════════════════════════════════════════════════════════════════════ */
 (function () {
 'use strict';
-const TEHFIZ_SENT_VERSION = 'm5';
+const TEHFIZ_SENT_VERSION = 'm7';
 const KEY_STUDENT = 'tehfiz_sent_student';
 const PAGE = 100;
 
@@ -33,6 +41,7 @@ let tab = 'sent';                          // chosen afresh on every open, see m
 let student = read(KEY_STUDENT) || '';     // '' = all students
 let rows = [], offset = 0, more = false, loading = false, error = '', loadedFor = null, busy = null;
 let menuFor = null;                        // m5: the card whose ⋯ menu is open
+let fix = null;                            // m6: {id, kind:'undo'|'move', busy} — the question being asked on a card
 
 function read(k) { try { return localStorage.getItem(k); } catch { return null; } }
 function write(k, v) { try { localStorage.setItem(k, v); } catch {} }
@@ -127,6 +136,10 @@ function injectCss() {
 .tss-dots{min-width:34px;font-size:15px;line-height:1;}
 .tss-menu{border-top:1px dashed var(--border2);padding-top:8px;}
 .tss-more{display:flex;justify-content:center;margin-top:10px;}
+.tss-fix{margin-top:8px;padding:10px;border:1px solid var(--border2);border-radius:8px;background:var(--parchment2);font-size:13px;color:var(--ink2);display:flex;flex-direction:column;gap:6px;}
+.tss-fix label{font-weight:600;color:var(--ink);}
+.tss-fix select{font:inherit;font-size:14px;min-height:40px;padding:4px 8px;border:1px solid var(--border2);border-radius:6px;background:var(--parchment);color:var(--ink);max-width:100%;}
+.tss-fix .tss-acts{margin-top:2px;}
 .tss-stu{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 0 10px;padding:10px 12px;
   border:1px solid var(--border2);border-radius:8px;background:var(--parchment2);}
 .tss-stu-name{font-weight:600;font-size:14px;color:var(--ink);margin-right:auto;min-width:0;}
@@ -226,9 +239,12 @@ async function fetchSession(row) {
   if (!s) throw new Error('empty session');
   // Names never reach the server; put back the one this device knows.
   if (!s.student) {
-    const r = rosterList().find((x) => x.id === (s.studentId || row.student_id));
+    // m6: the server's row says whose it is; the id inside the payload is
+    // only the app's note from when it was sent, and is stale after a move.
+    const r = rosterList().find((x) => x.id === (row.student_id || s.studentId));
     if (r && r.name) s.student = r.name;
   }
+  if (row.student_id) s.studentId = row.student_id;
   if (typeof migrateMistakes === 'function') s.mistakes = migrateMistakes(s.mistakes || []);
   return s;
 }
@@ -289,13 +305,35 @@ function render() {
           // m4: grades are edited on the device copy, then sent again.
           (isLocal && window.TehfizGrades ? '<button class="btn-tiny" data-tss="grade" data-cid="' + esc(r.client_id) + '">Grades</button>' : '') +
           '<a class="btn-tiny" href="/app/student?review=' + encodeURIComponent(r.student_id) + '" target="_blank" rel="noopener">Student’s view ↗</a>' +
-        '</div>' : '') +
+          (r.own && sync().unsend ? '<button class="btn-tiny" data-tss="ask-move" data-id="' + esc(r.id) + '">Move to another student…</button>' +
+            '<button class="btn-tiny" data-tss="ask-undo" data-id="' + esc(r.id) + '">Undo send</button>' : '') +
+        '</div>' + (fix && fix.id === r.id ? fixHtml(r, isLocal) : '') : '') +
         '</div>';
     }).join('') + '</div>' +
       (more ? '<div class="tss-more"><button class="btn-tiny" data-tss="more"' + (loading ? ' disabled' : '') + '>' +
         (loading ? 'Loading…' : 'Show more') + '</button></div>' : '');
   }
   pane.innerHTML = bar + stu + body;
+}
+
+/* m6: the question under a card's menu — undo the send, or move it. */
+function fixHtml(r, isLocal) {
+  const who = studentLabel(r.student_id, r.student_code), dis = fix.busy ? ' disabled' : '';
+  if (fix.kind === 'undo') {
+    return '<div class="tss-fix"><span>Take it back from ' + esc(who) + '? ' +
+      (isLocal ? 'It stays saved on this device.' : 'It is copied to this device first, so nothing is lost.') +
+      ' Their map is not changed.</span><div class="tss-acts">' +
+      '<button class="btn-tiny accent" data-tss="do-undo" data-id="' + esc(r.id) + '"' + dis + '>' + (fix.busy ? 'Undoing…' : 'Undo send') + '</button>' +
+      '<button class="btn-tiny" data-tss="fix-cancel"' + dis + '>Keep it sent</button></div></div>';
+  }
+  const others = rosterList().filter((s) => s.id !== r.student_id && !s.archived)
+    .sort((a, b) => (a.name || '~' + a.code).localeCompare(b.name || '~' + b.code));
+  if (!others.length) return '<div class="tss-fix"><span>There is no other student to move it to yet.</span></div>';
+  return '<div class="tss-fix"><label for="tssMoveTo">Move it from ' + esc(who) + ' to</label>' +
+    '<select id="tssMoveTo">' + others.map((s) => '<option value="' + esc(s.id) + '">' + esc(s.name ? s.name + ' · ' + s.code : s.code) + '</option>').join('') + '</select>' +
+    '<span>' + esc(who) + ' stops seeing it. Maps are not changed; correct them in each student’s profile if needed.</span><div class="tss-acts">' +
+    '<button class="btn-tiny accent" data-tss="do-move" data-id="' + esc(r.id) + '"' + dis + '>' + (fix.busy ? 'Moving…' : 'Move') + '</button>' +
+    '<button class="btn-tiny" data-tss="fix-cancel"' + dis + '>Cancel</button></div></div>';
 }
 
 /* One student picked: the two ways to see their whole record. Both open the
@@ -317,8 +355,11 @@ async function onClick(e) {
   const t = e.target.closest('[data-tss]');
   if (!t) return;
   const act = t.dataset.tss;
-  if (act === 'menu') { e.stopPropagation(); menuFor = menuFor === t.dataset.id ? null : t.dataset.id; render(); return; }
-  if (act === 'review' && e.target.closest('a, .tss-menu')) return;
+  if (act === 'menu') { e.stopPropagation(); menuFor = menuFor === t.dataset.id ? null : t.dataset.id; fix = null; render(); return; }
+  if (act === 'review' && e.target.closest('a, .tss-menu, .tss-fix')) return;
+  if (act === 'ask-undo' || act === 'ask-move') { fix = { id: t.dataset.id, kind: act.slice(4), busy: false }; render(); return; }
+  if (act === 'fix-cancel') { fix = null; render(); return; }
+  if (act === 'do-undo' || act === 'do-move') { await doFix(act.slice(3), t.dataset.id); return; }
   if (act === 'signin') { if (typeof closeSessions === 'function') closeSessions(); sync().open(); return; }
   if (act === 'refresh') { load(true, student + '|' + Math.floor(Date.now() / 60000)); return; }
   if (act === 'more') { load(false); return; }
@@ -346,6 +387,47 @@ async function onClick(e) {
     }
     busy = null; render();
   }
+}
+async function doFix(kind, id) {
+  const row = rows.find((r) => String(r.id) === id);
+  if (!row || !fix || fix.busy) return;
+  const sel = document.getElementById('tssMoveTo');
+  const to = kind === 'move' ? rosterList().find((s) => sel && s.id === sel.value) : null;
+  if (kind === 'move' && !to) return;
+  fix.busy = true; render();
+  let r = 'error';
+  try {
+    if (kind === 'undo') {
+      // Not on this device: bring it here first, so undoing never loses a lesson.
+      if (!localIds().has(String(row.client_id))) {
+        importSingle(await fetchSession(row), true);
+        if (typeof renderSessionsList === 'function') renderSessionsList();
+      }
+      r = await sync().unsend(row.client_id, row.id);
+    } else {
+      r = await sync().moveSession(row.client_id, to.id, row.id);
+    }
+  } catch (err) { r = 'error'; }
+  fix = null;
+  if (r === 'undone') {
+    rows = rows.filter((x) => x !== row); menuFor = null;
+    toast('Send undone — it is saved on this device');
+    apply();
+    // m7: the lesson open in the app — straight back to Finish session.
+    let cur = null; try { cur = typeof _currentSessionId !== 'undefined' ? _currentSessionId : null; } catch (e) { cur = null; }
+    if (cur != null && String(cur) === String(row.client_id) && window.TehfizFinish) {
+      if (typeof closeSessions === 'function') closeSessions();
+      window.TehfizFinish.open();
+      return;
+    }
+  } else if (r === 'moved') {
+    row.student_id = to.id; row.student_code = to.code; menuFor = null;
+    if (student && student !== to.id) rows = rows.filter((x) => x !== row);
+    toast('Moved to ' + (to.name || to.code));
+  } else {
+    toast(r === 'offline' ? 'No connection — nothing was changed. Try again when you are online.' : 'That did not work. Try again.');
+  }
+  render();
 }
 function onChange(e) {
   if (e.target.id !== 'tssStudent') return;

@@ -1,6 +1,10 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   profile.js — TehfizProfile — p15
-   Loaded by the teacher app only, from /app/teacher/profile.js?v=p15.
+   profile.js — TehfizProfile — p16
+   Loaded by the teacher app only, from /app/teacher/profile.js?v=p16.
+
+   p16: applyLesson returns the map as it was (.before) and restoreMap puts
+   it back, for an undone send; the PIN and code confirmations say when the
+   student's calendar link stopped too.
 
    p15: a new weekly slot defaults to 30 minutes.
 
@@ -60,7 +64,7 @@
    ═══════════════════════════════════════════════════════════════════════ */
 (function () {
 'use strict';
-const TEHFIZ_PROFILE_VERSION = 'p15';
+const TEHFIZ_PROFILE_VERSION = 'p16';
 const K_TT = 'tehfiz_prof_tt';            // {sid: {days: {'1': {t:'17:00', len:45}, …}, lessons: [{at, len}]}}, 0 = Sunday — a cache
 const K_LSQ = 'tehfiz_prof_lsq';          // {sid: true} single lessons not yet on the server (p7)
 const K_MAPQ = 'tehfiz_prof_mapq';        // {sid: {pages, recent_auto, ayahs}} not yet on the server
@@ -801,8 +805,8 @@ async function onClick(e) {
     if (busy) return;
     busy = true; render();
     try {
-      if (a === 'do-pin') { await sync().resetPin(sid); toast('PIN reset — they set a new one next time they log in'); }
-      else { const c = await sync().rotateCode(sid); toast('New code: ' + c + ' — PIN cleared, old code no longer works'); }
+      if (a === 'do-pin') { await sync().resetPin(sid); toast('PIN reset — they set a new one next time they log in' + (sync().calResetNote ? sync().calResetNote() : '')); }
+      else { const c = await sync().rotateCode(sid); toast('New code: ' + c + ' — PIN cleared, old code no longer works' + (sync().calResetNote ? sync().calResetNote() : '')); }
       ask = null;
     } catch (err) { toast((a === 'do-pin' ? 'Could not reset the PIN: ' : 'Could not change the code: ') + ((err && err.message) || 'offline')); }
     busy = false; render();
@@ -998,9 +1002,19 @@ function previewLesson(id, ranges) {
 function applyLesson(id, ranges) {
   const pv = previewLesson(id, ranges);
   if (!pv || !pv.added.length) return pv;
+  // p16: the map as it was, so an undone send can put it back (restoreMap).
+  const c = cachedPlan(id);
+  pv.before = { pages: c.map.pages, recentAuto: c.map.recent_auto !== false, ayahs: c.map.ayahs || '' };
   queueMap(id, pv.pages, pv.recentAuto, pv.ayahs);
   scheduleSave();
   return pv;
+}
+/* p16: put a student's map back to what applyLesson found (its .before). */
+function restoreMap(id, before) {
+  if (!before || !before.pages) return false;
+  queueMap(id, before.pages, before.recentAuto, before.ayahs);
+  scheduleSave();
+  return true;
 }
 /* The next lesson to suggest after this one: the next timetable slot, the
    next half page after the new lesson, the recent juz, the old juz due. */
@@ -1059,5 +1073,5 @@ function saveNextLesson(id, nx) {
 
 window.TehfizProfile = { open, close, isOpen: () => isOpen, nextLesson, nextOf, timetable, theirLine, ttOf, editLesson, setLessons, suggestPlan, startFromPlan,
   isEditing: () => !!(window.TehfizLesson && window.TehfizLesson.isOpen()),
-  planFor, previewLesson, applyLesson, suggestNext, saveNextLesson, oldRotation, version: TEHFIZ_PROFILE_VERSION };
+  planFor, previewLesson, applyLesson, restoreMap, suggestNext, saveNextLesson, oldRotation, version: TEHFIZ_PROFILE_VERSION };
 })();
