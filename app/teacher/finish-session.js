@@ -1,6 +1,6 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   finish-session.js — TehfizFinish — f19
-   Loaded by the teacher app only, from /app/teacher/finish-session.js?v=f18.
+   finish-session.js — TehfizFinish — f20
+   Loaded by the teacher app only, from /app/teacher/finish-session.js?v=f20.
 
    f18: after "Undo send" the sheet goes back to the Finish form, so the
    lesson can be changed and sent again, or sent to someone else.
@@ -48,7 +48,7 @@
    ═══════════════════════════════════════════════════════════════════════ */
 (function () {
 'use strict';
-const TEHFIZ_FINISH_VERSION = 'f19';
+const TEHFIZ_FINISH_VERSION = 'f20';
 
 let open_ = false, view = 'form', moreOpen = false;
 let st = null;   // the sheet's working state, see begin()
@@ -293,10 +293,14 @@ function billingNote() {
   const b = bound(), bill = sync() && sync().billing;
   const sec = effectiveSec();
   if (!b || !bill || !sec) return '';
-  const step = bill.step(bill.rate(b.id));
-  const billed = bill.billedSec(sec, step);
-  if (step <= 1 || billed === sec) return '';
-  return 'Bills as ' + minsText(billed) + ' · rounded up to ' + bill.stepText(step);
+  // f20: the rounding rule. Rounded on the period's total, one lesson has no billed time of its own.
+  const rule = bill.rule(bill.rate(b.id));
+  if (rule.step <= 1 || rule.mode === 'total') return '';
+  const billed = bill.billedSec(sec, rule.step, rule.after);
+  if (billed === sec) return '';
+  return 'Bills as ' + minsText(billed) + ' · ' + (rule.after
+    ? bill.stepText(rule.step) + ' steps, the next from ' + rule.after + ' min over'
+    : 'rounded up to ' + bill.stepText(rule.step));
 }
 
 /* ── render ─────────────────────────────────────────────────────────────── */

@@ -1,6 +1,6 @@
 /* ═══════════════════════════════════════════════════════════════════════
    invoices.js — TehfizInvoices — i6
-   Loaded by the teacher app only, from /app/teacher/invoices.js?v=i7.
+   Loaded by the teacher app only, from /app/teacher/invoices.js?v=i9.
    i7: redrawing (a tap on a row, a status change) keeps the place on the page.
    Opened from the header menu (Menu → Invoices), and used by a student's
    Profile (profile.js) for that student's Billing tab.
@@ -36,7 +36,7 @@
    ═══════════════════════════════════════════════════════════════════════ */
 (function () {
 'use strict';
-const TEHFIZ_INVOICES_VERSION = 'i7';
+const TEHFIZ_INVOICES_VERSION = 'i9';
 const K_BILLTO = 'tehfiz_inv_billto', K_STATUS = 'tehfiz_inv_status', K_PAY = 'tehfiz_inv_payment';
 const K_LASTEND = 'tehfiz_inv_lastend';   // {sid: 'YYYY-MM-DD'} end of the last period printed
 const K_RANGE = 'tehfiz_inv_range';       // the last custom range used on the list {from, to}
@@ -157,24 +157,56 @@ function lineFor(r, d, p) {
   d = d || data; p = p || period;
   const b = bill();
   const rate = b.rate(r.sid);
-  const step = b.step(rate);
+  const rule = b.rule(rate), step = rule.step;
   const rows = (d.sessions || []).filter((x) => x.student_id === r.sid)
     .sort((a, c) => String(a.date_ymd).localeCompare(String(c.date_ymd)));
-  const billed = rows.length
-    ? rows.reduce((n, x) => n + b.billedSec(x.duration_sec || 0, step), 0)
-    : b.billedSec(r.seconds || 0, step);
+  const bl = b.billedLessons(rows.length ? rows.map((x) => x.duration_sec || 0) : [r.seconds || 0], rule);
+  const billed = bl.total;
   const amt = parseFloat(rate.amount);
   const free = rate.amount != null && String(rate.amount) !== '' && amt === 0;
   const amount = Number.isFinite(amt) && amt > 0 ? (billed / 3600) * amt : (free ? 0 : null);
   const stored = b.stored(r.sid);
+  const status = statusOf(r.sid, p);
+  const currency = rate.currency || '';
+  /* i8: a printed or paid invoice keeps the figures it was issued with. When
+     the lessons, the rate or the rounding would now give different ones,
+     `mismatch` is set and `live` holds the new figures; nothing changes until
+     the teacher presses Update (reissue) or prints it again. */
+  const issued = !free && (status.printed || status.paid)
+    ? { amount: status.amount != null ? Number(status.amount) : null,
+        billed: status.billed != null ? Number(status.billed) : null, cur: status.cur || '' }
+    : null;
+  const same = (x, y) => (x == null || y == null ? x == y : Math.abs(x - y) < 0.005);
+  const mismatch = !!issued && (!same(issued.amount, amount) ||
+    (issued.billed != null && issued.billed !== billed) || (!!issued.cur && !!currency && issued.cur !== currency));
   return {
-    sid: r.sid, s: student(r.sid), rows, rate, step, billed, amount, free,
+    sid: r.sid, s: student(r.sid), rows, rate, rule, step, free,
+    billed: issued && issued.billed != null ? issued.billed : billed,
+    amount: issued ? issued.amount : amount,
+    currency: issued && issued.cur ? issued.cur : currency,
+    billedEach: bl.each, live: { billed, amount, currency }, issued: !!issued, mismatch,
     recorded: r.seconds || 0, sessions: r.sessions || 0, untimed: r.untimed || 0,
-    currency: rate.currency || '', rateIsDefault: stored.amount == null,
-    billTo: billTo(r.sid), status: statusOf(r.sid, p),
+    rateIsDefault: stored.amount == null,
+    billTo: billTo(r.sid), status,
     period: p, periodLabel: pLabel(p),
     ref: pRef(p, student(r.sid).code || r.sid.slice(0, 8)),
   };
+}
+/* i8: the line as it works out now, for printing and the preview. Printing an
+   issued invoice again is how its figures are brought up to date. */
+function liveOf(L) { return { ...L, billed: L.live.billed, amount: L.live.amount, currency: L.live.currency }; }
+function moneyOrNone(n, cur) { return n == null ? 'no amount' : money2(n, cur); }
+/* Update an issued invoice to the figures it works out to now. Asks first. */
+function reissue(L) {
+  if (!L || !L.mismatch) return false;
+  const who = L.s.name || L.s.code || 'this student';
+  const msg = 'Change the ' + L.periodLabel + ' invoice for ' + who + ' from ' + moneyOrNone(L.amount, L.currency) +
+    ' to ' + moneyOrNone(L.live.amount, L.live.currency) + '?' +
+    (L.status.paid ? '\n\nIt stays marked paid.' : '\n\nThe copy you already gave them does not change: print it again to give them the new one.');
+  if (!confirm(msg)) return false;
+  setStatus(L.sid, { amount: L.live.amount, billed: L.live.billed, cur: L.live.currency }, L.period);
+  if (onChanged) onChanged();
+  return true;
 }
 
 /* ── data ───────────────────────────────────────────────────────────────── */
@@ -290,8 +322,16 @@ function injectCss() {
 .tinv-sb:hover{background:var(--parchment);}
 .tinv-edit{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;margin-top:12px;padding:12px;background:var(--parchment);
   border-radius:8px;}
-.tinv-f{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--ink3);font-weight:500;}
-.tinv-f input,.tinv-f textarea{height:40px;box-sizing:border-box;padding:0 10px;border:1px solid var(--border2);border-radius:6px;
+.tinv-f{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--ink3);font-weight:500;position:relative;}
+.tinv-lt{display:flex;align-items:center;gap:6px;}
+.tinv-q{width:18px;height:18px;padding:0;border-radius:50%;border:1px solid var(--border2);background:transparent;color:var(--ink3);
+  font:600 11px/1 var(--ui-font);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;}
+.tinv-q[aria-expanded="true"]{background:var(--ink);border-color:var(--ink);color:var(--parchment);}
+.tinv-tip{position:absolute;left:0;top:22px;z-index:5;width:min(290px,78vw);padding:10px 12px;border-radius:8px;
+  background:var(--chrome,#1f2124);color:var(--on-ink,#fff);font-size:12.5px;font-weight:400;line-height:1.5;box-shadow:0 6px 20px rgba(0,0,0,.28);}
+.tinv-tip.r{left:auto;right:0;}
+.tinv-tip[hidden]{display:none;}
+.tinv-f input,.tinv-f textarea,.tinv-f select{height:40px;box-sizing:border-box;padding:0 10px;border:1px solid var(--border2);border-radius:6px;
   background:var(--surface,#fff);color:var(--ink);font:400 14px var(--ui-font);}
 .tinv-f textarea{height:auto;min-height:84px;padding:8px 10px;resize:vertical;}
 .tinv-f .w1{width:220px;}.tinv-f .w2{width:110px;}.tinv-f .w3{width:80px;}
@@ -327,7 +367,7 @@ function injectCss() {
 .tinv-card h3{margin:0;font-size:18px;}
 .tinv-card .row{display:flex;gap:12px;flex-wrap:wrap;}
 .tinv-card .tinv-f{flex:1 1 140px;}
-.tinv-card .tinv-f input{width:100%;}
+.tinv-card .tinv-f input,.tinv-card .tinv-f select{width:100%;}
 .tinv-card .tinv-f textarea{width:100%;}
 .tinv-card .foot{display:flex;gap:10px;justify-content:flex-end;}
 .tinv-pv{max-width:860px;padding:0;background:#e3e3df;}
@@ -430,11 +470,28 @@ function rowHtml(L) {
     '<div class="c-hide c-rec">' + rec + '</div>' +
     '<div class="c-hide tinv-num">' + hm(L.billed) + '</div>' +
     '<div class="c-hide">' + rateTxt + '</div>' +
-    '<div class="c-amt r tinv-num">' + (L.free ? '0' : (L.amount == null ? '—' : esc(money(Math.round(L.amount * 100) / 100, '')))) + '</div>' +
+    '<div class="c-amt r tinv-num">' + (L.free ? '0' : (L.amount == null ? '—' : esc(money(Math.round(L.amount * 100) / 100, '')))) +
+      (L.mismatch ? '<button class="tinv-fix" data-tinv="reissue" data-sid="' + esc(L.sid) + '" title="Lessons, rate or rounding changed since it was ' +
+        (L.status.paid ? 'paid' : 'printed') + '">now ' + esc(L.live.amount == null ? '—' : money(Math.round(L.live.amount * 100) / 100, '')) + ' · Update</button>' : '') + '</div>' +
     '<div class="c-st" style="padding-left:6px;">' + st + '</div>' +
     '<div class="c-act">' + acts + '</div>' +
     (editing === L.sid ? editHtml(L) : '') +
   '</div>';
+}
+/* i8: the Round choice. With `def` given it is a student's own, and blank
+   follows the defaults. */
+/* i9: a setting's name with a ? beside it; the ? shows what the setting does
+   (texts in TehfizSync.billing.hints). Opened and closed in onClick, without
+   redrawing, so nothing typed in the dialog is lost. */
+function labelHint(label, k) {
+  return '<span class="tinv-lt">' + esc(label) + '<button type="button" class="tinv-q" aria-expanded="false" aria-label="What \u201c' + esc(label) +
+    '\u201d means">?</button><span class="tinv-tip' + (k === 'after' ? ' r' : '') + '" role="note" hidden>' + esc((bill().hints || {})[k] || '') + '</span></span>';
+}
+function modeOptions(v, def) {
+  const name = { each: 'each lesson', total: 'the total only' };
+  const o = (val, txt) => '<option value="' + val + '"' + ((v || '') === val ? ' selected' : '') + '>' + txt + '</option>';
+  return (def !== undefined ? o('', 'as default (' + name[def === 'total' ? 'total' : 'each'] + ')') : '') +
+    o('each', name.each) + o('total', name.total);
 }
 function editHtml(L) {
   const stored = bill().stored(L.sid);
@@ -447,8 +504,11 @@ function editHtml(L) {
       (L.free ? ' disabled' : '') + '></label>' +
     '<label class="tinv-f">Currency<input class="w3" data-tinvin="currency" data-sid="' + esc(L.sid) + '" value="' + esc(stored.currency || '') +
       '" placeholder="' + esc(d.currency || 'PKR') + '"></label>' +
-    '<label class="tinv-f">Round each session up to (min)<input class="w3" inputmode="numeric" data-tinvin="step" data-sid="' + esc(L.sid) +
+    '<label class="tinv-f">' + labelHint('Bill in steps of (min)', 'step') + '<input class="w3" inputmode="numeric" data-tinvin="step" data-sid="' + esc(L.sid) +
       '" value="' + esc(stored.step || '') + '" placeholder="' + esc(bill().step(d)) + '"></label>' +
+    '<label class="tinv-f">' + labelHint('Round', 'mode') + '<select data-tinvin="mode" data-sid="' + esc(L.sid) + '">' + modeOptions(stored.mode, d.mode) + '</select></label>' +
+    '<label class="tinv-f">' + labelHint('Next step from (min over)', 'after') + '<input class="w3" inputmode="numeric" data-tinvin="after" data-sid="' + esc(L.sid) +
+      '" value="' + esc(stored.after != null ? stored.after : '') + '" placeholder="' + esc(d.after ? d.after : '0 = any') + '"></label>' +
     '<label class="tinv-chk"><input type="checkbox" data-tinvin="free" data-sid="' + esc(L.sid) + '"' + (L.free ? ' checked' : '') +
       '> Not billed (free or trial)</label>' +
     '<button class="tinv-sb strong" data-tinv="edit-done" data-sid="' + esc(L.sid) + '">Done</button>' +
@@ -459,7 +519,7 @@ function editHtml(L) {
 function mainHtml() {
   const b = bill();
   const d = { ...b.profileRate(), ...b.defaults() };
-  const defStep = b.step(d);
+  const defRule = b.rule(d);
   const isRange = period.kind === 'range';
   const pick = isRange
     ? '<div class="tinv-mon tinv-rng"><input type="date" data-tinvin="from" value="' + esc(period.from) + '" aria-label="From">' +
@@ -494,7 +554,7 @@ function mainHtml() {
       '<span><b>' + sessions + '</b> sessions</span><span><b>' + hm(billed) + '</b> billed</span>' +
       '<span>Still due <b class="mono">' + (curs.length > 1 ? 'mixed currencies' : esc(money(Math.round(due), curs[0] || ''))) + '</b></span>' +
       '<span class="def">Default: ' + (d.amount ? esc(money(parseFloat(d.amount), d.currency || '')) + ' / hour' : 'no rate set') +
-        ' · ' + (defStep > 1 ? 'round up to ' + esc(b.stepText(defStep)) + ' per session' : 'billed as recorded') + '</span></div>' +
+        ' · ' + esc(b.ruleText(defRule)) + '</span></div>' +
     '<div class="tinv-tbl" role="table">' +
       '<div class="tinv-r h" role="row"><span>Student · Bill to</span><span>Sessions</span><span>Recorded</span><span>Billed</span>' +
         '<span>Rate / hour</span><span class="r">Amount</span><span style="padding-left:6px;">Status</span><span></span></div>' +
@@ -512,12 +572,13 @@ function docHtml(L) {
   const dueD = new Date(issued.getTime() + (parseInt(p.due, 10) || 10) * 86400000);
   const cur = L.currency;
   const rateN = parseFloat(L.rate.amount);
-  const rows = L.rows.map((x) => {
-    const bs = bill().billedSec(x.duration_sec || 0, L.step);
+  const each = L.rule.mode !== 'total' && L.step > 1;    // i8: a Billed column only when each lesson is rounded
+  const rows = L.rows.map((x, i) => {
+    const bs = L.billedEach[i] || 0;
     return '<tr><td>' + esc(x.date_ymd ? new Date(x.date_ymd + 'T12:00:00').toLocaleDateString(undefined, { day: 'numeric', month: 'short' }) : '') + '</td>' +
       '<td>' + esc(x.session_name || 'Lesson') + (x.stages ? ' <span class="dim">' + esc(stageText(x.stages)) + '</span>' : '') + '</td>' +
       '<td class="n">' + (x.duration_sec == null ? '<span class="dim">untimed</span>' : esc(hm(x.duration_sec))) + '</td>' +
-      '<td class="n">' + esc(hm(bs)) + '</td></tr>';
+      (each ? '<td class="n">' + esc(hm(bs)) + '</td>' : '') + '</tr>';
   }).join('');
   return '<div class="tinv-doc">' +
     '<div class="brand"><b>TEHFĪZ</b><i></i><span>INVOICE</span></div>' +
@@ -532,12 +593,12 @@ function docHtml(L) {
         (p.phone ? '<span class="t">' + esc(p.phone) + '</span>' : '') +
         '<span class="lab">Issued · Due</span><span class="t" style="color:#17191c;">' + esc(dlong(issued)) + ' · ' + esc(dlong(dueD)) + '</span>' +
       '</div></div>' +
-    '<table><thead><tr><th>Date</th><th>Lesson</th><th class="n">Recorded</th><th class="n">Billed</th></tr></thead><tbody>' +
-      (rows || '<tr><td colspan="4" class="dim">No individual sessions recorded.</td></tr>') + '</tbody></table>' +
+    '<table><thead><tr><th>Date</th><th>Lesson</th><th class="n">Recorded</th>' + (each ? '<th class="n">Billed</th>' : '') + '</tr></thead><tbody>' +
+      (rows || '<tr><td colspan="' + (each ? 4 : 3) + '" class="dim">No individual sessions recorded.</td></tr>') + '</tbody></table>' +
     '<div class="tot">' +
       '<div><span>Sessions</span><span class="mono">' + L.sessions + '</span></div>' +
       '<div><span>Time recorded</span><span class="mono">' + esc(hm(L.recorded)) + '</span></div>' +
-      '<div><span>Billed' + (L.step > 1 ? ' <span style="color:#626973;">(each session rounded up to ' + esc(bill().stepText(L.step)) + ')</span>' : '') +
+      '<div><span>Billed' + (L.step > 1 ? ' <span style="color:#626973;">(' + esc(bill().ruleText(L.rule)) + ')</span>' : '') +
         '</span><span class="mono">' + (L.billed / 3600).toFixed(2) + ' h</span></div>' +
       '<div><span>Rate</span><span class="mono">' + (Number.isFinite(rateN) && rateN > 0 ? esc(money2(rateN, cur)) + ' / hour' : '—') + '</span></div>' +
       '<div class="due"><span>Amount due</span><span class="mono">' + (L.amount == null ? '—' : esc(money2(L.amount, cur))) + '</span></div>' +
@@ -560,8 +621,13 @@ function defaultsHtml() {
     '<div class="row">' +
       '<label class="tinv-f">Rate / hour<input id="tinvDAmount" inputmode="decimal" value="' + esc(d.amount || '') + '" placeholder="' + esc(pr.amount ? 'profile: ' + pr.amount : 'e.g. 2000') + '"></label>' +
       '<label class="tinv-f">Currency<input id="tinvDCur" value="' + esc(d.currency || '') + '" placeholder="' + esc(pr.currency || 'PKR') + '"></label>' +
-      '<label class="tinv-f">Round each session up to (min)<input id="tinvDStep" inputmode="numeric" value="' + esc(d.step || '') + '" placeholder="1 = as recorded"></label>' +
     '</div>' +
+    '<div class="row">' +
+      '<label class="tinv-f">' + labelHint('Bill in steps of (min)', 'step') + '<input id="tinvDStep" inputmode="numeric" value="' + esc(d.step || '') + '" placeholder="1 = as recorded"></label>' +
+      '<label class="tinv-f">' + labelHint('Round', 'mode') + '<select id="tinvDMode">' + modeOptions(d.mode === 'total' ? 'total' : 'each') + '</select></label>' +
+      '<label class="tinv-f">' + labelHint('Next step from (min over)', 'after') + '<input id="tinvDAfter" inputmode="numeric" value="' + esc(d.after || '') + '" placeholder="0 = any time over"></label>' +
+    '</div>' +
+    '<span class="tinv-note">Tap ? beside a setting to see what it does. Invoices already printed or paid keep their amounts; any that would change show an Update button.</span>' +
     '<div class="row">' +
       '<label class="tinv-f">Your name on invoices<input id="tinvDFrom" value="' + esc(p.from) + '" placeholder="' + esc((b.teacher() || {}).name || '') + '"></label>' +
       '<label class="tinv-f">Phone<input id="tinvDPhone" value="' + esc(p.phone) + '" placeholder="Optional"></label>' +
@@ -577,8 +643,11 @@ function previewHtml(L) {
     '<div class="tinv-card tinv-pv" role="dialog" aria-modal="true" aria-label="Invoice preview">' +
       '<div class="pvbar"><b>' + esc(L.s.name || L.s.code) + ' · ' + esc(L.periodLabel) + '</b><span style="display:flex;gap:8px;">' +
         '<button class="tinv-btn" data-tinv="dlg-close">Close</button>' +
-        '<button class="tinv-btn pri" data-tinv="print-preview"' + (L.amount == null || L.free ? ' disabled' : '') + '>Print</button></span></div>' +
-      '<div class="pvpage">' + docHtml(L) + '</div>' +
+        '<button class="tinv-btn pri" data-tinv="print-preview"' + (L.live.amount == null || L.free ? ' disabled' : '') + '>' +
+          (L.mismatch ? 'Update and print' : 'Print') + '</button></span></div>' +
+      (L.mismatch ? '<div class="tinv-note" style="padding:8px 14px;margin:0;">' + (L.status.paid ? 'Paid' : 'Printed') + ' for ' +
+        esc(moneyOrNone(L.amount, L.currency)) + '. Below is how it works out now; printing it changes the invoice to this.</div>' : '') +
+      '<div class="pvpage">' + docHtml(liveOf(L)) + '</div>' +
     '</div></div>';
 }
 
@@ -607,6 +676,7 @@ function render() {
 /* ── printing ───────────────────────────────────────────────────────────── */
 function printLines(lines) {
   if (!lines.length) return;
+  lines = lines.map(liveOf);   // i8: printed as it works out now (see lineFor)
   let pr = $('tinvPrint');
   if (!pr) { pr = document.createElement('div'); pr.id = 'tinvPrint'; document.body.appendChild(pr); }
   pr.innerHTML = lines.map(docHtml).join('');
@@ -625,8 +695,9 @@ function printLines(lines) {
   window.addEventListener('afterprint', done);
   const now = new Date().toISOString();
   lines.forEach((L) => {
-    // The amount is kept with the status so a Profile can list past invoices.
-    setStatus(L.sid, { printed: L.status.printed || now, amount: L.amount, cur: L.currency, label: L.periodLabel }, L.period);
+    // The amount is kept with the status so a Profile can list past invoices,
+    // and (i8) with the billed time, so a later change shows as a mismatch.
+    setStatus(L.sid, { printed: L.status.printed || now, amount: L.amount, billed: L.billed, cur: L.currency, label: L.periodLabel }, L.period);
     noteEnd(L.sid, L.period);
   });
   if (onChanged) onChanged();
@@ -638,12 +709,20 @@ function printLines(lines) {
    and a paid period counts as invoiced for the next custom range. */
 function markPaid(L, on) {
   if (!on) { setStatus(L.sid, { paid: null }, L.period); return; }
-  setStatus(L.sid, { paid: new Date().toISOString(), amount: L.amount, cur: L.currency, label: L.periodLabel }, L.period);
+  // i8: one already printed keeps the figures it was printed with.
+  const keep = L.status.printed && L.status.amount != null ? {} : { amount: L.amount, billed: L.billed, cur: L.currency, label: L.periodLabel };
+  setStatus(L.sid, { paid: new Date().toISOString(), ...keep }, L.period);
   noteEnd(L.sid, L.period);
 }
 
 /* ── events ─────────────────────────────────────────────────────────────── */
 function onClick(e) {
+  // i9: a ? opens its hint; any other tap closes an open one.
+  const q = e.target.closest('.tinv-q');
+  $('tinvRoot').querySelectorAll('.tinv-tip:not([hidden])').forEach((x) => {
+    if (!q || x !== q.nextElementSibling) { x.hidden = true; if (x.previousElementSibling) x.previousElementSibling.setAttribute('aria-expanded', 'false'); }
+  });
+  if (q) { e.preventDefault(); const tip = q.nextElementSibling; tip.hidden = !tip.hidden; q.setAttribute('aria-expanded', String(!tip.hidden)); return; }
   const t = e.target.closest('[data-tinv]');
   if (!t) return;
   const a = t.dataset.tinv, sid = t.dataset.sid;
@@ -663,15 +742,18 @@ function onClick(e) {
   if (a === 'dlg-close') { showDefaults = false; preview = null; return render(); }
   if (a === 'defaults-save') {
     const v = (id) => ($(id) || {}).value || '';
-    const step = parseInt(v('tinvDStep'), 10);
+    const step = parseInt(v('tinvDStep'), 10), after = parseInt(v('tinvDAfter'), 10);
     bill().setDefaults({ amount: v('tinvDAmount').trim().replace(/[, ]/g, ''), currency: v('tinvDCur').trim().slice(0, 6),
-                         step: Number.isFinite(step) && step >= 1 ? String(Math.min(step, 240)) : '' });
+                         step: Number.isFinite(step) && step >= 1 ? String(Math.min(step, 240)) : '',
+                         mode: v('tinvDMode') === 'total' ? 'total' : 'each',
+                         after: Number.isFinite(after) && after > 0 ? String(Math.min(after, 239)) : '' });
     writeJ(K_PAY, { from: v('tinvDFrom').trim(), phone: v('tinvDPhone').trim(),
                     due: Math.max(0, Math.min(90, parseInt(v('tinvDDue'), 10) || 10)), howto: v('tinvDHow').trim() });
     showDefaults = false; toast('Billing defaults saved'); render(); if (onChanged) onChanged(); return;
   }
   if (a === 'edit') { editing = editing === sid ? null : sid; return render(); }
   if (a === 'edit-done') { editing = null; return render(); }
+  if (a === 'reissue') { const r = data.rows.find((x) => x.sid === sid); if (r) reissue(lineFor(r)); return render(); }
   if (a === 'preview') { const r = data.rows.find((x) => x.sid === sid); preview = r ? lineFor(r) : null; return render(); }
   if (a === 'paid') { const r = data.rows.find((x) => x.sid === sid); if (r) markPaid(lineFor(r), true); return render(); }
   if (a === 'unpaid') { setStatus(sid, { paid: null }); return render(); }
@@ -690,7 +772,10 @@ function onClick(e) {
     return printLines([L]);
   }
   if (a === 'printall') {
-    const lines = data.rows.map((r) => lineFor(r)).filter((L) => !L.free && L.amount != null);
+    const all = data.rows.map((r) => lineFor(r)).filter((L) => !L.free && L.live.amount != null);
+    // i8: printing everything never changes an invoice already issued; those are updated one at a time.
+    const lines = all.filter((L) => !L.mismatch);
+    if (lines.length < all.length) toast((all.length - lines.length) + ' printed or paid invoice' + (all.length - lines.length === 1 ? '' : 's') + ' would change, so ' + (all.length - lines.length === 1 ? 'was' : 'were') + ' left out: use Update on ' + (all.length - lines.length === 1 ? 'it' : 'each') + ' first');
     const missing = lines.filter((L) => !L.billTo).length;
     if (missing) toast(missing + ' invoice' + (missing === 1 ? ' has' : 's have') + ' no “bill to” yet');
     return printLines(lines);
@@ -711,6 +796,10 @@ function onChange(e) {
   else if (f === 'step') {
     const n = parseInt(el.value, 10);
     bill().setStored(sid, { step: Number.isFinite(n) && n >= 1 ? String(Math.min(n, 240)) : undefined, unit: undefined });
+  } else if (f === 'mode') bill().setStored(sid, { mode: el.value === 'each' || el.value === 'total' ? el.value : undefined });
+  else if (f === 'after') {
+    const n = parseInt(el.value, 10);
+    bill().setStored(sid, { after: el.value.trim() === '' ? undefined : String(Number.isFinite(n) && n > 0 ? Math.min(n, 239) : 0) });
   } else if (f === 'free') bill().setStored(sid, { amount: el.checked ? '0' : undefined });
   render();
 }
@@ -758,6 +847,7 @@ const forStudent = {
   preview(L) { injectCss(); preview = L; showDefaults = false; render(); },
   print(L) { injectCss(); if (!L.billTo) { toast('Add who to bill first'); return false; } printLines([L]); return true; },
   setPaid(L, on) { markPaid(L, on); if (onChanged) onChanged(); },
+  reissue: (L) => reissue(L),
   // Past invoices: every period this student has a printed or paid status for.
   history(sid) {
     const all = readJ(K_STATUS, {}), out = [];

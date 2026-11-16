@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   profile.js — TehfizProfile — p17
+   profile.js — TehfizProfile — p20
    Loaded by the teacher app only, from /app/teacher/profile.js?v=p16.
 
    p16: applyLesson returns the map as it was (.before) and restoreMap puts
@@ -64,7 +64,7 @@
    ═══════════════════════════════════════════════════════════════════════ */
 (function () {
 'use strict';
-const TEHFIZ_PROFILE_VERSION = 'p17';
+const TEHFIZ_PROFILE_VERSION = 'p20';
 const K_TT = 'tehfiz_prof_tt';            // {sid: {days: {'1': {t:'17:00', len:45}, …}, lessons: [{at, len}]}}, 0 = Sunday — a cache
 const K_LSQ = 'tehfiz_prof_lsq';          // {sid: true} single lessons not yet on the server (p7)
 const K_MAPQ = 'tehfiz_prof_mapq';        // {sid: {pages, recent_auto, ayahs}} not yet on the server
@@ -345,7 +345,15 @@ function injectCss() {
 .tpf-slot b{width:44px;font-weight:600;}
 .tpf-in{height:40px;box-sizing:border-box;padding:0 10px;border:1px solid var(--border2);border-radius:8px;background:var(--surface,#fff);
   color:var(--ink);font:400 14px var(--ui-font);min-width:0;}
-.tpf-f{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--ink3);font-weight:500;flex:1 1 130px;}
+.tpf-f{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--ink3);font-weight:500;flex:1 1 130px;position:relative;}
+.tpf-lt{display:flex;align-items:center;gap:6px;}
+.tpf-q{width:18px;height:18px;padding:0;border-radius:50%;border:1px solid var(--border2);background:transparent;color:var(--ink3);
+  font:600 11px/1 var(--ui-font);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;}
+.tpf-q[aria-expanded="true"]{background:var(--ink);border-color:var(--ink);color:var(--parchment);}
+.tpf-tip{position:absolute;left:0;top:22px;z-index:5;width:min(290px,78vw);padding:10px 12px;border-radius:8px;
+  background:var(--chrome,#1f2124);color:var(--on-ink,#fff);font-size:12.5px;font-weight:400;line-height:1.5;box-shadow:0 6px 20px rgba(0,0,0,.28);}
+.tpf-tip.r{left:auto;right:0;}
+.tpf-tip[hidden]{display:none;}
 .tpf-f .tpf-in{width:100%;}
 .tpf-chk{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--ink2);}
 .tpf-seg{display:flex;}
@@ -600,11 +608,17 @@ function timetableHtml(s) {
     '<span class="tpf-mut">' + esc(nameOf(s)) + ' sees these in the student viewer, in ' + esc(nameOf(s)) + '’s own time. Finish session fills in the next lesson from them.</span>';
 }
 
+/* p20: a setting's name with a ? that shows what it does (TehfizSync.billing.hints). */
+function labelHint(label, k) {
+  return '<span class="tpf-lt">' + esc(label) + '<button type="button" class="tpf-q" aria-expanded="false" aria-label="What \u201c' + esc(label) +
+    '\u201d means">?</button><span class="tpf-tip' + (k === 'after' ? ' r' : '') + '" role="note" hidden>' + esc((bill().hints || {})[k] || '') + '</span></span>';
+}
 function billingHtml(s) {
   if (!(sync().isSignedIn && sync().isSignedIn()) || !inv()) {
     return '<div class="tpf-card"><span class="tpf-mut">Sign in to see billing — it is built from the sessions you have sent.</span></div>';
   }
   const b = bill(), I = inv();
+  if (!bp) bp = I.monthPeriod(I.today().slice(0, 7));   // p18: never drawn without a period
   const st = b.stored(sid), d = { ...b.profileRate(), ...b.defaults() };
   const free = st.amount != null && String(st.amount) !== '' && parseFloat(st.amount) === 0;
   /* p5: the invoice comes first. The rate folds into one line saying what it
@@ -624,7 +638,15 @@ function billingHtml(s) {
       '<label class="tpf-f" style="flex:0 1 120px">Rate / hour<input class="tpf-in" inputmode="decimal" data-tpfin="amount" value="' +
         esc(st.amount && st.amount !== '0' ? st.amount : '') + '" placeholder="' + esc(d.amount ? 'default ' + d.amount : 'e.g. 2000') + '"' + (free ? ' disabled' : '') + '></label>' +
       '<label class="tpf-f" style="flex:0 1 80px">Currency<input class="tpf-in" data-tpfin="currency" value="' + esc(st.currency || '') + '" placeholder="' + esc(d.currency || 'PKR') + '"></label>' +
-      '<label class="tpf-f" style="flex:0 1 120px">Round up to (min)<input class="tpf-in" inputmode="numeric" data-tpfin="step" value="' + esc(st.step || '') + '" placeholder="' + esc(b.step(d)) + '"></label>' +
+    '</div>' +
+    // p19: the rounding, as three settings; blank follows the defaults
+    '<div class="tpf-row" style="align-items:flex-end">' +
+      '<label class="tpf-f" style="flex:0 1 120px">' + labelHint('Bill in steps of (min)', 'step') + '<input class="tpf-in" inputmode="numeric" data-tpfin="step" value="' + esc(st.step || '') + '" placeholder="' + esc(b.step(d)) + '"></label>' +
+      '<label class="tpf-f" style="flex:0 1 180px">' + labelHint('Round', 'mode') + '<select class="tpf-in" data-tpfin="mode">' +
+        ['', 'each', 'total'].map((v) => '<option value="' + v + '"' + ((st.mode || '') === v ? ' selected' : '') + '>' +
+          (v === '' ? 'as default (' + (d.mode === 'total' ? 'the total only' : 'each lesson') + ')' : v === 'each' ? 'each lesson' : 'the total only') + '</option>').join('') +
+      '</select></label>' +
+      '<label class="tpf-f" style="flex:0 1 140px">' + labelHint('Next step from (min over)', 'after') + '<input class="tpf-in" inputmode="numeric" data-tpfin="after" value="' + esc(st.after != null ? st.after : '') + '" placeholder="' + esc(d.after ? d.after : '0 = any') + '"></label>' +
     '</div>' +
     '<label class="tpf-chk"><input type="checkbox" data-tpfin="free"' + (free ? ' checked' : '') + '> Not billed (free or trial)</label>' +
     '<div class="tpf-row"><span class="tpf-mut" style="flex:1">Blank fields follow your billing defaults. Kept on this device.</span>' +
@@ -649,14 +671,19 @@ function billingHtml(s) {
       : L.status.printed ? '<span class="tpf-chip">Printed ' + esc(new Date(L.status.printed).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })) + '</span>'
       : '<span class="tpf-chip">Not printed</span>';
     sum = '<div class="tpf-kv"><span>' + L.sessions + ' lesson' + (L.sessions === 1 ? '' : 's') + '</span><span class="tpf-mono">' + esc(I.hm(L.recorded)) + ' recorded</span></div>' +
-      '<div class="tpf-kv"><span>Billed' + (L.step > 1 ? ' <span class="tpf-mut">(rounded up per lesson)</span>' : '') + '</span><span class="tpf-mono">' + esc(I.hm(L.billed)) + '</span></div>' +
+      '<div class="tpf-kv"><span>Billed' + (L.step > 1 ? ' <span class="tpf-mut">(' + esc(bill().ruleText(L.rule)) + ')</span>' : '') + '</span><span class="tpf-mono">' + esc(I.hm(L.billed)) + '</span></div>' +
       (L.untimed ? '<span class="tpf-untimed">' + L.untimed + ' untimed lesson' + (L.untimed === 1 ? '' : 's') + ' count as no time.</span>' : '') +
       '<div class="tpf-kv tot"><span>Amount</span><span class="tpf-mono">' + (L.free ? '0' : L.amount == null ? 'Set a rate' : esc(I.money(Math.round(L.amount * 100) / 100, cur))) + '</span></div>' +
       '<div class="tpf-row">' + stt + (L.billTo ? '' : '<span class="tpf-untimed">Add who to bill</span>') + '</div>' +
+      // p19: an issued invoice that would now come out differently
+      (L.mismatch ? '<div class="tpf-row"><span class="tpf-untimed" style="flex:1">Now works out to ' +
+        esc(L.live.amount == null ? 'no amount' : I.money(Math.round(L.live.amount * 100) / 100, L.live.currency)) +
+        ': lessons, rate or rounding changed since it was ' + (L.status.paid ? 'paid' : 'printed') + '.</span>' +
+        '<button class="tpf-btn" data-tpf="breissue">Update</button></div>' : '') +
       '<div class="tpf-row"><button class="tpf-btn" data-tpf="bpreview" style="flex:1">Preview</button>' +
         (L.free ? '' : L.status.paid
           ? '<button class="tpf-btn" data-tpf="bunpaid" style="flex:1">Undo paid</button>'
-          : '<button class="tpf-btn pri" data-tpf="bprint" style="flex:1"' + (L.amount == null ? ' disabled title="Set a rate first"' : '') + '>Print invoice</button>' +
+          : '<button class="tpf-btn pri" data-tpf="bprint" style="flex:1"' + (L.live.amount == null ? ' disabled title="Set a rate first"' : '') + '>' + (L.mismatch ? 'Update and print' : 'Print invoice') + '</button>' +
             // p2: paid without printing — paid in cash, or invoiced some other way.
             '<button class="tpf-btn" data-tpf="bpaid" style="flex:1">Mark paid</button>') +
       '</div>';
@@ -758,6 +785,12 @@ function renderNow() {
 
 /* ── events ─────────────────────────────────────────────────────────────── */
 async function onClick(e) {
+  // p20: a ? opens its hint; any other tap closes an open one.
+  const q = e.target.closest('.tpf-q');
+  $('tpfRoot').querySelectorAll('.tpf-tip:not([hidden])').forEach((x) => {
+    if (!q || x !== q.nextElementSibling) { x.hidden = true; if (x.previousElementSibling) x.previousElementSibling.setAttribute('aria-expanded', 'false'); }
+  });
+  if (q) { e.preventDefault(); const tip = q.nextElementSibling; tip.hidden = !tip.hidden; q.setAttribute('aria-expanded', String(!tip.hidden)); return; }
   const t = e.target.closest('[data-tpf]');
   if (!t) return;
   const a = t.dataset.tpf;
@@ -824,6 +857,7 @@ async function onClick(e) {
   if (a === 'bpreview' && bLine) { inv().preview(bLine); return; }
   if (a === 'bprint' && bLine) { inv().print(bLine); return; }
   if (a === 'bpaid' && bLine) { inv().setPaid(bLine, true); return; }
+  if (a === 'breissue' && bLine) { if (inv().reissue(bLine)) loadBilling(); return; }
   if (a === 'bunpaid' && bLine) { inv().setPaid(bLine, false); return; }
 }
 function saveName() {
@@ -860,6 +894,10 @@ function onChange(e) {
   else if (f === 'step') {
     const n = parseInt(el.value, 10);
     b.setStored(sid, { step: Number.isFinite(n) && n >= 1 ? String(Math.min(n, 240)) : undefined, unit: undefined });
+  } else if (f === 'mode') b.setStored(sid, { mode: el.value === 'each' || el.value === 'total' ? el.value : undefined });
+  else if (f === 'after') {
+    const n = parseInt(el.value, 10);
+    b.setStored(sid, { after: el.value.trim() === '' ? undefined : String(Number.isFinite(n) && n > 0 ? Math.min(n, 239) : 0) });
   } else if (f === 'free') b.setStored(sid, { amount: el.checked ? '0' : undefined });
   else if (f === 'from' || f === 'to') {
     const from = f === 'from' ? el.value : bp.from, to = f === 'to' ? el.value : bp.to;
@@ -901,9 +939,15 @@ function open(id, t) {
   if (sid !== id) { bp = null; bLine = undefined; bMonths = null; plan = null; mapView = null; saveNote = ''; tzOpen = false; tzEdit = false; }
   nameEdit = false;
   sid = id; isOpen = true; busy = false;
-  loadPlan(id);
+  /* p18: the tab is set before anything draws. loadPlan draws at once, and it
+     used to run first: with Billing left open from another student, that drew
+     the Billing tab with no period chosen and stopped there with an error, so
+     the rest of open() never ran and Preview and Billing defaults did nothing
+     until the page was reloaded. */
   if (inv()) inv().onChange(() => { if (isOpen && tab === 'billing') loadBilling(); });
+  if (!plan) planState = signedIn() ? 'loading' : 'signedout';   // what loadPlan is about to say
   setTab(t || 'overview');
+  loadPlan(id);
 }
 function close() {
   isOpen = false; ask = null; render();

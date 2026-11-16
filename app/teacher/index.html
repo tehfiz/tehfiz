@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ═══════════════════════════════════════════════════════════════════
-     Tehfiz teacher app — v4_342
+     Tehfiz teacher app — v4_369
      Deployed from the `tehfiz` repo at app/teacher/index.html (the repo root
      is the web root). Locally, tehfiz-api/public/ is a clone of that repo:
      test with `npm run dev`, then commit and push from inside public/.
@@ -2599,7 +2599,7 @@ body.compact-ui .quick-form::before{
    console as APP_VERSION, or grep the deployed HTML for it. Bumped on every
    saved build; vcheck.py asserts it matches the filename, so a forgotten bump
    fails the integrity check rather than shipping a lie. */
-const APP_VERSION = 'v4_366';
+const APP_VERSION = 'v4_369';
 window.APP_VERSION = APP_VERSION;
 console.info('Tehfiz teacher app ' + APP_VERSION);
 
@@ -8028,6 +8028,68 @@ function saveEdit(){
 // ═══════════════════════════════════════════════════════════════════
 function getSessions(){try{return JSON.parse(localStorage.getItem('qrt4_sessions')||'[]');}catch{return[];}}
 
+/* v4_367: every write of the lessons kept on this device goes through here.
+   They are one browser item, and a browser stops accepting writes at about
+   5 MB. The writes used to be bare: once the device was full each one threw,
+   after the mark was already on the page, so the lesson looked normal and
+   nothing was being saved. Now a full device shows a bar that stays until a
+   write works again, and says what to do. true = saved. */
+let _storeFull = false, _storeNearWarned = false;
+const STORE_NEAR_CHARS = 4000000;   // about four fifths of what a browser allows
+function putSessions(list){
+  let json;
+  try{
+    json = JSON.stringify(list);
+    localStorage.setItem('qrt4_sessions', json);
+  }catch(err){
+    _storeFull = true; storeFullBar(true);
+    return false;
+  }
+  if(_storeFull){ _storeFull = false; storeFullBar(false); showToast('Saving on this device again ✓'); }
+  else if(!_storeNearWarned && json.length > STORE_NEAR_CHARS){
+    _storeNearWarned = true;
+    setTimeout(()=>storeFullBar(true, true), 2500);
+  }
+  return true;
+}
+/* The bar. `near` is the early warning (can be closed); otherwise the device
+   is full and the bar stays until a save works. */
+function storeFullBar(on, near){
+  let b = document.getElementById('storeFullBar');
+  if(!on){ if(b) b.remove(); return; }
+  if(near && _storeFull) return;
+  if(!b){
+    b = document.createElement('div'); b.id = 'storeFullBar'; b.setAttribute('role','alert');
+    b.style.cssText = 'position:fixed;left:0;right:0;top:0;z-index:5000;padding:10px 14px;display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;justify-content:center;font:500 13px/1.4 "IBM Plex Sans",system-ui,sans-serif;box-shadow:0 2px 10px rgba(0,0,0,.3);';
+    document.body.appendChild(b);
+  }
+  const btn = 'font:inherit;font-weight:600;padding:5px 12px;border-radius:6px;border:1px solid currentColor;background:transparent;color:inherit;cursor:pointer;';
+  if(near){
+    b.style.background = '#3a3d42'; b.style.color = '#fff';
+    b.innerHTML = '<span>This device is nearly full of lessons. Delete lessons you have already sent: they stay on the server.</span>'
+      + '<button type="button" style="'+btn+'" onclick="storeFullBar(false);openSessions()">Open Sessions</button>'
+      + '<button type="button" style="'+btn+'" onclick="storeFullBar(false)">Close</button>';
+  } else {
+    b.style.background = '#8a1c1c'; b.style.color = '#fff';
+    b.innerHTML = '<span><b>This lesson is not being saved.</b> This device is full of lessons. Keep this page open, then download the lesson or delete lessons you have already sent (they stay on the server).</span>'
+      + '<button type="button" style="'+btn+'" onclick="storeFullDownload()">Download this lesson</button>'
+      + '<button type="button" style="'+btn+'" onclick="openSessions()">Open Sessions</button>'
+      + '<button type="button" style="'+btn+'" onclick="storeFullRetry()">Try again</button>';
+  }
+}
+/* The lesson in hand as a file, straight from memory: nothing is written to
+   the device, so it works when the device is full. */
+function storeFullDownload(){
+  const sess = buildSessionObj();
+  sess.id = _currentSessionId || Date.now();
+  dl(JSON.stringify({type:'qrs-session',version:QRS_VERSION,exported:new Date().toISOString(),session:sess},null,2), makeFileName(sess)+'.qrs');
+}
+function storeFullRetry(){
+  if(mistakes.length || _currentSessionId){ autoSaveSession(); }
+  else if(putSessions(getSessions())){ /* putSessions cleared the bar */ }
+  if(_storeFull) showToast('Still full — delete some sent lessons first');
+}
+
 // The calendar day a session belongs to, as YYYY-MM-DD. Field precedence is
 // deliberately identical to sessionDateText(), so a filename can never
 // disagree with the date shown for the same session on screen.
@@ -8274,7 +8336,7 @@ function saveSession(){
   sess.id = _currentSessionId;
   const sessions = getSessions().filter(x => x.id !== _currentSessionId);
   sessions.unshift(sess);
-  localStorage.setItem('qrt4_sessions', JSON.stringify(sessions));
+  if(!putSessions(sessions)){ sessionSaved = false; return; }   // v4_367: the bar says why
   sessionSaved = true;
   showToast('Session saved ✓');
 }
@@ -8374,7 +8436,7 @@ function persistCurrentSessionEdit(){
   sess.id = _currentSessionId;
   const sessions = getSessions().filter(x => x.id !== _currentSessionId);
   sessions.unshift(sess);
-  localStorage.setItem('qrt4_sessions', JSON.stringify(sessions));
+  if(!putSessions(sessions)){ sessionSaved = false; return false; }
   sessionSaved = true;
   renderSessionsList();
   return true;
@@ -8406,8 +8468,8 @@ function autoSaveSession(){
   sess.id = _currentSessionId; // keep same ID so we overwrite, not duplicate
   const sessions = getSessions().filter(x => x.id !== _currentSessionId);
   sessions.unshift(sess);
-  localStorage.setItem('qrt4_sessions', JSON.stringify(sessions));
-  sessionSaved = true;
+  // v4_367: false keeps "unsaved", so leaving the page still asks first.
+  sessionSaved = putSessions(sessions);
 }
 
 // Export current session as a .qrs file directly (no need to save first)
@@ -9110,7 +9172,7 @@ let _sessMenuOpen = null;
 function toggleSessMenu(id){ _sessMenuOpen = (id==null || _sessMenuOpen===id) ? null : id; renderSessionsList(); }
 function deleteSession(id){
   if(!confirm('Delete this session?')) return;
-  localStorage.setItem('qrt4_sessions',JSON.stringify(getSessions().filter(x=>x.id!==id)));
+  putSessions(getSessions().filter(x=>x.id!==id));
   window.TehfizSync && TehfizSync.onSessionDeleted(id);
   renderSessionsList();
 }
@@ -9138,8 +9200,7 @@ function downloadQRS(sess,name){
   if(!_currentSessionId) _currentSessionId = id;
   const sessions = getSessions().filter(x => x.id !== id);
   sessions.unshift(sess);
-  localStorage.setItem('qrt4_sessions', JSON.stringify(sessions));
-  sessionSaved = true;
+  sessionSaved = putSessions(sessions);   // the file below is made either way
   dl(JSON.stringify({type:'qrs-session',version:QRS_VERSION,exported:new Date().toISOString(),session:sess},null,2),(name||'session')+'.qrs');
 }
 function exportReviewQRS(){if(reviewingSession) downloadQRS(reviewingSession,makeFileName(reviewingSession));}
@@ -9170,7 +9231,7 @@ function importSession(event){
 
 function importSingle(sess,silent=false){
   const sessions=getSessions();
-  if(!sessions.find(x=>x.id===sess.id)){sessions.unshift(sess);localStorage.setItem('qrt4_sessions',JSON.stringify(sessions));}
+  if(!sessions.find(x=>x.id===sess.id)){sessions.unshift(sess);putSessions(sessions);}
   if(!silent) renderSessionsList();
 }
 
@@ -12442,6 +12503,15 @@ document.querySelectorAll('.modal-bg').forEach(m=>m.addEventListener('click',e=>
       </label>
     </div>
 <div class="edit-form-group" style="border-top:.5px solid var(--border);padding-top:10px;margin-top:4px;">
+      <label style="display:flex;align-items:center;justify-content:space-between;user-select:none;">
+        <span>Billing defaults</span>
+        <span style="font-size:12px;color:var(--ink3);font-weight:400;margin-right:6px;font-family:var(--ui-font);">Rate, rounding and payment details on invoices</span>
+        <!-- v4_368: the same dialog the Profile and Invoices open. -->
+        <button class="btn-m" style="flex-shrink:0;"
+                onclick="closeModal('settingsModal'); window.TehfizInvoices && TehfizInvoices.forStudent && TehfizInvoices.forStudent.openDefaults();">Open</button>
+      </label>
+    </div>
+<div class="edit-form-group" style="border-top:.5px solid var(--border);padding-top:10px;margin-top:4px;">
       <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;">
         <span>ع Ruku markers</span>
         <span style="font-size:12px;color:var(--ink3);font-weight:400;margin-right:6px;font-family:var(--ui-font);">Mark where each ruku ends</span>
@@ -13191,7 +13261,7 @@ function footerState() {
 
 function localSessions() { return readJSON('qrt4_sessions', []); }
 
-function saveLocalSessions(list) { writeJSON('qrt4_sessions', list); }
+function saveLocalSessions(list) { putSessions(list); }   // v4_367: was silent when the device was full
 
 function findLocal(clientId) {
   return localSessions().find((s) => String(s.id) === String(clientId)) || null;
@@ -13994,7 +14064,10 @@ function getInvoiceRate(sid) {
      this student's own figures */
   return { ...profileRateDefaults(),
            ...(d.amount ? { amount: d.amount } : {}), ...(d.currency ? { currency: d.currency } : {}),
-           ...(d.step ? { step: d.step } : {}), ...stored };
+           ...(d.step ? { step: d.step } : {}),
+           // v4_368: how the rounding is done, from the defaults unless the student has their own
+           ...(d.mode ? { mode: d.mode } : {}), ...(d.after != null && d.after !== '' ? { after: d.after } : {}),
+           ...stored };
 }
 
 /* Minimum billing unit. Rounding is applied PER SESSION, not to the month's
@@ -14025,9 +14098,48 @@ function invoiceStepText(step) {
 function invoiceDefaults() {
   try { return JSON.parse(localStorage.getItem(INVOICE_DEFAULTS_KEY)) || {}; } catch { return {}; }
 }
-function sessionBilledSec(sec, stepMin) {
+/* v4_368: how time is rounded is three settings, in the billing defaults and,
+   when set, for one student:
+     step   minutes a step (1 = bill the minutes as recorded)
+     mode   'each'  every lesson rounded on its own (as it always was), or
+            'total' lessons listed as recorded and only the period's total rounded
+     after  minutes over a step before the next step counts; 0 = any time over,
+            which is how it always worked. With a 15-minute step and 10, a
+            24-minute lesson bills 15 and a 25-minute one 30.
+   A timed lesson (or total) shorter than one step bills one step (decided 16
+   Nov). Untimed stays at nothing, as before. */
+function invoiceRule(rate) {
+  const step = invoiceStep(rate);
+  const mode = rate && rate.mode === 'total' ? 'total' : 'each';
+  let after = parseInt(rate && rate.after, 10);
+  after = step > 1 && Number.isFinite(after) && after > 0 ? Math.min(after, step - 1) : 0;
+  return { step, mode, after };
+}
+function sessionBilledSec(sec, stepMin, afterMin) {
   const u = stepMin * 60;
-  return sec > 0 ? (u <= 60 ? sec : Math.ceil(sec / u) * u) : 0;
+  if (!(sec > 0)) return 0;
+  if (u <= 60) return sec;
+  const k = Math.floor(sec / u), over = sec - k * u;
+  if (!over) return sec;
+  if (!k) return u;                                   // under one step: one step
+  return over >= (afterMin || 0) * 60 ? (k + 1) * u : k * u;
+}
+/* Billed time for a period's lessons: {each: [per lesson], total}. */
+function invoiceBilled(secs, rule) {
+  if (rule.mode === 'total') {
+    const each = secs.map((s) => (s > 0 ? s : 0));
+    return { each, total: sessionBilledSec(each.reduce((a, b) => a + b, 0), rule.step, rule.after) };
+  }
+  const each = secs.map((s) => sessionBilledSec(s, rule.step, rule.after));
+  return { each, total: each.reduce((a, b) => a + b, 0) };
+}
+/* The rule in words, as the invoice and the screens state it. */
+function invoiceRuleText(rule) {
+  if (!rule || rule.step <= 1) return 'billed as recorded';
+  const what = rule.mode === 'total' ? 'the total' : 'each lesson';
+  const st = invoiceStepText(rule.step);
+  return rule.after ? what + ' in ' + st + ' steps, the next step from ' + rule.after + ' min over'
+    : what + ' rounded up to ' + st;
 }
 
 
@@ -14491,7 +14603,21 @@ window.TehfizSync = {
     },
     step: (rate) => invoiceStep(rate),
     stepText: (step) => invoiceStepText(step),
-    billedSec: (sec, step) => sessionBilledSec(sec, step),
+    billedSec: (sec, step, after) => sessionBilledSec(sec, step, after),
+    // v4_368: the rounding as three settings (see invoiceRule), used by every screen
+    rule: (rate) => invoiceRule(rate),
+    billedLessons: (secs, rule) => invoiceBilled(secs, rule),
+    ruleText: (rule) => invoiceRuleText(rule),
+    /* v4_369: what each rounding setting does, for the ? beside it (Billing
+       defaults, a Profile's rate, the Invoices row). One wording everywhere. */
+    hints: {
+      step: 'Time is billed in steps of this many minutes: with 15, a lesson bills 15, 30, 45 min and so on. ' +
+        '1 bills the minutes exactly as recorded. A lesson shorter than one step still bills one step.',
+      mode: 'Each lesson: every lesson is rounded on its own. Three 22-minute lessons in 15-minute steps bill 30 min each, 1 h 30 in all. ' +
+        'The total only: the lessons are listed as recorded and only the total for the month (or range) is rounded, so the same three lessons, 1 h 06, bill 1 h 15.',
+      after: 'How far into the next step a lesson has to go before that step is billed. With 15-minute steps and 10: ' +
+        'a 24-minute lesson bills 15, a 25-minute one bills 30. 0 bills the next step as soon as the time goes over at all.',
+    },
     defaults: () => invoiceDefaults(),
     setDefaults(patch) {
       try { localStorage.setItem(INVOICE_DEFAULTS_KEY, JSON.stringify({ ...invoiceDefaults(), ...patch })); } catch {}
@@ -15190,15 +15316,31 @@ async function bcSubSubmit(mode) {
   if (mode === 'add' && !confirm('Add ' + emails.length + ' address' + (emails.length === 1 ? '' : 'es') +
       ' without asking them to confirm?\n\nOnly do this for people who have already asked you for updates.')) return;
   bcSubBusy = true; bcSubMsg = ''; renderList();
-  try {
-    const r = await api('/api/admin/subscribers', { method: 'POST', body: { emails, mode } });
-    const part = (list, words) => (list && list.length ? list.length + ' ' + words : '');
-    bcSubMsg = [part(r.invited, 'invited'), part(r.added, 'added'), part(r.already, 'already subscribed'),
+  /* v4_367: the server takes ten invitations a request (an email and several
+     database calls each), so they go ten at a time. Adding without
+     confirmation is one request however long the list. If a request fails,
+     the addresses not yet sent stay in the box. */
+  const r = { invited: [], added: [], already: [], waiting: [], unsubscribed: [], failed: [] };
+  const part = (list, words) => (list && list.length ? list.length + ' ' + words : '');
+  const said = () => [part(r.invited, 'invited'), part(r.added, 'added'), part(r.already, 'already subscribed'),
       part(r.waiting, 'invited in the last 10 minutes, not sent again'),
       part(r.unsubscribed, 'unsubscribed earlier, so not added (only they can subscribe again)'),
-      part(r.failed, 'could not be emailed')].filter(Boolean).join(' \u00b7 ') || 'Nothing changed';
+      part(r.failed, 'could not be emailed')].filter(Boolean).join(' \u00b7 ');
+  const STEP = mode === 'invite' ? 10 : emails.length;
+  let at = 0;
+  try {
+    for (; at < emails.length; at += STEP) {
+      if (emails.length > STEP) { bcSubMsg = 'Sending\u2026 ' + at + ' of ' + emails.length; renderList(); }
+      const one = await api('/api/admin/subscribers', { method: 'POST', body: { emails: emails.slice(at, at + STEP), mode } });
+      Object.keys(r).forEach((k) => { if (one[k] && one[k].length) r[k] = r[k].concat(one[k]); });
+    }
+    bcSubMsg = said() || 'Nothing changed';
     bcSubAdd = '';
-  } catch (err) { bcSubMsg = 'Failed: ' + ((err && err.message) || 'unknown'); }
+  } catch (err) {
+    bcSubAdd = emails.slice(at).join('\n');
+    bcSubMsg = 'Stopped: ' + ((err && err.message) || 'unknown') + (said() ? '. Before that: ' + said() : '') +
+      '. The addresses not sent yet are still in the box.';
+  }
   bcSubBusy = false;
   await bcLoadSubs();
 }
@@ -16850,7 +16992,7 @@ else mount();
    score is worked out here, with the saved weights — or, while calibration
    is being tried below, with those weights. Nothing here writes anything:
    the calibration stays on this device, as it always has. */
-let gr = { rows: null, err: '', busy: '', teacher: '', stage: '', period: '90', part: 'parts', allModels: false };
+let gr = { rows: null, err: '', busy: '', done: '', teacher: '', stage: '', period: '90', part: 'parts', allModels: false };
 let grHost = null;
 
 function grSavedModel() {
@@ -16904,14 +17046,20 @@ async function grLoad() {
    session; the stats rebuild reads them out (and is safe to repeat). */
 async function grBackfill() {
   if (gr.busy) return;
-  let after = '', n = 0;
+  /* v4_367: counts what was rebuilt and what was not, and says so when it
+     ends. It used to show only a running number, and its button went away once
+     any grade existed. 20 a call is the server's limit. */
+  let after = '', n = 0, ok = 0, bad = 0;
+  gr.err = ''; gr.done = '';
   try {
     do {
-      gr.busy = 'Reading past sessions… ' + n; grPaint();
-      const r = await api('/api/admin/backfill-stats', { method: 'POST', body: { after, limit: 25 } });
-      n += r.scanned || 0; after = r.cursor;
+      gr.busy = 'Rebuilding\u2026 ' + n + ' sessions read. Keep this page open.'; grPaint();
+      const r = await api('/api/admin/backfill-stats', { method: 'POST', body: { after, limit: 20 } });
+      n += r.scanned || 0; ok += r.rebuilt || 0; bad += (r.failures || []).length; after = r.cursor;
     } while (after);
-  } catch (err) { gr.err = 'Stopped: ' + ((err && err.message) || 'unknown') + '. Running it again carries on safely.'; }
+    gr.done = 'Finished ' + new Date().toLocaleTimeString() + ': ' + ok + ' of ' + n + ' sessions rebuilt' +
+      (bad ? ', ' + bad + ' could not be (run it again; if the number stays, tell the developer)' : '') + '.';
+  } catch (err) { gr.err = 'Stopped after ' + n + ' sessions: ' + ((err && err.message) || 'unknown') + '. Running it again is safe.'; }
   gr.busy = ''; await grLoad();
 }
 
@@ -17010,6 +17158,13 @@ function grPaint() {
             '</div>';
         }).join('') : '<p class="tad-note">No part is 10 or more points apart.</p>') + '</div>';
     } else if (all.length) h += '<p class="tad-empty">Nothing graded matches these filters.</p>';
+  }
+  /* v4_367: always here, not only while there are no grades. */
+  if (gr.rows && !gr.busy) {
+    h += '<div class="gr-card"><h4>Rebuild analytics</h4><p class="tad-note" style="margin:0 0 10px;">Reads every stored session again and rewrites ' +
+      'what Overview and this page are worked out from, grades included. Sessions themselves are not changed. Safe to run again.</p>' +
+      '<button class="tad-mini" data-tad="grbackfill">Rebuild analytics</button>' +
+      (gr.done ? '<p class="tad-note" style="margin:8px 0 0;"><b>' + esc(gr.done) + '</b></p>' : '') + '</div>';
   }
   grHost.innerHTML = h;
 
@@ -18720,11 +18875,11 @@ span.seg-chip{display:flex;align-items:center;justify-content:center;box-sizing:
 })();
 </script>
 <script src="/app/teacher/sessions-sent.js?v=m7"></script>
-<script src="/app/teacher/finish-session.js?v=f19"></script>
-<script src="/app/teacher/invoices.js?v=i7"></script>
+<script src="/app/teacher/finish-session.js?v=f20"></script>
+<script src="/app/teacher/invoices.js?v=i9"></script>
 <script src="/app/shared/tehfiz-map.js?v=mp7"></script>
 <script src="/app/shared/tehfiz-time.js?v=t4"></script>
-<script src="/app/teacher/profile.js?v=p17"></script>
+<script src="/app/teacher/profile.js?v=p20"></script>
 <script src="/app/teacher/range-picker.js?v=rg5"></script>
 <script src="/app/teacher/lesson-editor.js?v=le7"></script>
 <script src="/app/teacher/calendar.js?v=c8"></script>
