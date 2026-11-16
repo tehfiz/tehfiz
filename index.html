@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Tehfīz landing page — v0_64 (Graphite; redesigned 13 Nov 2026; hero tour video, square cut on phones; updates sign-up; preview card centred so cropped previews read). Deploys to index.html at the root of the `tehfiz` repo. -->
+<!-- Tehfīz landing page — v0_65 (Graphite; redesigned 13 Nov 2026; hero tour video, square cut on phones; updates sign-up; preview card centred so cropped previews read; Menu button on phones). Deploys to index.html at the root of the `tehfiz` repo. -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -55,7 +55,15 @@ header a:hover,footer a:hover{color:#ffffff}
 section[id]{scroll-margin-top:12px}
 img{max-width:100%;height:auto}
 #tour{aspect-ratio:16/9}
-@media (max-width:640px){.nv{display:none}#tour{aspect-ratio:1/1}}
+.mnb{display:none;align-items:center;gap:8px;min-height:44px;padding:8px 14px;border:1px solid #626973;border-radius:8px;background:none;color:#ffffff;font:500 15px 'IBM Plex Sans',system-ui,sans-serif;cursor:pointer}
+.mnb::before{content:"";width:16px;height:10px;border-top:2px solid currentColor;border-bottom:2px solid currentColor;background:linear-gradient(currentColor,currentColor) center/100% 2px no-repeat}
+#navMain.open .mnb::before{content:"\2715";width:auto;height:auto;border:0;background:none;font-size:14px;line-height:1}
+@media (max-width:640px){
+  .nv{display:none}#tour{aspect-ratio:1/1}
+  .mnb{display:inline-flex}
+  #navMain.open .nv{display:block;order:5;width:100%;padding:14px 0 !important;border-top:1px solid #2c3036;font-size:17px !important}
+  #navMain.open .nv:first-of-type{margin-top:4px}
+}
 :focus-visible{outline:2px solid #6ea8fe;outline-offset:2px}
 @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
 </style>
@@ -64,13 +72,14 @@ img{max-width:100%;height:auto}
 <div style="font-family: 'IBM Plex Sans', system-ui, sans-serif; color: #17191c; background: #f5f5f3; font-size: 17px; line-height: 1.6">
 
 <header style="background: #17191c; color: #e8e9ea">
-<nav aria-label="Main" style="max-width: 1120px; margin: 0 auto; padding: 14px 24px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 28px">
+<nav id="navMain" aria-label="Main" style="max-width: 1120px; margin: 0 auto; padding: 14px 24px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 28px">
 <a href="/" style="color: #ffffff; text-decoration: none; font-size: 20px; font-weight: 600; margin-right: auto">Tehfīz <span lang="ar" style="font-family: 'Amiri', serif; font-weight: 400; color: #b6bac1">تحفيظ</span></a>
 <a class="nv" href="#lesson" style="color: #d6d8dc; text-decoration: none; font-size: 15px; padding: 10px 0">How it works</a>
 <a class="nv" href="#between" style="color: #d6d8dc; text-decoration: none; font-size: 15px; padding: 10px 0">Features</a>
 <a class="nv" href="#privacy" style="color: #d6d8dc; text-decoration: none; font-size: 15px; padding: 10px 0">Privacy</a>
 <a class="nv" href="#organisations" style="color: #d6d8dc; text-decoration: none; font-size: 15px; padding: 10px 0">Organisations</a>
-<a href="/help/" style="color: #d6d8dc; text-decoration: none; font-size: 15px; padding: 10px 0">Help</a>
+<a class="nv" href="/help/" style="color: #d6d8dc; text-decoration: none; font-size: 15px; padding: 10px 0">Help</a>
+<button id="navBtn" class="mnb" type="button" aria-expanded="false" aria-controls="navMain">Menu</button>
 <a href="/app/teacher/" style="background: #ffffff; color: #17191c; text-decoration: none; font-size: 15px; font-weight: 600; padding: 10px 18px; border-radius: 8px">Sign in</a>
 </nav>
 <div style="max-width: 1120px; margin: 0 auto; padding: clamp(40px, 7vw, 72px) 24px clamp(48px, 7vw, 80px); display: flex; flex-direction: column; gap: 40px">
@@ -353,6 +362,15 @@ v.src=sq?'/img/home-tour-square.mp4':'/img/home-tour.mp4';})();
       if(e.isIntersecting){if(!userPaused)play();}else v.pause();
     });},{threshold:0.35}).observe(v);
   } else play();
+})();
+/* Phones: the header links fold behind a Menu button. */
+(function(){
+  var n=document.getElementById('navMain'),b=document.getElementById('navBtn');
+  if(!n||!b) return;
+  function set(o){n.classList.toggle('open',o);b.setAttribute('aria-expanded',o?'true':'false');b.textContent=o?'Close':'Menu';}
+  b.addEventListener('click',function(){set(!n.classList.contains('open'));});
+  n.addEventListener('click',function(e){if(e.target.closest&&e.target.closest('a.nv'))set(false);});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape'&&n.classList.contains('open')){set(false);b.focus();}});
 })();
 /* Get updates (0017): the server answers the same either way, so the page
    cannot tell anyone whether an address was already on the list. */
