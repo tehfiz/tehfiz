@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   name-sync.js — TehfizNameSync — n4
+   name-sync.js — TehfizNameSync — n5
    Loaded by the teacher app from /app/teacher/name-sync.js?v=n4, after the
    TehfizSync module.
 
@@ -46,7 +46,7 @@
    ═══════════════════════════════════════════════════════════════════════ */
 (function () {
 'use strict';
-const TEHFIZ_NAMESYNC_VERSION = 'n4';
+const TEHFIZ_NAMESYNC_VERSION = 'n5';
 
 const SCOPE = 'https://www.googleapis.com/auth/drive.appdata';
 const FILE_NAME = 'tehfiz-student-names.json';
@@ -70,7 +70,6 @@ const $ = (id) => document.getElementById(id);
 const sync = () => window.TehfizSync || null;
 function get(k, fb) { try { const v = localStorage.getItem(k); return v === null ? fb : JSON.parse(v); } catch { return fb; } }
 function put(k, v) { try { if (v === null || v === undefined) localStorage.removeItem(k); else localStorage.setItem(k, JSON.stringify(v)); } catch {} }
-function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
 function toast(m) { if (typeof window.showToast === 'function') window.showToast(m); }
 function isOn() { return get(K.on, null) === '1'; }
 function who() { const s = sync(); return s && s.who ? s.who() : null; }

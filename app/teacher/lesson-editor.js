@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   lesson-editor.js — TehfizLesson — le6
+   lesson-editor.js — TehfizLesson — le7
    Loaded by the teacher app only, from /app/teacher/lesson-editor.js?v=le6.
 
    le6: open() takes `pages`, a map to show in the range picker and to
@@ -57,10 +57,10 @@
    ═══════════════════════════════════════════════════════════════════════ */
 (function () {
 'use strict';
-const TEHFIZ_LESSON_VERSION = 'le6';
+const TEHFIZ_LESSON_VERSION = 'le7';
 const K_HOURS = 'tehfiz_teach_hours';     // {from:'15:00', to:'21:00'} — optional, set in Settings
 const K_PLANS = 'tehfiz_cal_plans';       // the calendar's copy of every student's timetable
-const SNAP = 15, DAY = 86400000;
+const SNAP = 15;
 const NIGHT_FROM = 22 * 60, NIGHT_TO = 7 * 60;
 
 const $ = (id) => document.getElementById(id);

@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   finish-session.js — TehfizFinish — f18
+   finish-session.js — TehfizFinish — f19
    Loaded by the teacher app only, from /app/teacher/finish-session.js?v=f18.
 
    f18: after "Undo send" the sheet goes back to the Finish form, so the
@@ -48,7 +48,7 @@
    ═══════════════════════════════════════════════════════════════════════ */
 (function () {
 'use strict';
-const TEHFIZ_FINISH_VERSION = 'f18';
+const TEHFIZ_FINISH_VERSION = 'f19';
 
 let open_ = false, view = 'form', moreOpen = false;
 let st = null;   // the sheet's working state, see begin()
@@ -414,8 +414,6 @@ function recitedRanges() {
   return (segments || []).filter((sg) => sg.mode !== 'spot').map((sg) => segOrdered(sg))
     .filter((o) => keyValid(o.startKey) && keyValid(o.endKey)).map((o) => [o.startKey, o.endKey]);
 }
-function ymd(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
-function hhmm(d) { return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }
 /* Fills st.next from the student's schedule and map the first time, and
    returns the map preview (or null) for the Map line.
    f12: st.next = {on, fromTimetable, noPlan, at, len, plan, note, replaces}.

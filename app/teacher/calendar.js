@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   calendar.js — TehfizCalendar — c7
+   calendar.js — TehfizCalendar — c8
    Loaded by the teacher app only, from /app/teacher/calendar.js?v=c7.
 
    c7: removed a check for data-keep, which nothing ever set.
@@ -61,7 +61,7 @@
    ═══════════════════════════════════════════════════════════════════════ */
 (function () {
 'use strict';
-const TEHFIZ_CALENDAR_VERSION = 'c7';
+const TEHFIZ_CALENDAR_VERSION = 'c8';
 const MATCH_MS = 3 * 3600000;
 const K_PLANS = 'tehfiz_cal_plans';
 const K_DISMISS = 'tehfiz_cal_dismissed';
@@ -104,7 +104,6 @@ function addDays(ms, n) { const p = T().partsIn(ms + 12 * 3600000, Z()); return 
 function dayStartOf(ms) { const p = T().partsIn(ms, Z()); return T().zonedToMs(p.y, p.mo, p.d, 0, 0, Z()); }
 function mondayOf(ms) { const d = dayStartOf(ms); return addDays(d, -((T().partsIn(d + 12 * 3600000, Z()).wd + 6) % 7)); }
 function ymd(ms) { const p = T().partsIn(ms, Z()); return p.y + '-' + String(p.mo).padStart(2, '0') + '-' + String(p.d).padStart(2, '0'); }
-function hm(ms) { const p = T().partsIn(ms, Z()); return String(p.h).padStart(2, '0') + ':' + String(p.mi).padStart(2, '0'); }
 function timeText(ms) { return T().timeText(ms, Z()); }
 function dateText(ms, o) { try { return new Date(ms + 12 * 3600000).toLocaleDateString(undefined, { ...o, timeZone: Z() }); } catch { return new Date(ms).toLocaleDateString(undefined, o); } }
 function stageLabel(id) { return typeof sessionTypeLabel === 'function' ? sessionTypeLabel(id) : id; }
@@ -230,10 +229,6 @@ function evText(e) {
   const what = T().planText(e, stageLabel);
   const kind = e.status === 'next' ? 'Next lesson' : e.kind === 'single' ? (e.replaces ? 'Moved' : 'Single lesson') : 'Weekly';
   return kind + (what ? ' · ' + what : (e.len && e.status !== 'next' ? ' · ' + e.len + ' min' : ''));
-}
-function evHtml(e, i) {
-  return '<button type="button" class="tcal-ev ' + e.status + (pick === i ? ' on' : '') + '" data-tcal="ev" data-i="' + i + '">' +
-    '<b>' + (e.clash ? '<span class="tcal-warn" title="Overlaps ' + esc(e.clash.label) + '">⚠</span> ' : '') + esc(e.label) + '</b><span>' + esc(evText(e)) + '</span></button>';
 }
 function pillHtml(e) {
   const t = { done: '✓ Done', missed: 'Missed?', next: 'Next', up: 'Upcoming' }[e.status];

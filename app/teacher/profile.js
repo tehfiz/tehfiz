@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   profile.js — TehfizProfile — p16
+   profile.js — TehfizProfile — p17
    Loaded by the teacher app only, from /app/teacher/profile.js?v=p16.
 
    p16: applyLesson returns the map as it was (.before) and restoreMap puts
@@ -64,7 +64,7 @@
    ═══════════════════════════════════════════════════════════════════════ */
 (function () {
 'use strict';
-const TEHFIZ_PROFILE_VERSION = 'p16';
+const TEHFIZ_PROFILE_VERSION = 'p17';
 const K_TT = 'tehfiz_prof_tt';            // {sid: {days: {'1': {t:'17:00', len:45}, …}, lessons: [{at, len}]}}, 0 = Sunday — a cache
 const K_LSQ = 'tehfiz_prof_lsq';          // {sid: true} single lessons not yet on the server (p7)
 const K_MAPQ = 'tehfiz_prof_mapq';        // {sid: {pages, recent_auto, ayahs}} not yet on the server
@@ -290,11 +290,6 @@ function nextLesson(id, from) {
 // p6: "Today" and "Tomorrow" instead of the date when it is that close.
 function dayText(d) { return T() ? T().dayText(+d) : d.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' }); }
 function timeText(d) { return d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }); }
-function slotTime(t) {
-  const [h, m] = String(t || '').split(':').map(Number);
-  const d = new Date(); d.setHours(h || 0, m || 0, 0, 0);
-  return timeText(d);
-}
 
 /* ── CSS ────────────────────────────────────────────────────────────────── */
 function injectCss() {

@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   tehfiz-shared.js — s24
+   tehfiz-shared.js — s25
    Loaded by BOTH apps (teacher /app/teacher/, viewer /app/student/) before
    their own scripts, from /app/shared/tehfiz-shared.js?v=<version>.
 
@@ -18,7 +18,7 @@
    · Nothing here may run against the page at load time: this file runs in the
      <head>, before <body> exists. Declarations and pure tables only.
    ═══════════════════════════════════════════════════════════════════════ */
-const TEHFIZ_SHARED_VERSION = 's24';
+const TEHFIZ_SHARED_VERSION = 's25';
 
 /* s16: the surah banner on the mushaf — the calligraphic name (fonts/surah-names
    .woff2, from quran.com) with سورة, and at the sides the number of verses and
@@ -244,20 +244,12 @@ function typeFill(cfg, id){
   const c = typeCategory(cfg, id);
   return c==='tajweed' ? 'var(--ink)' : c==='other' ? 'var(--parchment3)' : 'var(--ink3)';
 }
-// Kept for callers that still pass a type: the word is now coloured by its
-// LEVEL (levelWordStyle), so this draws nothing of its own.
-function typeWordStyle(cfg, id){ return ''; }
 // A marked word, coloured the way its card is: the level colour, solid; a
 // Tajweed mark dashed in the Tajweed colour (solid when the rule was ADDED).
 function levelWordStyle(m, cfg){
   const sv = sevForMistake(m, cfg);
   const st = isTajweedMistake(m, cfg) && !isAddedTajweed(m) ? 'dashed' : 'solid';
   return `color:${sv.color};border-bottom:2px ${st} ${sv.color};`;
-}
-function typeDotStyle(cfg, id){
-  const c = typeCategory(cfg, id);
-  return c==='tajweed' ? `background:var(--ink);color:var(--parchment);`
-       : `background:var(--parchment);color:var(--ink);box-shadow:inset 0 0 0 1.5px ${c==='other'?'var(--border2)':'var(--ink2)'};`;
 }
 /* A tajweed rule the student ADDED (lengthened where there is no madd, a
    bounce on a non-qalqalah letter…) rather than left out or got wrong. Saved
@@ -742,30 +734,8 @@ const STRENGTH_MODEL_DEFAULT = {
   ],
 };
 
-// Runtime override. Today it comes from localStorage (so the calibration tool
-// can experiment against real sessions); later the backend can serve a model
-// fitted to aggregated data and this is the only line that needs to change.
-function loadStrengthModel(){   // kept for the legacy path only; see loadCalibration()
-  try{
-    const raw = localStorage.getItem('tehfiz_strength_model');
-    if(raw){
-      const o = JSON.parse(raw);
-      return {...STRENGTH_MODEL_DEFAULT, ...o,
-              weights:{...STRENGTH_MODEL_DEFAULT.weights, ...(o.weights||{})},
-              bands: o.bands || STRENGTH_MODEL_DEFAULT.bands};
-    }
-  }catch{}
-  return {...STRENGTH_MODEL_DEFAULT};
-}
 
-function saveStrengthModel(m){
-  applyCalibration({strength: {...STRENGTH_MODEL_DEFAULT, ...m}});
-}
 
-function resetStrengthModel(){
-  CALIBRATION.strength = {...STRENGTH_MODEL_DEFAULT};
-  applyCalibration({});
-}
 
 // ── CALIBRATION ENVELOPE ──────────────────────────────────────────────────
 // One object, one storage key, one entry point — so that moving calibration to
@@ -842,19 +812,7 @@ function applyCalibration(obj, persist){
   return CALIBRATION;
 }
 
-// What to PUT to a backend, or drop into a bug report.
-function calibrationPayload(){ return JSON.parse(JSON.stringify(CALIBRATION)); }
 
-function resetCalibration(){
-  const sec = calibrationSections();
-  CALIBRATION = {id: CALIBRATION_ID};
-  for(const k in sec) CALIBRATION[k] = {...sec[k]};
-  try{
-    localStorage.removeItem(CALIBRATION_KEY);
-    for(const k in CALIBRATION_LEGACY_KEYS) localStorage.removeItem(CALIBRATION_LEGACY_KEYS[k]);
-  }catch{}
-  syncCalibrationViews();
-}
 
 function syncCalibrationViews(){
   STRENGTH_MODEL = {...STRENGTH_MODEL_DEFAULT, ...(CALIBRATION.strength||{})};
@@ -921,9 +879,6 @@ function strengthFromInputs(inp, model){
   return Math.round(100 * Math.exp(-(inp.weighted/inp.verses) / M.k));
 }
 
-function memorizationStrength(mistakes, verseCount, model){
-  return strengthFromInputs(strengthInputs(mistakes, verseCount), model);
-}
 
 function strengthBand(v, model){
   const M = model||STRENGTH_MODEL;
@@ -2080,7 +2035,6 @@ async function flushPageIndex(){
   await qcMetaPut('pageIndex', Object.fromEntries(_pageFirstVerse));
 }
 
-function pageIndexCoverage(){ return _pageFirstVerse.size; }
 
 // Fetch multiple pages with concurrency limit — returns array in same order as input
 async function fetchPagesCached(pageNums, concurrency=8){
@@ -2519,14 +2473,6 @@ function ruleFamily(id){
   return (a && a.fam) || null;
 }
 
-// The family of a whole sub-rule record, including the family-level entries
-// that carry no `rule` at all. Reporting should call this rather than
-// ruleFamily(sr.rule), which returns null for those.
-function subruleFamily(sr){
-  if(!sr) return null;
-  if(sr.family) return sr.family;
-  return sr.rule ? ruleFamily(sr.rule) : null;
-}
 
 // For chips and pills. The added forms return their full label, because it is
 // already short and because "Madd" alone would be indistinguishable from the

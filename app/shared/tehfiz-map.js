@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   tehfiz-map.js — TehfizMap — mp6
+   tehfiz-map.js — TehfizMap — mp7
    Loaded by the teacher app (Profile → Memorised, sessions) and, read-only,
    by the student viewer, from /app/shared/tehfiz-map.js?v=mp6.
 
@@ -50,7 +50,7 @@
    ═══════════════════════════════════════════════════════════════════════ */
 (function () {
 'use strict';
-const TEHFIZ_MAP_VERSION = 'mp6';
+const TEHFIZ_MAP_VERSION = 'mp7';
 const PAGES = 604, LEN = PAGES * 2;
 const STATES = { '-': 'Not yet', o: 'Old', r: 'Recent', n: 'New lesson' };
 const MEMO = (c) => c === 'o' || c === 'r' || c === 'n';
@@ -486,8 +486,6 @@ function draw(el) {
 }
 
 /* ── editing ────────────────────────────────────────────────────────────── */
-// What "memorised" writes: Old (derive() makes it Recent when it belongs there).
-function tickValue(st, cur) { return cur === 'r' && !st.recentAuto ? 'r' : 'o'; }
 function writeHalves(st, hs, mode) {
   // mp5: marking a half page marks all of its ayahs; clearing it clears them.
   if (st.bits) hs.forEach((h) => { const r = halfAbs(h); st.bits.fill(mode === 'u' ? 0 : 1, r[0], r[1] + 1); });

@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   journey.js — TehfizJourney — j8
+   journey.js — TehfizJourney — j9
    Loaded by the student viewer only, from /app/student/journey.js?v=j8.
 
    j8: when the teacher changed the code or reset the PIN, the calendar link
@@ -53,7 +53,7 @@
    ═══════════════════════════════════════════════════════════════════════ */
 (function () {
 'use strict';
-const TEHFIZ_JOURNEY_VERSION = 'j8';
+const TEHFIZ_JOURNEY_VERSION = 'j9';
 const KEY_PLAN = 'tehfiz_journey_plan';
 const REFRESH_MS = 5 * 60 * 1000;
 const DAY_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -76,7 +76,6 @@ function apiBase() {
   if (o !== null) return o.replace(/\/+$/, '');
   return location.protocol === 'file:' ? 'http://localhost:8788' : '';
 }
-function compact() { return document.body.classList.contains('compact-ui'); }
 
 /* ── state ──────────────────────────────────────────────────────────────── */
 // plan: { map: {pages, recent_auto}, timetables: [{teacher, slots, next_lesson}], at }

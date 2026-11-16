@@ -15,7 +15,7 @@
 if(t==='classic'||t==='lapis'||t==='mulberry')d.setAttribute('data-tz-theme',t);
 if(m==='dark'||(m==='device'&&window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches))d.setAttribute('data-tz-mode','dark');}catch(e){}})();</script>
 <link rel="stylesheet" href="/app/shared/tehfiz-shared.css?v=s24">
-<script src="/app/shared/tehfiz-shared.js?v=s24"></script>
+<script src="/app/shared/tehfiz-shared.js?v=s25"></script>
 <script src="/app/shared/tehfiz-ornament.js?v=o2"></script>
 <script src="/app/shared/tehfiz-header.js?v=h7"></script>
 <script src="/app/shared/tehfiz-pwa.js?v=p2"></script>
@@ -1756,7 +1756,7 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
    console as APP_VERSION, or grep the deployed HTML for it. Bumped on every
    saved build; vcheck.py asserts it matches the filename, so a forgotten bump
    fails the integrity check rather than shipping a lie. */
-const APP_VERSION = 'v1_195';
+const APP_VERSION = 'v1_196';
 window.APP_VERSION = APP_VERSION;
 console.info('Tehfiz student viewer ' + APP_VERSION);
 
@@ -2276,21 +2276,7 @@ const METRICS_MODEL_DEFAULT = {
   },
 };
 
-function loadMetricsModel(){
-  try{
-    const raw = localStorage.getItem('tehfiz_metrics_model');
-    if(raw) return {...METRICS_MODEL_DEFAULT, ...JSON.parse(raw)};
-  }catch{}
-  return {...METRICS_MODEL_DEFAULT};
-}
 let METRICS_MODEL = {...METRICS_MODEL_DEFAULT};
-function setMetricsModel(m){
-  applyCalibration({metrics: {...METRICS_MODEL_DEFAULT, ...m}});
-}
-function resetMetricsModel(){
-  CALIBRATION.metrics = {...METRICS_MODEL_DEFAULT};
-  applyCalibration({});
-}
 
 // Decay runs from when the portion was last SCORED, not last seen. A juz
 // spot-tested yesterday whose last full recitation was four months ago has not
@@ -5503,45 +5489,6 @@ function closeReviewGoto(su,ay){
 
 
 
-// ── One mistake: badges, then the word in context ─────────────────
-// Severity drives the background (via the shared .sev-N classes) and the
-// row's left border; mistake type keeps the text colour and underline as a
-// secondary signal. Unlike the mushaf, there's no clash here — this is
-// serif text on parchment, not a QCF glyph on a coloured wash.
-function _mrvMistakeRow(m, cfg, sessions){
-  // s11: the word in context takes its level colour, like the card's edge.
-  const tCol = sevForMistake(m,cfg).color;
-  const tBdr = tCol;
-  const bef  = (m.context?.before||[]).join(' ');
-  const aft  = (m.context?.after ||[]).join(' ');
-  /* sevForMistake, not sev(m.correction). A tajweed mistake has no correction,
-     so sev() falls to SEVERITY.c0 — green, "recovered unaided" — which is a
-     claim no teacher made and the exact fall-through this whole feature exists
-     to remove. It survived here because the row reads the field directly
-     rather than going through the helper that knows better. */
-  const target = `<span class="rv-ctx-target ${sevForMistake(m,cfg).cls}" style="color:${tCol};border-bottom-color:${tBdr};">${m.word}</span>`;
-  // dir=rtl: `before` is written first but renders rightmost.
-  const ctx = `<div class="rv-ctx">`
-    + (bef?`<span class="rv-ctx-side">${bef}</span> `:'')
-    + target
-    + (aft?` <span class="rv-ctx-side">${aft}</span>`:'')
-    + `</div>`;
-  return `<div class="rv-mistake" style="border-left-color:${sev(m.correction).color};">
-    <div class="rv-mistake-top">
-      <span class="m-badge" style="${typeBadgeStyle(cfg,m.type)}">${mTypeLabel(m,cfg)}</span>
-      <span class="rv-ref">${m.surah}:${m.ayah}</span>
-      ${mistakeTimeText(m)?`<span class="rv-time" title="${mistakeTimeTitle(m)}">${mistakeTimeText(m)}</span>`:''}
-      <!-- mLevelText: the letter and its makhraj, or the rule name, in the slot
-           the intervention level occupies for memorisation. mCorrLabel here
-           printed "Lvl 0 · No intervention" against every tajweed mark and
-           threw away the specificity the teacher took the trouble to record. -->
-      <span class="m-corr ${isTajweedMistake(m,cfg) ? 'c-tajweed' : corrClass2[m.correction]}" style="font-size:12px;margin-left:auto;">${mLevelText(m,cfg)}</span>
-      ${m.sessionLabel && sessions.length>1?`<span class="rv-session-tag">${esc(m.sessionLabel)}</span>`:''}
-    </div>
-    ${ctx}
-    ${m.note?`<div class="rv-note">${esc(m.note)}</div>`:''}
-  </div>`;
-}
 
 const STRENGTH_TIP = 'Memorization strength, shown as a percentage.\n\n'
   + 'It is a SCORE, not a proportion of the Quran you have retained.\n\n'
@@ -6126,20 +6073,6 @@ function openSpotPopup(sessionId){
   document.getElementById('spotPopupModal').classList.add('open');
 }
 
-function openSpotPopupMulti(){
-  // Collect all sessions with spot tests, sorted chronologically (oldest first)
-  const withSpots = savedSessions
-    .filter(s=>s.spotTest?.enabled && s.spotTest.spots?.length)
-    .sort((a,b)=>(a.id||0)-(b.id||0));
-  if(!withSpots.length){
-    showToast('No sessions with spot test data');
-    return;
-  }
-  _spotPopupSessions = withSpots;
-  _spotPopupIdx = withSpots.length - 1; // Start at most recent
-  _renderSpotPopupMulti();
-  document.getElementById('spotPopupModal').classList.add('open');
-}
 
 function _renderSpotPopupMulti(){
   const sess = _spotPopupSessions[_spotPopupIdx];
@@ -8168,9 +8101,9 @@ span.seg-chip{display:flex;align-items:center;justify-content:center;box-sizing:
 </style>
 
 <!-- v1_174: My journey — the left panel and the next-lesson strip. -->
-<script src="/app/shared/tehfiz-map.js?v=mp6"></script>
+<script src="/app/shared/tehfiz-map.js?v=mp7"></script>
 <script src="/app/shared/tehfiz-time.js?v=t4"></script>
-<script src="/app/student/journey.js?v=j8"></script>
+<script src="/app/student/journey.js?v=j9"></script>
 
 <script>
 /* ═══ Header configuration (TehfizHeader, /app/shared/tehfiz-header.js) ═══ */

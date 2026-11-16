@@ -16,7 +16,7 @@
 if(t==='classic'||t==='lapis'||t==='mulberry')d.setAttribute('data-tz-theme',t);
 if(m==='dark'||(m==='device'&&window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches))d.setAttribute('data-tz-mode','dark');}catch(e){}})();</script>
 <link rel="stylesheet" href="/app/shared/tehfiz-shared.css?v=s24">
-<script src="/app/shared/tehfiz-shared.js?v=s24"></script>
+<script src="/app/shared/tehfiz-shared.js?v=s25"></script>
 <script src="/app/shared/tehfiz-ornament.js?v=o2"></script>
 <script src="/app/shared/tehfiz-header.js?v=h7"></script>
 <script src="/app/shared/tehfiz-callink.js?v=cl2"></script>
@@ -2599,7 +2599,7 @@ body.compact-ui .quick-form::before{
    console as APP_VERSION, or grep the deployed HTML for it. Bumped on every
    saved build; vcheck.py asserts it matches the filename, so a forgotten bump
    fails the integrity check rather than shipping a lie. */
-const APP_VERSION = 'v4_365';
+const APP_VERSION = 'v4_366';
 window.APP_VERSION = APP_VERSION;
 console.info('Tehfiz teacher app ' + APP_VERSION);
 
@@ -12714,8 +12714,6 @@ let flushing = false;
 let pendingSendSession = null;  // a session waiting for the user to pick a student
 let removingId = null;          // roster row showing its remove warning
 let footerClientId = null;      // the session the footer's Send button last acted on
-let managingId = null;          // roster row showing its Manage panel
-let managingAct = null;         // 'pin' | 'code' — which action is awaiting confirmation
 
 /* ── API ────────────────────────────────────────────────────────────────── */
 
@@ -13964,37 +13962,18 @@ function profilePanel() {
   '</div>';
 }
 
-let hoursData = null, hoursLoading = false, hoursError = '';
-// Individual sessions behind the monthly totals, and which month is expanded.
-let hoursSessions = [], hoursTruncated = false, hoursOpenMonth = '';
 
-async function loadHours(studentId) {
-  hoursLoading = true; hoursError = ''; hoursData = null;
-  hoursSessions = []; hoursTruncated = false; hoursOpenMonth = ''; invoiceMonth = ''; render();
-  try {
-    const r = await api('/api/sessions/hours?detail=1&studentId=' + encodeURIComponent(studentId));
-    hoursData      = r.months || [];
-    hoursSessions  = r.sessions || [];
-    hoursTruncated = !!r.truncated;
-  } catch (err) {
-    hoursError = (err && err.message) || 'Could not load hours';
-  }
-  hoursLoading = false; render();
-}
-function toggleHoursMonth(ym) {
-  hoursOpenMonth = (hoursOpenMonth === ym) ? '' : ym;
-  render();
-}
 
 /* ── Invoice ───────────────────────────────────────────────────────────────
-   Built from the same rows the hours panel already has, so an invoice can
-   never disagree with the figure it was raised from.
+   The rate and rounding arithmetic. The screens are invoices.js
+   (TehfizInvoices) and the Finish sheet's "bills as" note; both reach these
+   through TehfizSync.billing, so they cannot disagree. (v4_366: the old
+   Manage → Hours → Invoice panel that used to live here is gone.)
 
-   The rate is entered here rather than read from the teacher's profile. The
+   The rate is entered on the invoice rather than read from the profile. The
    profile field is free text — "£12–18 depending on level" is a real answer —
    and an invoice needs one number. It is remembered per student, because the
    rate is a property of that arrangement rather than of the teacher. */
-let invoiceMonth = '';
 function invoiceRateKey(sid) { return 'tehfiz_rate_' + sid; }
 /* The profile's rate is free text ("2000", "£6", "negotiable"), so only a
    clean number is used, and only as the starting value: whatever is typed on
@@ -14016,14 +13995,6 @@ function getInvoiceRate(sid) {
   return { ...profileRateDefaults(),
            ...(d.amount ? { amount: d.amount } : {}), ...(d.currency ? { currency: d.currency } : {}),
            ...(d.step ? { step: d.step } : {}), ...stored };
-}
-/* `quiet` skips the re-render. Typing in the rate field fires on every
-   keystroke, and a full render replaces the input the caret is sitting in —
-   so the totals are patched in place instead. */
-function setInvoiceRate(sid, patch, quiet) {
-  const cur = getInvoiceRate(sid);
-  try { localStorage.setItem(invoiceRateKey(sid), JSON.stringify({ ...cur, ...patch })); } catch {}
-  if (quiet) refreshInvoiceTotals(sid); else render();
 }
 
 /* Minimum billing unit. Rounding is applied PER SESSION, not to the month's
@@ -14054,190 +14025,12 @@ function invoiceStepText(step) {
 function invoiceDefaults() {
   try { return JSON.parse(localStorage.getItem(INVOICE_DEFAULTS_KEY)) || {}; } catch { return {}; }
 }
-function saveInvoiceDefaultStep(sid, step) {
-  try { localStorage.setItem(INVOICE_DEFAULTS_KEY, JSON.stringify({ ...invoiceDefaults(), step: String(step) })); } catch {}
-  // This student now follows the default rather than holding its own copy.
-  const cur = (() => { try { return JSON.parse(localStorage.getItem(invoiceRateKey(sid))) || {}; } catch { return {}; } })();
-  delete cur.step; delete cur.unit;
-  try { localStorage.setItem(invoiceRateKey(sid), JSON.stringify(cur)); } catch {}
-}
 function sessionBilledSec(sec, stepMin) {
   const u = stepMin * 60;
   return sec > 0 ? (u <= 60 ? sec : Math.ceil(sec / u) * u) : 0;
 }
-function billedSeconds(rows, monthSeconds, stepMin) {
-  const u = (stepMin || 1) * 60;
-  if (u <= 60) return monthSeconds;             // per-minute is what the timer already stores
-  if (!rows.length) return Math.ceil(monthSeconds / u) * u;   // no detail — round the month once
-  return rows.reduce((n, x) => n + sessionBilledSec(x.duration_sec || 0, stepMin), 0);
-}
-function _invMoney(sec, rate) {
-  const num = parseFloat(rate.amount);
-  return (isFinite(num) && num > 0) ? (sec / 3600) * num : null;
-}
-/* Patches the two figures the rate affects, leaving the rest of the sheet — and
-   the focused input — alone. */
-function refreshInvoiceTotals(sid) {
-  const month = (hoursData || []).find((r) => r.month === invoiceMonth);
-  if (!month) return;
-  const rate  = getInvoiceRate(sid);
-  const rows  = (hoursSessions || []).filter((x) => x.month === invoiceMonth);
-  const sec   = billedSeconds(rows, month.seconds || 0, invoiceStep(rate));
-  const money = _invMoney(sec, rate);
-  const rEl = document.getElementById('invRateLine');
-  const aEl = document.getElementById('invAmount');
-  if (rEl) rEl.textContent = money == null ? '—'
-    : (rate.currency || '') + ' ' + parseFloat(rate.amount).toFixed(2) + ' / hour';
-  if (aEl) aEl.textContent = money == null ? 'Enter a rate'
-    : (rate.currency || '') + ' ' + money.toFixed(2);
-  const pb = document.getElementById('invPrintBtn');
-  if (pb) { pb.disabled = money == null; pb.title = money == null ? 'Enter a rate first' : ''; }
-}
-/* TF-202609-ABCD. Month first so a teacher's invoices sort chronologically in a
-   folder, and the student's own code last so two students in the same month are
-   never the same reference. */
-function invoiceRef(s) {
-  const ym = String(invoiceMonth || '').replace('-', '');
-  return 'TF-' + ym + '-' + String(s.code || s.id || '').toUpperCase();
-}
-function invoiceIssued() {
-  try { return new Date().toLocaleDateString(undefined, { day:'numeric', month:'long', year:'numeric' }); }
-  catch { return new Date().toDateString(); }
-}
-function openInvoice(ym) {
-  invoiceMonth = ym;
-  // The rate default comes from the profile; load it if this session has not yet.
-  if (!profile && signedIn()) loadProfile().then(render);
-  render();
-}
-function closeInvoice()  { invoiceMonth = ''; render(); }
 
-function invoicePanel(s) {
-  const month = hoursData.find((r) => r.month === invoiceMonth);
-  if (!month) return '';
-  const rows  = hoursSessions.filter((x) => x.month === invoiceMonth);
-  const rate  = getInvoiceRate(s.id);
-  const raw   = month.seconds || 0;
-  const step  = invoiceStep(rate);
-  const secs  = billedSeconds(rows, raw, step);
-  const hrs   = secs / 3600;
-  const defStep = invoiceStep(invoiceDefaults().step ? { step: invoiceDefaults().step } : {});
-  // Two decimals on the hours as well as the money: an invoice that says
-  // "6 hours 20 mins" and then bills 6.33 × rate should show the 6.33.
-  const money = _invMoney(secs, rate);
 
-  return '<div class="tsy-manage">' +
-    /* data-* and delegation, not inline handlers. This whole script is inside
-       an IIFE, so nothing in it is reachable from an onclick attribute — which
-       is why every other control in this panel is written the same way. */
-    '<div class="inv-controls">' +
-      '<label>Rate <input type="number" min="0" step="0.01" value="' + esc(rate.amount || '') +
-        '" data-inv="amount" data-sid="' + esc(s.id) + '"></label>' +
-      '<label>Currency <input type="text" size="4" value="' + esc(rate.currency || '') +
-        '" placeholder="e.g. GBP" data-inv="currency" data-sid="' + esc(s.id) + '"></label>' +
-      /* A change event, not input: the rounding reshapes the sheet (billed-time
-         row, per-session lines), so it re-renders once the number is settled. */
-      '<label>Round each session up to <input type="number" min="1" max="240" step="1" class="inv-step" value="' +
-        step + '" data-invsel="step" data-sid="' + esc(s.id) + '"> min</label>' +
-      (step !== defStep
-        ? '<button class="tsy-btn" data-tsy="inv-default" data-sid="' + esc(s.id) + '" data-step="' + step + '"' +
-          ' title="Your default is ' + esc(invoiceStepText(defStep)) + '">Make ' + esc(invoiceStepText(step)) + ' my default</button>'
-        : '<span class="inv-hint">' + (step === 1 ? 'Billed as recorded' : 'Your default') + '</span>') +
-      '<button class="tsy-btn" id="invPrintBtn" data-tsy="inv-print"' +
-        (money == null ? ' disabled title="Enter a rate first"' : '') + '>\u2399 Print / PDF</button>' +
-      '<button class="tsy-btn" data-tsy="inv-close">Back</button>' +
-    '</div>' +
-    '<div class="inv-sheet" id="invoiceArea">' +
-      '<div class="inv-brand">' +
-        '<span class="inv-mark">Tehfiz</span>' +
-        '<span class="inv-rule"></span>' +
-        '<span class="inv-doc">Invoice</span>' +
-      '</div>' +
-      '<div class="inv-head">' +
-        '<div>' +
-          '<div class="inv-label">Billing period</div>' +
-          '<div class="inv-title">' + esc(monthLabel(invoiceMonth)) + '</div>' +
-          /* A reference the teacher can quote and the payer can match. Derived,
-             not stored: the same month for the same student always produces the
-             same string, so reprinting an invoice reprints THAT invoice rather
-             than a new one with a new number. */
-          '<div class="inv-ref">' + esc(invoiceRef(s)) + '</div>' +
-        '</div>' +
-        '<div class="inv-from">' +
-          '<div class="inv-label">From</div>' +
-          '<strong>' + esc(teacher.name || teacher.email || '') + '</strong>' +
-          (teacher.name ? '<div class="inv-dim">' + esc(teacher.email || '') + '</div>' : '') +
-          '<div class="inv-label" style="margin-top:6px;">Issued</div>' +
-          '<div class="inv-dim">' + esc(invoiceIssued()) + '</div>' +
-        '</div>' +
-      '</div>' +
-      '<div class="inv-to"><span class="inv-label">For</span> <strong>' +
-        esc(s.name || s.code) + '</strong>' +
-        (s.name && s.code ? ' <span class="inv-dim">' + esc(s.code) + '</span>' : '') +
-      '</div>' +
-      '<table class="inv-table"><thead><tr><th>Date</th><th>Lesson</th><th class="r">Time</th></tr></thead><tbody>' +
-        (rows.length
-          ? rows.map((x) =>
-              '<tr><td>' + esc(x.date_ymd || '') + '</td>' +
-              '<td>' + esc(x.session_name || '') +
-                (hoursStageText(x.stages) ? ' <span class="inv-dim">' + esc(hoursStageText(x.stages)) + '</span>' : '') +
-              '</td>' +
-              '<td class="r">' + (x.duration_sec == null
-                ? '<span class="tsy-untimed">untimed</span>'
-                : (sessionBilledSec(x.duration_sec, step) !== x.duration_sec && step > 1
-                    ? esc(hoursText(sessionBilledSec(x.duration_sec, step))) +
-                      ' <span class="inv-dim">(' + esc(hoursText(x.duration_sec)) + ')</span>'
-                    : esc(hoursText(x.duration_sec)))) + '</td></tr>').join('')
-          : '<tr><td colspan="3" class="inv-dim">No individual sessions recorded for this month.</td></tr>') +
-      '</tbody></table>' +
-      '<table class="inv-total"><tbody>' +
-        '<tr><td>Sessions</td><td class="r">' + (month.sessions || 0) + '</td></tr>' +
-        (secs !== raw
-          ? '<tr><td>Time recorded</td><td class="r inv-dim">' + esc(hoursText(raw)) + '</td></tr>' +
-            '<tr><td>Billed time <span class="inv-dim">each session rounded up to ' +
-              esc(invoiceStepText(step)) + '</span></td><td class="r">' + esc(hoursText(secs)) +
-              ' <span class="inv-dim">(' + hrs.toFixed(2) + ' h)</span></td></tr>'
-          : '<tr><td>Total time</td><td class="r">' + esc(hoursText(secs)) +
-              ' <span class="inv-dim">(' + hrs.toFixed(2) + ' h)</span></td></tr>') +
-        '<tr><td>Rate</td><td class="r" id="invRateLine">' +
-          (money == null ? '\u2014' : esc(rate.currency || '') + ' ' + parseFloat(rate.amount).toFixed(2) + ' / hour') +
-        '</td></tr>' +
-        '<tr class="inv-due"><td>Amount due</td><td class="r" id="invAmount">' +
-          (money == null ? 'Enter a rate' : esc(rate.currency || '') + ' ' + money.toFixed(2)) +
-        '</td></tr>' +
-      '</tbody></table>' +
-      (month.untimed
-        ? '<p class="inv-note inv-warn">' + month.untimed + ' session' + (month.untimed === 1 ? '' : 's') +
-          ' had no timer running and count as zero time. Correct them before invoicing.</p>'
-        : '') +
-      '<div class="inv-foot">' +
-        '<span class="inv-rule"></span>' +
-        '<div class="inv-foot-row">' +
-          '<span class="inv-note">Covers sessions sent to this student with a recorded date.</span>' +
-          '<span class="inv-site">tehfiz.com</span>' +
-        '</div>' +
-      '</div>' +
-    '</div>' +
-  '</div>';
-}
-
-function printInvoice() {
-  document.body.classList.add('printing-inv');
-  const done = () => { document.body.classList.remove('printing-inv');
-                       window.removeEventListener('afterprint', done); };
-  window.addEventListener('afterprint', done);
-  setTimeout(() => { window.print(); setTimeout(done, 1000); }, 60);
-}
-/* The app's own stage vocabulary, read from the stored `stages` string so the
-   drill-down says what KIND of lesson each session was — which is most of why
-   anyone opens a month rather than reading the total. */
-function hoursStageText(stages) {
-  if (!stages) return '';
-  return String(stages).split(',').map(function (x) { return x.trim(); })
-    .filter(Boolean)
-    .map(function (x) { return typeof sessionTypeLabel === 'function' ? sessionTypeLabel(x) : x; })
-    .join(' · ');
-}
 
 /* "2 hours 14 mins". Never rounded: this is billed time, and rounding a figure
    someone is invoicing on is not a presentation choice. */
@@ -14259,131 +14052,7 @@ function monthLabel(ym) {
   return _MONTHS[Number(m[2]) - 1] + ' ' + m[1];
 }
 
-function hoursPanel(s) {
-  if (invoiceMonth && hoursData) return invoicePanel(s);
-  let inner;
-  if (hoursLoading) {
-    inner = '<p class="tsy-lead">Loading\u2026</p>';
-  } else if (hoursError) {
-    inner = '<p class="tsy-err">' + esc(hoursError) + '</p>';
-  } else if (!hoursData || !hoursData.length) {
-    inner = '<p class="tsy-lead">No sent sessions with a recorded date yet.</p>';
-  } else {
-    const totalSec = hoursData.reduce((n, r) => n + (r.seconds || 0), 0);
-    const totalN   = hoursData.reduce((n, r) => n + (r.sessions || 0), 0);
-    const totalU   = hoursData.reduce((n, r) => n + (r.untimed || 0), 0);
-    inner =
-      '<table class="tsy-hours">' +
-        hoursData.map((r) => {
-          const open = hoursOpenMonth === r.month;
-          const mine = hoursSessions.filter((x) => x.month === r.month);
-          return '<tr class="tsy-hours-m' + (open ? ' open' : '') +
-              '" data-tsy="hours-month" data-m="' + esc(r.month) + '">' +
-            '<td>' + (mine.length ? '<span class="tsy-caret">' + (open ? '\u25be' : '\u25b8') + '</span>' : '') +
-              esc(monthLabel(r.month)) + '</td>' +
-            '<td class="tsy-hours-v">' + esc(hoursText(r.seconds)) + '</td>' +
-            '<td class="tsy-hours-n">' +
-              (r.sessions || 0) + ' session' +
-              ((r.sessions || 0) === 1 ? '' : 's') +
-              /* Surfaced per month, not just in the total. A month whose timer was
-                 forgotten twice sums low and would otherwise read as a quiet
-                 month rather than an incomplete record. */
-              (r.untimed ? ' \u00b7 <span class="tsy-untimed">' + r.untimed + ' untimed</span>' : '') +
-              '<button class="tsy-btn tsy-inv-btn" data-tsy="invoice" data-m="' + esc(r.month) + '" ' +
-                'aria-label="Invoice for ' + esc(monthLabel(r.month)) + '">Invoice</button>' +
-            '</td></tr>' +
-            (open ? mine.map((x) =>
-              '<tr class="tsy-hours-s"><td colspan="3">' +
-                '<span class="tsy-s-date">' + esc(x.date_ymd || '') + '</span>' +
-                '<span class="tsy-s-dur">' +
-                  (x.duration_sec == null
-                    ? '<span class="tsy-untimed">untimed</span>'
-                    : esc(hoursText(x.duration_sec))) + '</span>' +
-                '<span class="tsy-s-name">' + esc(x.session_name || '') + '</span>' +
-                (hoursStageText(x.stages) ? '<span class="tsy-s-stage">' + esc(hoursStageText(x.stages)) + '</span>' : '') +
-                (x.mistake_count != null ? '<span class="tsy-s-mk">' + x.mistake_count + ' mistake' +
-                  (x.mistake_count === 1 ? '' : 's') + '</span>' : '') +
-              '</td></tr>').join('') : '');
-        }).join('') +
-        '<tr class="tsy-hours-total"><td>Total</td>' +
-          '<td class="tsy-hours-v">' + esc(hoursText(totalSec)) + '</td>' +
-          '<td class="tsy-hours-n">' + totalN + ' session' + (totalN === 1 ? '' : 's') +
-          (totalU ? ' \u00b7 <span class="tsy-untimed">' + totalU + ' untimed</span>' : '') +
-          '</td></tr>' +
-      '</table>' +
-      (hoursTruncated
-        ? '<p class="tsy-lead tsy-untimed-note">Showing the most recent 1000 ' +
-          'sessions in the breakdown. The monthly totals above are complete.</p>'
-        : '') +
-      (totalU
-        ? '<p class="tsy-lead tsy-untimed-note">An untimed session had no timer ' +
-          'running, so it counts as zero. Open it and set the duration from the ' +
-          'SESSION header to correct the total.</p>'
-        : '');
-  }
-  return '<div class="tsy-manage">' +
-    '<p class="tsy-lead"><strong>Teaching hours \u2014 ' + esc(s.name || s.code) + '</strong></p>' +
-    inner +
-    '<p class="tsy-lead tsy-hours-caveat">Counts only sessions sent to this ' +
-      'student, and only the time you recorded yourself.</p>' +
-    '<button class="tsy-btn" data-tsy="manage-back" data-id="' + esc(s.id) + '">Back</button>' +
-    '</div>';
-}
 
-/**
- * Manage: the two actions that change a student's credentials.
- *
- * Both are gated behind a warning rather than sitting on the row, because
- * neither is undoable and both lock the student out until they are told what
- * changed. A teacher tapping the wrong thing mid-lesson should not be one
- * click from it.
- */
-function managePanel(s) {
-  if (managingAct === 'hours') return hoursPanel(s);
-  // The roster carries `claimed` (a boolean from GET /api/students), not
-  // claimed_at — reading claimed_at left Reset PIN disabled for everyone.
-  const claimed = !!s.claimed;
-  if (managingAct === 'pin') {
-    return '<div class="tsy-manage"><div class="tsy-danger">' +
-      '<strong>Reset the PIN for ' + esc(s.name || s.code) + '?</strong>' +
-      '<p>Their current PIN stops working and every device they are signed in on ' +
-      'is signed out. Next time they log in they choose a new PIN themselves \u2014 ' +
-      'so tell them to pick <em>\u201cThis is my first time\u201d</em>.</p>' +
-      '<p>Their code stays the same, and none of their sessions are affected.</p>' +
-      '<div class="tsy-danger-btns">' +
-        '<button class="tsy-btn tsy-btn-danger" data-tsy="do-pin" data-id="' + esc(s.id) + '">Reset PIN</button>' +
-        '<button class="tsy-btn" data-tsy="manage-back">Back</button>' +
-      '</div></div></div>';
-  }
-  if (managingAct === 'code') {
-    return '<div class="tsy-manage"><div class="tsy-danger">' +
-      '<strong>Change the code for ' + esc(s.name || s.code) + '?</strong>' +
-      '<p><code>' + esc(s.code) + '</code> stops working immediately, every paired ' +
-      'device is signed out, and <strong>their PIN is cleared too</strong> \u2014 a code ' +
-      'and its PIN are handed over together, so a code worth changing has to be ' +
-      'assumed to have taken the PIN with it.</p>' +
-      '<p>You will need to give them the new code, and they log in again as if for ' +
-      'the first time. Their sessions are kept.</p>' +
-      '<div class="tsy-danger-btns">' +
-        '<button class="tsy-btn tsy-btn-danger" data-tsy="do-code" data-id="' + esc(s.id) + '">Change code</button>' +
-        '<button class="tsy-btn" data-tsy="manage-back">Back</button>' +
-      '</div></div></div>';
-  }
-  return '<div class="tsy-manage">' +
-    '<div class="tsy-manage-row">' +
-      '<div><strong>Reset PIN</strong><span>' +
-        (claimed ? 'They forgot it, or it was seen by someone else'
-                 : 'Not set yet \u2014 nothing to reset') + '</span></div>' +
-      '<button class="tsy-btn"' + (claimed ? '' : ' disabled') +
-        ' data-tsy="ask-pin" data-id="' + esc(s.id) + '">Reset PIN</button>' +
-    '</div>' +
-    '<div class="tsy-manage-row">' +
-      '<div><strong>Change code</strong><span>The code was shared, lost, or seen by others</span></div>' +
-      '<button class="tsy-btn" data-tsy="ask-code" data-id="' + esc(s.id) + '">Change code</button>' +
-    '</div>' +
-    '<button class="tsy-chip-btn" data-tsy="manage-close">Close</button>' +
-  '</div>';
-}
 
 /**
  * Inline warning, per the no-browser-dialogs rule. States plainly what this
@@ -14413,25 +14082,6 @@ function removeWarning(s) {
 }
 
 /* ── event delegation ───────────────────────────────────────────────────── */
-
-/* Rate and currency update as you type, so they patch the totals rather than
-   re-rendering — see setInvoiceRate's `quiet`. The unit is a select, so a full
-   re-render is fine and keeps the rounding note in step. */
-document.addEventListener('input', (e) => {
-  const el = e.target.closest('[data-inv]');
-  if (!el) return;
-  setInvoiceRate(el.dataset.sid, { [el.dataset.inv]: el.value }, true);
-});
-document.addEventListener('change', (e) => {
-  const el = e.target.closest('[data-invsel]');
-  if (!el) return;
-  let v = el.value;
-  if (el.dataset.invsel === 'step') {
-    const n = parseInt(v, 10);
-    v = String(Number.isFinite(n) && n >= 1 ? Math.min(n, 240) : 1);
-  }
-  setInvoiceRate(el.dataset.sid, { [el.dataset.invsel]: v, ...(el.dataset.invsel === 'step' ? { unit: undefined } : {}) });
-});
 
 /* v4_349: the search repaints the list only, so typing keeps the focus. */
 document.addEventListener('input', (e) => {
@@ -14528,50 +14178,17 @@ document.addEventListener('click', async (e) => {
     return;
   }
   if (act === 'restoreremoved'){ await restoreRemoved(); return; }
-  if (act === 'manage')      { managingId = (managingId === id ? null : id); managingAct = null; removingId = null; render(); return; }
-  if (act === 'ask-hours')   { managingId = id; managingAct = 'hours'; removingId = null; loadHours(id); return; }
-  // Reads data-m rather than data-id: the row identifies a month, not a student.
-  if (act === 'hours-month') { toggleHoursMonth(t.dataset.m || ''); return; }
-  // Stops the row's own expand handler firing underneath it.
-  if (act === 'invoice')     { e.stopPropagation(); openInvoice(t.dataset.m || ''); return; }
-  if (act === 'inv-close')   { closeInvoice(); return; }
-  if (act === 'inv-print')   { if (!t.disabled) printInvoice(); return; }
-  if (act === 'inv-default') { saveInvoiceDefaultStep(t.dataset.sid, t.dataset.step); render(); toast('Default rounding saved'); return; }
   if (act === 'profile-open')    { openProfilePanel(); return; }
   if (act === 'profile-close')   { closeProfilePanel(); return; }
   if (act === 'profile-dismiss') { dismissProfilePrompt(); return; }
   if (act === 'profile-save')    { await saveProfile(); return; }
   if (act === 'profile') { if (window.TehfizProfile) window.TehfizProfile.open(id); return; }
-  if (act === 'manage-close'){ managingId = null; managingAct = null; render(); return; }
-  if (act === 'manage-back') { managingAct = null; render(); return; }
-  if (act === 'ask-pin')     { managingAct = 'pin'; render(); return; }
-  if (act === 'ask-code')    { managingAct = 'code'; render(); return; }
-  if (act === 'do-pin') {
-    try {
-      const r = await api('/api/students/' + encodeURIComponent(id) + '/reset-pin', { method: 'POST' });
-      const s = studentById(id);
-      if (s) s.claimed = false;
-      saveRoster(); managingAct = null; render();
-      toast('PIN reset — they set a new one next time they log in' + calResetNote(r));
-    } catch (err) { showError('Could not reset the PIN: ' + err.message); }
-    return;
-  }
-  if (act === 'do-code') {
-    try {
-      const r = await api('/api/students/' + encodeURIComponent(id) + '/rotate', { method: 'POST' });
-      const s = studentById(id);
-      if (s) { s.code = r.code; s.claimed = false; }
-      saveRoster(); rebind(); managingAct = null; render();
-      toast('New code: ' + r.code + ' — PIN cleared, old code no longer works' + calResetNote(r));
-    } catch (err) { showError('Could not change the code: ' + err.message); }
-    return;
-  }
   if (act === 'askremove')   { removingId = id; stuMenu = null; render(); return; }
   if (act === 'cancelremove'){ removingId = null; render(); return; }
   if (act === 'confirmremove'){ removeStudentLocally(id); return; }
   if (act === 'exportstudent'){ const s = studentById(id); if (s) exportStudent(s); return; }
   if (act === 'userow') {
-    if (removingId || managingId) return;   // the row is asking a question; don't also act on it
+    if (removingId) return;   // the row is asking a question; don't also act on it
     const s = studentById(id);
     if (!s) return;
     /* A missing name used to block this outright. It should not: the binding
@@ -15024,12 +14641,12 @@ window.TehfizSync = {
   background:var(--gold-pale);border-radius:4px;padding:3px 7px;flex:none;letter-spacing:.5px;}
 .tsy-copyable{cursor:pointer;transition:background .12s,color .12s;}
 .tsy-copyable:hover{background:var(--gold);color:var(--on-gold);}
-.tsy-hours{width:100%;border-collapse:collapse;font-size:13px;margin:6px 0 4px;}
-.tsy-hours td{padding:5px 4px;border-bottom:1px solid var(--border);vertical-align:baseline;}
-.tsy-hours-v{font-family:'IBM Plex Mono',monospace;color:var(--ink);white-space:nowrap;}
-.tsy-hours-n{color:var(--ink3);text-align:right;font-size:12px;}
-.tsy-hours-total td{border-bottom:none;border-top:1px solid var(--border2);font-weight:600;}
-.tsy-untimed{color:var(--amber);}
+
+
+
+
+
+
 .pf-prompt{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;
   background:var(--gold-pale);border:.5px solid var(--gold);border-radius:8px;
   padding:9px 11px;margin-bottom:9px;}
@@ -15063,51 +14680,41 @@ window.TehfizSync = {
 .pf-msg{font-size:12px;color:var(--gold-ink);}
 .pf-when{font-size:12px;color:var(--ink3);margin-left:auto;}
 @media(max-width:560px){.pf-grid{grid-template-columns:1fr;}}
-.tsy-inv-btn{margin-left:10px;padding:4px 12px;font-size:13px;font-weight:600;}
+
 .tsy-btn:disabled{opacity:.45;cursor:not-allowed;}
-.inv-controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px;}
-.inv-controls label{font-size:12px;color:var(--ink3);display:flex;align-items:center;gap:4px;}
-.inv-controls input,.inv-controls select{font-family:'IBM Plex Mono',monospace;font-size:13px;
-  padding:3px 5px;border:.5px solid var(--border2);border-radius:4px;
-  background:var(--parchment);color:var(--ink);}
-.inv-controls input{width:78px;}
-.inv-controls input.inv-step{width:58px;}
-.inv-hint{font-size:12px;color:var(--ink3);}
-.inv-sheet{background:var(--parchment);border:.5px solid var(--border);border-radius:8px;padding:18px 20px;}
+
+
+
+
+
+
+
 /* Wordmark, hairline, document type — the three things a reader needs before
    they read anything else. */
-.inv-brand{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
-.inv-mark{font-family:var(--ui-font);font-size:15px;font-weight:700;letter-spacing:.14em;
-  text-transform:uppercase;color:var(--gold-ink);}
-.inv-rule{flex:1;height:0;border-top:1px solid var(--gold);
-  box-shadow:0 2px 0 -1px var(--gold-pale);}
-.inv-doc{font-family:var(--ui-font);font-size:12px;letter-spacing:.18em;
-  text-transform:uppercase;color:var(--ink3);}
-.inv-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;
-  padding-bottom:10px;margin-bottom:10px;border-bottom:.5px solid var(--border);}
-.inv-label{font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink3);
-  font-weight:600;margin-bottom:2px;}
-.inv-title{font-family:var(--ui-font);font-size:17px;font-weight:600;color:var(--ink);line-height:1.15;}
-.inv-ref{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink3);margin-top:2px;}
-.inv-from{text-align:right;font-size:13px;color:var(--ink);}
-.inv-dim{color:var(--ink3);font-size:11px;font-weight:400;}
-.inv-to{font-size:14px;margin-bottom:10px;color:var(--ink2);}
-.inv-foot{margin-top:14px;}
-.inv-foot .inv-rule{display:block;width:100%;margin-bottom:6px;border-top-color:var(--border);
-  box-shadow:none;}
-.inv-foot-row{display:flex;justify-content:space-between;align-items:baseline;gap:12px;}
-.inv-site{font-family:var(--ui-font);font-size:11px;letter-spacing:.1em;text-transform:lowercase;
-  color:var(--gold-ink);white-space:nowrap;}
-.inv-warn{color:var(--amber);}
-.inv-table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:8px;}
-.inv-table th{text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.05em;
-  color:var(--ink3);padding:4px 6px;border-bottom:1px solid var(--border);}
-.inv-table td{padding:4px 6px;border-bottom:.5px solid var(--border2);}
-.inv-table .r,.inv-total .r{text-align:right;font-family:'IBM Plex Mono',monospace;}
-.inv-total{width:100%;border-collapse:collapse;font-size:13px;}
-.inv-total td{padding:3px 6px;}
-.inv-due td{font-weight:700;font-size:15px;border-top:1px solid var(--border);padding-top:6px;}
-.inv-note{font-size:11px;color:var(--ink3);margin-top:8px;font-style:italic;}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 @media print{
   body.printing-inv *{visibility:hidden;}
   body.printing-inv #invoiceArea, body.printing-inv #invoiceArea *{visibility:visible;}
@@ -15116,25 +14723,23 @@ window.TehfizSync = {
   /* Print keeps the rules and the wordmark — they are most of what makes it
      read as a document rather than a screenshot of a table — but browsers drop
      backgrounds by default, so anything carrying meaning has to be a border. */
-  body.printing-inv .inv-mark,
-  body.printing-inv .inv-site{color:var(--gold-ink);}
-  body.printing-inv .inv-rule{border-top-color:var(--ornament);}
-  body.printing-inv .inv-table tr{break-inside:avoid;}
-  body.printing-inv .inv-total{break-inside:avoid;}
-  body.printing-inv .inv-foot{break-inside:avoid;}
+  
+  
+  
+  
+  
 }
 .tsy-hours-m{cursor:pointer;}
 .tsy-hours-m:hover td{background:var(--gold-pale);}
-.tsy-caret{display:inline-block;width:11px;color:var(--ink3);font-size:12px;}
-.tsy-hours-s td{padding:3px 8px 3px 19px;background:var(--parchment2);
-  border-bottom:.5px solid var(--border2);font-size:12px;}
-.tsy-hours-s span{margin-right:10px;}
-.tsy-s-date{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink2);}
-.tsy-s-dur{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink);}
-.tsy-s-name{color:var(--ink2);}
-.tsy-s-stage{font-size:12px;color:var(--gold-ink);}
-.tsy-s-mk{font-size:12px;color:var(--ink3);}
-.tsy-untimed-note,.tsy-hours-caveat{font-size:12px;color:var(--ink3);margin-top:4px;}
+
+
+
+
+
+
+
+
+
 .tsy-row-meta{display:flex;gap:10px;align-items:center;font-size:12px;color:var(--ink3);margin-top:5px;}
 .tsy-ok-dot{color:var(--green);}
 .tsy-dim-dot{color:var(--ink3);}
@@ -15146,12 +14751,11 @@ window.TehfizSync = {
 .tsy-pending-cta .tsy-btn{display:inline-block;width:auto;margin-top:9px;text-decoration:none;}
 .tsy-manage{margin-top:8px;border:.5px solid var(--border2);border-radius:6px;
   padding:8px 10px;background:var(--parchment);}
-.tsy-manage-row{display:flex;align-items:center;gap:9px;justify-content:space-between;
-  padding:5px 0;border-bottom:.5px solid var(--border);}
-.tsy-manage-row:last-of-type{border-bottom:none;}
-.tsy-manage-row strong{display:block;font-size:13px;color:var(--ink);}
-.tsy-manage-row span{display:block;font-size:12px;color:var(--ink3);line-height:1.5;}
-.tsy-manage-row .tsy-btn{width:auto;flex:none;margin:0;}
+
+
+
+
+
 .tsy-btn[disabled]{opacity:.45;cursor:default;}
 .tsy-manage .tsy-danger{margin-top:0;}
 .tsy-removed-note{margin-top:10px;font-size:12px;color:var(--ink3);font-style:italic;}
@@ -15594,7 +15198,7 @@ async function bcSubSubmit(mode) {
       part(r.unsubscribed, 'unsubscribed earlier, so not added (only they can subscribe again)'),
       part(r.failed, 'could not be emailed')].filter(Boolean).join(' \u00b7 ') || 'Nothing changed';
     bcSubAdd = '';
-  } catch (err) { bcSubMsg = (err && err.message) === 'no_valid_emails' ? 'None of those look like email addresses.' : 'Failed: ' + ((err && err.message) || 'unknown'); }
+  } catch (err) { bcSubMsg = 'Failed: ' + ((err && err.message) || 'unknown'); }
   bcSubBusy = false;
   await bcLoadSubs();
 }
@@ -19116,17 +18720,17 @@ span.seg-chip{display:flex;align-items:center;justify-content:center;box-sizing:
 })();
 </script>
 <script src="/app/teacher/sessions-sent.js?v=m7"></script>
-<script src="/app/teacher/finish-session.js?v=f18"></script>
+<script src="/app/teacher/finish-session.js?v=f19"></script>
 <script src="/app/teacher/invoices.js?v=i7"></script>
-<script src="/app/shared/tehfiz-map.js?v=mp6"></script>
+<script src="/app/shared/tehfiz-map.js?v=mp7"></script>
 <script src="/app/shared/tehfiz-time.js?v=t4"></script>
-<script src="/app/teacher/profile.js?v=p16"></script>
+<script src="/app/teacher/profile.js?v=p17"></script>
 <script src="/app/teacher/range-picker.js?v=rg5"></script>
-<script src="/app/teacher/lesson-editor.js?v=le6"></script>
-<script src="/app/teacher/calendar.js?v=c7"></script>
+<script src="/app/teacher/lesson-editor.js?v=le7"></script>
+<script src="/app/teacher/calendar.js?v=c8"></script>
 <script src="/app/teacher/remind.js?v=r2"></script>
 <script src="/app/teacher/tz-converter.js?v=tc1"></script>
 <script src="/app/teacher/grades.js?v=g5"></script>
-<script src="/app/teacher/name-sync.js?v=n4"></script>
+<script src="/app/teacher/name-sync.js?v=n5"></script>
 </body>
 </html>
