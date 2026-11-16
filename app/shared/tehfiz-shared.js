@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   tehfiz-shared.js — s25
+   tehfiz-shared.js — s26
    Loaded by BOTH apps (teacher /app/teacher/, viewer /app/student/) before
    their own scripts, from /app/shared/tehfiz-shared.js?v=<version>.
 
@@ -18,7 +18,7 @@
    · Nothing here may run against the page at load time: this file runs in the
      <head>, before <body> exists. Declarations and pure tables only.
    ═══════════════════════════════════════════════════════════════════════ */
-const TEHFIZ_SHARED_VERSION = 's25';
+const TEHFIZ_SHARED_VERSION = 's26';
 
 /* s16: the surah banner on the mushaf — the calligraphic name (fonts/surah-names
    .woff2, from quran.com) with سورة, and at the sides the number of verses and
@@ -3096,9 +3096,12 @@ function pageLoadChartHTML(segs, seg, mistakes){
   if(!pages || pages.length < 1) return '';
   const max = Math.max(...pages.map(p=>p.load), 1);
 
-  /* Right-to-left, like the mushaf: page numbers advance the way the pages
-     turn, so a hafiz reads the chart in the same direction as the text. The
-     axis sits on the right for the same reason — it is the origin edge. */
+  /* RIGHT TO LEFT ON PURPOSE. The mushaf is read right to left and its pages
+     turn that way, so page numbers here rise from right to left (.plc-cols is
+     flex-direction: row-reverse): a hafiz reads the chart in the same direction
+     as the text and finds a page where they expect it. The axis sits on the
+     right because that is the origin edge. Do not "fix" this to left-to-right;
+     the line under the bars (.plc-dir, s26) says which way it runs. */
   const bars = pages.map(p=>{
     const pct = p.load > 0 ? Math.max(6, Math.round(p.load / max * 100)) : 0;
     const col = _pageLoadColor(p.worst) || 'var(--border2)';
@@ -3128,6 +3131,7 @@ function pageLoadChartHTML(segs, seg, mistakes){
       <div class="plc-cols">${bars}</div>
       <div class="plc-axis"><span>${max}</span><span>0</span></div>
     </div>
+    <div class="plc-dir"><span aria-hidden="true">\u2190</span> Mushaf page \u00b7 right to left, as the pages turn</div>
   </div>`;
 }
 

@@ -1,6 +1,6 @@
 /* ═══════════════════════════════════════════════════════════════════════
    invoices.js — TehfizInvoices — i6
-   Loaded by the teacher app only, from /app/teacher/invoices.js?v=i9.
+   Loaded by the teacher app only, from /app/teacher/invoices.js?v=i10.
    i7: redrawing (a tap on a row, a status change) keeps the place on the page.
    Opened from the header menu (Menu → Invoices), and used by a student's
    Profile (profile.js) for that student's Billing tab.
@@ -36,7 +36,7 @@
    ═══════════════════════════════════════════════════════════════════════ */
 (function () {
 'use strict';
-const TEHFIZ_INVOICES_VERSION = 'i9';
+const TEHFIZ_INVOICES_VERSION = 'i10';
 const K_BILLTO = 'tehfiz_inv_billto', K_STATUS = 'tehfiz_inv_status', K_PAY = 'tehfiz_inv_payment';
 const K_LASTEND = 'tehfiz_inv_lastend';   // {sid: 'YYYY-MM-DD'} end of the last period printed
 const K_RANGE = 'tehfiz_inv_range';       // the last custom range used on the list {from, to}
@@ -598,8 +598,8 @@ function docHtml(L) {
     '<div class="tot">' +
       '<div><span>Sessions</span><span class="mono">' + L.sessions + '</span></div>' +
       '<div><span>Time recorded</span><span class="mono">' + esc(hm(L.recorded)) + '</span></div>' +
-      '<div><span>Billed' + (L.step > 1 ? ' <span style="color:#626973;">(' + esc(bill().ruleText(L.rule)) + ')</span>' : '') +
-        '</span><span class="mono">' + (L.billed / 3600).toFixed(2) + ' h</span></div>' +
+      // i10: hours and minutes, like Time recorded; the rounding rule is not printed.
+      '<div><span>Billed</span><span class="mono">' + esc(hm(L.billed)) + '</span></div>' +
       '<div><span>Rate</span><span class="mono">' + (Number.isFinite(rateN) && rateN > 0 ? esc(money2(rateN, cur)) + ' / hour' : '—') + '</span></div>' +
       '<div class="due"><span>Amount due</span><span class="mono">' + (L.amount == null ? '—' : esc(money2(L.amount, cur))) + '</span></div>' +
     '</div>' +
