@@ -25,7 +25,7 @@
    each was stored beside the old ones for good. After a new copy is stored,
    older copies of the same path are now removed (see prune). The cache keeps
    its w1 name so that this update does not empty it. */
-const SW_VERSION = 'w2';
+const SW_VERSION = 'w3';
 const CACHE_VERSION = 'w1';
 const PREFIX = 'tehfiz-sw-student-';
 const CACHE = PREFIX + CACHE_VERSION;
@@ -57,7 +57,7 @@ self.addEventListener('fetch', (e) => {
   if (url.origin !== self.location.origin) return;
   if (url.pathname.startsWith('/api/')) return;
   if (!url.pathname.startsWith('/app/')) return;
-  e.respondWith(networkFirst(req));
+  e.respondWith(networkFirst(req, e));
 });
 
 /* A weak signal is worse than none: fetch neither fails nor arrives. For the
@@ -70,17 +70,26 @@ function withTimeout(p, ms) {
   });
 }
 
-async function networkFirst(req) {
+/* w3: when the page is served from the copy because the network took longer
+   than four seconds, the network's answer is still kept when it arrives, so
+   the next opening has the new release (before, it was dropped, and a slow
+   connection could stay on the old release opening after opening). */
+async function networkFirst(req, ev) {
   const cache = await caches.open(CACHE);
-  try {
-    const have = req.mode === 'navigate' && await cache.match(req, { ignoreSearch: true });
-    const res = await (have ? withTimeout(fetch(req), 4000) : fetch(req));
-    if (res && res.ok && res.type === 'basic') {
-      cache.put(req, res.clone()).then(() => prune(cache, req)).catch(() => {});
+  const store = (res) => {
+    if (res && res.ok && res.status === 200 && res.type === 'basic') {
+      return cache.put(req, res.clone()).then(() => prune(cache, req)).catch(() => {});
     } else if (res && res.status === 304) {
       // A reload revalidates: nothing new to store, but the copy held is current.
-      prune(cache, req).catch(() => {});
+      return prune(cache, req).catch(() => {});
     }
+  };
+  try {
+    const have = req.mode === 'navigate' && await cache.match(req, { ignoreSearch: true });
+    const net = fetch(req);
+    if (have && ev && ev.waitUntil) ev.waitUntil(net.then(store).catch(() => {}));
+    const res = await (have ? withTimeout(net, 4000) : net);
+    if (!have) store(res);
     return res;
   } catch (err) {
     const hit = await cache.match(req) || await cache.match(req, { ignoreSearch: true });

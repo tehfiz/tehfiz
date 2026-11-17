@@ -8,6 +8,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="tehfiz-version" content="v1_215"><!-- p3: read by the update bar; vcheck keeps it equal to APP_VERSION -->
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <script>/* Theme and light/dark before first paint — see TehfizTheme and TehfizMode.
    Unknown or missing → Graphite, light. */
@@ -19,7 +20,7 @@ if(m==='dark'||(m==='device'&&window.matchMedia&&matchMedia('(prefers-color-sche
 <script src="/app/shared/tehfiz-report.js?v=rp7"></script>
 <script src="/app/shared/tehfiz-ornament.js?v=o2"></script>
 <script src="/app/shared/tehfiz-header.js?v=h7"></script>
-<script src="/app/shared/tehfiz-pwa.js?v=p2"></script>
+<script src="/app/shared/tehfiz-pwa.js?v=p3"></script>
 <script src="/app/shared/tehfiz-callink.js?v=cl2"></script>
 <script src="/app/shared/tehfiz-versefind.js?v=vf2"></script>
 <script src="/app/shared/tehfiz-keys.js?v=k2"></script>
@@ -1803,7 +1804,7 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
    console as APP_VERSION, or grep the deployed HTML for it. Bumped on every
    saved build; vcheck.py asserts it matches the filename, so a forgotten bump
    fails the integrity check rather than shipping a lie. */
-const APP_VERSION = 'v1_214';
+const APP_VERSION = 'v1_215';
 window.APP_VERSION = APP_VERSION;
 console.info('Tehfiz student viewer ' + APP_VERSION);
 

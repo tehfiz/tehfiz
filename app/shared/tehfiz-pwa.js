@@ -19,7 +19,7 @@
    ═══════════════════════════════════════════════════════════════════════ */
 (function () {
 'use strict';
-const TEHFIZ_PWA_VERSION = 'p2';
+const TEHFIZ_PWA_VERSION = 'p3';
 
 let deferred = null, installed = false;
 
@@ -107,7 +107,16 @@ function showIosHelp() {
    the one it was loaded with, a banner offers a Reload. It never reloads by
    itself: a teacher may be mid-session.
    Every change to a shared file also changes the app pages' ?v= tags, so
-   watching the page covers the shared files and modules too. */
+   watching the page covers the shared files and modules too.
+
+   p3: compares RELEASES, not fingerprints. Each app page carries
+   <meta name="tehfiz-version">; the bar reads the server's page (its first
+   few KB only) and offers Reload when that differs from the release running.
+   Before, the first answer from the server was taken as the starting point,
+   so a page opened from the saved copy after a release took the NEW release
+   as its starting point and never offered Reload. Pages without the meta
+   (older releases) fall back to the fingerprint compare. Reload fetches the
+   page first, so it does not land on the saved copy again. */
 let _fp = null, _lastCheck = 0, _offered = false;
 function fingerprint(r) {
   const et = r.headers.get('etag');
@@ -115,9 +124,37 @@ function fingerprint(r) {
   const lm = r.headers.get('last-modified'), len = r.headers.get('content-length');
   return lm || len ? (lm || '') + '|' + (len || '') : null;
 }
+function runningRelease() {
+  const m = document.querySelector('meta[name="tehfiz-version"]');
+  return m ? m.content : null;
+}
+// The release named in the server's copy of this page, from its first bytes.
+async function serverRelease() {
+  const r = await fetch(location.pathname, { cache: 'no-store', credentials: 'same-origin', headers: { Range: 'bytes=0-8191' } });
+  if (!r.ok) return null;
+  let text = '';
+  if (r.body && r.body.getReader) {
+    const rd = r.body.getReader(), dec = new TextDecoder();
+    while (text.length < 32768) {
+      const { done, value } = await rd.read(); if (done) break;
+      text += dec.decode(value, { stream: true });
+      if (/name="tehfiz-version"[^>]*>|<\/head>/i.test(text)) break;
+    }
+    try { rd.cancel(); } catch (_) {}
+  } else text = (await r.text()).slice(0, 32768);
+  const m = text.match(/<meta name="tehfiz-version" content="([^"]+)"/);
+  return m ? m[1] : null;
+}
 async function checkUpdate() {
   if (_offered || !navigator.onLine) return;
   _lastCheck = Date.now();
+  const run = runningRelease();
+  if (run) {
+    try {
+      const srv = await serverRelease();
+      if (srv) { if (srv !== run) offerUpdate(); return; }
+    } catch (_) { return; }   /* offline or blocked — try again later */
+  }
   try {
     const r = await fetch(location.pathname, { method: 'HEAD', cache: 'no-store', credentials: 'same-origin' });
     if (!r.ok) return;
@@ -148,7 +185,13 @@ function offerUpdate() {
   el.innerHTML = '<span>Tehfīz has been updated.</span>' +
     '<button type="button" class="tpwa-go">Reload</button>' +
     '<button type="button" class="tpwa-later" aria-label="Not now">Later</button>';
-  el.querySelector('.tpwa-go').onclick = () => location.reload();
+  // Fetch the page first (through the service worker, which keeps it), so the
+  // reload cannot be answered with the saved copy of the old release.
+  el.querySelector('.tpwa-go').onclick = async (ev) => {
+    const b = ev.currentTarget; b.disabled = true; b.textContent = 'Updating\u2026';
+    try { await Promise.race([fetch(location.pathname, { cache: 'reload', credentials: 'same-origin' }), new Promise((r) => setTimeout(r, 8000))]); } catch (_) {}
+    location.reload();
+  };
   /* Later hides it until the app next comes back to the foreground. */
   el.querySelector('.tpwa-later').onclick = () => { el.remove(); _snoozed = true; };
   document.body.appendChild(el);
