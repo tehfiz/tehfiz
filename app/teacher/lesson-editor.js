@@ -1,6 +1,9 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   lesson-editor.js — TehfizLesson — le7
-   Loaded by the teacher app only, from /app/teacher/lesson-editor.js?v=le6.
+   lesson-editor.js — TehfizLesson — le8
+   Loaded by the teacher app only, from /app/teacher/lesson-editor.js?v=le8.
+
+   le8: typing a time no longer jumps (10 became 00): the fields aren't
+   rebuilt between keystrokes.
 
    le6: open() takes `pages`, a map to show in the range picker and to
    suggest from, in place of the saved one. New lessons default to 30 minutes.
@@ -57,7 +60,7 @@
    ═══════════════════════════════════════════════════════════════════════ */
 (function () {
 'use strict';
-const TEHFIZ_LESSON_VERSION = 'le7';
+const TEHFIZ_LESSON_VERSION = 'le8';
 const K_HOURS = 'tehfiz_teach_hours';     // {from:'15:00', to:'21:00'} — optional, set in Settings
 const K_PLANS = 'tehfiz_cal_plans';       // the calendar's copy of every student's timetable
 const SNAP = 15;
@@ -484,16 +487,20 @@ function onChange(e) {
   readText();
   if (f === 'date' && el.value) {
     const [y, mo, d] = el.value.split('-').map(Number);
-    ed.at = T().zonedToMs(y, mo, d, Math.floor(minOf(ed.at) / 60), minOf(ed.at) % 60, myZ()); ed.weekStart = mondayOf(ed.at); ed.keepBoth = false; return render();
+    ed.at = T().zonedToMs(y, mo, d, Math.floor(minOf(ed.at) / 60), minOf(ed.at) % 60, myZ()); ed.weekStart = mondayOf(ed.at); ed.keepBoth = false; return paintTime();
   }
-  if (f === 'time' && el.value) { ed.at = atOf(dayStart(ed.at), hm2min(el.value)); return render(); }
+  // le8: no render() while a date or time is being typed. Browsers send
+  // 'change' after every part (the "1" of "10"), and rebuilding the field
+  // threw away the half-typed hour, so the "0" landed in a fresh field as
+  // 00. The value is kept and the readouts follow; Done or Enter redraws.
+  if (f === 'time' && el.value) { ed.at = atOf(dayStart(ed.at), hm2min(el.value)); return paintTime(); }
   if ((f === 'ttime' || f === 'tdate') && theirZ()) {
     const z = theirZ(), wrap = el.closest('.tle-typ');
     const d = wrap.querySelector('[data-tlein="tdate"]').value, tm = wrap.querySelector('[data-tlein="ttime"]').value;
     if (!d || !tm) return;
     const [y, mo, dd] = d.split('-').map(Number), [h, mi] = tm.split(':').map(Number);
     ed.at = T().zonedToMs(y, mo, dd, h, mi, z); ed.weekStart = mondayOf(ed.at); ed.keepBoth = false;
-    return render();
+    return paintTime();
   }
   if (f === 'len') { ed.len = Math.max(5, Math.min(240, parseInt(el.value, 10) || 30)); return render(); }
   if (f === 'type') { const p = ed.plan[+el.dataset.i]; if (p) p.type = el.value; return; }
