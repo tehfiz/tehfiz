@@ -1,6 +1,16 @@
 /* ═══════════════════════════════════════════════════════════════════════════
    past.js — TehfizPast — pm4 (17 Nov 2026)
 
+   pm12 (17 Nov): the shade inside the box at 5%.
+
+   pm11 (17 Nov): dots at 85%, and a 10% shade inside the box.
+
+   pm10 (17 Nov): the dots are drawn (SVG): round, 3px, about 8px apart, at
+        60%; a CSS dotted border can only make small dots close together.
+
+   pm9 (17 Nov): dotted border, no shade inside; numbers faint until pointed
+        at; the pop-up moves with the page and pauses auto-scroll while open.
+
    pm8 (17 Nov): numbers smaller and further out, past the box's corner;
         the box's border at 50%.
 
@@ -61,7 +71,7 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 (function () {
 'use strict';
-const VERSION = 'pm8';
+const VERSION = 'pm12';
 const KEY = 'tehfiz_past';
 const E = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -222,9 +232,12 @@ function drawBoxes() {
     // Several marks on one word (different spans) stack their numbers.
     lines.forEach((L, li) => {
       const x = L.left - hr.left + host.scrollLeft - 4, y = L.top - hr.top + host.scrollTop - 3;
-      const b = document.createElement('div');
+      const b = document.createElement('div'), bw = L.right - L.left + 8, bh = L.bottom - L.top + 6;
       b.className = 'pm-span-box';
-      b.style.cssText = 'left:' + x + 'px;top:' + y + 'px;width:' + (L.right - L.left + 8) + 'px;height:' + (L.bottom - L.top + 6) + 'px;--pm-c:' + col;
+      b.style.cssText = 'left:' + x + 'px;top:' + y + 'px;width:' + bw + 'px;height:' + bh + 'px;--pm-c:' + col;
+      // pm10: round dots along a rounded rectangle.
+      b.innerHTML = '<svg width="' + bw + '" height="' + bh + '" aria-hidden="true"><rect x="1.5" y="1.5" width="' + Math.max(0, bw - 3) +
+        '" height="' + Math.max(0, bh - 3) + '" rx="7" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-dasharray="0 8"/></svg>';
       host.appendChild(b);
       // The number on the line that holds the mistake's first word, above the text.
       if (L.els.includes(head) || (li === 0 && !lines.some((z) => z.els.includes(head)))) {
@@ -281,9 +294,22 @@ function pop(w, sp) {
     '<div class="pm-btns"><button type="button" class="pm-b dark" data-pm-act="mark">Mark again</button>' +
     (window.TehfizPast.testHere ? '<button type="button" class="pm-b" data-pm-act="test">Test here</button>' : '') + '</div>';
   document.body.appendChild(el);
-  const r = w.getBoundingClientRect(), pw = el.offsetWidth, ph = el.offsetHeight;
-  el.style.left = Math.max(8, Math.min(window.innerWidth - pw - 8, r.left + r.width / 2 - pw / 2)) + 'px';
-  el.style.top = (r.bottom + 14 + ph < window.innerHeight ? r.bottom + 14 : Math.max(8, r.top - ph - 8)) + 'px';
+  // pm9: placed against the word, and kept there as the page scrolls; the
+  // side (below or above) is chosen once, so it does not jump.
+  const pw = el.offsetWidth, ph = el.offsetHeight, r0 = w.getBoundingClientRect();
+  const below = r0.bottom + 14 + ph < window.innerHeight;
+  const place = () => {
+    const r = w.getBoundingClientRect();
+    el.style.left = Math.max(8, Math.min(window.innerWidth - pw - 8, r.left + r.width / 2 - pw / 2)) + 'px';
+    el.style.top = (below ? r.bottom + 14 : r.top - ph - 8) + 'px';
+  };
+  place();
+  const pc = document.getElementById('pageContent');
+  if (pc) { pc.addEventListener('scroll', place, { passive: true }); el._unplace = () => pc.removeEventListener('scroll', place); }
+  window.addEventListener('resize', place);
+  const unplace0 = el._unplace; el._unplace = () => { if (unplace0) unplace0(); window.removeEventListener('resize', place); };
+  // pm9: auto-scroll waits while the history is open, as it does for the mark form.
+  if (typeof autoScrollState !== 'undefined' && autoScrollState.active) { autoScrollState.pausedQuickForm = true; el._paused = true; }
   el.addEventListener('click', (ev) => {
     const a = ev.target.closest('[data-pm-act]'); if (!a) return;
     close();
@@ -291,7 +317,16 @@ function pop(w, sp) {
     if (a.dataset.pmAct === 'test' && window.TehfizPast.testHere) window.TehfizPast.testHere(+w.dataset.surah, +w.dataset.ayah);
   });
 }
-function close() { const p = document.getElementById('pmPop'); if (p) p.remove(); }
+function close() {
+  const p = document.getElementById('pmPop'); if (!p) return;
+  if (p._unplace) p._unplace();
+  // Resume auto-scroll, unless the mark form has taken over the pause.
+  if (p._paused && typeof autoScrollState !== 'undefined') {
+    const qf = document.getElementById('quickForm');
+    if (!qf || qf.classList.contains('hidden')) autoScrollState.pausedQuickForm = false;
+  }
+  p.remove();
+}
 // The part of the lesson the mistake was in ("Al-Mulk 1–30", "… (spot test)"), not the whole lesson's name.
 function partOf(s, m) {
   try {
@@ -413,11 +448,13 @@ css.textContent = `
 .pm-past[data-pm=""]::after{display:none;}
 .pm-past{position:relative;outline:2px solid color-mix(in srgb,var(--pm-c,var(--ink)) 70%,transparent);outline-offset:3px;border-radius:6px;}
 .pm-past.pm-in{outline:none;}
-.pm-span-box{position:absolute;pointer-events:none;z-index:-1;border:2px solid color-mix(in srgb,var(--pm-c,var(--ink)) 50%,transparent);
-  background:color-mix(in srgb,var(--pm-c,var(--ink)) 7%,transparent);border-radius:8px;box-sizing:border-box;}
-.pm-span-n{position:absolute;z-index:4;min-width:10px;height:14px;padding:0 3px;pointer-events:auto;cursor:pointer;
+.pm-span-box{position:absolute;pointer-events:none;z-index:-1;border-radius:8px;
+  color:color-mix(in srgb,var(--pm-c,var(--ink)) 85%,transparent);background:color-mix(in srgb,var(--pm-c,var(--ink)) 5%,transparent);}
+.pm-span-box svg{display:block;overflow:visible;}
+.pm-span-n{position:absolute;z-index:4;opacity:.4;transition:opacity .15s;min-width:10px;height:14px;padding:0 3px;pointer-events:auto;cursor:pointer;
   font:600 10px/14px 'IBM Plex Mono',monospace;color:var(--pm-c,var(--ink));background:var(--surface,#fff);
   border:1.5px solid var(--pm-c,var(--ink));border-radius:9px;text-align:center;direction:ltr;}
+.pm-span-n:hover,.pm-span-n:focus-visible{opacity:1;}
 .pm-past::after{content:attr(data-pm);position:absolute;bottom:-13px;left:-11px;min-width:12px;height:16px;padding:0 4px;
   font:600 11px/16px 'IBM Plex Mono',monospace;color:var(--pm-c,var(--ink));background:var(--surface,#fff);
   border:1.5px solid var(--pm-c,var(--ink));border-radius:9px;text-align:center;z-index:3;cursor:pointer;direction:ltr;}
