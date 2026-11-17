@@ -1,6 +1,17 @@
 /* ═══════════════════════════════════════════════════════════════════════════
    past.js — TehfizPast — pm4 (17 Nov 2026)
 
+   pm8 (17 Nov): numbers smaller and further out, past the box's corner;
+        the box's border at 50%.
+
+   pm7 (17 Nov): every past mark is a box drawn BEHIND the text (the letters and
+        their vowel marks stay on top; an outline drew over them), one box around
+        all the words of a mistake across several (one per line where it
+        wraps), its number on the box's corner, above the text so it can be
+        tapped. Before: a mistake across several words is one box around all of them
+        (one per line where it wraps), its number on the box's corner; every
+        outline is softer (70% colour) with more room around the word.
+
    pm6 (17 Nov, found on a real student):
         · a mistake across several words (wordPos…wordPosEnd) outlines every
           word of it, with the number on its first word; before, only the
@@ -50,7 +61,7 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 (function () {
 'use strict';
-const VERSION = 'pm6';
+const VERSION = 'pm8';
 const KEY = 'tehfiz_past';
 const E = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -58,6 +69,7 @@ let opt = (() => { try { return Object.assign({ on: false, n: 3, hifz: true, taj
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(opt)); } catch (_) {} };
 
 let sid = null, server = [], index = new Map(), mo = null, poll = null, timer = null, fetching = false;
+let spans = new Map();   // pm7: "s:a:from-to" -> {surah, ayah, a, b, lessons:Set, worst}
 const sync = () => window.TehfizSync || null;
 const curSid = () => { const S = sync(); return S && S.currentStudentId ? S.currentStudentId() : null; };
 
@@ -121,7 +133,7 @@ function pagesOf(s) {
   return out;
 }
 function build() {
-  index = new Map();
+  index = new Map(); spans = new Map();
   if (!opt.on || !sid) return;
   const L = lessons().map((s) => ({ s, t: +(_sessDate(s) || 0), pages: pagesOf(s) })).sort((a, b) => b.t - a.t);
   // The last N hearings of each page: the lessons allowed to speak for it.
@@ -143,32 +155,87 @@ function build() {
       // pm6: every word of a mistake across several words; the number goes on
       // its first word only (head), the others are outlined.
       const a = +m.wordPos, b = Math.max(a, +(m.wordPosEnd || a));
+      {              // pm7: every mark, one word or several, as a box
+        const sk = m.surah + ':' + m.ayah + ':' + a + '-' + b;
+        let sp = spans.get(sk);
+        if (!sp) spans.set(sk, sp = { surah: m.surah, ayah: m.ayah, a, b, lessons: new Set(), worst: null });
+        sp.lessons.add(i);
+        if (!taj && (!sp.worst || sevRank(m.correction) > sevRank(sp.worst.m.correction))) sp.worst = { m, cfg };
+      }
       for (let w = a; w <= b; w++) {
         const k = m.surah + ':' + m.ayah + ':' + w;
         let e = index.get(k);
         if (!e) index.set(k, e = { word: m.word || '', marks: [], lessons: new Set(), heads: new Set(), worst: null, hifz: false });
         e.marks.push({ m, s: x.s, t: x.t, taj, cfg });
         e.lessons.add(i);
-        if (w === a) e.heads.add(i);
+        if (a === b) e.single = true;   // pm7: outlined on its own; else inside a box
         if (!taj) { e.hifz = true; if (!e.worst || sevRank(m.correction) > sevRank(e.worst.m.correction)) e.worst = { m, cfg }; }
       }
     });
   });
-  if (opt.rep2) for (const [k, e] of index) if (e.lessons.size < 2) index.delete(k);
+  if (opt.rep2) {
+    for (const [k, e] of index) if (e.lessons.size < 2) index.delete(k);
+    for (const [k, sp] of spans) if (sp.lessons.size < 2) spans.delete(k);
+  }
 }
 
 /* ── drawing ────────────────────────────────────────────────────────────── */
-function clear() { document.querySelectorAll('[data-pm]').forEach((w) => { w.removeAttribute('data-pm'); w.style.removeProperty('--pm-c'); w.classList.remove('pm-past'); }); }
+function clear() {
+  document.querySelectorAll('[data-pm]').forEach((w) => { w.removeAttribute('data-pm'); w.style.removeProperty('--pm-c'); w.classList.remove('pm-past', 'pm-in'); });
+  clearBoxes();
+}
+const colOf = (worst) => (worst ? sevForMistake(worst.m, worst.cfg).color : 'var(--ink)');
 function paint() {
   clear();
-  if (!opt.on || !index.size) return;
-  document.querySelectorAll('#pageContent [data-surah][data-ayah][data-pos]').forEach((w) => {
-    const e = index.get(w.dataset.surah + ':' + w.dataset.ayah + ':' + w.dataset.pos);
-    if (!e) return;
-    w.classList.add('pm-past');
-    // The number only where a mistake starts; a word inside one is outlined.
-    if (e.heads.size) w.setAttribute('data-pm', e.lessons.size); else w.setAttribute('data-pm', '');
-    w.style.setProperty('--pm-c', e.worst ? sevForMistake(e.worst.m, e.worst.cfg).color : 'var(--ink)');
+  if (!opt.on || !spans.size) return;
+  drawBoxes();
+}
+/* pm7: one box per multi-word mistake (per line where it wraps), drawn over
+   the page and never in the way of a tap. Only for pages on screen: measuring
+   words on a page the browser has skipped would make it lay that page out. */
+function clearBoxes() { document.querySelectorAll('.pm-span-box,.pm-span-n').forEach((b) => b.remove()); }
+function drawBoxes() {
+  clearBoxes();
+  if (!opt.on || !spans.size) return;
+  const pc = document.getElementById('pageContent'); if (!pc) return;
+  const vr = pc.getBoundingClientRect();
+  const onScreen = new Set([...pc.querySelectorAll('.mushaf-page')].filter((pg) => {
+    const r = pg.getBoundingClientRect(); return r.bottom > vr.top - 400 && r.top < vr.bottom + 400;
+  }));
+  spans.forEach((sp) => {
+    const words = [];
+    for (let w = sp.a; w <= sp.b; w++) {
+      const el = pc.querySelector('[data-surah="' + sp.surah + '"][data-ayah="' + sp.ayah + '"][data-pos="' + w + '"]');
+      if (el && (!onScreen.size || onScreen.has(el.closest('.mushaf-page')))) words.push(el);
+    }
+    if (!words.length) return;
+    const host = words[0].offsetParent || pc, hr = host.getBoundingClientRect();
+    // Group by line, then one box around each line's words.
+    const lines = [];
+    words.forEach((el) => {
+      const r = el.getBoundingClientRect(); if (!r.width) return;
+      const L = lines.find((l) => Math.abs(l.top - r.top) < r.height * 0.5);
+      if (L) { L.left = Math.min(L.left, r.left); L.right = Math.max(L.right, r.right); L.top = Math.min(L.top, r.top); L.bottom = Math.max(L.bottom, r.bottom); L.els.push(el); }
+      else lines.push({ left: r.left, right: r.right, top: r.top, bottom: r.bottom, els: [el] });
+    });
+    const col = colOf(sp.worst), head = words.find((el) => +el.dataset.pos === sp.a) || words[0];
+    // Several marks on one word (different spans) stack their numbers.
+    lines.forEach((L, li) => {
+      const x = L.left - hr.left + host.scrollLeft - 4, y = L.top - hr.top + host.scrollTop - 3;
+      const b = document.createElement('div');
+      b.className = 'pm-span-box';
+      b.style.cssText = 'left:' + x + 'px;top:' + y + 'px;width:' + (L.right - L.left + 8) + 'px;height:' + (L.bottom - L.top + 6) + 'px;--pm-c:' + col;
+      host.appendChild(b);
+      // The number on the line that holds the mistake's first word, above the text.
+      if (L.els.includes(head) || (li === 0 && !lines.some((z) => z.els.includes(head)))) {
+        const n = document.createElement('span');
+        n.className = 'pm-span-n'; n.textContent = sp.lessons.size;
+        // pm8: past the box's bottom-left corner, mostly outside it.
+        n.style.cssText = 'left:' + (x - 13) + 'px;top:' + (y + (L.bottom - L.top + 6) - 4) + 'px;--pm-c:' + col;
+        n.addEventListener('click', (ev) => { ev.preventDefault(); ev.stopPropagation(); pop(head, sp); });
+        host.appendChild(n);
+      }
+    });
   });
 }
 const repaint = () => { clearTimeout(timer); timer = setTimeout(paint, 120); };
@@ -184,15 +251,19 @@ function onBadge(e) {
   const w = e.target.closest && e.target.closest('[data-pm]'); if (!w || !w.getAttribute('data-pm')) return;   // pm6: no number, no badge
   const r = w.getBoundingClientRect();
   // The badge sits at the word's bottom-left corner (see .pm-past::after).
-  const inBadge = e.clientX >= r.left - 10 && e.clientX <= r.left + 18 && e.clientY >= r.bottom - 11 && e.clientY <= r.bottom + 13;
+  const inBadge = e.clientX >= r.left - 13 && e.clientX <= r.left + 15 && e.clientY >= r.bottom - 13 && e.clientY <= r.bottom + 11;
   if (!inBadge) return;
   e.preventDefault(); e.stopPropagation();
   pop(w);
 }
-function pop(w) {
+function pop(w, sp) {
   close();
   const k = w.dataset.surah + ':' + w.dataset.ayah + ':' + w.dataset.pos, e = index.get(k); if (!e) return;
-  const marks = e.marks.slice().sort((a, b) => b.t - a.t);
+  // pm7: from a box, the marks of that span; from a word, its own marks.
+  const marks = e.marks.filter((x) => {
+    const a = +x.m.wordPos, b = Math.max(a, +(x.m.wordPosEnd || a));
+    return sp ? (a === sp.a && b === sp.b) : (a === b || !e.single);
+  }).sort((a, b) => b.t - a.t);
   const col = e.worst ? sevForMistake(e.worst.m, e.worst.cfg).color : 'var(--ink)';
   const el = document.createElement('div');
   el.id = 'pmPop'; el.className = 'pm-pop'; el.setAttribute('role', 'dialog');
@@ -290,10 +361,22 @@ function openSheet() {
 /* ── life ───────────────────────────────────────────────────────────────── */
 function start() {
   const pc = document.getElementById('pageContent');
-  if (pc && !mo) { mo = new MutationObserver(repaint); mo.observe(pc, { childList: true, subtree: true }); }
+  if (pc && !mo) {
+    const ours = (n) => n.nodeType === 1 && n.classList && (n.classList.contains('pm-span-box') || n.classList.contains('pm-span-n'));
+    mo = new MutationObserver((list) => {
+      if (list.every((r) => [...r.addedNodes, ...r.removedNodes].every(ours))) return;   // our own boxes
+      repaint();
+    });
+    mo.observe(pc, { childList: true, subtree: true });
+    // Boxes follow zoom and the pages coming into view (pm7).
+    let bt = null; const later = () => { clearTimeout(bt); bt = setTimeout(drawBoxes, 150); };
+    pc.addEventListener('scroll', later, { passive: true });
+    if (typeof ResizeObserver === 'function') { ro = new ResizeObserver(later); ro.observe(pc); if (pc.firstElementChild) ro.observe(pc.firstElementChild); }
+  }
   if (!poll) poll = setInterval(() => { if (curSid() !== sid) refresh(); }, 1500);
 }
-function stop() { if (mo) { mo.disconnect(); mo = null; } if (poll) { clearInterval(poll); poll = null; } }
+let ro = null;
+function stop() { if (ro) { ro.disconnect(); ro = null; } if (mo) { mo.disconnect(); mo = null; } if (poll) { clearInterval(poll); poll = null; } }
 
 function init() {
   // Desktop: a block in the View pop-up, beside zoom and auto-scroll.
@@ -328,8 +411,14 @@ window.TehfizPast = { set, openSheet, isOn: () => opt.on, refresh: () => refresh
 const css = document.createElement('style');
 css.textContent = `
 .pm-past[data-pm=""]::after{display:none;}
-.pm-past{position:relative;outline:2px solid var(--pm-c,var(--ink));outline-offset:1px;border-radius:4px;}
-.pm-past::after{content:attr(data-pm);position:absolute;bottom:-11px;left:-8px;min-width:12px;height:16px;padding:0 4px;
+.pm-past{position:relative;outline:2px solid color-mix(in srgb,var(--pm-c,var(--ink)) 70%,transparent);outline-offset:3px;border-radius:6px;}
+.pm-past.pm-in{outline:none;}
+.pm-span-box{position:absolute;pointer-events:none;z-index:-1;border:2px solid color-mix(in srgb,var(--pm-c,var(--ink)) 50%,transparent);
+  background:color-mix(in srgb,var(--pm-c,var(--ink)) 7%,transparent);border-radius:8px;box-sizing:border-box;}
+.pm-span-n{position:absolute;z-index:4;min-width:10px;height:14px;padding:0 3px;pointer-events:auto;cursor:pointer;
+  font:600 10px/14px 'IBM Plex Mono',monospace;color:var(--pm-c,var(--ink));background:var(--surface,#fff);
+  border:1.5px solid var(--pm-c,var(--ink));border-radius:9px;text-align:center;direction:ltr;}
+.pm-past::after{content:attr(data-pm);position:absolute;bottom:-13px;left:-11px;min-width:12px;height:16px;padding:0 4px;
   font:600 11px/16px 'IBM Plex Mono',monospace;color:var(--pm-c,var(--ink));background:var(--surface,#fff);
   border:1.5px solid var(--pm-c,var(--ink));border-radius:9px;text-align:center;z-index:3;cursor:pointer;direction:ltr;}
 .pm-pop{position:fixed;z-index:1500;width:290px;max-height:60vh;overflow:auto;background:var(--surface,#fff);color:var(--ink);border:1px solid var(--pm-c);
