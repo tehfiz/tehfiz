@@ -1,6 +1,12 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   finish-session.js — TehfizFinish — f20
-   Loaded by the teacher app only, from /app/teacher/finish-session.js?v=f20.
+   finish-session.js — TehfizFinish — f21
+   Loaded by the teacher app only, from /app/teacher/finish-session.js?v=f21.
+
+   f21 (stage 9, decided 17 Nov): a lesson that was already sent and is
+   finished again (Edit in Sessions) says "Send again to …": it replaces the
+   student's copy. Keeping the change on this device only is a small link
+   below. Closing the Sent screen without choosing what comes next asks first:
+   the lesson stays open in the app, and marks added to it change it.
 
    f18: after "Undo send" the sheet goes back to the Finish form, so the
    lesson can be changed and sent again, or sent to someone else.
@@ -48,7 +54,7 @@
    ═══════════════════════════════════════════════════════════════════════ */
 (function () {
 'use strict';
-const TEHFIZ_FINISH_VERSION = 'f20';
+const TEHFIZ_FINISH_VERSION = 'f21';
 
 let open_ = false, view = 'form', moreOpen = false;
 let st = null;   // the sheet's working state, see begin()
@@ -187,6 +193,10 @@ body.compact-ui .tfs-foot{padding:12px 16px;padding-bottom:max(16px, env(safe-ar
 .tfs-pri{height:52px;border:none;border-radius:10px;background:var(--gold);color:var(--on-gold);font:600 16px var(--ui-font);cursor:pointer;}
 .tfs-pri:disabled{background:var(--parchment3);color:var(--ink2);cursor:default;}
 .tfs-sec2{display:flex;gap:10px;}
+.tfs-again{font-size:12.5px;color:var(--ink2);text-align:center;margin-top:-2px;}
+.tfs-ask{display:flex;flex-direction:column;gap:6px;padding:10px 12px;border-radius:10px;border:1px solid var(--border2);border-left:4px solid var(--amber,#8a5a00);background:var(--parchment2);font-size:13px;line-height:1.5;}
+.tfs-ask b{font-size:14px;}
+.tfs-ask-btns{display:flex;gap:8px;flex-wrap:wrap;}
 .tfs-sec{flex:1 1 0;min-height:44px;border:1px solid var(--border2);border-radius:8px;background:var(--surface,#fff);color:var(--ink);
   font:500 14px var(--ui-font);cursor:pointer;padding:0 8px;}
 .tfs-sec.strong{border-color:var(--ink);}
@@ -259,6 +269,10 @@ function begin() {
     grades: {}, next: null, mapOn: true,
     /* f9: which lines of the summary card are open, and the name being edited. */
     open: {}, renaming: false,
+    /* f21: this lesson was sent before (opened again with Edit), and the
+       question asked when the Sent screen is closed without a next step. */
+    wasSent: (() => { try { return _currentSessionId != null && !!sync() && !!sync().sendState && sync().sendState(_currentSessionId) === 'sent'; } catch (e) { return false; } })(),
+    askClose: false,
   };
   if (timerRunning) toggleTimer();     // the lesson is over; Resume comes back on ✕
 }
@@ -570,7 +584,7 @@ function sendLabel() {
   if (!b) return { text: 'Send · choose a student first', disabled: true };
   return { text: st.busy ? 'Sending…'
     : st.failed ? 'Try sending again'
-    : 'Send to ' + (b.name || b.code), disabled: st.busy };
+    : (st.wasSent ? 'Send again to ' : 'Send to ') + (b.name || b.code), disabled: st.busy };
 }
 
 function formHtml() {
@@ -595,8 +609,9 @@ function formHtml() {
     '<div class="tfs-foot">' +
       (s ? '<button class="tfs-pri" type="button" data-tfs="send"' + (s.disabled ? ' disabled' : '') + '>' + esc(s.text) + '</button>'
          : '<button class="tfs-pri" type="button" data-tfs="save">Save session</button>') +
+      (s && st.wasSent ? '<div class="tfs-again">Already sent: this replaces the copy ' + esc((bound() || {}).name || 'the student') + ' sees.</div>' : '') +
       '<div class="tfs-links">' +
-        (s ? '<button class="tfs-link" type="button" data-tfs="save">Save without sending</button>' : '') +
+        (s ? '<button class="tfs-link" type="button" data-tfs="save">' + (st.wasSent ? 'Keep the change on this device only' : 'Save without sending') + '</button>' : '') +
         '<button class="tfs-link" type="button" data-tfs="copy">Copy report</button>' +
       '</div>' +
     '</div>';
@@ -606,7 +621,9 @@ function doneHtml() {
   const r = st.result;
   const who = st.studentAfter;
   const nm = who ? (who.name || who.code) : '';
-  const head = r === 'sent' ? { t: 'Sent to ' + nm, p: (st.movedFrom ? 'Moved from ' + st.movedFrom + '. ' : '') + 'It is in their viewer now, with every mistake on the page.', q: false }
+  const head = r === 'sent' && st.wasSent && !st.movedFrom ? { t: 'Updated for ' + nm, p: 'The copy in their viewer is replaced by this one.', q: false }
+    : r === 'saved' && st.wasSent ? { t: 'Saved on this device only', p: nm + ' still sees the copy sent before. Send it again from Sessions to replace it.', q: true }
+    : r === 'sent' ? { t: 'Sent to ' + nm, p: (st.movedFrom ? 'Moved from ' + st.movedFrom + '. ' : '') + 'It is in their viewer now, with every mistake on the page.', q: false }
     : r === 'queued' ? { t: 'Not sent yet — saved on this device',
         p: 'There is no connection right now. It sends to ' + nm + ' by itself as soon as the connection is back, ' +
            'even if you close this or start the next student. Sessions shows it as Queued until then.', q: true }
@@ -633,6 +650,10 @@ function doneHtml() {
       '</div>' +
     '</div>' +
     '<div class="tfs-foot">' +
+      (st.askClose ? '<div class="tfs-ask" role="alertdialog" aria-labelledby="tfsAskH"><b id="tfsAskH">What next?</b>' +
+        '<span>This lesson is saved and stays open in the app. Marks added to it now change it.</span>' +
+        '<div class="tfs-ask-btns"><button class="tfs-sec" type="button" data-tfs="keep">Keep this lesson open</button>' +
+        '<button class="tfs-sec" type="button" data-tfs="ask-no">Back</button></div></div>' : '') +
       '<span class="tfs-l" style="margin:0;">Next</span>' +
       '<button class="tfs-pri" type="button" data-tfs="next">Start the next student</button>' +
       '<div class="tfs-sec2">' +
@@ -758,6 +779,14 @@ function cancel() {
   open_ = false; st = null; render();
 }
 function closeDone() { open_ = false; st = null; render(); }
+/* f21: ✕, the backdrop or Escape on the Sent screen: ask what comes next
+   rather than leave the finished lesson open without saying so. Asked once;
+   closing again keeps the lesson open. */
+function askDone() {
+  if (!st || st.askClose) return closeDone();
+  st.askClose = true; render();
+  const b = document.querySelector('#tfsRoot [data-tfs="next"]'); if (b) b.focus();
+}
 
 /* ── commit ─────────────────────────────────────────────────────────────── */
 function readForm() {
@@ -997,7 +1026,9 @@ document.addEventListener('click', (e) => {
   if (!t) { if (st && st.acOpen && !e.target.closest('.tfs-stu')) { st.acOpen = false; render(); } return; }
   const a = t.dataset.tfs;
   if (a === 'close') return cancel();
-  if (a === 'close-done') return closeDone();
+  if (a === 'close-done') return askDone();
+  if (a === 'keep') return closeDone();
+  if (a === 'ask-no') { st.askClose = false; render(); return; }
   if (a === 'change') { st.picking = true; st.acOpen = true; render(); const i = $('tfsStu'); if (i) i.focus(); return; }
   if (a === 'pick') return pickId(t.dataset.id);
   if (a === 'fold') {
@@ -1082,7 +1113,7 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     e.stopPropagation(); e.preventDefault();
     if (st && st.acOpen) { st.acOpen = false; render(); return; }
-    if (view === 'done') closeDone(); else cancel();
+    if (view === 'done') askDone(); else cancel();
     return;
   }
   if (e.target.id === 'tfsStu' && st && st.acOpen) {

@@ -1,5 +1,12 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   tehfiz-map.js — TehfizMap — mp7
+   tehfiz-map.js — TehfizMap — mp8
+
+   mp8 (stage 9, decided 17 Nov): one New lesson at a time. Marking a new
+   lesson on the map turns the previous one Recent (unless the new marks
+   carry it on, touching it); after a lesson, the last New lesson becomes
+   Recent, not Old. Worked-out Recent now crosses a juz: while less than a
+   quarter of the new lesson's juz is memorised, the second half of the juz
+   before it stays Recent too; past a quarter, that juz is Old.
    Loaded by the teacher app (Profile → Memorised, sessions) and, read-only,
    by the student viewer, from /app/shared/tehfiz-map.js?v=mp6.
 
@@ -50,7 +57,7 @@
    ═══════════════════════════════════════════════════════════════════════ */
 (function () {
 'use strict';
-const TEHFIZ_MAP_VERSION = 'mp7';
+const TEHFIZ_MAP_VERSION = 'mp8';
 const PAGES = 604, LEN = PAGES * 2;
 const STATES = { '-': 'Not yet', o: 'Old', r: 'Recent', n: 'New lesson' };
 const MEMO = (c) => c === 'o' || c === 'r' || c === 'n';
@@ -186,12 +193,23 @@ function withRanges(ayahs, ranges) {
 function surahAbs(i) { return [absVerse(i + 1, 1), absVerse(i + 1, AYAH_COUNTS[i])]; }
 
 /* "Recent" = everything memorised in the juz of the new lesson (the last half
-   marked New). Everything else memorised is Old. No new lesson: unchanged. */
+   marked New). Everything else memorised is Old. No new lesson: unchanged.
+   mp8: early in a juz (under a quarter of it memorised), the second half of
+   the juz before stays Recent as well, so crossing into a new juz does not
+   turn the pages just learnt Old at once. */
 function derive(pages) {
   const last = pages.lastIndexOf('n');
   if (last < 0) return pages;
   const j = juzOfPage(pageOf(last));
-  const a = (juzStart(j) - 1) * 2, b = juzEnd(j) * 2 - 1;
+  let a = (juzStart(j) - 1) * 2;
+  const b = juzEnd(j) * 2 - 1;
+  if (j > 1) {
+    let done = 0; for (let h = a; h <= b; h++) if (MEMO(pages[h])) done++;
+    if (done < (b - a + 1) / 4) {
+      const pa = (juzStart(j - 1) - 1) * 2, pb = a - 1;
+      a = pa + Math.ceil((pb - pa + 1) / 2);          // the second half of the juz before
+    }
+  }
   let out = '';
   for (let h = 0; h < LEN; h++) {
     const c = pages[h];
@@ -220,7 +238,7 @@ function withLesson(pages, ranges, recentAuto) {
   const fresh = new Set();
   ranges.forEach(([s, e]) => halvesForRange(s, e).forEach((h) => { if (pages[h] === '-' || pages[h] === 'n') fresh.add(h); }));
   if (!fresh.size) return { pages, added: [] };
-  let out = pages.replace(/n/g, 'o');               // last lesson's new part is memorised now
+  let out = pages.replace(/n/g, 'r');               // last lesson's new part is memorised now: Recent (mp8)
   out = set(out, Array.from(fresh), 'n');
   if (recentAuto !== false) out = derive(out);
   return { pages: out, added: Array.from(fresh).sort((a, b) => a - b).filter((h) => pages[h] === '-') };
@@ -620,7 +638,19 @@ function attach(el) {
     if (!cell || !el.contains(cell)) return;
     visit(cell, hit.closest('.tzm-hf'));
   });
-  const end = () => { if (!run) return; const changed = run.done.size; run = null; if (changed) commit(el); };
+  const end = () => {
+    if (!run) return;
+    const changed = run.done.size, r = run; run = null;
+    // mp8: one New lesson at a time. A new one that does not touch the old one
+    // turns the old one Recent; marks that carry it on keep it as one lesson.
+    if (changed && r.mode === 'n') {
+      const st = el._tzm, a = st.pages.split('');
+      const old = []; a.forEach((c, h) => { if (c === 'n' && !r.done.has(h)) old.push(h); });
+      const touches = old.some((h) => r.done.has(h - 1) || r.done.has(h + 1));
+      if (old.length && !touches) { old.forEach((h) => { a[h] = 'r'; }); st.pages = a.join(''); }
+    }
+    if (changed) commit(el);
+  };
   window.addEventListener('pointerup', end);
   window.addEventListener('pointercancel', end);
 }

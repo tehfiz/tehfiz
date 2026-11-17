@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   profile.js — TehfizProfile — p20
+   profile.js — TehfizProfile — p22
    Loaded by the teacher app only, from /app/teacher/profile.js?v=p16.
 
    p16: applyLesson returns the map as it was (.before) and restoreMap puts
@@ -64,7 +64,7 @@
    ═══════════════════════════════════════════════════════════════════════ */
 (function () {
 'use strict';
-const TEHFIZ_PROFILE_VERSION = 'p20';
+const TEHFIZ_PROFILE_VERSION = 'p22';
 const K_TT = 'tehfiz_prof_tt';            // {sid: {days: {'1': {t:'17:00', len:45}, …}, lessons: [{at, len}]}}, 0 = Sunday — a cache
 const K_LSQ = 'tehfiz_prof_lsq';          // {sid: true} single lessons not yet on the server (p7)
 const K_MAPQ = 'tehfiz_prof_mapq';        // {sid: {pages, recent_auto, ayahs}} not yet on the server
@@ -1000,6 +1000,10 @@ function oldRotation(id, pages) {
    Later this moves into a shared file both apps load. */
 let progEl = null;
 function openProgress(sid) {
+  /* p22: the report runs in this app now (TehfizProgress, stage 7b), with a
+     student switcher and this device's unsynced lessons. The frame below is
+     kept only for a page where progress.js did not load. */
+  if (window.TehfizProgress) { close(); window.TehfizProgress.open(sid); return; }
   const S = sync(), st = S && S.student ? S.student(sid) : null;
   const sess = S && S.localSessionsFor ? S.localSessionsFor(sid) : [];
   // p6: embed=1 — the viewer hides its own bars, so this overlay's is the only one.
@@ -1025,6 +1029,19 @@ function openProgress(sid) {
   });
 }
 function closeProgress() { if (progEl) { progEl.remove(); progEl = null; return true; } return false; }
+/* p21: the progress report's "Memorisation map" link, when the report is the
+   frame over this Profile: close it and show the map. */
+function showMap() { closeProgress(); if (isOpen) setTab('memorised'); }
+/* p21: /app/teacher/?profile=<id>&ptab=memorised opens that Profile — the
+   same link, when the report was opened in a tab of its own. */
+window.addEventListener('load', () => {
+  const q = new URLSearchParams(location.search), id = q.get('profile');
+  if (!id) return;
+  // The roster arrives after load; keep looking for up to 15 seconds.
+  let tries = 0;
+  const go = () => { if (sync() && sync().student && sync().student(id)) return open(id, q.get('ptab') || 'overview'); if (++tries < 30) setTimeout(go, 500); };
+  setTimeout(go, 500);
+});
 
 /* What a lesson does to the map: preview first (Finish session shows it),
    then apply when the session is saved. ranges: [[startKey, endKey], …] of
@@ -1112,5 +1129,5 @@ function saveNextLesson(id, nx) {
 
 window.TehfizProfile = { open, close, isOpen: () => isOpen, nextLesson, nextOf, timetable, theirLine, ttOf, editLesson, setLessons, suggestPlan, startFromPlan,
   isEditing: () => !!(window.TehfizLesson && window.TehfizLesson.isOpen()),
-  planFor, previewLesson, applyLesson, restoreMap, suggestNext, saveNextLesson, oldRotation, version: TEHFIZ_PROFILE_VERSION };
+  planFor, previewLesson, applyLesson, restoreMap, suggestNext, saveNextLesson, oldRotation, showMap, version: TEHFIZ_PROFILE_VERSION };
 })();

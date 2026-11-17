@@ -1,6 +1,10 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   sessions-sent.js — TehfizSent — m7
-   Loaded by the teacher app only, from /app/teacher/sessions-sent.js?v=m7.
+   sessions-sent.js — TehfizSent — m8
+   Loaded by the teacher app only, from /app/teacher/sessions-sent.js?v=m8.
+
+   m8 (stage 9): Review and Edit are buttons on every card, not hidden in a
+   tap on the card. Edit opens the lesson in the app (copying it to this
+   device first when it is not here); Finish then sends it again.
 
    m7: undoing the send of the lesson that is open in the app opens Finish
    session on it, so it can be changed and sent again.
@@ -33,7 +37,7 @@
    ═══════════════════════════════════════════════════════════════════════ */
 (function () {
 'use strict';
-const TEHFIZ_SENT_VERSION = 'm7';
+const TEHFIZ_SENT_VERSION = 'm8';
 const KEY_STUDENT = 'tehfiz_sent_student';
 const PAGE = 100;
 
@@ -300,6 +304,10 @@ function render() {
           '<button class="btn-tiny tss-dots" data-tss="menu" data-id="' + esc(r.id) + '" aria-haspopup="true" aria-expanded="' + m + '" aria-label="More" title="More">\u22ef</button></div>' +
         '<div class="tss-meta">' + meta + (b ? '<span>Opening\u2026</span>' : '') + '</div>' +
         (flags ? '<div class="tss-flags">' + flags + '</div>' : '') +
+        '<div class="tss-acts tss-main">' +
+          '<button class="btn-tiny" data-tss="review" data-id="' + esc(r.id) + '"' + (b ? ' disabled' : '') + '>Review</button>' +
+          (r.own ? '<button class="btn-tiny" data-tss="edit" data-id="' + esc(r.id) + '"' + (b ? ' disabled' : '') + ' title="Open it to change it; Finish sends it again">Edit</button>' : '') +
+        '</div>' +
         (m ? '<div class="tss-acts tss-menu" role="menu">' +
           (isLocal ? '' : '<button class="btn-tiny" data-tss="save" data-id="' + esc(r.id) + '"' + (b ? ' disabled' : '') + '>⇩ Save to this device</button>') +
           // m4: grades are edited on the device copy, then sent again.
@@ -350,6 +358,12 @@ function studentStrip(id) {
   '</div>';
 }
 
+// m8: the device copy of a lesson that is on the server counts as sent.
+function markSent(row) {
+  const S = sync(); if (!S || !S.markSent) return;
+  const at = row.created_at ? Date.parse(row.created_at) : NaN;
+  S.markSent(row.client_id, row.id, row.student_id, Number.isFinite(at) ? at : undefined);
+}
 /* ── events ─────────────────────────────────────────────────────────── */
 async function onClick(e) {
   const t = e.target.closest('[data-tss]');
@@ -371,6 +385,23 @@ async function onClick(e) {
   }
   const row = rows.find((r) => String(r.id) === t.dataset.id);
   if (!row) return;
+  if (act === 'edit') {
+    busy = row.id; render();
+    try {
+      // Not on this device: bring it here first, as Save to this device does.
+      if (!localIds().has(String(row.client_id))) {
+        importSingle(await fetchSession(row), true);
+        if (typeof renderSessionsList === 'function') renderSessionsList();
+      }
+      markSent(row);
+      busy = null;
+      if (typeof editSessionById === 'function') editSessionById(row.client_id);
+    } catch (err) {
+      toast('Could not open that session: ' + (err && err.message || 'offline'));
+    }
+    busy = null; render();
+    return;
+  }
   if (act === 'review' || act === 'save') {
     busy = row.id; render();
     try {
@@ -378,6 +409,7 @@ async function onClick(e) {
       if (act === 'review') reviewSessionObject(s);
       else {
         importSingle(s, true);
+        markSent(row);
         if (typeof renderSessionsList === 'function') renderSessionsList();
         toast('Saved to this device');
         apply();

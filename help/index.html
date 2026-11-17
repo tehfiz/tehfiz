@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<!-- Tehfīz help page — v0_4 (13 Nov 2026). Generated once; edit by hand from here. -->
+<!-- Tehfīz help page — v0_5 (17 Nov 2026). Generated once; edit by hand from here.
+     v0_5: a search box; past mistakes, weak-place spots, editing a sent lesson, tour topics. -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -64,6 +65,14 @@ footer{background:#17191c;color:#b6bac1}
 footer div{max-width:860px;margin:0 auto;padding:28px 24px;display:flex;flex-wrap:wrap;gap:6px 24px;font-size:15px}
 footer a{color:#e8e9ea;padding:8px 0}
 @media (max-width:520px){header .nv{display:none}}
+.hs{margin:0 0 18px}
+.hs-l{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+#helpQ{width:100%;min-height:48px;padding:12px 16px;border:1px solid #c9c9c3;border-radius:10px;background:#fff;color:#17191c;font:400 17px 'IBM Plex Sans',system-ui,sans-serif}
+#helpQ:focus{border-color:#17191c;outline:none;box-shadow:0 0 0 3px rgba(23,25,28,.12)}
+.hs-n{margin:8px 2px 0;font-size:15px;color:#626973;min-height:1em}
+.hs-n:empty{display:none}
+mark{background:#fdf3d4;color:inherit;border-radius:3px;padding:0 1px}
+.searching .toc{display:none}
 @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
 </style>
 </head>
@@ -80,6 +89,11 @@ footer a{color:#e8e9ea;padding:8px 0}
 <p class="eyebrow">Help and FAQ</p>
 <h1>How to use Tehfīz</h1>
 <p class="lede">Short answers for teachers, students and parents. Tap a question to open it. Prefer to watch? <a href="https://www.youtube.com/watch?v=3KipPz4yiUc" target="_blank" rel="noopener">See the walkthrough video</a>.</p>
+<div class="hs" role="search">
+<label for="helpQ" class="hs-l">Search the answers</label>
+<input id="helpQ" type="search" placeholder="Search, e.g. spot test, PIN, invoice" autocomplete="off" spellcheck="false">
+<p id="helpN" class="hs-n" aria-live="polite"></p>
+</div>
 <nav aria-label="On this page"><ul class="toc"><li><a href="#start">Getting started</a></li><li><a href="#marking">Marking a lesson</a></li><li><a href="#sending">Finishing and sending</a></li><li><a href="#viewer">What the student sees</a></li><li><a href="#between">Map, next lesson and calendar</a></li><li><a href="#privacy">Names and privacy</a></li><li><a href="#install">Installing and working offline</a></li><li><a href="#more">Organisations and contact</a></li></ul></nav>
 <section id="start">
 <h2>Getting started</h2>
@@ -105,7 +119,7 @@ footer a{color:#e8e9ea;padding:8px 0}
 </details>
 <details>
 <summary>Is there a tour inside the app?</summary>
-<div class="a"><p>Yes. Open <b>Menu</b> and choose <b>Take the tour</b>. Press <kbd>?</kbd> at any time for the built-in help and the keyboard shortcuts. There is also a <a href="https://www.youtube.com/watch?v=3KipPz4yiUc" target="_blank" rel="noopener">walkthrough video on YouTube</a>.</p></div>
+<div class="a"><p>Yes. Open <b>Menu</b> and choose <b>Take the tour</b>, then pick a topic: the basics, students, spot tests, planning, invoices, or reports and sessions. Each takes a minute or two. Press <kbd>?</kbd> at any time for the built-in help and the keyboard shortcuts. There is also a <a href="https://www.youtube.com/watch?v=3KipPz4yiUc" target="_blank" rel="noopener">walkthrough video on YouTube</a>.</p></div>
 </details>
 </section>
 <section id="marking">
@@ -132,7 +146,15 @@ footer a{color:#e8e9ea;padding:8px 0}
 </details>
 <details>
 <summary>What is the difference between Recite and Spot test?</summary>
-<div class="a"><ul><li><b>Recite:</b> the student reads the whole passage. The app fills in the range as you go. These passages earn a strength score.</li><li><b>Spot test:</b> you sample a range. Set the range, choose how many spots, and the app picks evenly spaced starting points. The measure is the pass rate.</li></ul></div>
+<div class="a"><ul><li><b>Recite:</b> the student reads the whole passage. The app fills in the range as you go. These passages earn a strength score.</li><li><b>Spot test:</b> you sample a range. Set the range, then <b>Choose spots</b>: how many, and whether they go at random, at the student's weak places, or a mix. The measure is the pass rate.</li></ul></div>
+</details>
+<details>
+<summary>How do I see a student's past mistakes?</summary>
+<div class="a"><p>Choose the student for the lesson, then turn on <b>Past mistakes</b> in <b>View</b> or in <b>Settings → Display</b>, or press <kbd>P</kbd>. Words they got wrong before are outlined, with a number for how many lessons each went wrong in.</p><p><b>Tap the number</b> to see what happened there and when. <b>Tap the word itself</b> to mark a mistake, as usual.</p><p>Past mistakes never count in today's lesson and are never sent.</p></div>
+</details>
+<details>
+<summary>How do I aim spot tests at weak places?</summary>
+<div class="a"><p>On a spot test segment, press <b>Choose spots</b> and pick <b>Weak places</b> or <b>Mixed</b>. Weak places come from the student's mistakes in the last three times each page was recited, most needed first. Tick, untick or pin them, or pick a place on the page. Each spot starts two verses before its weak place.</p><p>While you test, a spot can be swapped or removed until it is marked. The progress report shows random spots and weak places apart.</p></div>
 </details>
 <details>
 <summary>How do I set a range?</summary>
@@ -168,6 +190,10 @@ footer a{color:#e8e9ea;padding:8px 0}
 <details>
 <summary>I sent a lesson to the wrong student, or too soon.</summary>
 <div class="a"><p>On the screen that says it was sent, choose <b>Send to a different student…</b> or <b>Undo send</b>. Undo takes it back off the student's viewer and map and returns you to Finish session, so you can change it and send it again. For an older lesson, open <b>Sessions</b>, then <b>Sent to students</b>, and use the <b>⋯</b> menu on it.</p></div>
+</details>
+<details>
+<summary>Can I change a lesson after sending it?</summary>
+<div class="a"><p>Yes. In <b>Sessions</b>, press <b>Edit</b> on the lesson, make the change, then <b>Finish</b>: <b>Send again</b> replaces the copy your student sees.</p></div>
 </details>
 <details>
 <summary>Can I keep lessons as files instead?</summary>
@@ -278,6 +304,55 @@ footer a{color:#e8e9ea;padding:8px 0}
 <p>Email <a href="mailto:contact@tehfiz.com">contact@tehfiz.com</a> and we will help.</p>
 </div>
 </main>
+<script>
+/* v0_5: search. Every word typed must appear in a question or its answer
+   (accents ignored: "tehfiz" finds Tehfīz). Matching answers open; sections
+   with none hide. Clearing the box puts every question back as it was. */
+(function(){
+  var q=document.getElementById('helpQ'), n=document.getElementById('helpN');
+  var items=[].slice.call(document.querySelectorAll('main details'));
+  var fold=function(x){return x.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();};
+  var data=items.map(function(d){return {d:d, t:fold(d.textContent), was:d.open, html:d.innerHTML};});
+  function clearMarks(x){ if(x.marked){ x.d.innerHTML=x.html; x.marked=false; } }
+  function mark(x, words){
+    var walk=document.createTreeWalker(x.d,NodeFilter.SHOW_TEXT), nodes=[], t;
+    while((t=walk.nextNode())) nodes.push(t);
+    nodes.forEach(function(node){
+      var s=node.nodeValue, f=fold(s), hits=[];
+      words.forEach(function(w){ var i=f.indexOf(w); while(i>=0){ hits.push([i,i+w.length]); i=f.indexOf(w,i+w.length); } });
+      if(!hits.length || f.length!==s.length) return;
+      hits.sort(function(a,b){return a[0]-b[0];});
+      var frag=document.createDocumentFragment(), at=0;
+      hits.forEach(function(h){ if(h[0]<at) return; frag.appendChild(document.createTextNode(s.slice(at,h[0]))); var m=document.createElement('mark'); m.textContent=s.slice(h[0],h[1]); frag.appendChild(m); at=h[1]; });
+      frag.appendChild(document.createTextNode(s.slice(at)));
+      node.parentNode.replaceChild(frag,node);
+    });
+    x.marked=true;
+  }
+  function run(){
+    var words=fold(q.value).split(/\s+/).filter(Boolean);
+    document.body.classList.toggle('searching', !!words.length);
+    var shown=0;
+    data.forEach(function(x){
+      clearMarks(x);
+      if(!words.length){ x.d.hidden=false; x.d.open=x.was; return; }
+      var ok=words.every(function(w){return x.t.indexOf(w)>=0;});
+      x.d.hidden=!ok; if(ok){ shown++; x.d.open=true; mark(x, words); }
+    });
+    [].forEach.call(document.querySelectorAll('main section'), function(sec){
+      sec.hidden = !!words.length && !sec.querySelector('details:not([hidden])');
+    });
+    n.textContent = !words.length ? '' : shown ? shown+' answer'+(shown===1?'':'s') : 'No answers match. Try other words, or email contact@tehfiz.com.';
+  }
+  // Remember which were open before a search, so clearing it restores them.
+  q.addEventListener('focus', function(){ if(!q.value) data.forEach(function(x){ x.was=x.d.open; }); });
+  q.addEventListener('input', run);
+  q.addEventListener('keydown', function(e){ if(e.key==='Escape'){ q.value=''; run(); } });
+  document.addEventListener('keydown', function(e){
+    if(e.key==='/' && document.activeElement!==q && !/INPUT|TEXTAREA/.test((document.activeElement||{}).tagName||'')){ e.preventDefault(); q.focus(); }
+  });
+})();
+</script>
 <footer><div>
 <a href="/">Home</a>
 <a href="/app/teacher/">Teacher app</a>

@@ -15,7 +15,8 @@
 if(t==='classic'||t==='lapis'||t==='mulberry')d.setAttribute('data-tz-theme',t);
 if(m==='dark'||(m==='device'&&window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches))d.setAttribute('data-tz-mode','dark');}catch(e){}})();</script>
 <link rel="stylesheet" href="/app/shared/tehfiz-shared.css?v=s24">
-<script src="/app/shared/tehfiz-shared.js?v=s26"></script>
+<script src="/app/shared/tehfiz-shared.js?v=s31"></script>
+<script src="/app/shared/tehfiz-report.js?v=rp7"></script>
 <script src="/app/shared/tehfiz-ornament.js?v=o2"></script>
 <script src="/app/shared/tehfiz-header.js?v=h7"></script>
 <script src="/app/shared/tehfiz-pwa.js?v=p2"></script>
@@ -255,12 +256,12 @@ body.hint-welcome .hint-tour-btn{display:inline-block;}
 .verse-block.flash{animation:pulseVb .7s ease;outline:2px solid var(--gold);outline-offset:2px;}
 .verse-num-row{display:flex;align-items:center;gap:4px;margin-top:5px;}
 .verse-key-badge{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink3);background:var(--parchment3);padding:1px 5px;border-radius:999px;direction:ltr;unicode-bidi:isolate;display:inline-block;}
-.verse-arabic{direction:rtl;text-align:right;font-family:'Scheherazade New','Amiri','Traditional Arabic',serif;color:var(--ink);font-size:var(--arabic-size);line-height:2.6;unicode-bidi:isolate;}
+.verse-arabic{direction:rtl;text-align:right;font-family:'UthmanicHafs','Scheherazade New','Amiri','Traditional Arabic',serif;color:var(--ink);font-size:var(--arabic-size);line-height:2.6;unicode-bidi:isolate;}
 .verse-translation{font-size:13px;color:var(--ink3);font-style:italic;line-height:1.5;padding-top:4px;border-top:.5px solid var(--border);margin-top:4px;}
 .verse-mistakes-row{display:flex;flex-wrap:wrap;gap:3px;margin-top:4px;direction:ltr;unicode-bidi:isolate;}
 
 /* FLOW MODE */
-.flow-container{direction:rtl;text-align:right;font-family:'Scheherazade New','Amiri','Traditional Arabic',serif;font-size:var(--arabic-size);color:var(--ink);line-height:3;padding:4px 0;unicode-bidi:isolate;}
+.flow-container{direction:rtl;text-align:right;font-family:'UthmanicHafs','Scheherazade New','Amiri','Traditional Arabic',serif;font-size:var(--arabic-size);color:var(--ink);line-height:3;padding:4px 0;unicode-bidi:isolate;}
 
 /* WORD SPANS */
 .word-span{display:inline;padding:2px 2px;border-radius:3px;}
@@ -358,6 +359,10 @@ body.hint-welcome .hint-tour-btn{display:inline-block;}
    the standard 15 (pages 1-2 of the Madinah mushaf have ornate, shorter layouts). */
 .msl-buffer{width:100%;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;}
 /* UthmanicHafs fallback for end markers */
+/* v1_201/v4_372 (D1): every Quran word or letter shown as text uses this
+   font first. Scheherazade New is never loaded and Amiri only as a subset of
+   a few letters, so the browser mixed fonts letter by letter: joins broke and
+   marks such as the small zero (U+06DF) dropped out. Headers keep theirs. */
 @font-face{font-family:'UthmanicHafs';src:url('https://verses.quran.foundation/fonts/quran/hafs/uthmanic_hafs/UthmanicHafs1Ver18.woff2') format('woff2');font-display:swap;}
 .loading-spinner{width:24px;height:24px;border:3px solid var(--parchment3);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 10px;}
 @keyframes spin{to{transform:rotate(360deg);}}
@@ -597,14 +602,19 @@ body.compact-ui .panel-footer{flex-shrink:0;}
 .m-ref-verse{font-family:'IBM Plex Mono',monospace;}
 .m-ref-time{margin-left:auto;font-family:var(--ui-font);font-style:italic;opacity:.75;white-space:nowrap;}
 
-.m-word{font-family:'Scheherazade New','Amiri',serif;font-size:14px;direction:rtl;color:var(--ink);display:block;}
+.m-word{font-family:'UthmanicHafs','Scheherazade New','Amiri',serif;font-size:14px;direction:rtl;color:var(--ink);display:block;}
 .m-corr{font-size:12px;margin-top:1px;}
 .m-corr.c0{color:var(--green);font-style:italic;}
 .m-corr.c1{color:var(--lvl1-ink);font-weight:600;}
 .m-corr.c2{color:var(--lvl2-orange);font-weight:600;}
 .m-corr.c3{color:var(--red);font-weight:600;}
 .m-corr.c4{color:var(--ink2);font-weight:600;}
-.m-note{font-size:11px;color:var(--ink3);font-style:italic;margin-top:1px;}
+.m-note{font-size:12.5px;color:var(--ink2);margin-top:2px;}   /* I9: a note on a mistake reads, too */
+.share-mode{display:flex;gap:0;border:1px solid var(--border2);border-radius:7px;overflow:hidden;width:max-content;margin:0 0 8px;}
+.share-mode-b{font:500 13px var(--ui-font);padding:6px 12px;border:0;background:var(--surface,#fff);color:var(--ink);cursor:pointer;}
+.share-mode-b+.share-mode-b{border-left:1px solid var(--border);}
+.share-mode-b.on{background:var(--ink);color:var(--parchment);}
+
 .m-sess-tag{font-size:11px;font-family:'IBM Plex Mono',monospace;color:var(--ink3);margin-top:2px;background:var(--parchment3);border-radius:3px;padding:1px 3px;display:inline-block;}
 .repeat-badge{font-size:11px;background:var(--gold);color:var(--on-gold);padding:1px 4px;border-radius:999px;font-family:'IBM Plex Mono',monospace;font-weight:700;margin-left:3px;vertical-align:middle;}
 .empty-hint{text-align:center;padding:18px 10px;color:var(--ink3);font-size:13px;font-style:italic;line-height:1.8;}
@@ -617,6 +627,7 @@ body.compact-ui .panel-footer{flex-shrink:0;}
 .sess-card:hover{border-color:var(--border2);background:var(--surface,#fff);}
 .sess-card.active-sess{border-color:var(--gold);background:var(--gold-pale);}
 .sess-card-head{display:flex;justify-content:space-between;align-items:flex-start;gap:4px;margin-bottom:3px;}
+.nb{white-space:nowrap;}
 .sess-name{font-weight:600;font-size:13px;color:var(--ink);}
 .sess-date{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink3);}
 .sess-range{font-size:12px;color:var(--gold-ink);font-weight:600;margin-bottom:2px;}
@@ -646,7 +657,7 @@ body.compact-ui .panel-footer{flex-shrink:0;}
   border:1px solid var(--border2);border-left:4px solid var(--ink3);
   padding:8px 12px;font-size:13px;font-family:var(--ui-font);max-width:250px;
   box-shadow:var(--shadow-lg);pointer-events:none;display:none;line-height:1.6;}
-.word-tooltip .tt-word{font-family:'Scheherazade New','Amiri',serif;font-size:19px;direction:rtl;display:block;margin-bottom:4px;color:var(--ink);}
+.word-tooltip .tt-word{font-family:'UthmanicHafs','Scheherazade New','Amiri',serif;font-size:19px;direction:rtl;display:block;margin-bottom:4px;color:var(--ink);}
 /* Opacity is gone throughout. It was dimming already-low-contrast text on a
    dark surface; on a pale one the ink tokens carry the hierarchy properly and
    stay legible. */
@@ -715,6 +726,7 @@ body.tz-embed .panel-fab,body.tz-embed #autoscrollFabWrap,body.tz-embed #reviewM
 .bar-chart{display:flex;flex-direction:column;gap:4px;}
 .bar-row{display:flex;align-items:center;gap:5px;}
 .bar-label{width:68px;flex-shrink:0;color:var(--ink2);text-align:right;font-size:12px;}
+.chart-box .bar-label{width:118px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}   /* labels on one line */
 .bar-track{flex:1;background:var(--parchment3);border-radius:999px;height:8px;overflow:hidden;}
 .bar-fill{height:100%;border-radius:999px;transition:width .5s ease;}
 .bar-count{width:16px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink3);}
@@ -743,18 +755,18 @@ body.tz-embed .panel-fab,body.tz-embed #autoscrollFabWrap,body.tz-embed #reviewM
 .review-verses-title{font-size:11px;font-weight:600;color:var(--ink2);letter-spacing:.06em;text-transform:uppercase;margin-bottom:7px;padding-top:4px;border-top:.5px solid var(--border);}
 .review-verse{margin-bottom:9px;padding:8px 10px;border-radius:6px;border:.5px solid var(--border);background:var(--parchment2);}
 .review-verse-ref{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink3);margin-bottom:4px;}
-.review-verse-arabic{direction:rtl;text-align:right;line-height:2.6;font-size:18px;font-family:'Scheherazade New','Amiri',serif;margin-bottom:4px;}
+.review-verse-arabic{direction:rtl;text-align:right;line-height:2.6;font-size:18px;font-family:'UthmanicHafs','Scheherazade New','Amiri',serif;margin-bottom:4px;}
 
 /* ── Multi-session review ─────────────────────────────────────── */
-.ms-sec{margin-bottom:14px;padding:10px 12px;background:var(--parchment2);border-radius:9px;border:.5px solid var(--border);}
-.ms-sec-head{display:flex;align-items:baseline;gap:8px;font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--ink3);margin-bottom:7px;}
-.ms-sec-note{margin-left:auto;font-weight:400;letter-spacing:0;text-transform:none;font-size:12px;font-style:italic;}
-.ms-note{font-size:12px;color:var(--ink3);font-style:italic;line-height:1.5;margin-top:7px;}
+
+
+
+
 /* The ? that opens the matching entry in Help. Explanations live in one place
    so the report stays scannable — a wall of italic caveats under every section
    is read once and skipped forever after. */
-.ms-help{width:22px;height:22px;flex:none;padding:0;border-radius:50%;border:.5px solid var(--border2);background:var(--parchment2);color:var(--ink3);font-family:var(--ui-font);font-size:12px;line-height:1;cursor:pointer;align-self:center;}
-.ms-help:hover{border-color:var(--gold);color:var(--ink);background:var(--gold-pale);}
+
+
 .hlp-t{padding:9px 11px;border-radius:6px;background:var(--parchment2);margin-bottom:8px;border-left:3px solid var(--border2);transition:background .5s,border-color .5s;}
 .hlp-t h4{font-size:13px;font-weight:700;color:var(--ink);margin:0 0 4px;}
 .hlp-t p{font-size:13px;color:var(--ink2);line-height:1.6;margin:0 0 6px;}
@@ -763,79 +775,110 @@ body.tz-embed .panel-fab,body.tz-embed #autoscrollFabWrap,body.tz-embed #reviewM
 .tj-region{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--gold-ink);margin:12px 0 5px;}
 .tj-rows{display:flex;flex-direction:column;gap:2px;}
 .tj-row{display:flex;align-items:baseline;gap:8px;padding:4px 7px;border-radius:5px;background:var(--parchment2);}
-.tj-letter{font-family:'Scheherazade New','Amiri',serif;font-size:19px;line-height:1.2;color:var(--ink);
+.tj-letter{font-family:'UthmanicHafs','Scheherazade New','Amiri',serif;font-size:19px;line-height:1.2;color:var(--ink);
   flex:0 0 26px;text-align:center;direction:rtl;}
 .tj-rule{font-size:12px;font-weight:600;color:var(--tajweed);flex:0 0 108px;line-height:1.4;}
 .tj-text{font-size:11px;color:var(--ink2);line-height:1.5;flex:1;min-width:0;}
 @media(max-width:420px){.tj-rule{flex:0 0 84px;font-size:12px;}.tj-text{font-size:10px;}}
 /* juz rotation strip */
-.jz-strip{display:flex;flex-wrap:wrap;gap:3px;}
-.jz{width:62px;padding:5px 6px 6px;border-radius:6px;display:flex;flex-direction:column;gap:2px;cursor:default;border:.5px solid transparent;}
-.jz-top{display:flex;align-items:baseline;gap:4px;}
-.jz-n{font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:700;line-height:1;}
-.jz-s{margin-left:auto;font-family:var(--ui-font);font-size:11px;font-weight:700;line-height:1;opacity:.9;}
-.jz-s.spot{font-size:9px;}
-.jz-d{font-size:9px;font-weight:600;line-height:1.2;}
-.jz-c{font-size:8px;opacity:.7;line-height:1.2;}
-.jz-key i.jz{width:11px;height:11px;padding:0;border-radius:2px;display:inline-block;}
+
+
+
+
+
+
+
+
+
 /* Text is --ink throughout. Tinting it to match its own background was the
    worst of both: low contrast AND redundant, since the background already says
    what the tint was saying. The numbers have to be read, not glanced at. */
-.jz{color:var(--ink);}
-.jz-d{color:var(--ink2);}
-.jz-c{color:var(--ink2);opacity:.75;}
+
+
+
 /* One ramp, reused from the intervention levels the eye is already trained on
    here: green / yellow / orange / red. */
-.jz.settled{background:var(--green-bg);}
-.jz.due{background:var(--lvl1-yellow-bg);}
-.jz.overdue{background:var(--lvl2-orange-bg);}
-.jz.urgent{background:var(--red-bg);}
+
+
+
+
 /* Not a projection at all — nothing was ever measured, so it gets a neutral
    ground and a dashed edge rather than a place on the ramp. */
-.jz.unknown{background:var(--parchment3);border:.5px dashed var(--red);}
-.jz-s.aged{opacity:.5;text-decoration:underline dotted;text-underline-offset:2px;}
-.jz-key{display:flex;gap:9px;flex-wrap:wrap;margin-top:7px;font-size:9px;color:var(--ink3);align-items:center;}
-.jz-key i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:3px;vertical-align:-1px;}
+
+
+
+
 /* profile editor */
-.ms-prof{margin-top:8px;border-top:.5px solid var(--border);padding-top:7px;}
-.ms-prof summary{font-size:12px;color:var(--ink2);cursor:pointer;}
-.ms-map{margin-top:6px;}
-.jz-pick{display:flex;flex-wrap:wrap;gap:3px;}
-.jzp{width:26px;height:24px;border-radius:4px;border:.5px solid var(--border2);background:var(--parchment);color:var(--ink3);font-family:'IBM Plex Mono',monospace;font-size:12px;cursor:pointer;}
-.jzp.on{background:var(--gold-pale);border-color:var(--gold);color:var(--ink);font-weight:700;}
-.jzp.lock{background:var(--parchment3);border-color:var(--border2);color:var(--ink2);cursor:not-allowed;}
+
+
+
+
+
+
+
 /* trend */
-.ms-chart{width:100%;height:auto;display:block;}
-.tj-of{width:96px;flex-shrink:0;font-size:11px;color:var(--ink3);text-align:left;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
+
+
+
+
+
+
+
+
+
 .tj-letter{font-size:15px;color:var(--ink);font-family:'UthmanicHafs','Scheherazade New',serif;}
-.tj-sub{font-size:12px;color:var(--ink3);font-weight:400;}
-.tj-spark{display:flex;align-items:flex-end;gap:2px;height:30px;padding:2px 0;}
-.tj-spark-b{flex:1;min-width:2px;background:var(--tajweed);border-radius:1px 1px 0 0;opacity:.8;}
-.tj-caveats{font-size:12px;color:var(--ink3);font-style:italic;line-height:1.6;}
-.lg-scroll{overflow-x:auto;}
-.lg-table{width:100%;border-collapse:collapse;font-family:var(--ui-font);font-size:12px;}
-.lg-table th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.05em;
-  color:var(--ink3);font-weight:600;padding:4px 6px;border-bottom:1px solid var(--border);white-space:nowrap;}
-.lg-table td{padding:5px 6px;border-bottom:.5px solid var(--border2);vertical-align:top;color:var(--ink);}
-.lg-table tr:last-child td{border-bottom:none;}
-.lg-sub{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink3);margin-top:1px;}
-.lg-n{font-family:'IBM Plex Mono',monospace;text-align:right;white-space:nowrap;}
-.lg-range{max-width:150px;}
+
+
+
+
+
+/* v1_200: the Log's one line of tools (mock-up 5a) */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+@media (max-width:600px){
+
+
+
+
+}
+@media print{ }
+
+
+
+
+
+
+
 .lg-notes{max-width:180px;font-style:italic;color:var(--ink2);font-size:12px;}
-.lg-sess td{background:var(--parchment);border-bottom:.5px solid var(--border);padding:6px;}
-.lg-sess b{font-size:12px;color:var(--ink);}
-.lg-sub-i{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink3);margin-left:5px;}
-.lg-dur{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink2);margin-left:8px;
-  background:var(--gold-pale);border-radius:3px;padding:1px 5px;}
-.lg-segn{font-size:11px;color:var(--ink3);margin-left:8px;font-style:italic;}
-.lg-note-line{font-size:12px;font-style:italic;color:var(--ink2);margin-top:3px;
-  border-left:2px solid var(--gold);padding-left:6px;}
-.lg-seg td:first-child{padding-left:14px;}
-.lg-range-pick{display:inline-flex;align-items:center;gap:4px;margin-left:4px;}
-.lg-range-pick input{font-family:'IBM Plex Mono',monospace;font-size:12px;padding:2px 4px;
-  border:.5px solid var(--border2);border-radius:4px;background:var(--parchment);color:var(--ink);}
-.lg-range-pick b{color:var(--ink3);font-size:12px;}
+
+
+
+
+
+
+
 /* Print: everything except the log itself is hidden, and the table is allowed
    to break across pages with its header repeating — which is the one thing a
    long log needs and a screenshot cannot give you. */
@@ -843,30 +886,25 @@ body.tz-embed .panel-fab,body.tz-embed #autoscrollFabWrap,body.tz-embed #reviewM
   body.printing-log *{visibility:hidden;}
   body.printing-log #logPrintArea, body.printing-log #logPrintArea *{visibility:visible;}
   body.printing-log #logPrintArea{position:absolute;left:0;top:0;width:100%;border:none;box-shadow:none;}
-  body.printing-log .lg-scroll{overflow:visible;}
-  body.printing-log .lg-table thead{display:table-header-group;}
-  body.printing-log .lg-table tr{break-inside:avoid;}
+
+
+
 }
-.ms-tabs{display:flex;gap:3px;flex-wrap:wrap;margin-bottom:6px;}
-.ms-tab{display:flex;align-items:center;gap:5px;background:var(--parchment);border:.5px solid var(--border2);border-radius:5px;padding:4px 8px;font-family:var(--ui-font);font-size:12px;color:var(--ink2);cursor:pointer;}
-.ms-tab:hover{border-color:var(--gold);}
-.ms-tab.on{background:var(--gold-pale);border-color:var(--gold);color:var(--ink);font-weight:600;}
-.ms-tab i{width:8px;height:8px;border-radius:50%;display:inline-block;}
-.ms-tab span{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink3);}
-.ms-unit{margin-left:auto;display:flex;gap:0;border:.5px solid var(--border2);border-radius:4px;overflow:hidden;}
-.ms-unit-b{background:none;border:none;border-right:.5px solid var(--border2);padding:2px 7px;font-family:var(--ui-font);font-size:12px;color:var(--ink3);cursor:pointer;text-transform:none;letter-spacing:0;}
-.ms-unit-b:last-child{border-right:none;}
-.ms-unit-b.on{background:var(--chrome);color:var(--parchment);font-weight:600;}
-.ms-stats{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px;}
-.ms-stat{flex:1;min-width:78px;background:var(--parchment);border:.5px solid var(--border);border-radius:6px;padding:7px 9px;}
-.ms-stat-n{display:block;font-family:var(--ui-font);font-size:17px;font-weight:700;color:var(--ink);line-height:1;}
-.ms-stat-l{display:block;font-size:12px;color:var(--ink3);margin-top:3px;}
-.ms-rows{display:flex;flex-direction:column;gap:3px;margin-top:6px;max-height:230px;overflow-y:auto;}
-.ms-winrow{display:flex;align-items:center;gap:3px;margin-top:5px;}
-.ms-win{background:none;border:.5px solid var(--border2);border-radius:4px;padding:2px 8px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink3);cursor:pointer;}
-.ms-win:hover{border-color:var(--gold);}
-.ms-win.on{background:var(--chrome);border-color:var(--ink);color:var(--parchment);}
-.ms-hidden{margin-left:auto;font-size:12px;color:var(--ink3);font-style:italic;}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 .ms-legend{display:flex;gap:5px;flex-wrap:wrap;margin-top:5px;}
 .ms-leg{display:flex;align-items:center;gap:4px;background:none;border:.5px solid transparent;border-radius:5px;padding:2px 6px;font-family:var(--ui-font);font-size:12px;color:var(--ink2);cursor:pointer;}
 .ms-leg:hover{border-color:var(--border2);}
@@ -874,18 +912,18 @@ body.tz-embed .panel-fab,body.tz-embed #autoscrollFabWrap,body.tz-embed #reviewM
 .ms-leg i{width:8px;height:8px;border-radius:50%;display:inline-block;}
 .ms-leg span{color:var(--ink3);font-family:'IBM Plex Mono',monospace;font-size:12px;}
 /* two-column persistence */
-.ms-two{display:grid;grid-template-columns:1fr 1fr;gap:9px;}
-.ms-col-head{font-size:12px;font-weight:600;margin-bottom:4px;}
-.ms-col-head.bad{color:var(--red);}
-.ms-col-head.good{color:var(--green);}
-.ms-row{display:flex;align-items:center;gap:7px;padding:4px 7px;margin-bottom:3px;background:var(--parchment);border-radius:5px;border:.5px solid var(--border);cursor:pointer;font-size:12px;}
-.ms-row:hover{border-color:var(--gold);}
-.ms-row-ref{color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.ms-row-ref strong{font-family:'IBM Plex Mono',monospace;color:var(--ink);}
-.ms-row-meta{margin-left:auto;font-size:12px;color:var(--ink3);white-space:nowrap;}
-.ms-row-score{font-family:var(--ui-font);font-weight:700;font-size:13px;min-width:24px;text-align:right;}
-.ms-empty{font-size:12px;color:var(--ink3);font-style:italic;padding:3px 0;}
-@media(max-width:560px){.ms-two{grid-template-columns:1fr;}}
+
+
+
+
+
+
+
+
+
+
+
+@media(max-width:560px){}
 .rv-focus{margin-bottom:12px;padding:10px 12px;background:var(--gold-pale);border-radius:9px;border:.5px solid var(--gold-light);}
 .rv-focus-title{font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--amber);margin-bottom:6px;}
 .rv-focus-rows{display:flex;flex-direction:column;gap:3px;}
@@ -894,7 +932,7 @@ body.tz-embed .panel-fab,body.tz-embed #autoscrollFabWrap,body.tz-embed #reviewM
 .rv-focus-rank{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink3);width:12px;flex:none;}
 .rv-focus-ref{font-size:13px;color:var(--ink2);white-space:nowrap;}
 .rv-focus-ref strong{font-family:'IBM Plex Mono',monospace;color:var(--ink);}
-.rv-focus-words{font-family:'Scheherazade New','Amiri',serif;font-size:15px;color:var(--ink);direction:rtl;margin-left:auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:45%;}
+.rv-focus-words{font-family:'UthmanicHafs','Scheherazade New','Amiri',serif;font-size:15px;color:var(--ink);direction:rtl;margin-left:auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:45%;}
 .rv-focus-n{font-family:'IBM Plex Mono',monospace;font-size:12px;padding:1px 5px;border-radius:3px;flex:none;}
 .rv-focus-note{font-size:12px;color:var(--ink3);font-style:italic;margin-top:6px;}
 .rv-details{border:.5px solid var(--border);border-radius:8px;background:var(--parchment2);margin-top:4px;}
@@ -923,7 +961,7 @@ body.tz-embed .panel-fab,body.tz-embed #autoscrollFabWrap,body.tz-embed #reviewM
 .rv-focus-rank{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink3);width:12px;flex:none;}
 .rv-focus-ref{font-size:13px;color:var(--ink2);white-space:nowrap;}
 .rv-focus-ref strong{font-family:'IBM Plex Mono',monospace;color:var(--ink);}
-.rv-focus-words{font-family:'Scheherazade New','Amiri',serif;font-size:15px;color:var(--ink);direction:rtl;margin-left:auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:45%;}
+.rv-focus-words{font-family:'UthmanicHafs','Scheherazade New','Amiri',serif;font-size:15px;color:var(--ink);direction:rtl;margin-left:auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:45%;}
 .rv-focus-n{font-family:'IBM Plex Mono',monospace;font-size:12px;padding:1px 5px;border-radius:3px;flex:none;}
 .rv-focus-note{font-size:12px;color:var(--ink3);font-style:italic;margin-top:6px;}
 .rv-details{border:.5px solid var(--border);border-radius:8px;background:var(--parchment2);margin-top:4px;}
@@ -996,7 +1034,7 @@ body.tz-embed .panel-fab,body.tz-embed #autoscrollFabWrap,body.tz-embed #reviewM
 .rv-focus-rank{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink3);width:12px;flex:none;}
 .rv-focus-ref{font-size:13px;color:var(--ink2);white-space:nowrap;}
 .rv-focus-ref strong{font-family:'IBM Plex Mono',monospace;color:var(--ink);}
-.rv-focus-words{font-family:'Scheherazade New','Amiri',serif;font-size:15px;color:var(--ink);direction:rtl;margin-left:auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:45%;}
+.rv-focus-words{font-family:'UthmanicHafs','Scheherazade New','Amiri',serif;font-size:15px;color:var(--ink);direction:rtl;margin-left:auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:45%;}
 .rv-focus-n{font-family:'IBM Plex Mono',monospace;font-size:12px;padding:1px 5px;border-radius:3px;flex:none;}
 .rv-focus-note{font-size:12px;color:var(--ink3);font-style:italic;margin-top:6px;}
 .rv-details{border:.5px solid var(--border);border-radius:8px;background:var(--parchment2);margin-top:4px;}
@@ -1039,7 +1077,7 @@ body.tz-embed .panel-fab,body.tz-embed #autoscrollFabWrap,body.tz-embed #reviewM
 .rv-focus-rank{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink3);width:12px;flex:none;}
 .rv-focus-ref{font-size:13px;color:var(--ink2);white-space:nowrap;}
 .rv-focus-ref strong{font-family:'IBM Plex Mono',monospace;color:var(--ink);}
-.rv-focus-words{font-family:'Scheherazade New','Amiri',serif;font-size:15px;color:var(--ink);direction:rtl;margin-left:auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:45%;}
+.rv-focus-words{font-family:'UthmanicHafs','Scheherazade New','Amiri',serif;font-size:15px;color:var(--ink);direction:rtl;margin-left:auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:45%;}
 .rv-focus-n{font-family:'IBM Plex Mono',monospace;font-size:12px;padding:1px 5px;border-radius:3px;flex:none;}
 .rv-focus-note{font-size:12px;color:var(--ink3);font-style:italic;margin-top:6px;}
 .rv-details{border:.5px solid var(--border);border-radius:8px;background:var(--parchment2);margin-top:4px;}
@@ -1105,7 +1143,10 @@ body.tz-embed .panel-fab,body.tz-embed #autoscrollFabWrap,body.tz-embed #reviewM
 
 .rv-head h2{font-size:16px;font-weight:600;}
 .rv-sub{font-size:13px;color:var(--ink3);}
-.rv-remarks{font-size:13px;color:var(--ink2);font-style:italic;margin-top:5px;padding:5px 8px;background:var(--parchment2);border-radius:5px;border-left:3px solid var(--gold);}
+/* I9: the teacher's note is often the most useful line, so it reads as one:
+   its own label, full ink, upright, not small grey italics. */
+.rv-remarks{font-size:14px;line-height:1.5;color:var(--ink);font-style:normal;margin-top:8px;padding:8px 11px;background:var(--parchment2);border-radius:6px;border-left:3px solid var(--ink);}
+.rv-remarks::before{content:"Teacher's note";display:block;font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--ink3);margin-bottom:2px;}
 /* The tajweed list carries the same petrol accent the marks themselves do. */
 .rv-details.tajweed{border-left:3px solid var(--tajweed);}
 .rv-details.tajweed .rv-summary > span:first-child{color:var(--tajweed);}
@@ -1121,7 +1162,7 @@ body.tz-embed .panel-fab,body.tz-embed #autoscrollFabWrap,body.tz-embed #reviewM
 .rv-mistake{display:flex;flex-direction:column;align-items:stretch;gap:2px;margin-bottom:7px;padding:6px 0 7px 8px;border-bottom:.5px solid var(--border);border-left-width:3px;border-left-style:solid;}
 .rv-mistake-top{display:flex;align-items:center;gap:5px;flex-wrap:wrap;}
 /* Context strip: grey surroundings, the mistaken word carried by .sev-N */
-.rv-ctx{direction:rtl;text-align:right;font-family:'Scheherazade New','Amiri',serif;font-size:16px;line-height:2.2;margin:4px 0;padding:4px 8px;background:var(--parchment);border-radius:6px;border:.5px solid var(--border);unicode-bidi:isolate;}
+.rv-ctx{direction:rtl;text-align:right;font-family:'UthmanicHafs','Scheherazade New','Amiri',serif;font-size:16px;line-height:2.2;margin:4px 0;padding:4px 8px;background:var(--parchment);border-radius:6px;border:.5px solid var(--border);unicode-bidi:isolate;}
 .rv-ctx-side{color:var(--ink3);opacity:.75;}
 .rv-ctx-target{border-radius:3px;padding:1px 3px;font-weight:700;font-size:17px;border-bottom-width:2px;border-bottom-style:solid;}
 /* Spot test card */
@@ -1243,6 +1284,8 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
 .panel-fab.open{display:none!important;}
 
 </style>
+<!-- v1_203: the progress report's own styles, shared with the teacher app. After the page's styles, where they sat before. -->
+<link rel="stylesheet" href="/app/shared/tehfiz-report.css?v=rp6">
 </head>
 <body>
 <!-- v1_175: ?embed=1 — shown inside the teacher app's own progress overlay,
@@ -1612,10 +1655,11 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
         </div>
 
         <div class="hlp-t" id="hlp-spot">
-          <h4>Spot vs full recitation</h4>
-          <p><strong>These two aren't the same scale.</strong> Being dropped into a random ayah is harder
+          <h4>Spot tests</h4>
+          <p><strong>Spot and full recitation aren't the same scale.</strong> Being dropped into a random ayah is harder
           than continuing a flow, so spot scores run lower almost everywhere. Read the gap as a pattern
           across portions, not as a portion "failing".</p>
+          <p><strong>Random and weak places.</strong> A teacher can aim some spots at places that went wrong before (weak places) and leave the rest random. They are counted apart: random spots say how well the portion holds up anywhere; weak places are hard on purpose, so they score lower. What matters there is that the number rises over time.</p>
         </div>
 
         <div class="hlp-t" id="hlp-trend">
@@ -1709,6 +1753,7 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
   <div class="modal">
     <div class="modal-title">Session Report</div>
     <div class="modal-sub">Ready to share via WhatsApp, email, etc.</div>
+    <div id="shareModeBar"></div>
     <div class="share-out" id="shareOut"></div>
     <div class="modal-btns">
       <button class="btn-m sec" onclick="closeModal('shareModal')">Close</button>
@@ -1758,7 +1803,7 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
    console as APP_VERSION, or grep the deployed HTML for it. Bumped on every
    saved build; vcheck.py asserts it matches the filename, so a forgotten bump
    fails the integrity check rather than shipping a lie. */
-const APP_VERSION = 'v1_197';
+const APP_VERSION = 'v1_213';
 window.APP_VERSION = APP_VERSION;
 console.info('Tehfiz student viewer ' + APP_VERSION);
 
@@ -1935,70 +1980,11 @@ let _segSeq = 0;
    lesson needs. Dividing would answer "how weak is that page" and is a
    different question — the fraction is in the tooltip so a two-verse sliver at
    the edge of a range is never mistaken for a whole page. */
-function segPageLoads(segs, seg, mistakes){
-  const s = segOrdered(seg || {});
-  if(!keyValid(s.startKey) || !keyValid(s.endKey)) return null;
-  const a = keyAbs(s.startKey), b = keyAbs(s.endKey);
-  if(!a || !b) return null;
-  const lo = Math.min(a,b), hi = Math.max(a,b);
-  const p1 = pageForAbs(lo), p2 = pageForAbs(hi);
-  if(!p1 || !p2 || p2 < p1) return null;
-
-  const pages = [];
-  for(let p = p1; p <= p2; p++){
-    const bd = pageBoundsAbs(p);
-    const covered = bd
-      ? Math.max(0, Math.min(hi, bd.last) - Math.max(lo, bd.first) + 1) /
-        (bd.last - bd.first + 1)
-      : 1;
-    pages.push({page:p, load:0, count:0, tajweed:0, worst:null, covered:+covered.toFixed(3)});
-  }
-  const byPage = new Map(pages.map(p=>[p.page, p]));
-
-  // Severity rank, so `worst` means what a teacher means by it: needing to be
-  // taught outranks any number of self-corrections.
-  const RANK = {c0:0, c4:1, c1:2, c2:3, c3:4};
-  mistakesInSegment(segs, seg, mistakes).forEach(m=>{
-    const rec = byPage.get(pageForVerse(m.surah, m.ayah));
-    if(!rec) return;                       // outside the span; nothing to draw
-    /* Counted apart, never together. `load` is a sum of intervention weights
-       and a tajweed mark has no level to contribute; `worst` means most help
-       needed, and none was recorded. Ported from the teacher app so the same
-       page draws the same bar in both. */
-    if(isTajweedMistake(m, m && m.typeConfig || null)){ rec.tajweed++; return; }
-    rec.count++;
-    rec.load += mistakeWeight(m);
-    const c = (m && m.correction) || 'c0';
-    if(rec.worst === null || (RANK[c]||0) > (RANK[rec.worst]||0)) rec.worst = c;
-  });
-  pages.forEach(p=>{ p.load = +p.load.toFixed(3); });
-  return pages;
-}
+/* v1_205: moved to /app/shared/tehfiz-shared.js (s29), one copy for both apps. */
 
 
 
-function focusAyahs(mistakes, limit){
-  const by={};
-  (mistakes||[]).forEach(m=>{
-    if(!m.surah||!m.ayah) return;
-    const k=`${m.surah}:${m.ayah}`;
-    const e = by[k] || (by[k]={key:k, surah:m.surah, ayah:m.ayah, n:0, hits:0, weight:0, worst:'c0', words:new Set(), positions:new Set()});
-    // Distinct word positions, not mistake records: a single three-word
-    // mistake shouldn't outrank three separate slips on the same ayah.
-    const lo=m.wordPos||0, hi=m.wordPosEnd||lo;
-    for(let w=lo; w<=hi; w++) e.positions.add(w);
-    e.n = e.positions.size;
-    e.hits++;
-    e.weight += mistakeWeight(m);
-    e.words.add(m.word||'');
-    const order=METRICS_MODEL.focus.severityOrder;
-    if((order[m.correction]??0) > (order[e.worst]??0)) e.worst = m.correction||'c0';
-  });
-  return Object.values(by)
-    .map(e=>({...e, words:[...e.words].filter(Boolean), score:e.weight * Math.sqrt(Math.max(1,e.hits))}))
-    .sort((a,b)=>b.score-a.score || b.hits-a.hits)
-    .slice(0, limit||METRICS_MODEL.focus.singleListLimit);
-}
+/* v1_205: moved to /app/shared/tehfiz-shared.js (s29), one copy for both apps. */
 
 // Longest unbroken stretch of mistake-free verses. Speaks to fluency rather
 // than accuracy — twelve slips spread evenly reads very differently from twelve
@@ -2006,633 +1992,10 @@ function focusAyahs(mistakes, limit){
 /* Hifz mistakes only — shown under the strength score as "longest clean run",
    so it reads as a statement about recall, and a verse recalled perfectly but
    pronounced imperfectly did not fail to be recalled. */
-function longestCleanRun(segs, seg, mistakes){
-  const o=segOrdered(seg);
-  const n=segVerseCount(o);
-  if(!n) return null;
-  const hit=new Set(mistakesInSegment(segs, seg, mistakes)
-    .filter(m=>!isTajweedMistake(m, m && m.typeConfig || null))
-    .map(m=>absVerse(m.surah,m.ayah)));
-  const from=keyAbs(o.startKey);
-  let best=0, run=0;
-  for(let v=from; v<from+n; v++){
-    if(hit.has(v)){ run=0; } else { run++; if(run>best) best=run; }
-  }
-  return best;
-}
+/* v1_205: moved to /app/shared/tehfiz-shared.js (s29), one copy for both apps. */
 
-// ═══════════════════════════════════════════════════════════════════
-// CROSS-SESSION ANALYTICS — pure
-// ───────────────────────────────────────────────────────────────────
-// Hifz is maintenance, not a climb. A portion decays while it goes unheard and
-// recovers when revised, so these functions are built to answer "what condition
-// is each portion in NOW, and when was that last verified?" — not "is the line
-// going up?". A rising line is not the goal; not letting anything rot is.
-// ═══════════════════════════════════════════════════════════════════
-
-function _sessDate(s){ return s?.isoDate ? new Date(s.isoDate) : (s?.dateYMD ? new Date(s.dateYMD+'T12:00:00Z') : null); }
-// Period filtering compares YMD strings, not Dates. dateYMD is the teacher's
-// LOCAL calendar day — converting it to a timestamp and back reintroduces the
-// off-by-one that made late-evening sessions land in the wrong day. Comparing
-// 'YYYY-MM-DD' lexicographically is exact and timezone-free.
-function _sessYMD(s){
-  if(s?.dateYMD) return s.dateYMD;
-  if(s?.isoDate){ const d=new Date(s.isoDate); if(!isNaN(d)) return _ymd(d); }
-  return null;
-}
-function _ymd(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
-function _periodStartYMD(period){
-  const d=new Date(); d.setHours(0,0,0,0);
-  if(period==='week'){ d.setDate(d.getDate() - ((d.getDay()+6)%7)); return _ymd(d); }  // Monday
-  if(period==='month'){ return _ymd(new Date(d.getFullYear(), d.getMonth(), 1)); }
-  if(period==='year'){  return _ymd(new Date(d.getFullYear(), 0, 1)); }
-  return null;
-}
-const PERIOD_LABEL={week:'This week', month:'This month', year:'This year'};
-function sessionsChrono(sessions){
-  return [...(sessions||[])].filter(Boolean).sort((a,b)=>(_sessDate(a)||0)-(_sessDate(b)||0));
-}
-function daysBetween(a,b){ return Math.round((b-a)/86400000); }
-
-// Every segment that earns a rate, flattened with its session context.
-// Spot segments and inferred extents are excluded here exactly as in the
-// single-session review — they have no trustworthy verse count.
-function scorableSegments(sessions){
-  const out=[];
-  sessionsChrono(sessions).forEach(s=>{
-    const d=_sessDate(s);
-    (s.segments||[]).forEach(sg=>{
-      if(!segmentScorable(sg)) return;
-      /* Recomputed rather than read when the session predates the current
-         model — this is the trend, so a stale point does not just read low, it
-         puts a visible step in the line at the deploy date. */
-      const inp = inputsAreCurrent(s)
-        ? (inputsWithPages(sg.strengthInputs, sg) || segmentStrengthInputs(s.segments, sg, s.mistakes||[]))
-        : segmentStrengthInputs(s.segments, sg, s.mistakes||[]);
-      if(!inp || !inp.verses) return;
-      out.push({session:s, seg:sg, date:d, stage:sg.type||'unassigned',
-                inputs:inp, score:gradedValue(sg, strengthFromInputs(inp)), teacher:isTeacherGraded(sg)});
-    });
-  });
-  return out;
-}
-
-// One series per stage. Never pooled: new memorisation runs several times the
-// mistake rate of settled revision, so a combined line mostly measures which
-// mix the student happened to do that week.
-function stageTrend(sessions){
-  const by={};
-  scorableSegments(sessions).forEach(r=>{
-    if(r.score==null) return;
-    (by[r.stage]=by[r.stage]||[]).push({date:r.date, score:r.score, verses:r.inputs.verses,
-                                        label:r.seg.rangeLabel||describeRange(segOrdered(r.seg).startKey,segOrdered(r.seg).endKey)});
-  });
-  return by;
-}
-
-// ── MEMORISATION PROFILE ──────────────────────────────────────────
-// Which portions the student has actually memorised. This CANNOT be inferred
-// from session history:
-//   · a student who joins mid-hifz only ever revises part of what they know,
-//     so the unrevised remainder — the very thing worth surfacing — is invisible
-//   · memorisation is often non-contiguous (Juz 30, 29, 28 + Juz 1-3), so any
-//     min..max span invents a couple of dozen juz they never memorised
-// So it's declared, seeded from what we can observe, and editable. Same shape
-// as the segment boundaries: guess, show the guess, let it be corrected.
-const MEM_PROFILE_KEY='tehfiz_memorised_juz';
-
-/* What the sessions show has been memorised.
-   New memorisation (sabaq) is being learned, not held; a spot test's range is
-   where verses were drawn from, not what was recited; a tajweed-only session
-   is about pronunciation. None of them is evidence, so none counts — before
-   this, one sabaq lesson in Juz 1 marked the whole juz memorised, for good.
-
-   `lockedOnly` narrows further to stages that PROVE it (recent / old). An
-   unassigned segment is probably revision, so it seeds the profile, but the
-   student can untick it — it no longer locks. */
-function observedJuz(sessions, lockedOnly){
-  const set=new Set();
-  (sessions||[]).forEach(s=>{ if(sessionFocus(s)==='tajweed') return; (s.segments||[]).forEach(sg=>{
-    if(sg.mode==='spot') return;
-    const st=sg.type||'unassigned';
-    if(st==='new') return;
-    if(lockedOnly && st==='unassigned') return;
-    const o=segOrdered(sg);
-    if(!keyValid(o.startKey)||!keyValid(o.endKey)) return;
-    const a=juzForVerse(...o.startKey.split(':').map(Number));
-    const b=juzForVerse(...o.endKey.split(':').map(Number));
-    for(let j=Math.min(a,b); j<=Math.max(a,b); j++) set.add(j);
-  }); });
-  // Legacy sessions have no segments — fall back to where the mistakes are.
-  if(!lockedOnly) (sessions||[]).forEach(s=>{ if(!s.segments?.length)
-    (s.mistakes||[]).forEach(m=>{ if(m.surah&&m.ayah) set.add(juzForVerse(m.surah,m.ayah)); }); });
-  return set;
-}
-
-function loadMemorisedJuz(){
-  try{
-    const raw=localStorage.getItem(MEM_PROFILE_KEY);
-    if(raw) return new Set(JSON.parse(raw));
-  }catch{}
-  return null;   // null = never declared, caller falls back to observed
-}
-function saveMemorisedJuz(set){
-  try{ localStorage.setItem(MEM_PROFILE_KEY, JSON.stringify([...set].sort((a,b)=>a-b))); }catch{}
-}
-// Anything heard is memorised by definition, so observed is always unioned in —
-// the student can add to the profile but can't accidentally hide real history.
-/* v1_178: the teacher's memorisation map (journey.js), when there is one,
-   is what the progress report goes by — the same map the teacher sees on the
-   Profile. A juz counts when any of it is old or recent; the new lesson is
-   still being learned, so it does not. */
-function teacherMapPages(){
-  try{ const m=window.TehfizJourney&&TehfizJourney.map&&TehfizJourney.map(); return m?m.pages:null; }catch{ return null; }
-}
-function mapJuz(pages){
-  const set=new Set(), M=window.TehfizMap;
-  for(let j=1;j<=30;j++){
-    const a=(M.juzStart(j)-1)*2, b=M.juzEnd(j)*2-1;
-    for(let i=a;i<=b;i++) if(pages[i]==='o'||pages[i]==='r'){ set.add(j); break; }
-  }
-  return set;
-}
-function memorisedJuz(sessions){
-  const pages=teacherMapPages();
-  if(pages && window.TehfizMap){
-    const set=mapJuz(pages);
-    observedJuz(sessions).forEach(j=>set.add(j));
-    return {set, declared:true, fromMap:true};
-  }
-  const declared=loadMemorisedJuz();
-  const obs=observedJuz(sessions);
-  if(!declared) return {set:obs, declared:false};
-  obs.forEach(j=>declared.add(j));
-  return {set:declared, declared:true};
-}
-function toggleMemorisedJuz(j, sessions){
-  if(memorisedJuz(sessions).fromMap) return false;
-  const {set}=memorisedJuz(sessions);
-  const obs=observedJuz(sessions, true);
-  if(set.has(j)){
-    if(obs.has(j)) return false;   // heard in a real session — not removable
-    set.delete(j);
-  } else set.add(j);
-  saveMemorisedJuz(set);
-  return true;
-}
-
-// Condition of each juz: how it scored when last heard, and how long ago that
-// was. Both halves are needed — a juz at 90 last heard in February is not in
-// good condition, it's unverified.
-// ATTENTION = strength decayed by time since it was last verified.
-//
-// Freshness and strength are both already on the card as text, so the colour
-// should not repeat either one — it should say the thing neither number says
-// alone: how much this portion needs looking at now. Two portions at 99 are not
-// equally safe if one was heard yesterday and one five months ago, and two
-// portions heard yesterday are not equally safe if one scored 96 and the other
-// 68. One projection captures both.
-//
-// Hifz is maintenance, so condition decays when unheard. ~4%/week matches the
-// decay the sample data was modelled on. The projection is an ESTIMATE and is
-// deliberately never printed as a number — the card shows what was measured;
-// the colour shows what we think is true now.
-// ── CALIBRATION ───────────────────────────────────────────────────────────
-// Every number below was chosen from judgement and synthetic data. None has met
-// a real student yet, so all of them are provisional and all of them live here
-// rather than inline, on the same three rules as STRENGTH_MODEL:
-//
-//   1. VERSIONED (METRICS_MODEL.id) so a figure can never be compared across
-//      two different calibrations without that being visible.
-//   2. OVERRIDABLE at runtime (localStorage now, a backend later), so a
-//      recalibration ships without a code release.
-//   3. RETROACTIVE. Unlike strength, none of these are ever stored on a
-//      session — every cross-session metric is recomputed from raw segments and
-//      mistakes each time the report opens. Change a constant and the whole
-//      history re-reads under the new model immediately, with no migration.
-//
-// Rule 3 is the reason recalibration is cheap here, and it is worth preserving:
-// if a metric ever starts caching its output into a session file, it stops
-// being calibratable and needs the versioned-inputs treatment strength has.
-const METRICS_MODEL_DEFAULT = {
-  id: 'metrics-v1',
-
-  rotation: {
-    // Condition decays while unheard. 4%/week is the rate the sample data was
-    // modelled on — the single most important number to check against reality.
-    decayPerWeek: 0.04,
-    // Projected condition -> how much attention the portion needs.
-    bands: [
-      {min:80, key:'settled', label:'settled'},
-      {min:60, key:'due',     label:'due a look'},
-      {min:40, key:'overdue', label:'overdue'},
-      {min:0,  key:'urgent',  label:'urgent'},
-    ],
-    // Gap between "last seen" and "last scored" past which the score is marked
-    // as stale on the card.
-    agedScoreDays: 30,
-  },
-
-  sabqi: {
-    // Two segments are the same passage when each covers this fraction of the
-    // other. Raising it splits passages; lowering it risks chaining.
-    overlap: 0.5,
-    // Score change across the sabqi sequence that counts as movement.
-    climbing: 5,
-    declining: -5,
-  },
-
-  focus: {
-    // Recency half-life for ranking what to work on: a mistake this old counts
-    // half as much as one made today. 42d = six weeks.
-    halfLifeDays: 42,
-    // Severity ranking of intervention levels. c4 ("other") sits just above c0
-    // because it carries no intervention information.
-    severityOrder: {c0:0, c4:1, c1:2, c2:3, c3:4},
-    // Two separate lists: the cross-session 'work on these next' and the
-    // single-session one, deliberately different lengths.
-    listLimit: 6,
-    singleListLimit: 5,
-  },
-
-  spot: {
-    // A partial recall counts as half a pass in the spot pass rate.
-    partialCredit: 0.5,
-  },
-
-  pace: {
-    // Fallback when a segment starts and ends on the same page: what share of a
-    // page its verses represent. Real pages vary from ~4 to ~20 verses.
-    versesPerPage: 15,
-  },
-
-  persistence: {
-    // Later sessions that covered the verse without a mistake before it counts
-    // as resolved. Below 2, "not missed lately" just means "not tested lately".
-    cleanRuns: 2,
-  },
-
-  trend: {
-    // Points needed before a direction is drawn rather than a scatter.
-    minPointsForLine: 4,
-  },
-};
-
-let METRICS_MODEL = {...METRICS_MODEL_DEFAULT};
-
-// Decay runs from when the portion was last SCORED, not last seen. A juz
-// spot-tested yesterday whose last full recitation was four months ago has not
-// been verified in four months, and the colour should say so.
-function rotationProjection(lastScore, daysUnverified, model){
-  if(lastScore==null || daysUnverified==null) return null;
-  const R = (model||METRICS_MODEL).rotation;
-  return Math.round(lastScore * Math.exp(-(R.decayPerWeek/7) * Math.max(0, daysUnverified)));
-}
-function rotationBand(projected, model){
-  if(projected==null) return 'unknown';
-  const B = (model||METRICS_MODEL).rotation.bands;
-  return (B.find(b=>projected>=b.min) || B[B.length-1]).key;
-}
-
-function portionCondition(sessions, memSet){
-  const chrono=sessionsChrono(sessions);
-  const now = chrono.length ? _sessDate(chrono[chrono.length-1]) : new Date();
-  const by={};
-  chrono.forEach(s=>{
-    const d=_sessDate(s);
-    (s.segments||[]).forEach(sg=>{
-      const o=segOrdered(sg);
-      if(!keyValid(o.startKey)||!keyValid(o.endKey)) return;
-      const j1=juzForVerse(...o.startKey.split(':').map(Number));
-      const j2=juzForVerse(...o.endKey.split(':').map(Number));
-      for(let j=Math.min(j1,j2); j<=Math.max(j1,j2); j++){
-        const e=by[j]||(by[j]={juz:j, heard:0, last:null, lastScore:null, lastStage:null,
-                               lastScoredDate:null, lastScoredStage:null, spotOnly:true});
-        e.heard++; e.last=d; e.lastStage=sg.type||'unassigned';
-        if(segmentScorable(sg)){
-          e.spotOnly=false;
-          const inp=inputsWithPages(sg.strengthInputs,sg)||segmentStrengthInputs(s.segments,sg,s.mistakes||[]);
-          const sc=gradedValue(sg, strengthFromInputs(inp));   // the teacher's grade wins (s13)
-          // The score and WHEN + AS WHAT it was earned move together. e.last
-          // advances on every segment including spot tests, so without these two
-          // a juz spot-tested yesterday renders bright green beside a
-          // four-month-old score, with nothing marking the gap.
-          if(sc!=null){ e.lastScore=sc; e.lastScoredDate=d; e.lastScoredStage=sg.type||'unassigned'; }
-        }
-      }
-    });
-  });
-  const out=Object.values(by).map(e=>{
-    const daysSince       = e.last          ? daysBetween(e.last, now)          : null;
-    const daysSinceScored = e.lastScoredDate ? daysBetween(e.lastScoredDate, now) : null;
-    const proj = rotationProjection(e.lastScore, daysSinceScored);
-    return {...e, daysSince, daysSinceScored,
-      // How much older the score is than the cell's freshness. A positive gap
-      // means the two describe different sessions.
-      scoreGap: (daysSince!=null && daysSinceScored!=null) ? daysSinceScored - daysSince : null,
-      projected: proj, att: rotationBand(proj)};
-  });
-  // Fill the gaps. A juz inside the student's memorised span that has NEVER
-  // been heard is invisible otherwise — and it's the most important row on the
-  // page, because nothing about it is known at all.
-  // Every memorised juz appears, heard or not. A juz that's been memorised and
-  // never revised is the most important row here — and the one that no amount
-  // of inference from session history could ever produce.
-  const mem = memSet || memorisedJuz(sessions).set;
-  mem.forEach(j=>{
-    if(!by[j]) out.push({juz:j, heard:0, last:null, lastScore:null, lastStage:null,
-                         lastScoredDate:null, lastScoredStage:null, daysSince:null,
-                         daysSinceScored:null, scoreGap:null,
-                         projected:null, att:'unknown',
-                         spotOnly:false, neverHeard:true});
-  });
-  return out.sort((a,b)=>a.juz-b.juz);
-}
-
-// Spot tests can't join the strength trend: they sample rather than recite, so
-// there's no verse rate to plot. Pass rate is the honest equivalent.
-function spotTrend(sessions){
-  const out=[];
-  sessionsChrono(sessions).forEach(s=>{
-    const d=_sessDate(s);
-    const segs=(s.segments||[]).filter(sg=>sg.mode==='spot' && sg.spots?.length);
-    if(segs.length){
-      segs.forEach(sg=>{
-        const t=spotTally(sg.spots);
-        const done=t.pass+t.partial+t.fail;
-        if(done) out.push({date:d, ...t, done, rate:Math.round((t.pass+METRICS_MODEL.spot.partialCredit*t.partial)/done*100),
-                           label:sg.rangeLabel||describeRange(segOrdered(sg).startKey,segOrdered(sg).endKey)});
-      });
-    } else if(s.spotTest?.spots?.length){
-      const t=spotTally(s.spotTest.spots);
-      const done=t.pass+t.partial+t.fail;
-      if(done) out.push({date:d, ...t, done, rate:Math.round((t.pass+METRICS_MODEL.spot.partialCredit*t.partial)/done*100),
-                         label:s.spotTest.scopeInput||''});
-    }
-  });
-  return out;
-}
-
-
-
-
-
-
-// ── Stage-specific metrics ────────────────────────────────────────
-// Each stage asks a different question, so each earns different numbers rather
-// than the same chart relabelled.
-
-// MANZIL: is the rotation actually rotating? Average gap between hearings of
-// the same juz, and the worst offender. A short mean with a huge max means a
-// few portions get all the attention while others are quietly rotting.
-function cycleTimes(sessions){
-  const chrono=sessionsChrono(sessions);
-  const hits={};
-  chrono.forEach(s=>{
-    const d=_sessDate(s);
-    (s.segments||[]).forEach(sg=>{
-      if((sg.type||'')!=='old') return;
-      const o=segOrdered(sg);
-      if(!keyValid(o.startKey)||!keyValid(o.endKey)) return;
-      const a=juzForVerse(...o.startKey.split(':').map(Number));
-      const b=juzForVerse(...o.endKey.split(':').map(Number));
-      for(let j=Math.min(a,b);j<=Math.max(a,b);j++) (hits[j]=hits[j]||[]).push(d);
-    });
-  });
-  const rows=Object.entries(hits).map(([j,ds])=>{
-    ds.sort((x,y)=>x-y);
-    const gaps=ds.slice(1).map((d,i)=>daysBetween(ds[i],d));
-    return {juz:+j, times:ds.length, last:ds[ds.length-1],
-            avgGap: gaps.length ? Math.round(gaps.reduce((a,b)=>a+b,0)/gaps.length) : null,
-            maxGap: gaps.length ? Math.max(...gaps) : null};
-  }).sort((a,b)=>a.juz-b.juz);
-  const withGap=rows.filter(r=>r.avgGap!=null);
-  return {rows, meanCycle: withGap.length ? Math.round(withGap.reduce((n,r)=>n+r.avgGap,0)/withGap.length) : null};
-}
-
-// SABAQ → SABQI hand-off. The real test of new memorisation isn't how it scored
-// on the day it was learned — it's how it scored when it came back. Matches a
-// sabaq segment to the later sabqi segment covering the same verses.
-function handoffDeltas(sessions){
-  const segs=scorableSegments(sessions);
-  const news=segs.filter(r=>r.stage==='new');
-  const recents=segs.filter(r=>r.stage==='recent');
-  const out=[];
-  news.forEach(n=>{
-    const o=segOrdered(n.seg);
-    const mid=Math.round((keyAbs(o.startKey)+keyAbs(o.endKey))/2);
-    const later=recents.filter(r=>{
-      if(r.date<=n.date) return false;
-      const ro=segOrdered(r.seg);
-      return mid>=keyAbs(ro.startKey) && mid<=keyAbs(ro.endKey);
-    }).sort((a,b)=>a.date-b.date)[0];
-    if(later && n.score!=null && later.score!=null){
-      out.push({label:n.seg.rangeLabel||describeRange(o.startKey,o.endKey),
-                learned:n.score, returned:later.score, delta:later.score-n.score,
-                days:daysBetween(n.date,later.date), date:n.date});
-    }
-  });
-  return out.sort((a,b)=>a.date-b.date);
-}
-
-// SABQI: consolidation. A hand-off delta says whether a passage survived its
-// first return; it cannot say whether it is still improving. That needs the
-// whole sequence of hearings for one passage — which forces the question of
-// what "one passage" is, since ranges drift between sessions and no segment
-// carries an identity.
-//
-// Two sabqi segments are the same passage when EACH covers at least half of the
-// other. The symmetry is the point: a one-sided test would swallow a short
-// passage into any longer one containing it.
-function _segSpan(r){ const o=segOrdered(r.seg); return [keyAbs(o.startKey), keyAbs(o.endKey)]; }
-function _mutualOverlap(a, b){
-  const ov = Math.min(a[1],b[1]) - Math.max(a[0],b[0]) + 1;
-  if(ov<=0) return false;
-  const f = METRICS_MODEL.sabqi.overlap;
-  return ov >= (a[1]-a[0]+1)*f && ov >= (b[1]-b[0]+1)*f;
-}
-function sabqiPassages(sessions){
-  const segs = scorableSegments(sessions);
-  const recents = segs.filter(r=>r.stage==='recent'
-    && keyValid(segOrdered(r.seg).startKey) && keyValid(segOrdered(r.seg).endKey))
-    .sort((a,b)=>a.date-b.date);
-  const news = segs.filter(r=>r.stage==='new');
-  const olds = segs.filter(r=>r.stage==='old');
-
-  // Each cluster is matched against its ANCHOR — the span of its first hearing —
-  // never against the union of what it has absorbed. Growing the target would
-  // make overlap transitive, and a sabqi range that slides forward week by week
-  // would chain an entire juz into one "passage". Chronological order makes the
-  // partition independent of the order sessions were imported in.
-  const clusters=[];
-  recents.forEach(r=>{
-    const sp=_segSpan(r);
-    const c = clusters.find(c=>_mutualOverlap(c.anchor, sp));
-    if(c) c.items.push(r); else clusters.push({anchor:sp, items:[r]});
-  });
-
-  const med = a => { if(!a.length) return null;
-    const s=[...a].sort((x,y)=>x-y), m=s.length>>1;
-    return s.length%2 ? s[m] : Math.round((s[m-1]+s[m])/2); };
-
-  const rows = clusters.map(c=>{
-    const hs=c.items;
-    const lo=Math.min(...hs.map(h=>_segSpan(h)[0])), hi=Math.max(...hs.map(h=>_segSpan(h)[1]));
-    const mid=Math.round((lo+hi)/2);
-    const widest=[...hs].sort((a,b)=>{const x=_segSpan(a),y=_segSpan(b);return (y[1]-y[0])-(x[1]-x[0]);})[0];
-    const wo=segOrdered(widest.seg);
-    const scores=hs.map(h=>({date:h.date, score:h.score}));
-    const f=scores[0], l=scores[scores.length-1];
-    const delta = scores.length>1 ? l.score-f.score : null;
-    // Where it came from: the latest sabaq covering this passage's midpoint that
-    // predates the first sabqi hearing.
-    const learned=news.filter(n=>{const o=segOrdered(n.seg);
-      return n.date<=f.date && mid>=keyAbs(o.startKey) && mid<=keyAbs(o.endKey);})
-      .sort((a,b)=>b.date-a.date)[0]||null;
-    // Where it went: the first manzil hearing covering it after sabqi began.
-    const grad=olds.filter(o=>{const oo=segOrdered(o.seg);
-      return o.date>f.date && mid>=keyAbs(oo.startKey) && mid<=keyAbs(oo.endKey);})
-      .sort((a,b)=>a.date-b.date)[0]||null;
-    return {label: widest.seg.rangeLabel || describeRange(wo.startKey, wo.endKey),
-      scores, hearings:scores.length, days:daysBetween(f.date, l.date), delta,
-      status: delta==null ? 'single'
-        : delta>=METRICS_MODEL.sabqi.climbing  ? 'climbing'
-        : delta<=METRICS_MODEL.sabqi.declining ? 'declining' : 'stalled',
-      learnedScore: learned ? learned.score : null,
-      gained: learned ? l.score-learned.score : null,
-      graduated: !!grad, gradDays: grad ? daysBetween(f.date, grad.date) : null,
-      gradHearings: grad ? scores.filter(s=>s.date<=grad.date).length : null};
-  }).sort((a,b)=>b.scores[b.scores.length-1].date - a.scores[a.scores.length-1].date);
-
-  const multi=rows.filter(r=>r.delta!=null);
-  const grads=rows.filter(r=>r.graduated);
-  const open =rows.filter(r=>!r.graduated);
-  return {rows, passages:rows.length,
-    avgHearings: rows.length ? Math.round(rows.reduce((n,r)=>n+r.hearings,0)/rows.length*10)/10 : null,
-    avgDelta: multi.length ? Math.round(multi.reduce((n,r)=>n+r.delta,0)/multi.length) : null,
-    climbing: multi.filter(r=>r.status==='climbing').length,
-    stalled:  multi.filter(r=>r.status==='stalled').length,
-    declining:multi.filter(r=>r.status==='declining').length,
-    single:   rows.length-multi.length,
-    graduated:{n:grads.length, medDays:med(grads.map(r=>r.gradDays)),
-               medHearings:med(grads.map(r=>r.gradHearings))},
-    openN: open.length,
-    longestOpen: open.length ? Math.max(...open.map(r=>r.days)) : null};
-}
-
-// SPOT vs RECITE agreement. If a juz passes its spot checks but scores poorly
-// when fully recited, the sampling is missing things — worth knowing before
-// trusting a pass rate.
-function spotVsRecite(sessions){
-  const cond={};
-  scorableSegments(sessions).forEach(r=>{
-    const o=segOrdered(r.seg);
-    const j=juzForVerse(...o.startKey.split(':').map(Number));
-    if(r.score!=null) (cond[j]=cond[j]||{recite:[],spot:[]}).recite.push(r.score);
-  });
-  spotTrend(sessions).forEach(p=>{
-    const m=/Juz\s*(\d+)/i.exec(p.label||'');
-    if(m){ const j=+m[1]; (cond[j]=cond[j]||{recite:[],spot:[]}).spot.push(p.rate); }
-  });
-  const avg=a=>a.length?Math.round(a.reduce((x,y)=>x+y,0)/a.length):null;
-  return Object.entries(cond).map(([j,v])=>({juz:+j, recite:avg(v.recite), spot:avg(v.spot)}))
-    .filter(r=>r.recite!=null && r.spot!=null)
-    .sort((a,b)=>a.juz-b.juz);
-}
-
-// Pace: verses of new memorisation per week — the sabaq question nothing else answers.
-function sabaqPace(sessions){
-  const news=scorableSegments(sessions).filter(r=>r.stage==='new');
-  if(news.length<2) return null;
-  const days=Math.max(1, daysBetween(news[0].date, news[news.length-1].date));
-  const verses=news.reduce((n,r)=>n+r.inputs.verses,0);
-  // Pages as well as verses: verse length varies enormously (2:282 against
-  // 55:64), so verses/week flatters a stretch of short surahs and understates
-  // a long one. Page span is closer to how much was actually memorised.
-  let pages=0;
-  news.forEach(r=>{
-    const o=segOrdered(r.seg);
-    const [s1,a1]=o.startKey.split(':').map(Number), [s2,a2]=o.endKey.split(':').map(Number);
-    const p1=pageForVerse(s1,a1), p2=pageForVerse(s2,a2);
-    pages += Math.abs(p2-p1)+ (p2===p1 ? (r.inputs.verses/METRICS_MODEL.pace.versesPerPage) : 1);
-  });
-  pages=+pages.toFixed(1);
-  return {verses, pages, days, sessions:news.length,
-          versesPerWeek:+(verses/days*7).toFixed(1),
-          pagesPerWeek:+(pages/days*7).toFixed(2)};
-}
-
-// Words the student keeps missing, versus words they've stopped missing.
-// "Resolved" is the most motivating figure available and nothing computed it.
-// A word counts as resolved only once it has survived `cleanRuns` later
-// sessions that actually covered its verse — otherwise "not missed lately"
-// just means "not tested lately", which is the opposite of reassuring.
-function persistence(sessions, cleanRuns){
-  const need = cleanRuns ?? METRICS_MODEL.persistence.cleanRuns;
-  const chrono = sessionsChrono(sessions);
-  const seen = {};                       // wordKey -> [session indexes it was missed in]
-  chrono.forEach((s,i)=>{
-    // Ayah-level, not word-level: stumbling on a different word of the same
-    // ayah is the same weak spot resurfacing, not a new one. Word-level made
-    // recurrence look vanishingly rare and "resolved" implausibly large.
-    new Set((s.mistakes||[]).map(m=>`${m.surah}:${m.ayah}`)).forEach(k=>{
-      (seen[k]=seen[k]||[]).push(i);
-    });
-  });
-  // Which later sessions actually covered a given verse — a clean run only
-  // counts if the passage was heard again.
-  const covered = (idx, surah, ayah) => {
-    const s=chrono[idx];
-    if(!s?.segments?.length) return (s?.mistakes||[]).some(m=>m.surah===surah);
-    return !!segForVerse(s.segments, surah, ayah);
-  };
-  const recurring=[], resolved=[], fresh=[];
-  Object.entries(seen).forEach(([k,idxs])=>{
-    const [su,ay]=k.split(':').map(Number);
-    const last=idxs[idxs.length-1];
-    const laterCovering = chrono.map((_,i)=>i).filter(i=>i>last && covered(i,su,ay));
-    const rec={key:k, surah:su, ayah:ay, times:idxs.length,
-               lastIdx:last, lastDate:_sessDate(chrono[last]), retested:laterCovering.length};
-    if(idxs.length===1 && last===chrono.length-1) fresh.push(rec);
-    else if(laterCovering.length>=need) resolved.push(rec);
-    else if(idxs.length>1) recurring.push(rec);
-  });
-  recurring.sort((a,b)=>b.times-a.times || b.lastIdx-a.lastIdx);
-  resolved.sort((a,b)=>b.retested-a.retested);
-  return {recurring, resolved, fresh};
-}
-
-// Cross-session focus. Recency matters here in a way it doesn't within one
-// session: an ayah missed three times but not for two months is fixed, not
-// urgent. Weight decays with a ~6-week half-life.
-function crossFocus(sessions, limit){
-  const chrono=sessionsChrono(sessions);
-  if(!chrono.length) return [];
-  const now=_sessDate(chrono[chrono.length-1]);
-  const by={};
-  chrono.forEach(s=>{
-    const d=_sessDate(s);
-    const age = d? Math.max(0, daysBetween(d, now)) : 0;
-    const recency = Math.pow(0.5, age/METRICS_MODEL.focus.halfLifeDays);
-    (s.mistakes||[]).forEach(m=>{
-      if(!m.surah||!m.ayah) return;
-      const k=`${m.surah}:${m.ayah}`;
-      const e=by[k]||(by[k]={key:k, surah:m.surah, ayah:m.ayah, hits:0, sessions:new Set(),
-                             weight:0, words:new Set(), last:null, worst:'c0'});
-      e.hits++; e.sessions.add(s.id); e.weight += mistakeWeight(m)*recency;
-      if(m.word) e.words.add(m.word);
-      e.last=d;
-      const order=METRICS_MODEL.focus.severityOrder;
-      if((order[m.correction]??0)>(order[e.worst]??0)) e.worst=m.correction||'c0';
-    });
-  });
-  return Object.values(by)
-    .map(e=>({...e, sessions:e.sessions.size, words:[...e.words],
-              score:e.weight*Math.sqrt(e.sessions.size)}))
-    .sort((a,b)=>b.score-a.score)
-    .slice(0, limit||METRICS_MODEL.focus.listLimit);
-}
-
+/* v1_203: the cross-session measures moved to /app/shared/tehfiz-report.js
+   (TehfizReport), so the teacher app can run the progress report too. */
 
 let STRENGTH_MODEL = {...STRENGTH_MODEL_DEFAULT};
 
@@ -2649,25 +2012,7 @@ syncCalibrationViews();
 
 // The recalibration payload: everything a future model needs, and nothing
 // derived. Keep this stable even if the formula changes completely.
-function strengthInputs(mistakes, verseCount, pageCount){
-  const all = mistakes||[];
-  // Held out of the hifz score, counted separately so the inputs still
-  // describe the whole session. See STRENGTH_MODEL_DEFAULT.
-  const ml = all.filter(m => !isTajweedMistake(m, m && m.typeConfig || null));
-  const tajweed = all.length - ml.length;
-  const byLevel = {c0:0,c1:0,c2:0,c3:0,c4:0};
-  ml.forEach(m=>{ const c = m?.correction && byLevel.hasOwnProperty(m.correction) ? m.correction : 'c0'; byLevel[c]++; });
-  return {
-    verses: verseCount||0,
-    // Kept alongside verses rather than replacing it: verses cost nothing to
-    // store and a future model may want either, or both.
-    pages: +(pageCount||0).toFixed(4),
-    mistakes: ml.length,
-    tajweed,
-    byLevel,
-    weighted: +ml.reduce((n,m)=>n+mistakeWeight(m),0).toFixed(4),
-  };
-}
+/* v1_205: moved to /app/shared/tehfiz-shared.js (s29), one copy for both apps. */
 
 
 
@@ -2679,12 +2024,14 @@ function strengthInputs(mistakes, verseCount, pageCount){
 
 
 
-const SESSION_COLORS=['#b8841a','#2d6a4f','#0a5059','#3d2d7a','#7d1f1f','#7d4e00'];
+const SESSION_COLORS=['#5a6270','#2d6a4f','#0a5059','#3d2d7a','#7d1f1f','#7d4e00'];
 
 // ── STATE
 let viewMode='mushaf',currentJuz=1,currentSurah=null,pageVerses=[],allVerseWords={};
 let arabicSize=28;
 let savedSessions=[],activeSessions=[],activeMistakes=[],repeatWordKeys=new Set();
+// v1_204: the shared progress report reads this page's lessons through its hook.
+TehfizReport.use({ lessons: () => activeSessions });
 // Mistake list grouping & filtering state
 let mistakeGroupMode='juz'; // 'juz' | 'surah' | 'none'
 let mistakeFilterTypes=new Set();   // empty = show all types
@@ -4329,7 +3676,7 @@ function renderSessionsList(){
     return`<div class="sess-card${isA?' active-sess':''}" onclick="toggleSessionActive(${s.id})" style="${isA?`border-left:3px solid ${col};`:''}">
       <div class="sess-card-head"><div style="flex:1;min-width:0;">
         <div style="display:flex;align-items:center;gap:5px;"><span class="sess-name">${esc(s.student)}</span>${isA?`<span style="font-size:11px;background:${col};color:white;padding:1px 4px;border-radius:999px;font-family:'IBM Plex Mono',monospace;font-weight:700;">ON</span>`:''}</div>
-        <div class="sess-range">${esc(sessionNameOf(s))}</div>
+        <div class="sess-range">${nbNames(sessionNameOf(s))}</div>
         ${s.spotTest?.enabled ? `<div style="font-size:12px;color:var(--spot-blue);font-family:'IBM Plex Mono',monospace;margin-top:2px;background:var(--spot-blue-bg);border-radius:3px;padding:1px 5px;display:inline-block;cursor:pointer;" onclick="event.stopPropagation();openSpotPopup(${s.id})" title="View spot test results">🎲 Spot test · ${s.spotTest.spots?.length||0} spots</div>` : ''}
         <div class="sess-date">${sessionDateText(s)} · ${s.duration||''}</div>
         ${s.remarks?`<div style="font-size:12px;color:var(--ink2);font-style:italic;margin-top:3px;padding:3px 5px;background:var(--parchment2);border-radius:3px;border-left:2px solid var(--gold);">${esc(s.remarks)}</div>`:''}
@@ -4386,12 +3733,12 @@ function activeFilterPills(){
   });
   mistakeFilterCorr.forEach(k=>out.push({label:CORR_FILTER_LABEL[k]||k, off:`toggleMistakeCorrFilter('${k}')`}));
   mistakeFilterLetters.forEach(l=>out.push({label:l, off:`toggleMistakeLetterFilter('${l}')`}));
-  mistakeFilterRules.forEach(r=>out.push({label:ruleShort(r), off:`toggleMistakeRuleFilter('${r}')`}));
+  mistakeFilterRules.forEach(r=>out.push({label:ruleLabel(r), off:`toggleMistakeRuleFilter('${r}')`}));
   if(mistakeFilterRepeatedOnly) out.push({label:'Repeated only', off:`toggleRepeatedOnlyFilter()`});
   return out;
 }
 
-const CAT_LABEL={tehfiz:'Memorisation', tajweed:'Tajweed', other:'Other'};
+const CAT_LABEL={tehfiz:'Hifz', tajweed:'Tajweed', other:'Other'};   // I6
 const CORR_FILTER_LABEL={c0:'Lvl 0',c1:'Lvl 1',c2:'Lvl 2',c3:'Lvl 3',c4:'Other',tj:'Tajweed'};
 
 function mistakeCategoryOf(m){
@@ -4440,7 +3787,7 @@ function renderFilterSheet(){
           `title="${esc(MAKHRAJ_GUIDE[l]||'')}"`, 'fs-letter')
         ).join('')}</div>`:''}
       ${rules.length?`<div class="fs-sec-h">Rule</div><div class="fs-chips">${
-        rules.map(r=>chip(mistakeFilterRules.has(r), esc(ruleShort(r)),
+        rules.map(r=>chip(mistakeFilterRules.has(r), esc(ruleLabel(r)),
           _countWith('rule', m=>m.subrule&&m.subrule.rule===r),
           `toggleMistakeRuleFilter('${r}')`,
           `title="${esc(ruleLabel(r))}"`)).join('')}</div>`:''}
@@ -4659,825 +4006,8 @@ function importSession(event){
 }
 
 // ── REVIEW
-function openReview(){
-  if(!activeSessions.length){showToast('No sessions loaded');return;}
-  // The multi-session review takes the sessions themselves — it works from
-  // segments, dates and per-session inputs, none of which survive being
-  // flattened into one synthetic session the way the old version did.
-  _msTab='overview'; _msTrendWindow='all';
-  document.getElementById('reviewContent').innerHTML = buildMultiReviewHTML(activeSessions);
-  _msMountMap();
-  document.getElementById('reviewModal').classList.add('open');
-}
-// ═══════════════════════════════════════════════════════════════════
-// REVIEW — HTML BUILDERS
-// ───────────────────────────────────────────────────────────────────
-// One builder per section, mirroring the teacher app's split. Everything a
-// builder needs arrives as an argument — `sessions` and `repeats` used to be
-// read straight off the activeSessions/repeatWordKeys globals — so the whole
-// report can be rendered outside a browser once the app is split front/back.
-// ═══════════════════════════════════════════════════════════════════
-
-// ═══════════════════════════════════════════════════════════════════
-// MULTI-SESSION REVIEW
-// ───────────────────────────────────────────────────────────────────
-// Answers a different question from the single-session review. That one asks
-// "how did that go?"; this asks "what condition is each portion in, and what
-// hasn't been checked lately?" — so it leads with rotation and persistence,
-// not with a score.
-// ═══════════════════════════════════════════════════════════════════
-let _msTab = 'overview';
-let _msPaceUnit = 'verses';
-let _msTrendWindow = 'all';
-
-function msToggleJuz(j){
-  if(!toggleMemorisedJuz(j, activeSessions)) { showToast('Already revised — cannot be un-memorised'); return; }
-  const el=document.getElementById('reviewContent');
-  if(el) { el.innerHTML = buildMultiReviewHTML(activeSessions); _msMountMap(); }
-}
-/* v1_178: the map inside "Memorised portions", read-only. */
-function _msMountMap(){
-  const el=document.querySelector('#reviewContent [data-msmap]'), pages=teacherMapPages();
-  if(!el || !pages || !window.TehfizMap) return;
-  const m=TehfizJourney.map();
-  TehfizMap.render(el, { pages, ayahs: (m && m.ayahs) || '', recentAuto: m.recent_auto!==false && m.recent_auto!==0, editable:false, openReadOnly:true });
-}
-// A fresh copy of the map: redraw the report if it is open.
-window.addEventListener('tehfiz-plan', ()=>{
-  if(document.getElementById('reviewModal')?.classList.contains('open')) _msRerender();
-});
-
-function buildMultiReviewHTML(sessions){
-  const S = sessionsChrono(sessions);
-  if(!S.length) return `<div class="empty-hint">No sessions selected</div>`;
-  const mem = memorisedJuz(S);
-  const by  = stageTrend(S);
-  const spots = spotTrend(S);
-
-  // Tabs are built from what the data actually contains — a student with no
-  // manzil segments shouldn't be given an empty manzil tab.
-  const tabs=[{k:'overview', label:'Overview'}];
-  ['new','recent','old','unassigned'].forEach(st=>{
-    if(by[st]?.length) tabs.push({k:st, label:sessionTypeLabel(st), n:by[st].length});
-  });
-  if(spots.length) tabs.push({k:'spot', label:'Spot tests', n:spots.length});
-  /* Top-level, NOT a sixth stage. A tajweed error in a sabaq segment and one in
-     a manzil segment are the same phenomenon — the stage tells you nothing
-     about it — so bucketing tajweed by stage would split one question into
-     five answers to nothing. */
-  const tjN = _tjMarks(S).length;
-  if (tjN) tabs.push({k:'tajweed', label:'Tajweed', n:tjN});
-  tabs.push({k:'log', label:'Log'});
-  if(!tabs.some(t=>t.k===_msTab)) _msTab='overview';
-
-  const rail=`<div class="ms-tabs">${tabs.map(t=>`<button class="ms-tab${_msTab===t.k?' on':''}" onclick="msSetTab('${t.k}')">
-      ${t.k==='overview'?'':`<i style="background:${MS_STAGE_COLORS[t.k]||'var(--ink3)'}"></i>`}${esc(t.label)}${t.n?`<span>${t.n}</span>`:''}
-    </button>`).join('')}</div>`;
-
-  let body;
-  if(_msTab==='overview')      body = _msRotation(S, mem) + _msPersistence(S) + _msFocus(S) + _msSessions(S);
-  else if(_msTab==='spot')     body = _msSpotTab(S);
-  else if(_msTab==='log')      body = _msLogTab(S);
-  else if(_msTab==='tajweed')  body = _msTajweedTab(S);
-  else                         body = _msStageTab(S, _msTab);
-
-  return _msHeader(S, mem) + rail + body;
-}
-
-/* ── TAJWEED ────────────────────────────────────────────────────────
-   Counts, not rates — for BOTH missed and added errors, deliberately.
-   A missed rule has a real denominator: how many times the passage offered it,
-   which the teacher app now counts at save time. An added rule has none — the
-   places a ghunnah could WRONGLY be applied is roughly every word — so rating
-   one and counting the other would put two numbers side by side that look
-   comparable and are not. That is the spot-v1 / strength-v2 problem, which
-   needed a tooltip to explain away.
-   Opportunities still appear, as context beside a count rather than under it:
-   "14 · of 212 madds recited" informs without inviting the division. */
-
-function _tjMarks(S){
-  const out = [];
-  S.forEach(s => {
-    const cfg = s.typeConfig || null;
-    (s.mistakes || []).forEach(m => {
-      if(!isTajweedMistake(m, cfg)) return;
-      const sr = m.subrule || null;
-      out.push({
-        s, ymd: _sessYMD(s), sr,
-        // The grouping key: a rule id, a letter, or a family when the teacher
-        // named no rule. Null only when nothing was specified at all.
-        key:  sr ? (sr.rule || sr.letter || sr.family || null) : null,
-        kind: sr && sr.letter ? 'letter' : 'rule',
-        added: !!(sr && sr.err === 'added'),
-        cond:  !!(sr && sr.cond),
-      });
-    });
-  });
-  return out;
-}
-
-/* Opportunities summed across the sessions in view. Absent on any session
-   recorded before the counter existed, and absent is not zero — a rule with no
-   opportunity data shows its count with no denominator rather than "of 0". */
-function _tjOpps(S){
-  const rules = {}, letters = {};
-  let have = 0;
-  S.forEach(s => {
-    const o = s.opportunities;
-    if(!o) return;
-    have++;
-    for(const k in (o.rules   || {})) rules[k]   = (rules[k]   || 0) + o.rules[k];
-    for(const k in (o.letters || {})) letters[k] = (letters[k] || 0) + o.letters[k];
-  });
-  return { rules, letters, have, total: S.length };
-}
-
-function _tjBar(label, n, max, color, note){
-  return `<div class="bar-row">
-    <div class="bar-label">${esc(label)}</div>
-    <div class="bar-track"><div class="bar-fill" style="width:${Math.round(n/max*100)}%;background:${color};"></div></div>
-    <div class="bar-count">${n}</div>
-    ${note ? `<div class="tj-of">${esc(note)}</div>` : '<div class="tj-of"></div>'}
-  </div>`;
-}
-
-/* Improving, flat or worsening — by comparing the first half of the window
-   with the second. Requires marks in at least three separate sessions: a
-   direction drawn from two points is a line through noise, and the same
-   discipline already governs minPointsForLine and the single-hearing dash. */
-function _tjTrend(marks, sessionYmds){
-  if(sessionYmds.length < 3) return null;
-  const cut  = sessionYmds[Math.floor(sessionYmds.length / 2)];
-  const early = marks.filter(m => m.ymd && m.ymd <  cut).length;
-  const late  = marks.filter(m => m.ymd && m.ymd >= cut).length;
-  if(early === 0 && late === 0) return null;
-  if(late < early) return {dir:'better', sym:'↓', txt:`${early} → ${late}`};
-  if(late > early) return {dir:'worse',  sym:'↑', txt:`${early} → ${late}`};
-  return {dir:'flat', sym:'→', txt:`${early} → ${late}`};
-}
-
-function _msTajweedTab(S){
-  const marks = _tjMarks(S);
-  const opps  = _tjOpps(S);
-  const ymds  = [...new Set(S.map(s => _sessYMD(s)).filter(Boolean))].sort();
-  const withTj = new Set(marks.map(m => m.s)).size;
-
-  const missed = marks.filter(m => !m.added);
-  const added  = marks.filter(m =>  m.added);
-  const conds  = marks.filter(m =>  m.cond).length;
-
-  const tally = (list, kind) => {
-    const t = {};
-    list.filter(m => m.kind === kind && m.key).forEach(m => { t[m.key] = (t[m.key] || 0) + 1; });
-    return Object.entries(t).sort((a,b) => b[1] - a[1]);
-  };
-
-  const missedRules   = tally(missed, 'rule');
-  const addedRules    = tally(added,  'rule');
-  const letters       = tally(marks,  'letter');
-  const unspecified   = marks.filter(m => !m.key).length;
-
-  const head = `<div class="ms-stats">
-    <div class="ms-stat"><div class="ms-stat-n">${marks.length}</div><div class="ms-stat-l">marks</div></div>
-    <div class="ms-stat"><div class="ms-stat-n">${withTj}<span class="tj-sub">/${S.length}</span></div><div class="ms-stat-l">sessions</div></div>
-    <div class="ms-stat"><div class="ms-stat-n">${missedRules.length + addedRules.length}</div><div class="ms-stat-l">rules</div></div>
-    <div class="ms-stat"><div class="ms-stat-n">${letters.length}</div><div class="ms-stat-l">letters</div></div>
-  </div>`;
-
-  /* Per session over time. Bars, not a line: a line implies a value between
-     the points, and there is no tajweed count for a day with no lesson. */
-  const perSession = ymds.map(y => ({ y, n: marks.filter(m => m.ymd === y).length }));
-  const maxN = Math.max(1, ...perSession.map(p => p.n));
-  const overTime = `<div class="ms-sec">
-    <div class="ms-sec-head"><span>Marks per session</span>
-      <span class="ms-sec-note">${ymds.length} session${ymds.length===1?'':'s'}</span></div>
-    <div class="tj-spark">${perSession.map(p =>
-      `<span class="tj-spark-b" style="height:${Math.max(2, Math.round(p.n/maxN*28))}px"
-         title="${esc(p.y)} — ${p.n} mark${p.n===1?'':'s'}"></span>`).join('')}</div>
-    <div class="ms-note">A session with none is a gap, not a zero: it may mean a clean
-      recitation or a day tajweed was not listened for, and the two are indistinguishable here.</div>
-  </div>`;
-
-  const ruleSec = (title, list, color, useOpps) => {
-    if(!list.length) return '';
-    const max = list[0][1];
-    return `<div class="ms-sec">
-      <div class="ms-sec-head"><span>${esc(title)}</span>
-        <span class="ms-sec-note">${list.length} distinct</span></div>
-      ${list.map(([k, n]) => {
-        const chances = useOpps ? opps.rules[k] : null;
-        const tr = _tjTrend(marks.filter(m => m.key === k && (useOpps ? !m.added : m.added)), ymds);
-        return _tjBar(ruleShort(k), n, max, color,
-          (chances ? `of ${chances}` : '') + (tr ? `  ${tr.sym}` : ''));
-      }).join('')}
-    </div>`;
-  };
-
-  const letterSec = letters.length ? `<div class="ms-sec">
-    <div class="ms-sec-head"><span>Letters by recurrence</span>
-      <span class="ms-sec-note">${letters.length} distinct</span></div>
-    ${letters.map(([l, n]) => {
-      const mk = makhrajOf(l);
-      const chances = opps.letters[l];
-      return `<div class="bar-row">
-        <div class="bar-label tj-letter">${esc(l)}</div>
-        <div class="bar-track"><div class="bar-fill" style="width:${Math.round(n/letters[0][1]*100)}%;background:var(--tajweed);"></div></div>
-        <div class="bar-count">${n}</div>
-        <div class="tj-of">${mk ? esc(mk.label) : ''}${chances ? ` · of ${chances}` : ''}</div>
-      </div>`;
-    }).join('')}
-    <div class="ms-note">Which letters will not sit in the right place — the most
-      directly actionable thing here, because it names what to drill.</div>
-  </div>` : '';
-
-  const caveats = [];
-  if(opps.have && opps.have < opps.total)
-    caveats.push(`Opportunity counts cover ${opps.have} of ${opps.total} sessions; the rest predate them.`);
-  if(!opps.have)
-    caveats.push('No opportunity counts in these sessions, so counts appear without a denominator.');
-  if(conds)
-    caveats.push(`${conds} mark${conds===1?'':'s'} applied only because a verse was joined to the next — the teacher's judgement, not the annotation's.`);
-  if(unspecified)
-    caveats.push(`${unspecified} mark${unspecified===1?'':'s'} named no rule or letter, so ${unspecified===1?'it is':'they are'} counted but not ranked.`);
-
-  return head + overTime +
-    ruleSec('Rules missed or mistimed', missedRules, 'var(--tajweed)', true) +
-    ruleSec('Rules added where they do not belong', addedRules, 'var(--amber)', false) +
-    letterSec +
-    (addedRules.length ? `<div class="ms-note">Added errors are counted, never rated: there is no
-      meaningful number of chances to wrongly apply a rule, so a percentage would be invented.</div>` : '') +
-    (caveats.length ? `<div class="ms-sec tj-caveats">${caveats.map(c => `<div>${esc(c)}</div>`).join('')}</div>` : '');
-}
-
-/* ── RECITATION LOG ─────────────────────────────────────────────────
-   One row per SEGMENT, not per session. The stage lives on the segment, and a
-   sitting can hold a sabaq and a manzil — collapsing those to one row would
-   make "filter by lesson type" meaningless.
-   Duration and notes are session-level and therefore repeat across a session's
-   rows. That is right for something you will sort and filter: every row has to
-   stand on its own. */
-/* `grouped` is the default: a session banner carrying the things that belong to
-   the SITTING — time, duration, notes — with its segments beneath it. Those
-   three repeated on every segment row, which read as three lessons of 1h 05m
-   rather than one sitting of 1h 05m containing three lessons.
-   `segments` is the flat view for when the segment is the unit of interest. It
-   drops duration and notes entirely rather than repeating them: a value that is
-   true of the session but printed against a segment is a claim about the
-   segment, and it is the wrong one. */
-let _logStage = 'all', _logKind = 'all', _logPeriod = 'all', _logNotesOnly = false;
-let _logView = 'grouped', _logFrom = '', _logTo = '';
-
-function _logRows(S){
-  const rows = [];
-  S.forEach(s => {
-    const d    = _sessDate(s);
-    const ymd  = _sessYMD(s);
-    const time = d && !isNaN(d) ? d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : '';
-    (s.segments || []).forEach(sg => {
-      const o    = segOrdered(sg);
-      const spot = sg.mode === 'spot';
-      // Counts only, per the brief — the by-verse list already carries detail.
-      const ml   = mistakesInSegment(s.segments, sg, s.mistakes || []);
-      const hifz = ml.filter(m => !isTajweedMistake(m, s.typeConfig || null)).length;
-      const taj  = ml.length - hifz;
-      let score = null, pages = null;
-      if(!spot && segmentScorable(sg)){
-        const inp = inputsAreCurrent(s)
-          ? (inputsWithPages(sg.strengthInputs, sg) || segmentStrengthInputs(s.segments, sg, s.mistakes||[]))
-          : segmentStrengthInputs(s.segments, sg, s.mistakes||[]);
-        if(inp && inp.verses){ score = gradedValue(sg, strengthFromInputs(inp)); pages = inp.pages; }
-      }
-      rows.push({
-        sid: s.id || (ymd + '|' + time), sessionName: sessionNameOf(s),
-        ymd, date: sessionDateText(s), time, duration: s.duration || '',
-        stage: spot ? 'spot' : (sg.type || 'unassigned'),
-        stageLabel: spot ? 'Spot test' : sessionTypeLabel(sg.type || 'unassigned'),
-        kind: spot ? 'spot' : 'recite',
-        range: sg.rangeLabel || describeRange(o.startKey, o.endKey) || sessionNameOf(s),
-        pages, hifz, taj, score,
-        notes: s.remarks || '',
-      });
-    });
-  });
-  return rows.reverse();          // newest first, which is how a log is read
-}
-
-function _logFiltered(S){
-  // Custom takes both ends, and either end may be left open.
-  const from = _logPeriod === 'custom' ? (_logFrom || null)
-             : _logPeriod === 'all'    ? null
-             : _periodStartYMD(_logPeriod);
-  const to   = _logPeriod === 'custom' ? (_logTo || null) : null;
-  return _logRows(S).filter(r =>
-       (_logStage === 'all' || r.stage === _logStage)
-    && (_logKind  === 'all' || r.kind  === _logKind)
-    && (!from || (r.ymd && r.ymd >= from))
-    && (!to   || (r.ymd && r.ymd <= to))
-    && (!_logNotesOnly || r.notes));
-}
-
-function msSetLogFilter(k, v){
-  if(k === 'stage') _logStage = v;
-  else if(k === 'kind') _logKind = v;
-  else if(k === 'period') _logPeriod = v;
-  else if(k === 'notes') _logNotesOnly = !_logNotesOnly;
-  else if(k === 'view')  _logView = v;
-  _msRerender();
-}
-function msSetLogRange(which, val){
-  if(which === 'from') _logFrom = val; else _logTo = val;
-  _logPeriod = 'custom';
-  _msRerender();
-}
-
-function _msLogTab(S){
-  const all  = _logRows(S);
-  const rows = _logFiltered(S);
-  const stages = [...new Set(all.map(r => r.stage))];
-  const chip = (k, v, label, on) =>
-    `<button class="ms-tab${on?' on':''}" onclick="msSetLogFilter('${k}','${v}')">${esc(label)}</button>`;
-
-  const filters = `
-    <div class="ms-tabs" style="margin-bottom:4px;">
-      ${chip('period','all','All time', _logPeriod==='all')}
-      ${['week','month','year'].map(p => chip('period',p,PERIOD_LABEL[p], _logPeriod===p)).join('')}
-      ${chip('period','custom','Custom', _logPeriod==='custom')}
-      ${_logPeriod==='custom' ? `<span class="lg-range-pick">
-        <input type="date" value="${_logFrom}" max="${_logTo||''}" onchange="msSetLogRange('from', this.value)" title="From">
-        <b>→</b>
-        <input type="date" value="${_logTo}" min="${_logFrom||''}" onchange="msSetLogRange('to', this.value)" title="To">
-      </span>` : ''}
-    </div>
-    <div class="ms-tabs" style="margin-bottom:4px;">
-      ${chip('stage','all','All lessons', _logStage==='all')}
-      ${stages.map(st => chip('stage', st,
-          st==='spot' ? 'Spot test' : sessionTypeLabel(st), _logStage===st)).join('')}
-    </div>
-    <div class="ms-tabs">
-      ${chip('kind','all','Recite + spot', _logKind==='all')}
-      ${chip('kind','recite','Recite only', _logKind==='recite')}
-      ${chip('kind','spot','Spot only', _logKind==='spot')}
-      <button class="ms-tab${_logNotesOnly?' on':''}" onclick="msSetLogFilter('notes','')">With notes</button>
-      <span style="flex:1"></span>
-      ${chip('view','grouped','By session', _logView==='grouped')}
-      ${chip('view','segments','By segment', _logView==='segments')}
-      <button class="ms-tab" onclick="exportLogCSV()" title="Opens in Excel">⭳ CSV</button>
-      <button class="ms-tab" onclick="printLog()" title="Use your system dialog's Save as PDF">⎙ PDF</button>
-    </div>`;
-
-  if(!rows.length){
-    return filters + `<div class="empty-hint">No sessions match these filters.</div>`;
-  }
-
-  const cells = r => `
-      <td>${esc(r.stageLabel)}</td>
-      <td class="lg-range">${esc(r.range)}</td>
-      <td class="lg-n">${r.pages != null ? r.pages.toFixed(1) : '—'}</td>
-      <td class="lg-n">${r.score != null ? r.score + '%' : '—'}</td>
-      <td class="lg-n">${r.hifz || '—'}</td>
-      <td class="lg-n">${r.taj || '—'}</td>`;
-
-  let head, body;
-  if(_logView === 'grouped'){
-    head = `<tr><th>Lesson</th><th>Range</th><th>Pages</th><th>Strength</th><th>Mistakes</th><th>Tajweed</th></tr>`;
-    // Rows are already newest-first and a session's segments are contiguous,
-    // so a running key groups them without sorting or bucketing.
-    let last = null; body = '';
-    rows.forEach(r => {
-      if(r.sid !== last){
-        last = r.sid;
-        const segs = rows.filter(x => x.sid === r.sid).length;
-        body += `<tr class="lg-sess"><td colspan="6">
-          <b>${esc(r.date)}</b> <span class="lg-sub-i">${esc(r.time)}</span>
-          ${r.duration ? `<span class="lg-dur">${esc(r.duration)}</span>` : ''}
-          <span class="lg-segn">${segs} segment${segs===1?'':'s'}</span>
-          ${r.notes ? `<div class="lg-note-line">${esc(r.notes)}</div>` : ''}
-        </td></tr>`;
-      }
-      body += `<tr class="lg-seg">${cells(r)}</tr>`;
-    });
-  } else {
-    head = `<tr><th>Date</th><th>Lesson</th><th>Range</th><th>Pages</th><th>Strength</th><th>Mistakes</th><th>Tajweed</th></tr>`;
-    body = rows.map(r => `<tr>
-      <td>${esc(r.date)}<div class="lg-sub">${esc(r.time)}</div></td>${cells(r)}
-    </tr>`).join('');
-  }
-
-  const sessN = new Set(rows.map(r => r.sid)).size;
-  return filters + `
-    <div class="ms-sec" id="logPrintArea">
-      <div class="ms-sec-head"><span>Recitation log</span><span class="ms-sec-note">${rows.length} of ${all.length} segments · ${sessN} session${sessN===1?'':'s'}</span></div>
-      <div class="lg-scroll"><table class="lg-table">
-        <thead>${head}</thead>
-        <tbody>${body}</tbody>
-      </table></div>
-    </div>`;
-}
-
-/* CSV rather than a real .xlsx. An xlsx is a zip container, so writing one
-   needs a zip implementation or a CDN library — and this viewer has no external
-   scripts at all, which is what lets a student open a .qrs with no network. A
-   dependency that fails silently offline is a worse trade than losing column
-   widths.
-   The BOM is not optional: without it Excel reads the file as its local
-   codepage and every Arabic range comes out as mojibake. */
-function exportLogCSV(){
-  const rows = _logFiltered(activeSessions ? sessionsChrono(activeSessions) : []);
-  /* Duration and notes are session-level, so in the grouped view they are
-     written against the FIRST segment of each session and left blank after —
-     the spreadsheet stays flat and sortable without asserting that every
-     segment lasted an hour. The segment view omits them entirely, matching
-     what is on screen. */
-  const grouped = _logView === 'grouped';
-  const head = grouped
-    ? ['Date','Time','Lesson','Range','Pages','Strength','Mistakes','Tajweed','Duration','Notes']
-    : ['Date','Time','Lesson','Range','Pages','Strength','Mistakes','Tajweed'];
-  let seen = null;
-  const esc2 = v => {
-    const s = String(v == null ? '' : v);
-    return /[",\n]/.test(s) ? `"${s.replace(/"/g,'""')}"` : s;
-  };
-  const lines = [head.join(',')].concat(rows.map(r => {
-    const first = r.sid !== seen; seen = r.sid;
-    const base = [r.date, r.time, r.stageLabel, r.range,
-      r.pages != null ? r.pages.toFixed(1) : '',
-      r.score != null ? r.score : '', r.hifz, r.taj];
-    return (grouped ? base.concat([first ? r.duration : '', first ? r.notes : '']) : base)
-      .map(esc2).join(',');
-  }));
-  const blob = new Blob(['\uFEFF' + lines.join('\r\n')], {type:'text/csv;charset=utf-8;'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `recitation-log-${_ymd(new Date())}.csv`;
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
-}
-
-/* window.print() rather than a PDF library. It gives Save as PDF on every
-   platform including iOS, and it renders the Arabic with the browser's own
-   text engine — jsPDF would need the fonts embedded and still breaks Arabic
-   shaping, which would turn every range label into disconnected letters. */
-function printLog(){
-  document.body.classList.add('printing-log');
-  const done = () => { document.body.classList.remove('printing-log'); window.removeEventListener('afterprint', done); };
-  window.addEventListener('afterprint', done);
-  setTimeout(() => { window.print(); setTimeout(done, 1000); }, 60);
-}
-
-function msSetPaceUnit(u){ _msPaceUnit=u; _msRerender(); }
-function msSetTab(t){ _msTab=t; _msTrendWindow='all'; _msRerender(); }
-
-// ── A stage tab: its trend, plus the metrics that only make sense for it ──
-function _msStageTab(S, stage){
-  let extra='';
-  if(stage==='new'){
-    const pace=sabaqPace(S), hd=handoffDeltas(S);
-    const mean = hd.length ? Math.round(hd.reduce((n,h)=>n+h.delta,0)/hd.length) : null;
-    extra = `<div class="ms-sec">
-      <div class="ms-sec-head"><span>Pace &amp; retention</span>${hlpBtn('sabaq')}
-        <span class="ms-unit">
-          <button class="ms-unit-b${_msPaceUnit==='verses'?' on':''}" onclick="msSetPaceUnit('verses')">verses</button>
-          <button class="ms-unit-b${_msPaceUnit==='pages'?' on':''}" onclick="msSetPaceUnit('pages')">pages</button>
-        </span></div>
-      <div class="ms-stats">
-        ${pace?(_msPaceUnit==='pages'
-          ? `<div class="ms-stat"><span class="ms-stat-n">${pace.pagesPerWeek}</span><span class="ms-stat-l">pages / week</span></div>
-             <div class="ms-stat"><span class="ms-stat-n">${pace.pages}</span><span class="ms-stat-l">pages added</span></div>`
-          : `<div class="ms-stat"><span class="ms-stat-n">${pace.versesPerWeek}</span><span class="ms-stat-l">verses / week</span></div>
-             <div class="ms-stat"><span class="ms-stat-n">${pace.verses}</span><span class="ms-stat-l">verses added</span></div>`):''}
-        ${mean!=null?`<div class="ms-stat"><span class="ms-stat-n" style="color:${mean>=0?'var(--green)':'var(--red)'}">${mean>0?'+':''}${mean}</span><span class="ms-stat-l">avg change on return</span></div>`:''}
-      </div>
-      ${hd.length?`<div class="ms-rows">${hd.slice(-6).reverse().map(h=>`<div class="ms-row">
-        <span class="ms-row-ref">${esc(h.label||'')}</span>
-        <span class="ms-row-meta">${h.learned} → ${h.returned} after ${h.days}d</span>
-        <span class="ms-row-score" style="color:${h.delta>=0?'var(--green)':'var(--red)'};">${h.delta>0?'+':''}${h.delta} pts</span>
-      </div>`).join('')}</div>`:''}
-    </div>`;
-  }
-  if(stage==='recent'){
-    const sq=sabqiPassages(S);
-    const col=st=>st==='climbing'?'var(--green)':st==='declining'?'var(--red)':'var(--ink3)';
-    const seq=r=>{
-      const shown = r.scores.length>6 ? r.scores.slice(-6) : r.scores;
-      const lead  = r.scores.length>6 ? '… ' : '';
-      const from  = r.learnedScore!=null
-        ? `<span style="color:var(--ink3)" title="score on the day it was learned">${r.learnedScore}</span> &rArr; ` : '';
-      return from + lead + shown.map(s=>s.score).join(' &rarr; ');
-    };
-    extra = `<div class="ms-sec">
-      <div class="ms-sec-head"><span>Consolidation</span>${hlpBtn('sabqi')}
-        <span class="ms-sec-note">${sq.passages} passage${sq.passages===1?'':'s'}${sq.avgHearings?` · ${sq.avgHearings} hearings each on average`:''}</span></div>
-      <div class="ms-stats">
-        ${sq.avgDelta!=null?`<div class="ms-stat"><span class="ms-stat-n" style="color:${sq.avgDelta>=0?'var(--green)':'var(--red)'}">${sq.avgDelta>0?'+':''}${sq.avgDelta}</span><span class="ms-stat-l">avg change across hearings</span></div>`:''}
-        <div class="ms-stat"><span class="ms-stat-n" style="color:var(--green)">${sq.climbing}</span><span class="ms-stat-l">still improving</span></div>
-        <div class="ms-stat"><span class="ms-stat-n">${sq.stalled}</span><span class="ms-stat-l">not moving</span></div>
-        <div class="ms-stat"><span class="ms-stat-n" style="color:var(--red)">${sq.declining}</span><span class="ms-stat-l">slipping</span></div>
-      </div>
-      ${sq.rows.length?`<div class="ms-rows">${sq.rows.slice(0,12).map(r=>`<div class="ms-row">
-        <span class="ms-row-ref">${esc(r.label||'')}</span>
-        <span class="ms-row-meta">${seq(r)} · ${r.hearings}&times;${r.days?` over ${r.days}d`:''}</span>
-        <span class="ms-row-score" style="color:${col(r.status)};">${r.delta==null?'—':(r.delta>0?'+':'')+r.delta+' pts'}</span>
-      </div>`).join('')}</div>`:''}
-      ${sq.single?`<div class="ms-note" style="margin-top:6px;">${sq.single} passage${sq.single===1?' has':'s have'} been heard
-        only once so far — no trajectory yet, shown with a dash.</div>`:''}
-    </div>`;
-    if(sq.graduated.n || sq.openN){
-      extra += `<div class="ms-sec">
-        <div class="ms-sec-head"><span>Time to graduate</span>${hlpBtn('graduate')}
-          <span class="ms-sec-note">${sq.graduated.n} moved on to ${esc(sessionTypeLabel('old'))}</span></div>
-        <div class="ms-stats">
-          ${sq.graduated.medDays!=null?`<div class="ms-stat"><span class="ms-stat-n">${sq.graduated.medDays}</span><span class="ms-stat-l">median days in ${esc(sessionTypeLabel('recent'))}</span></div>`:''}
-          ${sq.graduated.medHearings!=null?`<div class="ms-stat"><span class="ms-stat-n">${sq.graduated.medHearings}</span><span class="ms-stat-l">median hearings first</span></div>`:''}
-          <div class="ms-stat"><span class="ms-stat-n">${sq.openN}</span><span class="ms-stat-l">still here</span></div>
-          ${sq.longestOpen?`<div class="ms-stat"><span class="ms-stat-n" style="color:${sq.longestOpen>90?'var(--red)':'var(--ink)'}">${sq.longestOpen}d</span><span class="ms-stat-l">longest running</span></div>`:''}
-        </div>
-      </div>`;
-    }
-  }
-  if(stage==='old'){
-    const ct=cycleTimes(S);
-    extra = _msRotation(S, memorisedJuz(S)) + `<div class="ms-sec">
-      <div class="ms-sec-head"><span>Rotation cycle</span>${hlpBtn('cycle')}
-        <span class="ms-sec-note">${ct.meanCycle!=null?`averaging ${ct.meanCycle} days between hearings`:''}</span></div>
-      <div class="ms-rows">${ct.rows.map(r=>`<div class="ms-row">
-        <span class="ms-row-ref">Juz <strong>${r.juz}</strong></span>
-        <span class="ms-row-meta">${r.times}&times; · avg ${r.avgGap==null?'—':r.avgGap+'d'}</span>
-        <span class="ms-row-score" style="color:${r.maxGap>90?'var(--red)':r.maxGap>45?'var(--lvl2-orange)':'var(--ink3)'};font-size:12px;">${r.maxGap==null?'—':'worst '+r.maxGap+'d'}</span>
-      </div>`).join('')}</div>
-    </div>`;
-  }
-  return _msTrend(S, stage) + extra;
-}
-
-// ── Spot tests get the whole tab, not a line on someone else's chart ──
-function _msSpotTab(S){
-  const sp=spotTrend(S);
-  const cmp=spotVsRecite(S);
-  const tot=sp.reduce((a,p)=>({pass:a.pass+p.pass, partial:a.partial+p.partial, fail:a.fail+p.fail, done:a.done+p.done}),
-                      {pass:0,partial:0,fail:0,done:0});
-  return _msTrend(S,'spot') + `<div class="ms-sec">
-    <div class="ms-sec-head"><span>All spots</span><span class="ms-sec-note">${tot.done} assessed across ${sp.length} tests</span></div>
-    <div class="ms-stats">
-      <div class="ms-stat"><span class="ms-stat-n" style="color:var(--green)">${tot.pass}</span><span class="ms-stat-l">passed</span></div>
-      <div class="ms-stat"><span class="ms-stat-n" style="color:var(--amber)">${tot.partial}</span><span class="ms-stat-l">partial</span></div>
-      <div class="ms-stat"><span class="ms-stat-n" style="color:var(--red)">${tot.fail}</span><span class="ms-stat-l">failed</span></div>
-    </div>
-    ${cmp.length?`<div class="ms-sec-head" style="margin-top:10px;"><span>Spot vs full recitation</span>${hlpBtn('spot')}</div>
-      <div class="ms-rows">${cmp.map(r=>`<div class="ms-row">
-        <span class="ms-row-ref">Juz <strong>${r.juz}</strong></span>
-        <span class="ms-row-meta">recited ${r.recite}% · spot ${r.spot}%</span>
-        <span class="ms-row-score" style="color:${r.spot-r.recite<-15?'var(--red)':'var(--ink3)'};font-size:13px;">${r.spot-r.recite>0?'+':''}${r.spot-r.recite} pts</span>
-      </div>`).join('')}</div>
-      `:''}
-  </div>`;
-}
-
-function _msHeader(S, mem){
-  const first=_sessDate(S[0]), last=_sessDate(S[S.length-1]);
-  const span = first&&last ? `${sessionDateText(S[0])} – ${sessionDateText(S[S.length-1])}` : '';
-  const days = first&&last ? daysBetween(first,last) : 0;
-  const names=[...new Set(S.map(s=>s.student).filter(Boolean))];
-  const totalM=S.reduce((n,s)=>n+(s.mistakes||[]).length,0);
-  /* Synced sessions carry no name — the server never has one — so counting
-     names gave "0 students" on every synced report. Named sessions only exist
-     in files imported by hand; everything else is titled by who is looking. */
-  const title = names.length===1 ? names[0]
-    : names.length>1 ? `${names.length} students`
-    : (window.TehfizReviewLabel ? window.TehfizReviewLabel()
-    : (localStorage.getItem('tehfiz_claim_token') ? 'Your progress' : 'Progress report'));
-  return `<div class="rv-head">
-    <h2>${esc(title)}</h2>
-    <p class="rv-sub">${S.length} sessions · ${esc(span)}${days?` · ${days} days`:''}</p>
-    <div class="rv-badges">
-      <span class="m-badge" style="background:var(--parchment3);color:var(--ink2);">${totalM} mistakes</span>
-      <span class="m-badge" style="background:var(--parchment3);color:var(--ink2);">${mem.set.size} juz memorised</span>
-    </div>
-  </div>`;
-}
-
-// ── Rotation: the headline. What hasn't been heard lately, and what never has.
-function _msRotation(S, mem){
-  const rows = portionCondition(S, mem.set);
-  if(!rows.length) return '';
-  const stale = rows.filter(r=>r.att!=='settled');
-  const bandLabel = k => (METRICS_MODEL.rotation.bands.find(b=>b.key===k)||{}).label || 'never verified';
-  const cell = r => {
-    const aged = r.scoreGap!=null && r.scoreGap > METRICS_MODEL.rotation.agedScoreDays;
-    const cls = r.att;
-    const ttl = r.neverHeard
-      ? `Juz ${r.juz} — memorised but never revised in any recorded session`
-      : `Juz ${r.juz} — last heard ${r.daysSince} day${r.daysSince===1?'':'s'} ago, ${r.heard} time${r.heard===1?'':'s'} total`
-        + (r.lastScore!=null?`, scored ${r.lastScore} then`:r.spotOnly?', spot-tested only — no full recitation to score':'')
-        + (aged?` — but that score is ${r.daysSinceScored} days old; nothing since has been fully recited`:'')
-        + (r.projected!=null?`. Unverified for ${r.daysSinceScored} day${r.daysSinceScored===1?'':'s'}, so condition now reads ~${r.projected} — ${bandLabel(r.att)}`:'');
-    // Everything legible without hovering: how long ago, how many times, and
-    // what it scored. A tooltip is no use on touch and no use when scanning.
-    const when = r.neverHeard ? 'never'
-      : r.daysSince===0 ? 'today'
-      : r.daysSince<31 ? `${r.daysSince}d ago`
-      : r.daysSince<365 ? `${Math.round(r.daysSince/30)}mo ago`
-      : `${(r.daysSince/365).toFixed(1)}y ago`;
-    return `<div class="jz ${cls}" title="${ttl}">
-      <div class="jz-top"><span class="jz-n">${r.juz}</span>${r.lastScore!=null?`<span class="jz-s${aged?' aged':''}">${r.lastScore}</span>`:r.spotOnly?`<span class="jz-s spot">🎲</span>`:''}</div>
-      <div class="jz-d">${when}</div>
-      <div class="jz-c">${r.neverHeard?'not revised':`heard ${r.heard}&times;`}</div>
-    </div>`;
-  };
-
-  return `<div class="ms-sec">
-    <div class="ms-sec-head"><span>Revision rotation</span>${hlpBtn('rotation')}
-      <span class="ms-sec-note">${stale.length} of ${rows.length} need attention</span></div>
-    <div class="jz-strip">${rows.map(cell).join('')}</div>
-    <div class="jz-key">
-      <span>needs attention:</span>
-      <span><i class="jz settled"></i>settled</span>
-      <span><i class="jz due"></i>due a look</span>
-      <span><i class="jz overdue"></i>overdue</span>
-      <span><i class="jz urgent"></i>urgent</span>
-      <span><i class="jz unknown"></i>never verified</span>
-      <span><span class="jz-s aged" style="font-size:9px;">99</span> score older than the visit</span>
-    </div>
-    ${_msProfileEditor(S, mem)}
-  </div>`;
-}
-
-function _msProfileEditor(S, mem){
-  if(mem.fromMap){
-    const who = window.TehfizReview && TehfizReview.active && TehfizReview.active()
-      ? 'This is the memorisation map from the student\u2019s Profile. Change it there.'
-      : 'Your teacher keeps this map in Tehfiz. It is the same one you see in My journey.';
-    return `<details class="ms-prof" open><summary>Memorised portions \u2014 from the memorisation map</summary>
-      <div class="ms-note" style="margin:6px 0;">${who}</div>
-      <div class="ms-map" data-msmap></div>
-    </details>`;
-  }
-  const obs=observedJuz(S, true);
-  return `<details class="ms-prof"><summary>Memorised portions${mem.declared?'':' — inferred from revisions so far'}</summary>
-    <div class="ms-note" style="margin:6px 0;">Tap a juz to mark it memorised. Anything already
-      revised is locked on. Only declared portions can show up as never-revised.</div>
-    <div class="jz-pick">${Array.from({length:30},(_,i)=>i+1).map(j=>{
-      const on=mem.set.has(j), lock=obs.has(j);
-      return `<button class="jzp${on?' on':''}${lock?' lock':''}" onclick="msToggleJuz(${j})"
-        title="${lock?'Revised in a session — always counted':on?'Memorised':'Not memorised'}">${j}</button>`;
-    }).join('')}</div>
-  </details>`;
-}
-// ── Trend: tabbed by stage, with a real dated x-axis ──────────────
-// Tabs rather than one overlaid chart because the CADENCE differs — sabaq shows
-// up almost every session, manzil every few weeks — so on a shared axis manzil
-// bunches into clumps while sabaq fills the width. Each stage gets the space.
-// Spot tests get their own tab: they sample rather than recite, so they have no
-// verse rate and can't share the strength axis at all.
-const MS_WINDOWS=[['all','All'],['1y','1y'],['6m','6m'],['3m','3m'],['1m','1m']];
-const MS_WIN_DAYS={'1y':365,'6m':182,'3m':91,'1m':31};
-const MS_STAGE_COLORS={new:'var(--red)', recent:'var(--lvl2-orange)', old:'var(--teal)',
-                       unassigned:'var(--ink3)', spot:'var(--spot-blue)'};
-
-function msSetWindow(w){ _msTrendWindow=w; _msRerender(); }
-function _msRerender(){
-  const el=document.getElementById('reviewContent');
-  if(el) { el.innerHTML=buildMultiReviewHTML(activeSessions); _msMountMap(); }
-}
-
-// Ticks that stay readable at every window: months when the span is long,
-// days when it's short. A bare pixel axis with no labels was the real gap.
-function _msTicks(t0,t1){
-  const span=(t1-t0)/86400000;
-  const out=[];
-  if(span<=0){ return [{t:t0,lab:''}]; }
-  if(span>200){
-    const d=new Date(t0); d.setDate(1);
-    const step = span>500 ? 3 : span>320 ? 2 : 1;
-    let m=new Date(d.getFullYear(), d.getMonth(), 1);
-    while(+m<=t1){ if(+m>=t0) out.push({t:+m, lab:m.toLocaleDateString(undefined,{month:'short'})}); m=new Date(m.getFullYear(), m.getMonth()+step, 1); }
-  } else if(span>45){
-    const d=new Date(t0); d.setDate(1);
-    let m=new Date(d.getFullYear(), d.getMonth(), 1);
-    while(+m<=t1){ if(+m>=t0) out.push({t:+m, lab:m.toLocaleDateString(undefined,{month:'short'})}); m=new Date(m.getFullYear(), m.getMonth()+1, 1); }
-  } else {
-    const n=Math.min(6, Math.max(2, Math.round(span/7)));
-    for(let i=0;i<=n;i++){ const t=t0+(t1-t0)*i/n;
-      out.push({t, lab:new Date(t).toLocaleDateString(undefined,{day:'numeric',month:'short'})}); }
-  }
-  return out;
-}
-
-function _msTrend(S, which){
-  // Now a plain chart for ONE series — the tab bar moved up to the review
-  // itself, so this no longer decides what it's showing.
-  const isSpot = which==='spot';
-  let pts = isSpot
-    ? spotTrend(S).map(p=>({date:p.date, v:p.rate, label:`${p.label} — ${p.pass}/${p.done} passed`}))
-    : (stageTrend(S)[which]||[]).map(p=>({date:p.date, v:p.score, label:`${p.label||''} · ${p.verses} verses`}));
-  pts=pts.filter(p=>p.date && p.v!=null).sort((a,b)=>a.date-b.date);
-  if(!pts.length) return '';
-
-  const lastT=+pts[pts.length-1].date;
-  const winDays=MS_WIN_DAYS[_msTrendWindow];
-  const cutoff=winDays ? lastT-winDays*86400000 : -Infinity;
-  const inWin=pts.filter(p=>+p.date>=cutoff);
-  const hidden=pts.length-inWin.length;
-
-  const W=560,H=150,PL=28,PR=10,PT=10,PB=30;
-  const color=MS_STAGE_COLORS[which]||'var(--ink3)';
-  let body;
-  if(!inWin.length){
-    body=`<text x="${W/2}" y="${H/2}" font-size="10" fill="var(--ink3)" text-anchor="middle">Nothing in this window</text>`;
-  } else {
-    const t0=+inWin[0].date, t1=+inWin[inWin.length-1].date;
-    const x=d=>t1===t0?(PL+(W-PL-PR)/2):PL+(+d-t0)/(t1-t0)*(W-PL-PR);
-    const y=v=>PT+(100-v)/100*(H-PT-PB);
-    const path=inWin.map((p,i)=>`${i?'L':'M'}${x(p.date).toFixed(1)},${y(p.v).toFixed(1)}`).join(' ');
-    body=`
-      ${[0,25,50,75,100].map(v=>`<line x1="${PL}" x2="${W-PR}" y1="${y(v)}" y2="${y(v)}" stroke="var(--border)" stroke-width=".5"/>
-         <text x="2" y="${y(v)+3}" font-size="8" fill="var(--ink3)">${v}</text>`).join('')}
-      <line x1="${PL}" x2="${W-PR}" y1="${H-PB}" y2="${H-PB}" stroke="var(--border2)" stroke-width=".8"/>
-      ${_msTicks(t0,t1).map(t=>`<line x1="${x(t.t).toFixed(1)}" x2="${x(t.t).toFixed(1)}" y1="${H-PB}" y2="${H-PB+3}" stroke="var(--border2)" stroke-width=".8"/>
-         <text x="${x(t.t).toFixed(1)}" y="${H-PB+13}" font-size="8" fill="var(--ink3)" text-anchor="middle">${t.lab}</text>`).join('')}
-      ${inWin.length>=4?`<path d="${path}" fill="none" stroke="${color}" stroke-width="1.6" opacity=".85"/>`:''}
-      ${inWin.map(p=>`<circle cx="${x(p.date).toFixed(1)}" cy="${y(p.v).toFixed(1)}" r="2.8" fill="${color}"><title>${esc(p.label)} · ${p.v}${isSpot?'% passed':''}</title></circle>`).join('')}`;
-  }
-  return `<div class="ms-sec">
-    <div class="ms-sec-head"><span>${isSpot?'Pass rate over time':'Condition over time'}</span>${hlpBtn('trend')}
-      <span class="ms-sec-note">${isSpot?'(pass + ½ partial) ÷ assessed':'memorization strength'}</span></div>
-    <svg class="ms-chart" viewBox="0 0 ${W} ${H}">${body}</svg>
-    <div class="ms-winrow">
-      ${MS_WINDOWS.map(([k,l])=>`<button class="ms-win${_msTrendWindow===k?' on':''}" onclick="msSetWindow('${k}')">${l}</button>`).join('')}
-      ${hidden?`<span class="ms-hidden">${hidden} earlier hidden</span>`:''}
-    </div>
-    ${inWin.length&&inWin.length<METRICS_MODEL.trend.minPointsForLine?`<div class="ms-note">Fewer than four points — shown as points only, too little to call a direction.</div>`:''}
-  </div>`;
-}
-
-// ── Persistence: what's stuck, what's actually been fixed ─────────
-function _msPersistence(S){
-  const p=persistence(S);
-  if(!p.recurring.length && !p.resolved.length) return '';
-  // "missed in 3 sessions" reads as "the last 3", which it isn't — they're 3
-  // separate occasions anywhere in the history. Say the count and the recency
-  // as two distinct facts, because they mean different things: 3 times ending
-  // last week is urgent, 3 times ending in February is probably settled.
-  const ago=d=>{
-    if(!d) return '';
-    const n=daysBetween(d,new Date());
-    return n<=0?'today':n===1?'yesterday':n<30?`${n}d ago`:n<365?`${Math.round(n/30)}mo ago`:'over a year';
-  };
-  const row=(r,kind)=>`<div class="ms-row" onclick="closeReviewGoto(${r.surah},${r.ayah})">
-      <span class="ms-row-ref">${esc(SURAH_NAMES[r.surah-1]||'')} <strong>${r.surah}:${r.ayah}</strong></span>
-      <span class="ms-row-meta">${kind==='rec'
-        ? `${r.times}&times; · last ${ago(r.lastDate)}`
-        : `clean ${r.retested}&times; since`}</span>
-    </div>`;
-  return `<div class="ms-sec">
-    <div class="ms-sec-head"><span>What's stuck, what's fixed</span>${hlpBtn('persistence')}</div>
-    <div class="ms-two">
-      <div>
-        <div class="ms-col-head bad" title="Ayahs missed on more than one separate occasion, and not yet cleanly re-heard twice">Still recurring · ${p.recurring.length}</div>
-        ${p.recurring.slice(0,6).map(r=>row(r,'rec')).join('') || '<div class="ms-empty">Nothing recurring</div>'}
-      </div>
-      <div>
-        <div class="ms-col-head good">Resolved · ${p.resolved.length}</div>
-        ${p.resolved.slice(0,6).map(r=>row(r,'res')).join('') || '<div class="ms-empty">None yet</div>'}
-      </div>
-    </div>
-  </div>`;
-}
-
-// ── Focus: recency-weighted, so old fixed problems drop away ──────
-function _msFocus(S){
-  const top=crossFocus(S,6);
-  if(top.length<2) return '';
-  return `<div class="ms-sec">
-    <div class="ms-sec-head"><span>Work on these next</span>${hlpBtn('focus')}
-      <span class="ms-sec-note">weighted by severity, repetition and how recent</span></div>
-    <div class="rv-focus-rows">${top.map((f,i)=>{
-      const b=sev(f.worst);
-      return `<div class="rv-focus-row" onclick="closeReviewGoto(${f.surah},${f.ayah})">
-        <span class="rv-focus-rank">${i+1}</span>
-        <span class="rv-focus-ref">${esc(SURAH_NAMES[f.surah-1]||'')} <strong>${f.surah}:${f.ayah}</strong></span>
-        <span class="rv-focus-words">${esc(f.words.slice(0,3).join(' · '))}</span>
-        <span class="rv-focus-n ${b.cls}" title="Missed in ${f.sessions} separate session${f.sessions>1?'s':''} (${f.hits} mistakes in total)">${f.sessions}&times;</span>
-      </div>`;
-    }).join('')}</div>
-  </div>`;
-}
-
-// ── Sessions: each one opens the single-session review ────────────
-function _msSessions(S){
-  return `<details class="rv-details"><summary class="rv-summary">
-      <span>Sessions</span><span class="rv-summary-n">${S.length}</span><span class="rv-chev">▾</span>
-    </summary><div class="rv-details-body">
-    ${[...S].reverse().map(s=>{
-      const sc=gradedValue(s, strengthFromInputs(sessionInputsWithPages(s.strength?.inputs||null, s.segments)));
-      const b=gradedBand(s, sc);
-      return `<div class="ms-row" onclick="openSingleReview(${s.id})">
-        <span class="ms-row-ref"><strong>${sessionDateText(s)}</strong> ${esc(sessionNameOf(s))}</span>
-        <span class="ms-row-meta">${(s.mistakes||[]).length} mistakes</span>
-        <span class="ms-row-score" style="color:${b.color};">${sc==null?'—':bandOnly(s)?b.label:sc+'%'}</span>
-      </div>`;
-    }).join('')}
-    </div></details>`;
-}
+/* v1_203: the progress report screens moved to /app/shared/tehfiz-report.js
+   (TehfizReport, rp2). Its hooks default to what this page did. */
 
 function closeReviewGoto(su,ay){
   document.getElementById('reviewModal')?.classList.remove('open');
@@ -5492,34 +4022,11 @@ function closeReviewGoto(su,ay){
 
 
 
-const STRENGTH_TIP = 'Memorization strength, shown as a percentage.\n\n'
-  + 'It is a SCORE, not a proportion of the Quran you have retained.\n\n'
-  + 'Scores only compare within the same model. Recited ranges score under '
-  + 'strength-v2; spot checks score under spot-v1 — same curve, different test, '
-  + 'since starting cold from a random point is harder than carrying on.\n\n'
-  + 'Combines how often the student slipped with how much help each slip needed, '
-  + 'measured per verse recited — so a long passage and a short one are comparable.\n\n'
-  + 'Weighting: Lvl 0 self-corrected 0.25 · Lvl 1 repeat 1 · Lvl 2 hint 2 · Lvl 3 taught 3.\n'
-  + 'Level 0 counts a little rather than nothing, so a run of self-corrections '
-  + 'never scores the same as a flawless recitation.\n\n'
-  + 'Spot-tested and estimated ranges are excluded — they have no reliable verse count.';
+/* v1_205: STRENGTH_TIP moved to tehfiz-shared.js (s29). */
 
 // band: the band to show (the teacher's choice may differ from where v falls);
 // noPct: the teacher gave a band only, so the dial shows no made-up %.
-function strengthCardHTML(v, label, sub, band, noPct){
-  const b = band || strengthBand(v);
-  return `<div class="str-card str-${b.key}" title="${STRENGTH_TIP}">
-    <div class="str-dial">
-      ${strengthArcSVG(v, b.color)}
-      <div class="str-val" style="color:${b.color};">${v==null||noPct?'—':v+'%'}</div>
-    </div>
-    <div class="str-meta">
-      <div class="str-title">${label}<span class="str-info" onclick="openInterventionGuide()">?</span></div>
-      <div class="str-band" style="color:${b.color};">${b.label}</div>
-      ${sub?`<div class="str-sub">${sub}</div>`:''}
-    </div>
-  </div>`;
-}
+/* v1_205: moved to /app/shared/tehfiz-shared.js (s29), one copy for both apps. */
 
 // ═══════════════════════════════════════════════════════════════════
 // REVIEW — HTML BUILDERS
@@ -5541,95 +4048,14 @@ let _rvListOpen = false;
 
 
 let _rvPageFilter = null;
-function rvFilterPage(pg){
-  _rvPageFilter = (_rvPageFilter===pg) ? null : pg;
-  /* singleReviewContent, for the same reason rvFilterSegment() uses it: the
-     viewer has two review surfaces and the teacher app has one. Copying that
-     function's body without this line would repaint the closed multi-session
-     modal, and the tap would appear to do nothing. */
-  const el = document.getElementById('singleReviewContent');
-  if(reviewingSession && el) el.innerHTML = buildReviewHTML(reviewingSession);
-}
+/* v1_205: moved to /app/shared/tehfiz-shared.js (s29), one copy for both apps. */
 
-function rvFilterSegment(segId){
-  _rvSegFilter = (_rvSegFilter===segId) ? null : segId;   // tapping again clears
-  _rvPageFilter = null;                                   // a new segment discards a page pick
-  /* singleReviewContent, NOT reviewContent. The viewer has two review surfaces
-     — one session, and the multi-session view — where the teacher app has only
-     one. This line was carried across unchanged, so it repainted the closed
-     multi-session modal instead: the filter did apply, and nothing on screen
-     moved. openSingleReview() is the only thing that renders buildReviewHTML
-     here, so this must follow it. */
-  const el = document.getElementById('singleReviewContent');
-  if(reviewingSession && el) el.innerHTML = buildReviewHTML(reviewingSession);
-}
+/* v1_205: moved to /app/shared/tehfiz-shared.js (s29), one copy for both apps. */
 
-function buildReviewHTML(s){
-  const cfg   = s.typeConfig || null;
-  const segs  = s.segments || [];
-  const all   = s.mistakes;
-  // One filter, applied once, feeding every section below. The segment cards
-  // are the control, so they always show their own full figures — everything
-  // else (badges, charts, focus, list) narrows to the selected segment.
-  const fseg  = _rvSegFilter ? segs.find(x=>x.id===_rvSegFilter) : null;
-  const ml    = fseg ? mistakesInSegment(segs, fseg, all) : all;
-  const tally = corrTally(ml);
-  // Build the type list from the ids actually present in the mistakes, then
-  // order it by the session's catalog. Deriving it from the catalog alone meant
-  // that if a mistake's id wasn't in that list — an older save, a renamed or
-  // deleted custom type — it matched nothing and EVERY bar read zero, with no
-  // hint that 25 mistakes had gone uncounted.
-  const present = [...new Set(ml.map(m=>migrateId(m.type)).filter(Boolean))];
-  // `mistakeTypesActive` was named here and never defined in this file — a
-  // ReferenceError for any session with no typeConfig at all, which blanks
-  // the whole review modal. The library is the viewer's equivalent: a list of
-  // type objects with `.id`, so it drops straight in.
-  const catalog = (cfg?.mistakeTypes || MISTAKE_TYPE_LIBRARY).map(t=>migrateId(t.id));
-  const ordered = catalog.filter(id=>present.includes(id));      // catalog order first
-  const extras  = present.filter(id=>!catalog.includes(id));     // then anything unlisted
-  const types = [...ordered, ...extras];
-
-  return _rvHeader(s, tally)
-       + _rvStrength(s, all)
-       + _rvFilterBar(fseg, ml.length, all.length)
-       + _rvCharts(ml, cfg, types, tally)
-       + _rvFocus(ml, cfg)
-       + _rvSpotTest(s.spotTest, ml, cfg)
-       /* Narrowed HERE and nowhere else. Passing a page-filtered list into
-          _rvStrength would rebuild every chart from one page's mistakes — the
-          bars would all collapse to the bar just tapped, and the strength score
-          beside them would silently change. */
-       + _rvVersesSplit(_rvApplyPageFilter(segs, ml), cfg);
-}
+/* v1_205: moved to /app/shared/tehfiz-shared.js (s29), one copy for both apps. */
 
 // ── Header: who/what/when, remarks, and the level badge strip ──────
-function _rvHeader(s, t){
-  return `<div class="rv-head">
-    <h2>${esc(s.student)}</h2>
-    <p class="rv-sub">${esc(sessionNameOf(s))} · ${sessionDateText(s)}${sessionTimeText(s)?` ${sessionTimeText(s)}`:''}${(s.duration&&s.duration!=='00:00')?` · ${s.duration}`:''}${
-      /* Shown only when the teacher DECLARED it. The inferred value adds
-         nothing a reader cannot see from the mistakes below, and printing a
-         guess as a statement is how "no tajweed marked" becomes "tajweed was
-         fine". */
-      s.focus ? `<span class="rv-focus-tag" title="Set by your teacher">${esc(FOCUS_LABEL[s.focus])}</span>` : ''
-    }</p>
-    ${s.remarks?`<p class="rv-remarks">${esc(s.remarks)}</p>`:''}
-    <div class="rv-badges">
-      ${(t.scored || !t.tajweed)?`<span class="m-badge" style="background:var(--parchment3);color:var(--ink2);">${t.scored} mistake${t.scored!==1?'s':''}</span>`:''}
-      ${t.tajweed?`<span class="m-badge" style="background:var(--tajweed-bg);color:var(--tajweed);">${t.tajweed} tajweed</span>`:''}
-      ${/* The level badges describe hifz mistakes only, so they stand down
-            entirely when there are none. A tajweed-only session reading
-            "9 mistakes · Lvl 1 0 · Lvl 2 0 · Lvl 3 0" was a contradiction
-            printed for a student to puzzle over. */
-        t.scored ? `
-      ${t.c0?`<span class="m-badge" style="background:var(--green-bg);color:var(--green);">Lvl 0 · ${t.c0}</span>`:''}
-      <span class="m-badge" style="background:var(--lvl1-yellow-bg);color:var(--lvl1-ink);">Lvl 1 · ${t.c1}</span>
-      <span class="m-badge" style="background:var(--lvl2-orange-bg);color:var(--lvl2-orange);">Lvl 2 · ${t.c2}</span>
-      <span class="m-badge" style="background:var(--red-bg);color:var(--red);">Lvl 3 · ${t.c3}</span>
-      <span class="m-badge" style="background:var(--parchment3);color:var(--ink2);">◌ ${t.c4} other</span>` : ''}
-    </div>
-  </div>`;
-}
+/* v1_205: moved to /app/shared/tehfiz-shared.js (s29), one copy for both apps. */
 
 
 
@@ -5637,44 +4063,7 @@ function _rvHeader(s, t){
 
 
 // ── Spot test: scope, outcome tally, and a row per spot ───────────
-function _rvSpotTest(spotTest, ml, cfg){
-  if(!spotTest?.enabled || !spotTest.spots?.length) return '';
-  const spots = spotTest.spots;
-  const {pass,partial,fail,none} = spotTally(spots);
-  return `<div class="spot-card">
-    <div class="spot-card-title">🎲 Spot Test — ${spotTest.scopeInput||''} · ${spots.length} spots</div>
-    <div class="spot-badges">
-      <span class="m-badge" style="background:var(--green-bg);color:var(--green);">✓ ${pass} passed</span>
-      <span class="m-badge" style="background:var(--amber-bg);color:var(--amber);">~ ${partial} partial</span>
-      <span class="m-badge" style="background:var(--red-bg);color:var(--red);">✗ ${fail} failed</span>
-      ${none?`<span class="m-badge" style="background:var(--parchment3);color:var(--ink3);">○ ${none} not assessed</span>`:''}
-    </div>
-    <div class="spot-rows">${spots.map((sp,i)=>{
-      const sm = ml.filter(m=>m.spotId===sp.id);
-      const mc = sm.length;
-      const color = {pass:'var(--green)',partial:'var(--amber)',fail:'var(--red)'}[sp.outcome]||'var(--ink3)';
-      const label = {pass:'✓ Pass',partial:'~ Partial',fail:'✗ Fail'}[sp.outcome]||'○ —';
-      // Read from what the teacher app STORED. The viewer never recomputes a
-      // score: it has no calibration model of its own, and recomputing would
-      // silently restate history under whatever formula shipped last.
-      const reach = sp.reached && sp.reached.key ? sp.reached.key : null;
-      const st = sp.strength || null;
-      // Mistakes first and always shown: "Mistakes: 0" is a result, and hiding
-      // it made a clean spot look unassessed. Outcome last, as the conclusion.
-      const head = `<span class="spot-row-n">#${i+1}</span>
-        <span class="spot-row-ref">${sp.surahName} <span>${sp.surah}:${sp.ayah}${reach?` → ${reach}`:''}</span></span>
-        <span class="spot-row-count">Mistakes: ${mc}</span>
-        ${st?`<span class="spot-row-score" style="color:${strengthBand(st.score).color};" title="Only comparable with other spot checks">${st.score}%</span>`:''}
-        <span class="spot-row-outcome" style="color:${color};">${label}</span>`;
-      if(!mc) return `<div class="spot-row">${head}</div>`;
-      return `<details class="spot-row-det"><summary class="spot-row">${head}
-        <span class="spot-row-chev">▾</span></summary>
-        <div class="spot-row-body">${sm
-          .sort((a,b)=>a.surah-b.surah||a.ayah-b.ayah||a.wordPos-b.wordPos)
-          .map(m=>_rvMistakeRow(m,cfg)).join('')}</div></details>`;
-    }).join('')}</div>
-  </div>`;
-}
+/* v1_205: moved to /app/shared/tehfiz-shared.js (s29), one copy for both apps. */
 
 
 
@@ -5684,12 +4073,12 @@ function _rvSpotTest(spotTest, ml, cfg){
 
 
 
-function donutSVG(sl,total){if(!total)return`<svg viewBox="0 0 88 88"><circle cx="44" cy="44" r="31" fill="none" stroke="var(--parchment3)" stroke-width="14"/></svg>`;const r=31,sw=14,ci=2*Math.PI*r;let off=0;return`<svg viewBox="0 0 88 88">${sl.map(s=>{const d=(s.val/total)*ci;const p=`<circle cx="44" cy="44" r="${r}" fill="none" stroke="${s.color}" stroke-width="${sw}" stroke-dasharray="${d} ${ci-d}" stroke-dashoffset="${-off}" transform="rotate(-90 44 44)" opacity="${s.val?1:0}"/>`;off+=d;return p;}).join('')}</svg>`;}
+/* v1_205: moved to /app/shared/tehfiz-shared.js (s29), one copy for both apps. */
 
 // ── SHARE
 function buildReport(sessions,mistakes){
   const _tl=corrTally(mistakes);
-  const {c1:sf,c2:sp,c3:st,c4:so}=_tl;
+  const {c0:s0,c1:sf,c2:sp,c3:st,c4:so}=_tl;
   let t='📖 *Quran Recitation Session Report*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
   if(sessions.length===1){
     t+=`👤 Student : ${sessions[0].student}\n📜 Session  : ${sessionNameOf(sessions[0])}\n📅 Date    : ${sessions[0].date}   ⏱ ${sessions[0].duration}\n`;
@@ -5702,8 +4091,9 @@ function buildReport(sessions,mistakes){
      9 tajweed slips is not "12 mistakes" — the two are different measurements
      and adding them states something nobody observed. The levels now sum to
      the first number, which they did not when tajweed was folded in. */
-  t+=`📊 Summary : ${_tl.scored} mistake${_tl.scored===1?'':'s'}  |  Lvl 1: ${sf}  |  Lvl 2: ${sp}  |  Lvl 3: ${st}${so?`  |  Other: ${so}`:''}\n`;
-  if(_tl.tajweed) t+=`🔤 Tajweed : ${_tl.tajweed} slip${_tl.tajweed===1?'':'s'}  (intervention level does not apply)\n`;
+  // v1_201 (D2): Lvl 0 is counted too, so the levels add up to the total.
+  t+=`📊 Summary : ${_tl.scored} hifz mistake${_tl.scored===1?'':'s'}  |  ${s0?`Lvl 0: ${s0}  |  `:''}Lvl 1: ${sf}  |  Lvl 2: ${sp}  |  Lvl 3: ${st}${so?`  |  Other: ${so}`:''}\n`;
+  if(_tl.tajweed) t+=`🔤 Tajweed : ${_tl.tajweed} tajweed mistake${_tl.tajweed===1?'':'s'}  (no level for tajweed)\n             ${tajweedBreakdown(mistakes.filter(m=>isTajweedMistake(m)))}\n`;   // I1
   if(repeatWordKeys.size>0)t+=`⚠ Repeated: ${repeatWordKeys.size} words appear in multiple sessions\n`;
   t+='━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n';
   // Spot test section (single session only)
@@ -5759,22 +4149,21 @@ function buildReport(sessions,mistakes){
          printing "Lvl 0 · No intervention" claimed the student recovered
          unaided. The letter or the rule takes its place — the thing the
          teacher actually recorded. */
-      if(sr && sr.letter){
-        const mk=makhrajOf(sr.letter);
-        t+=`   Letter       : ${sr.letter}${mk?`  — ${mk.label}`:''}\n`;
-      } else if(sr && sr.rule){
-        t+=`   Rule         : ${ruleLabel(sr.rule)}\n`;
-      } else if(sr && sr.family){
-        t+=`   Rule         : ${sr.label || sr.family}\n`;
-      }
+      // v1_201 (D3): one wording, shared with the teacher app (tajweedMarkText).
+      const _tw=tajweedMarkText(sr);
+      if(_tw) t+=`   ${(_tw.field+'            ').slice(0,12)} : ${_tw.text}\n`;
       t+=_tail(m);
     });
   }
   return t;
 }
-function openShare(){if(!activeMistakes.length){showToast('No sessions loaded');return;}document.getElementById('shareOut').textContent=buildReport(activeSessions,activeMistakes);document.getElementById('shareModal').classList.add('open');}
+/* v1_201 (I4): Full, or Short (one line per mistake), remembered on this device. */
+function _shareText(){ return shareMode()==='short' ? shortTextReport(activeSessions, activeMistakes) : buildReport(activeSessions, activeMistakes); }
+function setShareMode(m){ setShareModeStored(m); document.getElementById('shareModeBar').innerHTML=shareModeBar(); document.getElementById('shareOut').textContent=_shareText(); }
+function openShare(){if(!activeMistakes.length){showToast('No sessions loaded');return;}document.getElementById('shareModeBar').innerHTML=shareModeBar();document.getElementById('shareOut').textContent=_shareText();document.getElementById('shareModal').classList.add('open');}
 async function copyReport(){const text=document.getElementById('shareOut').textContent,btn=document.getElementById('copyBtn');try{await navigator.clipboard.writeText(text);}catch{const ta=document.createElement('textarea');ta.value=text;ta.style.cssText='position:fixed;opacity:0;';document.body.appendChild(ta);ta.focus();ta.select();document.execCommand('copy');document.body.removeChild(ta);}btn.textContent='✓ Copied!';setTimeout(()=>btn.textContent='Copy text',2000);}
-async function copyReviewText(){if(!activeMistakes.length)return;try{await navigator.clipboard.writeText(buildReport(activeSessions,activeMistakes));}catch{}showToast('Copied ✓');}
+// v1_207: the progress report's Copy text copies what the report shows (range and time first).
+async function copyReviewText(){if(!activeMistakes.length)return;try{await navigator.clipboard.writeText(TehfizReport.text());}catch{}showToast('Copied ✓');}
 
 // ── LOAD FROM FOLDER (File System Access API with fallback)
 async function loadFromFolder(){
@@ -6245,65 +4634,7 @@ function buildSpotTrendChart(sessions, activeIdx){
   </div>
 </div>
 <script>
-/* v1_188: many sessions' payloads, quickly. Used by the student's pull
-   (TehfizClaim) and the teacher's review (TehfizReview), which used to fetch
-   them one after another — forty sessions was forty round trips in a row,
-   about ten seconds on a slow connection.
-
-   Now fifty at a time in one request (POST …/payloads {ids}), a few requests
-   side by side. The server sends them still gzipped (base64) so the Worker
-   does almost no work; the browser unzips them. A browser without
-   DecompressionStream, or a server from before this, falls back to one
-   request per session, six at a time.
-
-     tehfizFetchPayloads(api, ids, manyPath, onePath) → Promise<Map id → session>
-       api       the module's own api(path, opts)
-       manyPath  '/api/student/sessions/payloads' or '/api/sessions/payloads'
-       onePath   id → that session's single-payload path
-   A session that cannot be read is left out, as before. */
-async function tehfizFetchPayloads(api, ids, manyPath, onePath) {
-  const out = new Map();
-  if (!ids.length) return out;
-  const pool = async (items, n, fn) => {
-    let i = 0;
-    await Promise.all(Array.from({ length: Math.min(n, items.length) }, async () => {
-      while (i < items.length) { const x = items[i++]; await fn(x); }
-    }));
-  };
-  const one = async (id) => {
-    try { const p = await api(onePath(id)); if (p && p.session) out.set(id, p.session); } catch (e) {}
-  };
-  const unzip = async (b64) => {
-    const bin = atob(b64), u = new Uint8Array(bin.length);
-    for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
-    const txt = await new Response(new Blob([u]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
-    return JSON.parse(txt);
-  };
-  let many = typeof DecompressionStream === 'function';
-  if (many) {
-    const chunks = [];
-    for (let i = 0; i < ids.length; i += 50) chunks.push(ids.slice(i, i + 50));
-    const left = [];
-    await pool(chunks, 3, async (c) => {
-      if (!many) { left.push(...c); return; }
-      try {
-        const r = await api(manyPath, { method: 'POST', body: { ids: c } });
-        const gz = (r && r.gz) || {};
-        await Promise.all(c.map(async (id) => {
-          if (!gz[id]) return;
-          try { out.set(id, await unzip(gz[id])); } catch (e) { left.push(id); }
-        }));
-      } catch (e) {
-        if (e && e.status === 404) many = false;      // a server from before this
-        left.push(...c);
-      }
-    });
-    if (left.length) await pool(left, 6, one);
-    return out;
-  }
-  await pool(ids, 6, one);
-  return out;
-}
+/* v1_204: tehfizFetchPayloads moved to /app/shared/tehfiz-report.js, shared with the teacher app. */
 </script>
 <!-- ═══════════════════════════════════════════════════════════════════════════
      TEHFIZ CLAIM MODULE  —  v1  (phase 3, student viewer)
@@ -6649,8 +4980,11 @@ async function pull(loud, reveal) {
   if (!paired() || busy) return;
   busy = true; errorMsg = ''; render();
   try {
-    const data = await api('/api/student/sessions');
-    const rows = data.sessions || [];
+    /* v1_212 (A6): every page of the list. Removals are mirrored below, so
+       taking only the first 500 deleted a student's oldest lessons from the
+       device; tehfizListAll throws if any page fails, and then nothing is
+       removed. */
+    const rows = await tehfizListAll(api, '/api/student/sessions');
     const seen = {};
     const incoming = [];
 
@@ -7183,7 +5517,7 @@ window.TehfizClaim = { open, sync, isSynced, isPaired: paired, code: () => code 
 .tcl-busy{font-size:13px;color:var(--ink3);text-align:center;margin-bottom:10px;}
 .tcl-paired{text-align:center;margin-bottom:16px;}
 /* 44px minimum per HANDOFF §16 — new markup starts at the floor. */
-.tcl-teacher{padding:11px 12px;border-radius:8px;background:var(--parchment2,#f2ede4);
+.tcl-teacher{padding:11px 12px;border-radius:8px;background:var(--parchment2,#ecece8);
   margin-bottom:7px;min-height:44px;}
 .tcl-teacher.past{opacity:.72;}
 .tcl-teacher-name{font-size:14px;font-weight:600;display:flex;align-items:center;gap:7px;}
@@ -7357,8 +5691,7 @@ async function load() {
     /* No `hidden` filter: the teacher endpoint already returns hidden rows by
        default, and this view needs them — a session the teacher hid must stay
        visible on the one screen where they might want to put it back. */
-    const list = await api('/api/sessions?studentId=' + encodeURIComponent(STUDENT_ID) + '&limit=500');
-    rows = list.sessions || [];
+    rows = await tehfizListAll(api, '/api/sessions?studentId=' + encodeURIComponent(STUDENT_ID));   // v1_212: every page (A6)
     resolveLabelRemote();
     byClientId = {};
     rows.forEach((r) => { byClientId[r.client_id] = r; });
@@ -7780,8 +6113,7 @@ const STEPS = [
 
   { title: 'Your journey',
     find: () => pick(['#tjyBtn', '#tjyStrip']),
-    body: 'Your next lesson, your lesson days and what you have memorised are ' +
-          'here, with your progress report.' },
+    body: 'Your next lesson, your lesson days and what you have memorised are here.' },
 
   { title: 'Every lesson is a card',
     before: () => { const o = reveal(); ensureDemo(); return o; },
@@ -7795,6 +6127,20 @@ const STEPS = [
     find: () => pick(['#sessListInner .sess-card .sess-review']),
     body: 'Tap Review on any card for the whole lesson written out \u2014 every ' +
           'mistake, where it was, and how you are doing over time.' },
+
+  /* v1_213 (stage 8): the progress report and calendar reminders, both in
+     My journey. Pointed at its button: the sheet itself is not opened. */
+  { title: 'Your progress report',
+    find: () => pick(['#tjyBtn', '#tjyStrip']),
+    body: 'In My journey, Progress report puts all your lessons together: how each part is ' +
+          'holding up, what keeps coming back, and your spot tests. You can narrow it to one ' +
+          'juz, one surah or any verses, and its table lists every juz and surah.' },
+
+  { title: 'Reminders in your calendar',
+    find: () => pick(['#tjyBtn', '#tjyStrip']),
+    body: 'Also in My journey: Get reminders in your calendar puts your lessons in your ' +
+          'phone\u2019s calendar, with a reminder before each one. It follows any change your ' +
+          'teacher makes to your lesson times.' },
 
   { title: 'Every mistake, listed',
     before: () => reveal(),
@@ -8103,7 +6449,8 @@ span.seg-chip{display:flex;align-items:center;justify-content:center;box-sizing:
 </style>
 
 <!-- v1_174: My journey — the left panel and the next-lesson strip. -->
-<script src="/app/shared/tehfiz-map.js?v=mp7"></script>
+<script src="/app/shared/tehfiz-map.js?v=mp8"></script>
+<script src="/app/shared/tehfiz-range.js?v=r6"></script>
 <script src="/app/shared/tehfiz-time.js?v=t4"></script>
 <script src="/app/student/journey.js?v=j9"></script>
 

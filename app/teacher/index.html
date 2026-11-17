@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ═══════════════════════════════════════════════════════════════════
-     Tehfiz teacher app — v4_370
+     Tehfiz teacher app — v4_390
      Deployed from the `tehfiz` repo at app/teacher/index.html (the repo root
      is the web root). Locally, tehfiz-api/public/ is a clone of that repo:
      test with `npm run dev`, then commit and push from inside public/.
@@ -16,7 +16,10 @@
 if(t==='classic'||t==='lapis'||t==='mulberry')d.setAttribute('data-tz-theme',t);
 if(m==='dark'||(m==='device'&&window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches))d.setAttribute('data-tz-mode','dark');}catch(e){}})();</script>
 <link rel="stylesheet" href="/app/shared/tehfiz-shared.css?v=s24">
-<script src="/app/shared/tehfiz-shared.js?v=s26"></script>
+<script src="/app/shared/tehfiz-shared.js?v=s31"></script>
+<!-- v4_374: the progress report, shared with the viewer, runs here too (TehfizProgress, progress.js). -->
+<script src="/app/shared/tehfiz-report.js?v=rp7"></script>
+<script src="/app/teacher/lesson-store.js?v=ls1"></script>
 <script src="/app/shared/tehfiz-ornament.js?v=o2"></script>
 <script src="/app/shared/tehfiz-header.js?v=h7"></script>
 <script src="/app/shared/tehfiz-callink.js?v=cl2"></script>
@@ -388,12 +391,12 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
 .verse-block.has-mistake{border-color:var(--gold);background:var(--gold-pale);}
 .verse-num-row{display:flex;align-items:center;gap:5px;margin-top:6px;}
 .verse-key-badge{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink3);background:var(--parchment3);padding:1px 5px;border-radius:999px;direction:ltr;unicode-bidi:isolate;display:inline-block;}
-.verse-arabic{direction:rtl;text-align:right;font-family:'Scheherazade New','Amiri','Traditional Arabic',serif;color:var(--ink);font-size:var(--arabic-size);line-height:2.6;unicode-bidi:isolate;}
+.verse-arabic{direction:rtl;text-align:right;font-family:'UthmanicHafs','Scheherazade New','Amiri','Traditional Arabic',serif;color:var(--ink);font-size:var(--arabic-size);line-height:2.6;unicode-bidi:isolate;}
 .verse-translation{font-size:13px;color:var(--ink3);font-style:italic;line-height:1.5;padding-top:5px;border-top:.5px solid var(--border);margin-top:5px;}
 .verse-mistakes-row{display:flex;flex-wrap:wrap;gap:3px;margin-top:5px;direction:ltr;unicode-bidi:isolate;}
 
 /* COMPACT / FLOW MODE — whole page is one rtl paragraph */
-.flow-container{direction:rtl;text-align:right;font-family:'Scheherazade New','Amiri','Traditional Arabic',serif;font-size:var(--arabic-size);color:var(--ink);line-height:3;padding:4px 0;unicode-bidi:isolate;}
+.flow-container{direction:rtl;text-align:right;font-family:'UthmanicHafs','Scheherazade New','Amiri','Traditional Arabic',serif;font-size:var(--arabic-size);color:var(--ink);line-height:3;padding:4px 0;unicode-bidi:isolate;}
 /* clearfix so the page frame contains floated hizb markers */
 .flow-container::after{content:'';display:table;clear:both;}
 
@@ -437,13 +440,14 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
        reads as a header rather than a first line of content. Height is
        unchanged: the vertical budget against A4 is already tight. */
     margin:0 -12mm; padding:0 12mm;
-    background:#f2ede4;
-    border-bottom:1pt solid #b8841a;
-    font-family:'IBM Plex Mono',monospace; font-size:7.5pt; color:#5a5248;
+    /* v4_372 (D6): Graphite ink and hairline, as the screen; was the old gold. */
+    background:#f5f5f3;
+    border-bottom:.5pt solid #17191c;
+    font-family:'IBM Plex Mono',monospace; font-size:7.5pt; color:#3f444b;
     letter-spacing:.04em;
   }
-  .prh-title{ font-weight:600; color:#1a1612; }
-  .prh-brand{ color:#b8841a; font-weight:700; font-size:10pt; letter-spacing:.02em; }
+  .prh-title{ font-weight:600; color:#17191c; }
+  .prh-brand{ color:#17191c; font-weight:700; font-size:10pt; letter-spacing:.02em; }
 
   .print-report{ max-width:100%; margin-top:9mm; }
   .print-sheet{ padding-top:9mm; }
@@ -485,8 +489,8 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
     break-inside:avoid; page-break-inside:avoid;
   }
   .print-gap-note{
-    margin-top:6mm; padding:6mm; border:.5pt dashed #b8841a; border-radius:4px;
-    font-family:var(--ui-font); font-size:10pt; color:#5a5248; font-style:italic;
+    margin-top:6mm; padding:6mm; border:.5pt dashed #626973; border-radius:4px;
+    font-family:var(--ui-font); font-size:10pt; color:#3f444b; font-style:italic;
   }
   /* Width is set in px by _printMushafMetrics via _applyMushafZoomToPages, and
      is derived from the paper. A width:100% override here would stretch the
@@ -500,26 +504,41 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
   }
   /* The caption band travels WITH its page — break-before sits on .print-sheet,
      not on the page, so the two can never be separated across a sheet. */
+  /* v4_376 (I3): margin cards beside the page. */
+  .mc-row{ display:grid; grid-template-columns:var(--mc-col) auto var(--mc-col); column-gap:var(--mc-gap); align-items:start; justify-content:center; }
+  .mc-row .mushaf-page{ margin:0 !important; }
+  .mc-col{ position:relative; align-self:stretch; }
+  .mc-card{ position:absolute; left:0; right:0; box-sizing:border-box; padding:2px 4px 2px 5px; border-left:2.5pt solid #626973;
+    background:#f5f5f3; border-radius:2px; font-family:var(--ui-font); font-size:7pt; line-height:1.3; color:#17191c; break-inside:avoid; }
+  .mc-h{ display:flex; align-items:baseline; gap:4px; }
+  .mc-n{ display:inline-block; min-width:11px; text-align:center; background:#17191c; color:#fff; border-radius:6px; font-size:6.5pt; padding:0 2px; }
+  .mc-ref{ font-family:'IBM Plex Mono',monospace; color:#3f444b; }
+  .mc-w{ margin-left:auto; font-family:'UthmanicHafs','Scheherazade New',serif; font-size:10pt; line-height:1; }
+  .mc-t{ color:#3f444b; }
+  .mc-note{ color:#17191c; font-style:normal; overflow:hidden; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; }
+  .print-sheet [data-mc]{ position:relative; }
+  .print-sheet [data-mc]::before{ content:attr(data-mc); position:absolute; top:-.55em; right:-.2em; font:600 6.5pt/1 'IBM Plex Sans',sans-serif;
+    background:#17191c; color:#fff; border-radius:5px; padding:1px 2px; z-index:2; }
   .print-sheet-band{
     display:flex; align-items:baseline; gap:8px; flex-wrap:wrap;
     padding:0 0 3mm; margin-bottom:2mm;
-    border-bottom:1.5pt solid #d8d0c4;
+    border-bottom:1.5pt solid #d6d8dc;
     font-family:'IBM Plex Mono',monospace; font-size:8pt;
   }
   /* The two segment kinds are different documents and must not be mistaken for
      one another at a glance: a recited range was read end to end, a spot check
      was sampled. Colour carries it, the word confirms it. */
-  .print-sheet-band.recite{ border-bottom-color:#5a5248; }
+  .print-sheet-band.recite{ border-bottom-color:#3f444b; }
   .print-sheet-band.spot{ border-bottom-color:#1a4a8a; }
   .psb-kind{
     font-weight:700; letter-spacing:.06em; text-transform:uppercase;
     border-radius:999px; padding:1px 7px; white-space:nowrap;
   }
-  .print-sheet-band.recite .psb-kind{ background:#e8e0d4; color:#1a1612; }
+  .print-sheet-band.recite .psb-kind{ background:#e9eaed; color:#17191c; }
   .print-sheet-band.spot   .psb-kind{ background:#ddeeff; color:#1a4a8a; }
-  .psb-label{ font-family:var(--ui-font); font-size:10pt; font-weight:700; color:#1a1612; }
-  .psb-sub{ color:#5a5248; }
-  .psb-page{ margin-left:auto; color:#9a928a; white-space:nowrap; }
+  .psb-label{ font-family:var(--ui-font); font-size:10pt; font-weight:700; color:#17191c; }
+  .psb-sub{ color:#3f444b; }
+  .psb-page{ margin-left:auto; color:#626973; white-space:nowrap; }
   .psb-cont{ font-style:italic; }
 
   /* Words inside a spot's recited span, underlined so the range reads as one
@@ -837,9 +856,9 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
 .quick-form.hidden{display:none;}
 .qf-title{font-size:11px;font-weight:600;color:var(--gold-ink);letter-spacing:.06em;text-transform:uppercase;margin-bottom:7px;display:flex;justify-content:space-between;align-items:center;}
 .qf-ref{font-family:'IBM Plex Mono',monospace;color:var(--ink);font-weight:400;font-size:13px;text-transform:none;letter-spacing:0;}
-.word-display{font-family:'Scheherazade New','Amiri',serif;font-size:19px;direction:rtl;text-align:center;padding:5px;background:var(--surface,#fff);border-radius:5px;margin-bottom:7px;border:.5px solid var(--border);color:var(--ink);}
+.word-display{font-family:'UthmanicHafs','Scheherazade New','Amiri',serif;font-size:19px;direction:rtl;text-align:center;padding:5px;background:var(--surface,#fff);border-radius:5px;margin-bottom:7px;border:.5px solid var(--border);color:var(--ink);}
 /* FIX: context RTL — reading order: words-after TARGET words-before */
-.context-display{direction:rtl;text-align:right;font-family:'Scheherazade New','Amiri',serif;font-size:14px;padding:3px 7px;background:var(--surface,#fff);border-radius:4px;margin-bottom:7px;border:.5px solid var(--border);line-height:2.2;unicode-bidi:embed;}
+.context-display{direction:rtl;text-align:right;font-family:'UthmanicHafs','Scheherazade New','Amiri',serif;font-size:14px;padding:3px 7px;background:var(--surface,#fff);border-radius:4px;margin-bottom:7px;border:.5px solid var(--border);line-height:2.2;unicode-bidi:embed;}
 .ctx-before{color:var(--ink3);}
 .ctx-after{color:var(--ink3);}
 .ctx-target{color:var(--ink);font-weight:700;background:var(--gold-pale);padding:2px 5px;border-radius:3px;font-size:19px;}
@@ -932,7 +951,7 @@ body.compact-ui .type-btn-alt{display:block;font-size:11px;line-height:1.2;
 .subrule-btn.empty{cursor:default;background:transparent;border-style:dashed;opacity:.4;}
 .subrule-btn.empty:hover{border-color:var(--border2);background:transparent;}
 .subrule-btn.more .sb-glyph{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--amber);}
-.sb-glyph{font-family:'Scheherazade New','Amiri',serif;font-size:17px;line-height:1;color:var(--ink);direction:rtl;}
+.sb-glyph{font-family:'UthmanicHafs','Scheherazade New','Amiri',serif;font-size:17px;line-height:1;color:var(--ink);direction:rtl;}
 .sb-key{font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1;color:var(--ink3);}
 /* Ten across gets tight on a phone; two rows of five keeps the direction and
    therefore the letter-to-slot correspondence. */
@@ -1155,7 +1174,7 @@ input.corr-btn.sel-c4{background:var(--parchment3);color:var(--ink2);border-colo
 .tj-region{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--gold-ink);margin:12px 0 5px;}
 .tj-rows{display:flex;flex-direction:column;gap:2px;}
 .tj-row{display:flex;align-items:baseline;gap:8px;padding:4px 7px;border-radius:5px;background:var(--parchment2);}
-.tj-letter{font-family:'Scheherazade New','Amiri',serif;font-size:19px;line-height:1.2;color:var(--ink);flex:0 0 26px;text-align:center;direction:rtl;}
+.tj-letter{font-family:'UthmanicHafs','Scheherazade New','Amiri',serif;font-size:19px;line-height:1.2;color:var(--ink);flex:0 0 26px;text-align:center;direction:rtl;}
 .tj-rule{font-size:12px;font-weight:600;color:var(--tajweed);flex:0 0 112px;line-height:1.4;}
 .tj-text{font-size:11px;color:var(--ink2);line-height:1.5;flex:1;min-width:0;}
 @media(max-width:520px){.tj-rule{flex:0 0 88px;font-size:12px;}.tj-text{font-size:10px;}}
@@ -1255,15 +1274,22 @@ body.seg-arming .word-btn:hover,body.seg-arming .qcf-word:hover{outline:2px soli
 .m-ref-verse{font-family:'IBM Plex Mono',monospace;}
 .m-ref-time{margin-left:auto;font-family:var(--ui-font);font-style:italic;opacity:.75;white-space:nowrap;}
 
-.m-word{font-family:'Scheherazade New','Amiri',serif;font-size:15px;direction:rtl;color:var(--ink);display:block;}
+.m-word{font-family:'UthmanicHafs','Scheherazade New','Amiri',serif;font-size:15px;direction:rtl;color:var(--ink);display:block;}
 .m-corr{font-size:12px;margin-top:1px;}
 .m-corr.c0{color:var(--green);font-style:italic;}
 .m-corr.c1{color:var(--lvl1-ink);font-weight:600;}
 .m-corr.c2{color:var(--lvl2-orange);font-weight:600;}
 .m-corr.c3{color:var(--red);font-weight:600;}
 .m-corr.c4{color:var(--ink2);font-weight:600;}
-.m-note{font-size:12px;color:var(--ink3);font-style:italic;margin-top:1px;}
-.m-ctx{direction:rtl;text-align:right;font-family:'Scheherazade New','Amiri',serif;font-size:14px;line-height:2;margin:1px 0;unicode-bidi:embed;}
+.m-note{font-size:12.5px;color:var(--ink2);margin-top:2px;}   /* I9 */
+@keyframes needsPick{0%,100%{box-shadow:none;}30%,70%{box-shadow:0 0 0 2px var(--red);}}
+.subrule-row.needs-pick{animation:needsPick 1s ease 1;border-radius:6px;}
+.share-mode{display:flex;gap:0;border:1px solid var(--border2);border-radius:7px;overflow:hidden;width:max-content;margin:0 0 8px;}
+.share-mode-b{font:500 13px var(--ui-font);padding:6px 12px;border:0;background:var(--surface,#fff);color:var(--ink);cursor:pointer;}
+.share-mode-b+.share-mode-b{border-left:1px solid var(--border);}
+.share-mode-b.on{background:var(--ink);color:var(--parchment);}
+
+.m-ctx{direction:rtl;text-align:right;font-family:'UthmanicHafs','Scheherazade New','Amiri',serif;font-size:14px;line-height:2;margin:1px 0;unicode-bidi:embed;}
 .m-ctx-word{font-weight:700;color:var(--ink);background:var(--gold-pale);padding:0 2px;border-radius:2px;}
 .m-ctx-side{color:var(--ink3);font-size:13px;}
 .m-actions{display:flex;flex-direction:column;gap:2px;flex-shrink:0;}
@@ -1345,6 +1371,7 @@ body.seg-arming .word-btn:hover,body.seg-arming .qcf-word:hover{outline:2px soli
 .bar-chart{display:flex;flex-direction:column;gap:5px;}
 .bar-row{display:flex;align-items:center;gap:6px;}
 .bar-label{width:72px;flex-shrink:0;color:var(--ink2);text-align:right;font-size:12px;}
+.chart-box .bar-label{width:118px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}   /* labels on one line */
 .bar-track{flex:1;background:var(--parchment3);border-radius:999px;height:9px;overflow:hidden;}
 .bar-fill{height:100%;border-radius:999px;transition:width .5s ease;}
 .bar-count{width:18px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink3);}
@@ -1373,10 +1400,10 @@ body.seg-arming .word-btn:hover,body.seg-arming .qcf-word:hover{outline:2px soli
 .review-verses-title{font-size:11px;font-weight:600;color:var(--ink2);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px;padding-top:4px;border-top:.5px solid var(--border);}
 .review-verse{margin-bottom:10px;padding:8px 12px;border-radius:6px;border:.5px solid var(--border);background:var(--parchment2);}
 .review-verse-ref{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink3);margin-bottom:5px;}
-.review-verse-arabic{direction:rtl;text-align:right;line-height:2.6;font-size:19px;font-family:'Scheherazade New','Amiri',serif;margin-bottom:5px;}
+.review-verse-arabic{direction:rtl;text-align:right;line-height:2.6;font-size:19px;font-family:'UthmanicHafs','Scheherazade New','Amiri',serif;margin-bottom:5px;}
 .rw-type-tag{border-bottom:2px solid currentColor;border-radius:2px;padding:1px 2px;}
 .rml-item{display:flex;align-items:flex-start;gap:5px;font-size:12px;margin-bottom:3px;}
-.rml-word{font-family:'Scheherazade New','Amiri',serif;font-size:14px;direction:rtl;}
+.rml-word{font-family:'UthmanicHafs','Scheherazade New','Amiri',serif;font-size:14px;direction:rtl;}
 .rml-detail{flex:1;color:var(--ink2);}
 .rml-note{color:var(--ink3);font-style:italic;}
 
@@ -1458,7 +1485,7 @@ body.seg-arming .word-btn:hover,body.seg-arming .qcf-word:hover{outline:2px soli
 .rv-focus-rank{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink3);width:12px;flex:none;}
 .rv-focus-ref{font-size:13px;color:var(--ink2);white-space:nowrap;}
 .rv-focus-ref strong{font-family:'IBM Plex Mono',monospace;color:var(--ink);}
-.rv-focus-words{font-family:'Scheherazade New','Amiri',serif;font-size:15px;color:var(--ink);direction:rtl;margin-left:auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:45%;}
+.rv-focus-words{font-family:'UthmanicHafs','Scheherazade New','Amiri',serif;font-size:15px;color:var(--ink);direction:rtl;margin-left:auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:45%;}
 .rv-focus-n{font-family:'IBM Plex Mono',monospace;font-size:12px;padding:1px 5px;border-radius:3px;flex:none;}
 .rv-focus-note{font-size:12px;color:var(--ink3);font-style:italic;margin-top:6px;}
 .rv-details{border:.5px solid var(--border);border-radius:8px;background:var(--parchment2);margin-top:4px;}
@@ -1532,7 +1559,10 @@ body.seg-arming .word-btn:hover,body.seg-arming .qcf-word:hover{outline:2px soli
 
 .rv-head h2{font-size:17px;font-weight:600;}
 .rv-sub{font-size:13px;color:var(--ink3);}
-.rv-remarks{font-size:13px;color:var(--ink2);font-style:italic;margin-top:4px;padding:5px 8px;background:var(--parchment2);border-radius:5px;border-left:3px solid var(--gold);}
+/* I9: the teacher's note is often the most useful line, so it reads as one:
+   its own label, full ink, upright, not small grey italics. */
+.rv-remarks{font-size:14px;line-height:1.5;color:var(--ink);font-style:normal;margin-top:8px;padding:8px 11px;background:var(--parchment2);border-radius:6px;border-left:3px solid var(--ink);}
+.rv-remarks::before{content:"Teacher's note";display:block;font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--ink3);margin-bottom:2px;}
 .rv-badges{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px;}
 .rv-badges .m-badge{font-size:12px;}
 .chart-note{font-size:8px;color:var(--ink3);margin-bottom:6px;font-style:italic;}
@@ -1543,7 +1573,7 @@ body.seg-arming .word-btn:hover,body.seg-arming .qcf-word:hover{outline:2px soli
 .rv-mistake{flex-direction:column;align-items:stretch;gap:2px;margin-bottom:8px;padding:6px 0 8px 8px;border-bottom:.5px solid var(--border);border-left-width:3px;border-left-style:solid;}
 .rv-mistake-top{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
 /* Context strip: grey surroundings, the mistaken word carried by .sev-N */
-.rv-ctx{direction:rtl;text-align:right;font-family:'Scheherazade New','Amiri',serif;font-size:17px;line-height:2.4;margin:5px 0 3px;padding:5px 10px;background:var(--parchment);border-radius:6px;border:.5px solid var(--border);unicode-bidi:isolate;}
+.rv-ctx{direction:rtl;text-align:right;font-family:'UthmanicHafs','Scheherazade New','Amiri',serif;font-size:17px;line-height:2.4;margin:5px 0 3px;padding:5px 10px;background:var(--parchment);border-radius:6px;border:.5px solid var(--border);unicode-bidi:isolate;}
 .rv-ctx-side{color:var(--ink3);opacity:.75;}
 .rv-ctx-target{border-radius:3px;padding:1px 4px;font-weight:700;font-size:19px;border-bottom-width:2.5px;border-bottom-style:solid;}
 /* Spot test card */
@@ -1595,6 +1625,10 @@ body.seg-arming .word-btn:hover,body.seg-arming .qcf-word:hover{outline:2px soli
 .end-marker{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;background:var(--gold);color:var(--on-gold);border-radius:50%;font-size:9px;font-family:'IBM Plex Mono',monospace;margin:0 3px;vertical-align:middle;flex-shrink:0;cursor:pointer;transition:transform .1s,opacity .1s;}
 .end-marker:hover{transform:scale(1.15);opacity:.85;}
 
+/* v1_201/v4_372 (D1): every Quran word or letter shown as text uses this
+   font first. Scheherazade New is never loaded and Amiri only as a subset of
+   a few letters, so the browser mixed fonts letter by letter: joins broke and
+   marks such as the small zero (U+06DF) dropped out. Headers keep theirs. */
 @font-face{font-family:'UthmanicHafs';src:url('https://verses.quran.foundation/fonts/quran/hafs/uthmanic_hafs/UthmanicHafs1Ver18.woff2') format('woff2');font-display:swap;}
 
 /* SHORTCUTS MODAL TABS */
@@ -1853,6 +1887,7 @@ body.compact-ui .quick-form::before{
   margin:8px auto 4px;
 }
 </style>
+<link rel="stylesheet" href="/app/shared/tehfiz-report.css?v=rp6">
 </head>
 <body>
 
@@ -2158,6 +2193,7 @@ body.compact-ui .quick-form::before{
   <div class="modal">
     <div class="modal-title">Session Report</div>
     <div class="modal-sub">Ready to paste into WhatsApp, email, etc.</div>
+    <div id="shareModeBar"></div>
     <div class="share-out" id="shareOut"></div>
     <div class="modal-btns">
       <button class="btn-m sec" onclick="closeModal('shareModal')">Close</button>
@@ -2409,8 +2445,8 @@ body.compact-ui .quick-form::before{
           <div style="padding:8px 10px;background:var(--spot-blue-bg);border-radius:6px;border-left:3px solid var(--spot-blue);">
             <strong style="display:block;color:var(--spot-blue);margin-bottom:3px;">🎲 Spot test — you sample it</strong>
             The range is an <em>input</em>: set it first, choose how many spots, then
-            <strong>Populate spots</strong>. The app picks evenly-spaced starting points across the range
-            and you ask the student to continue from each.<br>
+            <strong>Choose spots</strong>. Pick how many, and whether they go at random, at the student's
+            weak places (where they went wrong before), or a mix; you ask the student to continue from each.<br>
             Only a fraction was recited, so there's no verse rate — the honest measure is the pass rate.
           </div>
           <div style="padding:8px 10px;background:var(--parchment2);border-radius:6px;border-left:3px solid var(--gold);">
@@ -2601,7 +2637,7 @@ body.compact-ui .quick-form::before{
    console as APP_VERSION, or grep the deployed HTML for it. Bumped on every
    saved build; vcheck.py asserts it matches the filename, so a forgotten bump
    fails the integrity check rather than shipping a lie. */
-const APP_VERSION = 'v4_370';
+const APP_VERSION = 'v4_390';
 window.APP_VERSION = APP_VERSION;
 console.info('Tehfiz teacher app ' + APP_VERSION);
 
@@ -2705,6 +2741,8 @@ function _loadMistakeTypesActive(){
   return _defaultActiveMistakeTypes();
 }
 let mistakeTypesActive = _recomputeMistakeTypeColors(_loadMistakeTypesActive());
+// v4_375: the shared lesson report charts this app's active types when a lesson carries none.
+TehfizLessonReport.use({ types: () => mistakeTypesActive });
 function saveMistakeTypesActive(){
   _recomputeMistakeTypeColors(mistakeTypesActive);
   try{ localStorage.setItem('tehfiz_mistake_types_v1', JSON.stringify(mistakeTypesActive)); }catch{}
@@ -2848,26 +2886,7 @@ syncCalibrationViews();
 
 // The recalibration payload: everything a future model needs, and nothing
 // derived. Keep this stable even if the formula changes completely.
-function strengthInputs(mistakes, verseCount, pageCount){
-  const all = mistakes||[];
-  // Tajweed is held out of the hifz score — see STRENGTH_MODEL_DEFAULT.
-  // Counted separately rather than discarded, so the inputs still describe the
-  // whole session and a future model could bring them back in.
-  const ml = all.filter(m => !isTajweedMistake(m));
-  const tajweed = all.length - ml.length;
-  const byLevel = {c0:0,c1:0,c2:0,c3:0,c4:0};
-  ml.forEach(m=>{ const c = m?.correction && byLevel.hasOwnProperty(m.correction) ? m.correction : 'c0'; byLevel[c]++; });
-  return {
-    verses: verseCount||0,
-    // Kept alongside verses rather than replacing it: verses cost nothing to
-    // store and a future model may want either, or both.
-    pages: +(pageCount||0).toFixed(4),
-    mistakes: ml.length,
-    tajweed,
-    byLevel,
-    weighted: +ml.reduce((n,m)=>n+mistakeWeight(m),0).toFixed(4),
-  };
-}
+/* v4_375: moved to /app/shared/tehfiz-shared.js (s29), one copy for both apps. */
 
 
 
@@ -2882,57 +2901,14 @@ function strengthInputs(mistakes, verseCount, pageCount){
 // Longest unbroken stretch of mistake-free verses. Speaks to fluency rather
 // than accuracy — twelve slips spread evenly reads very differently from twelve
 // clustered in one passage, and a raw count can't tell them apart.
-function longestCleanRun(segs, seg, mistakes){
-  const o=segOrdered(seg);
-  const n=segVerseCount(o);
-  if(!n) return null;
-  /* Hifz mistakes only. This is shown directly under the strength score as
-     "longest clean run 5 of 12", so it reads as a statement about recall — and
-     a verse recited from memory perfectly but with one madd shortened did not
-     fail to be recalled. A tajweed slip breaking the run would contradict the
-     score above it. */
-  const hit=new Set(mistakesInSegment(segs, seg, mistakes)
-    .filter(m=>!isTajweedMistake(m))
-    .map(m=>absVerse(m.surah,m.ayah)));
-  const from=keyAbs(o.startKey);
-  let best=0, run=0;
-  for(let v=from; v<from+n; v++){
-    if(hit.has(v)){ run=0; } else { run++; if(run>best) best=run; }
-  }
-  return best;
-}
+/* v4_375: moved to /app/shared/tehfiz-shared.js (s29), one copy for both apps. */
 
 // ── What to work on next ──────────────────────────────────────────
 // Ranks AYAHS, not words: an ayah is what a student actually re-practises.
 // Score = severity (how much help it needed) x repetition (how many separate
 // times it broke down). Within a single session repetition is capped low, so
 // this leans on severity; across sessions in the viewer it does the heavy work.
-function focusAyahs(mistakes, limit){
-  const by={};
-  (mistakes||[]).forEach(m=>{
-    if(!m.surah||!m.ayah) return;
-    const k=`${m.surah}:${m.ayah}`;
-    const e = by[k] || (by[k]={key:k, surah:m.surah, ayah:m.ayah, n:0, hits:0, weight:0, worst:'c0', words:new Set(), positions:new Set()});
-    // Distinct word positions, not mistake records: a single three-word
-    // mistake shouldn't outrank three separate slips on the same ayah.
-    const lo=m.wordPos||0, hi=m.wordPosEnd||lo;
-    for(let w=lo; w<=hi; w++) e.positions.add(w);
-    e.n = e.positions.size;
-    e.hits++;
-    e.weight += mistakeWeight(m);
-    e.words.add(m.word||'');
-    // "Worst" means most help needed. A tajweed mistake needed none recorded,
-    // so it must not set the value — it would claim c0, the mildest reading.
-    if(!isTajweedMistake(m)){
-      const order={c0:0,c4:1,c1:2,c2:3,c3:4};
-      if((order[m.correction]??0) > (order[e.worst]??0)) e.worst = m.correction||'c0';
-    }
-  });
-  return Object.values(by)
-    .map(e=>({...e, words:[...e.words].filter(Boolean), score:e.weight * Math.sqrt(Math.max(1,e.hits))}))
-    .sort((a,b)=>b.score-a.score || b.hits-a.hits)
-    .slice(0, limit||5);
-}
+/* v4_375: moved to /app/shared/tehfiz-shared.js (s29), one copy for both apps. */
 
 
 // Legacy .qrs files have no segments. Infer one loose span from the first and
@@ -4741,6 +4717,10 @@ function _renderMushafVirtualized(contentEl, pageHtmlChunks, qcPages, pageMap, j
 
   // Store for goToSpot force-upgrade
   window._virtData = {pageHtmlChunks, qcPages, pageMap, juzNum};
+  // v4_376: every juz drawn keeps its data, so printing can bring back a page
+  // from any of them; _virtData alone held only the last, and a lesson spanning
+  // two juz printed the other's pages as "could not be loaded".
+  (window._virtDataByJuz = window._virtDataByJuz || {})[juzNum] = {pageHtmlChunks, qcPages};
 
   _virtObserver = new IntersectionObserver((entries)=>{
     entries.forEach(entry=>{
@@ -5623,7 +5603,18 @@ function _visibleVerseBounds(){
   const panel = document.getElementById('pageContent');
   if(!panel) return null;
   const pr = panel.getBoundingClientRect();
-  const words = panel.querySelectorAll('[data-surah][data-ayah][data-pos]');
+  /* v4_386: only the words of the pages on screen. Off-screen pages are
+     skipped by the browser (content-visibility, css s7), and measuring a word
+     inside one makes it lay that whole page out: with a few juz loaded, Start
+     (and Finish, for the end) measured every word of every page, which is the
+     slow start of the recite segment. A page's own box costs nothing to read. */
+  const pages = [...panel.querySelectorAll('.mushaf-page')].filter(pg=>{
+    const r = pg.getBoundingClientRect();
+    return r.bottom > pr.top && r.top < pr.bottom;
+  });
+  const words = pages.length
+    ? pages.flatMap(pg=>[...pg.querySelectorAll('[data-surah][data-ayah][data-pos]')])
+    : panel.querySelectorAll('[data-surah][data-ayah][data-pos]');
   let first=null, last=null;
   for(const w of words){
     const r = w.getBoundingClientRect();
@@ -5662,6 +5653,9 @@ function autoFillSegmentStart(){
   if(ex && (!key || keyAbs(ex.first) < keyAbs(key))) key = ex.first;
   if(!key) return;
   sg.startKey=key; sg.startSrc='auto';
+  // v4_388: the recite segment Start just began is shown open, so the teacher
+  // sees where it starts (and can correct it) without tapping it.
+  _segOpenId = sg.id;
   renderSegments();
 }
 
@@ -5913,7 +5907,7 @@ function renderOrphanWarn(){
     ? `That verse is inside a spot-test segment whose spots haven't been generated yet, so there's no spot for it to belong to.`
     : `The active segment is a spot test and this verse isn't in its range.`;
   const fix = w.reason==='unpopulated'
-    ? `<button class="ow-yes" onclick="dismissOrphanWarn();requestPopulateSpots('${w.segId}')">Populate spots</button>`
+    ? `<button class="ow-yes" onclick="dismissOrphanWarn();requestPopulateSpots('${w.segId}')">Choose spots</button>`
     : `<button class="ow-yes" onclick="dismissOrphanWarn();openRangePicker('${w.segId}',this)">Widen range</button>`;
   const alt = w.alt ? segments.find(x=>x.id===w.alt) : null;
   const altName = alt ? (alt.rangeLabel || describeRange(segOrdered(alt).startKey, segOrdered(alt).endKey) || 'the other segment') : '';
@@ -6175,7 +6169,7 @@ function renderSegments(){
             ? `<button class="seg-start" onclick="event.stopPropagation();resumeSegmentSpotTest('${raw.id}')">▶ Resume</button>
                <button class="seg-start alt" onclick="event.stopPropagation();requestPopulateSpots('${raw.id}')" ${n?'':'disabled'}>↻ New spots</button>
                <span class="seg-hint">${(()=>{const t=spotTally(raw.spotsData);return `${t.pass+t.partial+t.fail}/${t.total} assessed`;})()}</span>`
-            : `<button class="seg-start" onclick="event.stopPropagation();requestPopulateSpots('${raw.id}')" ${n?'':'disabled'}>▶ Populate spots</button>
+            : `<button class="seg-start" onclick="event.stopPropagation();requestPopulateSpots('${raw.id}')" ${n?'':'disabled'}>▶ Choose spots</button>
                <span class="seg-hint">${n?`across ${n} verses`:'set the range first'}</span>`}
       </div>`:''}
       ${confirming && confirming.kind==='delete'?`<div class="seg-warn">
@@ -6189,14 +6183,14 @@ function renderSegments(){
         </div>
       </div>`:''}
       ${confirming && confirming.kind!=='delete'?`<div class="seg-warn">
-        <strong>${confirming.kind==='range'?'Change the range?':'Repopulate?'}</strong>
+        <strong>${confirming.kind==='range'?'Change the range?':'Choose new spots?'}</strong>
         ${confirming.kind==='range'
           ? `The ${raw.spotsData?.length||raw.spotIds?.length||0} spots for the old range will be discarded.`
           : `New spots replace the current ${raw.spotsData?.length||raw.spotIds?.length||0}.`}
         ${confirming.count?`<span class="seg-warn-loss">${confirming.count} mistake${confirming.count>1?'s':''} logged against the old spots will be deleted.</span>`:'No mistakes were logged against them.'}
         <div class="seg-warn-btns">
           <button class="seg-warn-no" onclick="cancelPopulateSpots()">Cancel</button>
-          <button class="seg-warn-yes" onclick="confirmPopulateSpots()">${confirming.kind==='range'?'Change range':'Repopulate'}</button>
+          <button class="seg-warn-yes" onclick="confirmPopulateSpots()">${confirming.kind==='range'?'Change range':'Choose new spots'}</button>
         </div>
       </div>`:''}
     </div>`;
@@ -7538,6 +7532,16 @@ function cancelForm(){
 // ═══════════════════════════════════════════════════════════════════
 // COMMIT MISTAKE
 // ═══════════════════════════════════════════════════════════════════
+let _mkAskedFor = null;
+function _needsLetter(type, sub, key){
+  const isMk = type === 'makhraj' || type === 'm4';
+  if(!isMk || (sub && sub.letter) || _mkAskedFor === key){ _mkAskedFor = null; return false; }
+  _mkAskedFor = key;
+  showToast('Which letter? Tap it above, or save again to keep it without one');
+  const row = document.getElementById(key === editingMistakeId ? 'editSubruleRow' : 'qfSubruleRow');
+  if(row){ row.classList.remove('needs-pick'); void row.offsetWidth; row.classList.add('needs-pick'); }
+  return true;
+}
 function commitMistake(){
   if(!pendingWord) return;
   if(!selectedType){alert('Select a mistake type.');return;}
@@ -7571,6 +7575,11 @@ function commitMistake(){
   // Sub-rule selection already calls this; committing calls it again for the
   // case where the teacher tapped a family shortcut and pressed Enter.
   _normalizeTajweedType();
+  /* v4_372 (D5): a makhraj mark asks for its letter, as a rule asks for its
+     sub-rule. Without one it was counted as "0 letters" and could not be
+     ranked. Saving again keeps it without a letter, for when the teacher
+     cannot say which letter it was. */
+  if(_needsLetter(selectedType, selectedSubrule, pendingWord)) return;
   const _isTajweed = (getType(selectedType)||{}).category === 'tajweed';
   const effectiveCorr = _isTajweed ? null : (selectedCorr || 'c0');
   const typeOtherText = selectedType==='other' ? (document.getElementById('qfTypeOther').value.trim()||'') : '';
@@ -7980,6 +7989,7 @@ function editSelCorr(el){
 }
 function saveEdit(){
   const m=mistakes.find(x=>x.id===editingMistakeId); if(!m) return;
+  if(_needsLetter(editType||m.type, editSubrule, editingMistakeId)) return;   // D5
   m.type=editType||m.type; m.correction=editCorr||m.correction; m.note=document.getElementById('editNote').value.trim();
 
   // Custom labels ride alongside the ids, exactly as commitMistake stores them.
@@ -8028,7 +8038,13 @@ function saveEdit(){
 // ═══════════════════════════════════════════════════════════════════
 // SESSIONS
 // ═══════════════════════════════════════════════════════════════════
-function getSessions(){try{return JSON.parse(localStorage.getItem('qrt4_sessions')||'[]');}catch{return[];}}
+/* v4_387 (A3, stage 8): the lessons on this device are kept by lesson-store.js
+   (TehfizStore): the open lesson in the browser's quick store, the rest in its
+   database. Same list, same calls; without the module, the old way. */
+function getSessions(){
+  if(window.TehfizStore) return TehfizStore.all();
+  try{return JSON.parse(localStorage.getItem('qrt4_sessions')||'[]');}catch{return[];}
+}
 
 /* v4_367: every write of the lessons kept on this device goes through here.
    They are one browser item, and a browser stops accepting writes at about
@@ -8039,8 +8055,13 @@ function getSessions(){try{return JSON.parse(localStorage.getItem('qrt4_sessions
 let _storeFull = false, _storeNearWarned = false;
 const STORE_NEAR_CHARS = 4000000;   // about four fifths of what a browser allows
 function putSessions(list){
-  let json;
-  try{
+  let json = '';
+  if(window.TehfizStore){
+    // Only the lessons that changed are written; a refusal is a full quick store.
+    if(!TehfizStore.put(list)){ _storeFull = true; storeFullBar(true); return false; }
+    // The early warning only means something while everything is in the quick store.
+    if(TehfizStore.mode()==='ls'){ try{ json = localStorage.getItem('qrt4_sessions')||''; }catch(e){} }
+  } else try{
     json = JSON.stringify(list);
     localStorage.setItem('qrt4_sessions', json);
   }catch(err){
@@ -8053,6 +8074,19 @@ function putSessions(list){
     setTimeout(()=>storeFullBar(true, true), 2500);
   }
   return true;
+}
+// v4_387: the store needs to know which lesson is open (it stays in the quick
+// store), and the app redraws what depends on the full list once the database
+// has loaded, or another tab has changed it.
+if(window.TehfizStore) TehfizStore.use({
+  openId: () => _currentSessionId,
+  onReady: () => _storeRefresh(),
+  onChange: () => _storeRefresh(),
+});
+function _storeRefresh(){
+  const o = document.getElementById('sessionsOverlay');
+  if(o && o.classList.contains('open')) renderSessionsList();
+  if(window.TehfizPast && TehfizPast.isOn()) TehfizPast.refresh();
 }
 /* The bar. `near` is the early warning (can be closed); otherwise the device
    is full and the bar stays until a save works. */
@@ -8468,6 +8502,13 @@ function autoSaveSession(){
   if(!_currentSessionId) _currentSessionId = Date.now(); // stable for this session
   const sess = buildSessionObj();
   sess.id = _currentSessionId; // keep same ID so we overwrite, not duplicate
+  // v4_387: one lesson, not the whole list (TehfizStore.putOne).
+  if(window.TehfizStore){
+    sessionSaved = TehfizStore.putOne(sess);
+    if(!sessionSaved){ _storeFull = true; storeFullBar(true); }
+    else if(_storeFull){ _storeFull = false; storeFullBar(false); showToast('Saving on this device again ✓'); }
+    return;
+  }
   const sessions = getSessions().filter(x => x.id !== _currentSessionId);
   sessions.unshift(sess);
   // v4_367: false keeps "unsaved", so leaving the page still asks first.
@@ -8561,6 +8602,20 @@ function loadSessionById(id){
   const s = getSessions().find(x => x.id === id);
   if(!s){ showToast('Session not found'); return; }
   loadSessionIntoEditor(s);
+}
+// v4_385 (stage 9): Edit on a lesson card, on both Sessions tabs. Opens it in
+// the app; when it was sent, Finish sends it again (replacing the student's
+// copy) or keeps the change on this device. The lesson open now is not thrown
+// away without asking.
+function editSessionById(id){
+  const s = getSessions().find(x => String(x.id) === String(id));
+  if(!s){ showToast('Session not found'); return false; }
+  if(String(_currentSessionId) !== String(s.id) && !sessionSaved && (mistakes.length || segments.some(g=>g.startKey))
+     && !confirm('The lesson open now has not been saved. Open this one instead? The open lesson will be lost.')) return false;
+  loadSessionIntoEditor(s);
+  if(window.TehfizSync && TehfizSync.sendState && TehfizSync.sendState(s.id)==='sent')
+    showToast('Editing a sent lesson. Finish sends it again, replacing the student\u2019s copy.');
+  return true;
 }
 
 // ── Load session into editor ──
@@ -8754,12 +8809,22 @@ async function _ensurePagesLoaded(pages){
   // retry each juz once, then report what is genuinely missing instead of
   // letting the sheet loop drop it without a word — which is how a print can
   // come out holding one spot when it should hold seven.
+  /* v4_376: a juz draws its pages in batches after loadJuz resolves, so the
+     last pages arrive a moment later. Checking at once called them missing and
+     printed "could not be loaded" sheets for pages that were on their way —
+     which ones depended on timing. Wait for them (up to 8 s) first. */
+  const waitForPages = async (ms) => {
+    const t0 = Date.now();
+    while(Date.now() - t0 < ms && pages.some(p => !document.getElementById(`pg-${p}`))) await new Promise(r => setTimeout(r, 150));
+  };
+  await waitForPages(8000);
   let missing = pages.filter(p => !document.getElementById(`pg-${p}`));
   if(missing.length){
     for(const j of [...new Set(missing.map(_juzForPage))]){
       _activeJuzs = _activeJuzs.filter(x => x !== j);   // let loadJuz run again
       await loadJuz(j, 'append');
     }
+    await waitForPages(8000);
     missing = pages.filter(p => !document.getElementById(`pg-${p}`));
   }
   if(missing.length){
@@ -8806,9 +8871,82 @@ function _pagesBetween(aKey, bKey){
 // the student read end to end, so it prints straight through; a spot segment is
 // a set of samples, so it prints one group per spot. Flattening them made a
 // recited range look like a spot test that happened to have no spots on it.
+/* v4_377: pages 1-2 carry two spacers that keep them as tall as a 15-line
+   page. On screen a watcher measures and trims them; a printed copy cannot be
+   measured (it is built hidden), and the line-count estimate it was left with
+   made those pages a sheet and a half tall. So the copy takes the live page's
+   spacers, which the watcher has already fitted, scaled from the screen's type
+   size to the paper's: everything in the page body is in ems, so the ratio holds. */
+function _fitPrintSpacers(liveEl, clone, pm){
+  const lb = liveEl.querySelectorAll('.mushaf-page-body > .msl-buffer');
+  const cb = clone.querySelectorAll('.mushaf-page-body > .msl-buffer');
+  if(!lb.length || lb.length !== cb.length) return;
+  const liveFont = parseFloat(getComputedStyle(liveEl.querySelector('.mushaf-page-body')).fontSize) || pm.font;
+  lb.forEach((b, i) => { cb[i].style.height = Math.round(b.getBoundingClientRect().height * pm.font / liveFont) + 'px'; });
+}
+
+/* ── v4_376 (I3): margin cards, layout A ────────────────────────────────
+   A printed mushaf page between two columns. Every mistake on the page that
+   belongs to this group (a spot's own marks on a spot sheet, the recited ones
+   on a recitation sheet) gets a card beside the line it is on: right column
+   for a word in the right half of the page, left for the left half. The word
+   on the page carries the same number. Positions are read from the LIVE page
+   as fractions of its height and width, so they hold at any print size.
+   Cards stack downwards and never overlap; at the foot they push back up. */
+function _marginCardsRow(s, g, liveEl, clone, pm){
+  const cfg = s.typeConfig || null;
+  const row = document.createElement('div');
+  row.className = 'mc-row';
+  row.style.setProperty('--mc-col', MC_COL + 'px');
+  row.style.setProperty('--mc-gap', MC_GAP + 'px');
+  const pr = liveEl.getBoundingClientRect();
+  const mine = (s.mistakes || []).filter(m => g.kind === 'spot'
+    ? (g.spot && m.spotId === g.spot.id) : !m.spotId);
+  const hits = [];
+  mine.forEach(m => {
+    const w = liveEl.querySelector(`[data-surah="${m.surah}"][data-ayah="${m.ayah}"][data-pos="${m.wordPos}"]`);
+    if(!w || !pr.height) return;
+    const r = w.getBoundingClientRect();
+    hits.push({ m, fy: (r.top + r.height / 2 - pr.top) / pr.height, fx: (r.left + r.width / 2 - pr.left) / pr.width });
+  });
+  // Reading order: down the page, and right to left along a line.
+  hits.sort((a, b) => (Math.abs(a.fy - b.fy) > 0.02 ? a.fy - b.fy : b.fx - a.fx));
+  const H = pm.pageH || PRINT_BOX_H;
+  const col = (side) => { const d = document.createElement('div'); d.className = 'mc-col ' + side; return d; };
+  const L = col('left'), Rc = col('right');
+  const stacks = { left: [], right: [] };
+  hits.forEach((h, i) => {
+    const n = i + 1, m = h.m, taj = isTajweedMistake(m, cfg);
+    const cw = clone.querySelector(`[data-surah="${m.surah}"][data-ayah="${m.ayah}"][data-pos="${m.wordPos}"]`);
+    if(cw) cw.setAttribute('data-mc', n);
+    const what = taj ? ((tajweedMarkText(m.subrule) || {}).text || mTypeLabel(m, cfg))
+                     : mTypeLabel(m, cfg) + ' · ' + String(mCorrLabel(m, cfg) || '').split(' · ')[0];
+    const card = document.createElement('div');
+    card.className = 'mc-card' + (taj ? ' taj' : '');
+    card.style.borderLeftColor = taj ? 'var(--tajweed)' : sevForMistake(m, cfg).color;
+    card.innerHTML = `<div class="mc-h"><b class="mc-n">${n}</b><span class="mc-ref">${m.surah}:${m.ayah}</span><span class="mc-w" dir="rtl">${esc(m.word || '')}</span></div>`
+      + `<div class="mc-t">${esc(what)}</div>` + (m.note ? `<div class="mc-note">${esc(m.note)}</div>` : '');
+    const side = h.fx >= 0.5 ? 'right' : 'left';
+    const est = 30 + (m.note ? 12 * Math.min(3, Math.ceil(m.note.length / 30)) : 0);   // px, for stacking
+    stacks[side].push({ card, want: h.fy * H - est / 2, est });
+  });
+  ['left', 'right'].forEach(side => {
+    const st = stacks[side]; let y = 0;
+    st.forEach(c => { c.top = Math.max(c.want, y); y = c.top + c.est + 4; });
+    let floor = H;                                   // push back up from the foot
+    for(let i = st.length - 1; i >= 0; i--){ if(st[i].top + st[i].est > floor) st[i].top = floor - st[i].est; floor = st[i].top - 4; }
+    st.forEach(c => { c.card.style.top = Math.max(0, c.top) + 'px'; (side === 'left' ? L : Rc).appendChild(c.card); });
+  });
+  row.appendChild(L); row.appendChild(clone); row.appendChild(Rc);
+  return row;
+}
+
 function _printGroups(s){
   const out = [];
-  const spots = (s.spotTest && s.spotTest.spots) || [];
+  // v4_376: the lesson's spot list, else the spots kept on its spot parts (a
+  // lesson saved without the lesson-level copy printed no spot pages at all).
+  const spots = (s.spotTest && s.spotTest.spots && s.spotTest.spots.length) ? s.spotTest.spots
+    : (s.segments || []).filter(sg => sg.mode === 'spot').flatMap(sg => sg.spots || []);
   let spotsEmitted = false;
   (s.segments || []).forEach(sg => {
     if(sg.mode === 'spot'){
@@ -8900,7 +9038,9 @@ const PRINT_BOX_H = 1123 - Math.round(34 / 25.4 * 96)   // @page top+bottom
 // The TALLEST target page decides, not the first: pages 1-2 carry decorative
 // buffer blocks and stand taller than a standard 15-line page, so sizing off a
 // standard page would push those two over the edge.
-function _printMushafMetrics(pages){
+// v4_376 (I3): the margin columns' width each side, and the gap to the page.
+const MC_COL = 132, MC_GAP = 8;
+function _printMushafMetrics(pages, reserve){
   let ratio = Infinity;             // px of height per px of width
   (pages || []).forEach(p => {
     const el = document.getElementById(`pg-${p}`);
@@ -8911,8 +9051,11 @@ function _printMushafMetrics(pages){
   const wForHeight = Number.isFinite(ratio) ? PRINT_BOX_H * ratio : PRINT_BOX_W;
   // 0.985 leaves a hair of slack: sub-pixel rounding in the print renderer has
   // no margin to absorb, and one pixel over is a whole extra sheet.
-  const w = Math.min(PRINT_BOX_W, wForHeight) * 0.985;
-  return computeMushafZoomMetrics(w);
+  // reserve (v4_376): width kept free for the margin cards either side.
+  const w = Math.min(PRINT_BOX_W - (reserve || 0), wForHeight) * 0.985;
+  const m = computeMushafZoomMetrics(w);
+  m.pageH = Number.isFinite(ratio) ? m.width / ratio : PRINT_BOX_H;   // the printed page's height, for placing cards
+  return m;
 }
 
 // Teacher name for the running header. It lives inside the TehfizSync closure
@@ -8981,16 +9124,14 @@ async function printReport(mode){
       // height — they print as blank sheets. Force each target page to full
       // before it is cloned, and stop the downgrade timers from swapping one
       // back out mid-print.
-      if(window._virtData){
-        const {pageHtmlChunks, qcPages} = window._virtData;
-        // _virtData only ever holds the LAST render, so when two juz are in
-        // the DOM only one of them can be upgraded from here. Pages left as
-        // placeholders become gap sheets rather than disappearing.
-        wanted.forEach(p => {
-          const i = qcPages.indexOf(p);
-          if(i >= 0) _virtUpgradePage(p, i, pageHtmlChunks[i]);
-        });
-      }
+      // v4_376: each page from its own juz's data (_virtDataByJuz). Pages that
+      // still cannot be drawn become gap sheets rather than disappearing.
+      wanted.forEach(p => {
+        const d = (window._virtDataByJuz || {})[_juzForPage(p)] || window._virtData;
+        if(!d) return;
+        const i = d.qcPages.indexOf(p);
+        if(i >= 0) _virtUpgradePage(p, i, d.pageHtmlChunks[i]);
+      });
       _virtDowngradeTimers.forEach(t => clearTimeout(t));
       _virtDowngradeTimers.clear();
 
@@ -9016,9 +9157,10 @@ async function printReport(mode){
       // One metrics object for every sheet, sized to the PAPER rather than to
       // the on-screen panel. Without it a page inherits whatever zoom the
       // teacher happened to be using and spills onto a second sheet.
-      const pm = _printMushafMetrics(renderable);
+      const pm = _printMushafMetrics(renderable, 2 * (MC_COL + MC_GAP));   // v4_376: room for margin cards
       const wrap = document.createElement('div');
       wrap.className = 'print-mushaf';
+      let anyGap = false;
 
       groups.forEach(g => {
         g.pages.forEach((p, i) => {
@@ -9039,6 +9181,7 @@ async function printReport(mode){
               + `<p class="print-gap-note">Mushaf page ${p} could not be loaded, so it is not `
               + `reproduced here. Everything recorded for this range is in the report above.</p>`;
             wrap.appendChild(gap);
+            anyGap = true;
             return;
           }
 
@@ -9059,6 +9202,7 @@ async function printReport(mode){
 
           _applyMushafZoomToPages([c], pm);
           _applyHizbZoomToPages([c], pm);
+          _fitPrintSpacers(el, c, pm);
 
           const band = document.createElement('div');
           band.className = 'print-sheet-band ' + g.kind;
@@ -9071,11 +9215,17 @@ async function printReport(mode){
             + `<span class="psb-page">Mushaf page ${p}${cont}</span>`;
 
           sheet.appendChild(band);
-          sheet.appendChild(c);
+          // v4_376 (I3, layout A): the page between two margin columns, each
+          // mistake on it a numbered card beside its line.
+          sheet.appendChild(_marginCardsRow(s, g, el, c, pm));
           wrap.appendChild(sheet);
         });
       });
       if(wrap.children.length) root.appendChild(wrap);
+      /* Decided 16 Nov: the full report shows the mushaf with its cards, the
+         summary the list. So the list is left out here, unless a page could
+         not be printed: then the list is where its mistakes are. */
+      if(!anyGap) rep.querySelectorAll('.rv-details').forEach(d => d.remove());
     }
   }
 
@@ -9153,12 +9303,12 @@ function renderSessionsList(){
           </div>
         </div>
         <div class="sess-actions">
+          <button class="btn-tiny" onclick="reviewSession(${s.id})" title="See the lesson's report">Review</button>
+          <button class="btn-tiny" onclick="editSessionById(${s.id})" title="Open it to change it; a sent lesson can be sent again">Edit</button>
           <button class="btn-tiny sess-dots" onclick="toggleSessMenu(${s.id})" aria-haspopup="true" aria-expanded="${_menu}" title="More" aria-label="More">&#8943;</button>
         </div>
       </div>
       ${_menu?`<div class="sess-menu" role="menu">
-          <button class="btn-tiny" onclick="toggleSessMenu(null);reviewSession(${s.id})">&#128202; Review</button>
-          <button class="btn-tiny" onclick="toggleSessMenu(null);loadSessionById(${s.id})">▶ Load to keep working</button>
           <button class="btn-tiny" onclick="toggleSessMenu(null);TehfizGrades.openEditor(${s.id})">${_graded?'&#10003; Grades':'Grade'}</button>
           <button class="btn-tiny" onclick="toggleSessMenu(null);exportSingleQRS(${s.id})">&#8681; Save &amp; Export .qrs</button>
           <button class="btn-tiny" onclick="toggleSessMenu(null);shareTextSession(${s.id})">&#8679; Copy as text</button>
@@ -9275,54 +9425,13 @@ let _rvSegFilter = null;
 // nothing — the list it filters is shut.
 let _rvListOpen = false;
 
-function rvFilterSegment(segId){
-  _rvSegFilter = (_rvSegFilter===segId) ? null : segId;   // tapping again clears
-  _rvPageFilter = null;                                   // a new segment discards a page pick
-  if(reviewingSession) document.getElementById('reviewContent').innerHTML = buildReviewHTML(reviewingSession);
-}
+/* v4_375: moved to /app/shared/tehfiz-shared.js (s29), one copy for both apps. */
 
 
 let _rvPageFilter = null;
-function rvFilterPage(pg){
-  _rvPageFilter = (_rvPageFilter===pg) ? null : pg;
-  if(reviewingSession) document.getElementById('reviewContent').innerHTML = buildReviewHTML(reviewingSession);
-}
+/* v4_375: moved to /app/shared/tehfiz-shared.js (s29), one copy for both apps. */
 
-function buildReviewHTML(s){
-  const cfg   = s.typeConfig || null;
-  const segs  = s.segments || [];
-  const all   = s.mistakes;
-  // A page pick narrows further still, on top of any segment filter.
-  // One filter, applied once, feeding every section below. The segment cards
-  // are the control, so they always show their own full figures — everything
-  // else (badges, charts, focus, list) narrows to the selected segment.
-  const fseg  = _rvSegFilter ? segs.find(x=>x.id===_rvSegFilter) : null;
-  const ml    = fseg ? mistakesInSegment(segs, fseg, all) : all;
-  const tally = corrTally(ml);
-  // Build the type list from the ids actually present in the mistakes, then
-  // order it by the session's catalog. Deriving it from the catalog alone meant
-  // that if a mistake's id wasn't in that list — an older save, a renamed or
-  // deleted custom type — it matched nothing and EVERY bar read zero, with no
-  // hint that 25 mistakes had gone uncounted.
-  const present = [...new Set(ml.map(m=>migrateId(m.type)).filter(Boolean))];
-  const catalog = (cfg?.mistakeTypes || mistakeTypesActive).map(t=>migrateId(t.id));
-  const ordered = catalog.filter(id=>present.includes(id));      // catalog order first
-  const extras  = present.filter(id=>!catalog.includes(id));     // then anything unlisted
-  const types = [...ordered, ...extras];
-
-  return _rvHeader(s, tally)
-       + _rvStrength(s, all)
-       + _rvFilterBar(fseg, ml.length, all.length)
-       + _rvCharts(ml, cfg, types, tally)
-       + _rvFocus(ml, cfg)
-       + _rvSpotTest(s.spotTest, ml, cfg)
-       /* Narrowed HERE and nowhere else. Passing a page-filtered list into
-          _rvStrength would rebuild every chart from one page's mistakes — the
-          bars would all collapse to the bar just tapped, and the strength score
-          beside them would silently change. The chart is a control; controls
-          must keep showing the whole picture they are selecting within. */
-       + _rvVersesSplit(_rvApplyPageFilter(segs, ml), cfg);
-}
+/* v4_375: moved to /app/shared/tehfiz-shared.js (s29), one copy for both apps. */
 
 
 /* A chip on the session card, behaving like the segment and spot range chips:
@@ -9369,7 +9478,7 @@ function openFocusPicker(btn, ctx){
   pop.className = 'focus-pop';
   pop.id = 'focusPop';
   pop.innerHTML = `<div class="fp-title">This session was for</div>
-    ${row('hifz','Memorisation')}${row('tajweed','Tajweed')}
+    ${row('hifz','Hifz')}${row('tajweed','Tajweed')}
     <div class="fp-hint">Ticked automatically from what you mark.</div>`;
   document.body.appendChild(pop);
   const r = btn.getBoundingClientRect();
@@ -9480,7 +9589,7 @@ function _cardFocusCtx(id){
       const r = find();
       if(!r) return;
       if(!val || val === inferSessionFocus(r.s)) delete r.s.focus; else r.s.focus = val;
-      try{ localStorage.setItem('qrt4_sessions', JSON.stringify(r.all)); }catch(err){}
+      putSessions(r.all);   // v4_387: through the store, like every other write
       // The reviewed copy is a clone, so it needs telling too.
       if(reviewingSession && reviewingSession.id === id){
         if(r.s.focus) reviewingSession.focus = r.s.focus; else delete reviewingSession.focus;
@@ -9493,21 +9602,7 @@ function _cardFocusCtx(id){
 }
 
 // ── Header: who/what/when, remarks, and the level badge strip ──────
-function _rvHeader(s, t){
-  return `<div class="rv-head">
-    <h2>${esc(s.student)}</h2>
-    <p class="rv-sub">${esc(sessionNameOf(s))} · ${sessionDateText(s)}${sessionTimeText(s)?` ${sessionTimeText(s)}`:''}${(s.duration&&s.duration!=='00:00')?` · ${s.duration}`:''}</p>
-    ${s.remarks?`<p class="rv-remarks">${esc(s.remarks)}</p>`:''}
-    <div class="rv-badges">
-      <span class="m-badge" style="background:var(--parchment3);color:var(--ink2);">${t.total} mistakes</span>
-      ${t.c0?`<span class="m-badge" style="background:var(--green-bg);color:var(--green);">Lvl 0 · ${t.c0}</span>`:''}
-      <span class="m-badge" style="background:var(--lvl1-yellow-bg);color:var(--lvl1-ink);">Lvl 1 · ${t.c1}</span>
-      <span class="m-badge" style="background:var(--lvl2-orange-bg);color:var(--lvl2-orange);">Lvl 2 · ${t.c2}</span>
-      <span class="m-badge" style="background:var(--red-bg);color:var(--red);">Lvl 3 · ${t.c3}</span>
-      <span class="m-badge" style="background:var(--parchment3);color:var(--ink2);">◌ ${t.c4} other</span>
-    </div>
-  </div>`;
-}
+/* v4_375: moved to /app/shared/tehfiz-shared.js (s29), one copy for both apps. */
 
 
 
@@ -9515,95 +9610,24 @@ function _rvHeader(s, t){
 
 
 // ── Spot test: scope, outcome tally, and a row per spot ───────────
-function _rvSpotTest(spotTest, ml, cfg){
-  if(!spotTest?.enabled || !spotTest.spots?.length) return '';
-  const spots = spotTest.spots;
-  const {pass,partial,fail,none} = spotTally(spots);
-  return `<div class="spot-card">
-    <div class="spot-card-title">🎲 Spot Test — ${spotTest.scopeInput||''} · ${spots.length} spots</div>
-    <div class="spot-badges">
-      <span class="m-badge" style="background:var(--green-bg);color:var(--green);">✓ ${pass} passed</span>
-      <span class="m-badge" style="background:var(--amber-bg);color:var(--amber);">~ ${partial} partial</span>
-      <span class="m-badge" style="background:var(--red-bg);color:var(--red);">✗ ${fail} failed</span>
-      ${none?`<span class="m-badge" style="background:var(--parchment3);color:var(--ink3);">○ ${none} not assessed</span>`:''}
-    </div>
-    <div class="spot-rows">${spots.map((sp,i)=>{
-      const sm = ml.filter(m=>m.spotId===sp.id);
-      const mc = sm.length;
-      const color = {pass:'var(--green)',partial:'var(--amber)',fail:'var(--red)'}[sp.outcome]||'var(--ink3)';
-      const label = {pass:'✓ Pass',partial:'~ Partial',fail:'✗ Fail'}[sp.outcome]||'○ —';
-      // Reach and score come from what was STORED on the spot, never recomputed
-      // here: review runs with a different session's mistakes in scope.
-      const reach = sp.reached && sp.reached.key ? sp.reached.key : null;
-      const st = sp.strength || null;
-      // Mistakes first and always shown — "Mistakes: 0" is a result, and hiding
-      // it made a clean spot look like one nobody had assessed. Outcome last,
-      // because it is the conclusion the two figures before it lead to.
-      const head = `<span class="spot-row-n">#${i+1}</span>
-        <span class="spot-row-ref">${sp.surahName} <span>${sp.surah}:${sp.ayah}${reach?` → ${esc(reach)}`:''}</span></span>
-        <span class="spot-row-count">Mistakes: ${mc}</span>
-        ${st?`<span class="spot-row-score" style="color:${strengthBand(st.score).color};" title="Only comparable with other spot checks — a cold start is harder than carrying on">${st.score}%</span>`:''}
-        <span class="spot-row-outcome" style="color:${color};">${label}</span>`;
-      // No mistakes: a plain row. A <details> with an empty body is a
-      // disclosure arrow that does nothing when tapped.
-      if(!mc) return `<div class="spot-row">${head}</div>`;
-      return `<details class="spot-row-det"><summary class="spot-row">${head}
-        <span class="spot-row-chev">▾</span></summary>
-        <div class="spot-row-body">${sm
-          .sort((a,b)=>a.surah-b.surah||a.ayah-b.ayah||a.wordPos-b.wordPos)
-          .map(m=>_rvMistakeRow(m,cfg)).join('')}</div></details>`;
-    }).join('')}</div>
-  </div>`;
-}
+/* v4_375: moved to /app/shared/tehfiz-shared.js (s29), one copy for both apps. */
 
 
 
 
-const STRENGTH_TIP = 'Memorization strength, shown as a percentage.\n\n'
-  + 'It is a SCORE, not a proportion of the Quran retained.\n\n'
-  + 'Scores are only comparable within the same model. Recited segments score '
-  + 'under strength-v2; spot checks score under spot-v1, which uses the same '
-  + 'curve but a different test condition — a cold start from a random point is '
-  + 'harder than continuing, so the same student scores lower on spots.\n\n'
-  + 'Combines how often the student slipped with how much help each slip needed, '
-  + 'measured per PAGE recited, counting part-pages as fractions.\n\n'
-  + 'Pages rather than verses because a verse is not a unit of quantity — they run '
-  + 'from two words to over a hundred, so the same slips over a page of juz 30 and '
-  + 'a page of Al-Baqarah used to score very differently. A page is a near-constant '
-  + 'amount of text wherever you are.\n\n'
-  + 'Weighting: Lvl 0 self-corrected 0.25 · Lvl 1 repeat 1 · Lvl 2 hint 2 · Lvl 3 taught 3.\n'
-  + 'Level 0 counts a little rather than nothing, so a run of self-corrections '
-  + 'never scores the same as a flawless recitation.\n\n'
-  + 'Spot-tested and estimated ranges are excluded — they have no reliable verse count.';
+/* v4_375: STRENGTH_TIP moved to tehfiz-shared.js (s29). */
 
 // band: the band to show (the teacher's choice may differ from where v falls);
 // noPct: the teacher gave a band only, so the dial shows no made-up %.
-function strengthCardHTML(v, label, sub, band, noPct){
-  const b = band || strengthBand(v);
-  return `<div class="str-card str-${b.key}" title="${STRENGTH_TIP}">
-    <div class="str-dial">
-      ${strengthArcSVG(v, b.color)}
-      <div class="str-val" style="color:${b.color};">${v==null||noPct?'—':v+'%'}</div>
-    </div>
-    <div class="str-meta">
-      <div class="str-title">${label}<span class="str-info" onclick="openShortcutsToStrength()">?</span></div>
-      <div class="str-band" style="color:${b.color};">${b.label}</div>
-      ${sub?`<div class="str-sub">${sub}</div>`:''}
-    </div>
-  </div>`;
-}
+/* v4_375: moved to /app/shared/tehfiz-shared.js (s29), one copy for both apps. */
 
-function donutSVG(slices,total){
-  if(!total) return`<svg viewBox="0 0 96 96"><circle cx="48" cy="48" r="34" fill="none" stroke="var(--parchment3)" stroke-width="15"/></svg>`;
-  const r=34,sw=15,circ=2*Math.PI*r;let off=0;
-  return`<svg viewBox="0 0 96 96">${slices.map(s=>{const dash=(s.val/total)*circ;const p=`<circle cx="48" cy="48" r="${r}" fill="none" stroke="${s.color}" stroke-width="${sw}" stroke-dasharray="${dash} ${circ-dash}" stroke-dashoffset="${-off}" transform="rotate(-90 48 48)" opacity="${s.val?1:0}"/>`;off+=dash;return p;}).join('')}</svg>`;
-}
+/* v4_375: moved to /app/shared/tehfiz-shared.js (s29), one copy for both apps. */
 
 
 
 function buildTextReport(s){
   const cfg=s.typeConfig||null;
-  const {c1:self,c2:prompted,c3:teacher,c4:other}=corrTally(s.mistakes);
+  const {c0:none,c1:self,c2:prompted,c3:teacher,c4:other}=corrTally(s.mistakes);
   let t='📖 *Quran Recitation Session Report*\n';
   t+='━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
   t+=`👤 Student : ${s.student}\n`;
@@ -9614,7 +9638,8 @@ function buildTextReport(s){
      figure beside four zeroes read as a contradiction. */
   const _tal = corrTally(s.mistakes);
   const _nH = _tal.scored, _nT = _tal.tajweed;
-  const _lvls = `Lvl 1: ${self}  |  Lvl 2: ${prompted}  |  Lvl 3: ${teacher}${other?`  |  Other: ${other}`:''}`;
+  // v4_372 (D2): Lvl 0 counted too, so the levels add up to the number before them.
+  const _lvls = `${none?`Lvl 0: ${none}  |  `:''}Lvl 1: ${self}  |  Lvl 2: ${prompted}  |  Lvl 3: ${teacher}${other?`  |  Other: ${other}`:''}`;
   /* Reports only what was looked for. A tajweed-only session used to say
      "memorisation was clean", which claims the teacher was listening for
      memorisation — they may have been running a tajweed session and marking
@@ -9624,8 +9649,8 @@ function buildTextReport(s){
   t+= !s.mistakes.length
         ? (_focus ? `📊 Summary : No ${String(FOCUS_LABEL[_focus]).toLowerCase()} mistakes logged\n`
                   : `📊 Summary : No mistakes logged\n`)
-    : _nH && _nT ? `📊 Summary : ${_nH} memorisation  |  ${_lvls}\n             ${_nT} tajweed\n`
-    : _nT        ? `📊 Summary : ${_nT} tajweed mistake${_nT!==1?'s':''}\n`
+    : _nH && _nT ? `📊 Summary : ${_nH} hifz  |  ${_lvls}\n             ${_nT} tajweed: ${tajweedBreakdown(s.mistakes.filter(m=>isTajweedMistake(m,cfg)))}\n`
+    : _nT        ? `📊 Summary : ${_nT} tajweed mistake${_nT!==1?'s':''}: ${tajweedBreakdown(s.mistakes.filter(m=>isTajweedMistake(m,cfg)))}\n`
     :              `📊 Summary : ${_nH} mistake${_nH!==1?'s':''}  |  ${_lvls}\n`;
   if(_focus && _focus !== 'both') t+=`🎯 Focus   : ${FOCUS_LABEL[_focus]}\n`;
   if(s.remarks) t+=`📝 Remarks  : ${s.remarks}\n`;
@@ -9737,16 +9762,10 @@ function buildTextReport(s){
          printing "Lvl 0 · No intervention" claimed the student recovered
          unaided. The letter or rule takes its place, which is the thing the
          teacher actually recorded. */
-      if(sr && sr.letter){
-        const mk = makhrajOf(sr.letter);
-        t+=`   Letter : ${sr.letter}${mk?`  — ${mk.label}`:''}\n`;
-      } else if(sr && sr.family && !sr.rule){
-      t += `   Rule   : ${sr.label || sr.family}\n`;
-    } else if(sr && sr.rule){
-        // ruleLabel, not TAJWEED_RULES: the "added" rules (add_madd …) live in
-        // ADDED_RULES, and the direct lookup sent parents "add_ghunnah" (v4_317).
-        t+=`   Rule   : ${ruleLabel(sr.rule)}\n`;
-      }
+      // v4_372 (D3): one wording, shared with the viewer (tajweedMarkText):
+      // a rule on its own reads "— not applied", an added one "… added".
+      const _tw = tajweedMarkText(sr);
+      if(_tw) t+=`   ${(_tw.field+'      ').slice(0,6)} : ${_tw.text}\n`;
       if(m.note) t+=`   Note   : ${m.note}\n`;
       t+='\n';
     });
@@ -9756,11 +9775,20 @@ function buildTextReport(s){
 
 let shareSessionObj = null; // track what's currently shown in share modal
 
+/* v4_372 (I4): Full, or Short (one line per mistake), remembered on this device. */
+function _renderShareText(){
+  if(!shareSessionObj) return;
+  document.getElementById('shareModeBar').innerHTML = shareModeBar();
+  document.getElementById('shareOut').textContent = shareMode()==='short'
+    ? shortTextReport([shareSessionObj], shareSessionObj.mistakes || [])
+    : buildTextReport(shareSessionObj);
+}
+function setShareMode(m){ setShareModeStored(m); _renderShareText(); }
 function openShare(){
   // A session with no mistakes is a RESULT, not an empty state to be refused.
   finalizeSegments();
   shareSessionObj = buildSessionObj();
-  document.getElementById('shareOut').textContent=buildTextReport(shareSessionObj);
+  _renderShareText();
   document.getElementById('shareModal').classList.add('open');
 }
 // The share dialog already holds a fully-built session object, so the graphical
@@ -9777,7 +9805,7 @@ function reviewFromShare(){
 function shareTextSession(id){
   const s=getSessions().find(x=>x.id===id); if(!s) return;
   shareSessionObj = s;
-  document.getElementById('shareOut').textContent=buildTextReport(s);
+  _renderShareText();
   document.getElementById('shareModal').classList.add('open');
 }
 function exportShareQRS(){
@@ -10791,7 +10819,9 @@ function confirmPopulateSpots(){
   }
 }
 
-function startSegmentSpotTest(segId){
+// v4_381: Populate opens the weak-place setup (spot-weak.js) first; it comes
+// back here with a plan. picked: verses to start with as hand-picked places.
+function startSegmentSpotTest(segId, plan, picked){
   const raw = segments.find(s=>s.id===segId);
   if(!raw) return;
   const sg = segOrdered(raw);
@@ -10809,6 +10839,10 @@ function startSegmentSpotTest(segId){
   // minVerses is hidden in the UI but still respected; back it off rather than
   // refusing when the range is tight, since even spacing already does the work.
   const minVerses = Math.max(1, Math.min(spotState.minVerses||5, Math.floor(verses.length/count)));
+  if(!plan && window.TehfizWeakSpots){
+    TehfizWeakSpots.setup(segId, {startKey:sg.startKey, endKey:sg.endKey, count, verses:verses.length, picked});
+    return;
+  }
 
   spotState.enabled      = true;
   spotState.segId        = segId;
@@ -10816,7 +10850,9 @@ function startSegmentSpotTest(segId){
   spotState.scopeVerses  = {startKey:sg.startKey, endKey:sg.endKey};
   spotState.scopeInput   = raw.rangeLabel || `${sg.startKey}–${sg.endKey}`;
   spotState.minVerses    = minVerses;
-  spotState.spots        = buildAllSpots(count, minVerses, verses);
+  spotState.spots        = plan && window.TehfizWeakSpots
+    ? TehfizWeakSpots.build(plan, verses, count, minVerses)
+    : buildAllSpots(count, minVerses, verses);
   spotState.spots.sort((a,b)=>a.surah-b.surah || a.ayah-b.ayah);
   spotState.spots.forEach((s,i)=>s.index=i);
   spotState.currentIndex = -1;
@@ -10841,7 +10877,8 @@ function startSegmentSpotTest(segId){
   // to see — so start collapsed to the bottom bar there and let them expand it.
   if(isMobile()){ collapseSpotPanel(); showSpotBottomBar(); }
   else openSpotPanel();
-  showToast(`${count} spots across ${verses.length} verses ✓`);
+  const _weak = spotState.spots.filter(x=>x.how==='weak'||x.how==='picked').length;
+  showToast(`${count} spots across ${verses.length} verses${_weak?` · ${_weak} at weak places`:''} ✓`);
   renderSegments();
   // Generating spots without moving to one leaves the teacher wherever they
   // happened to be standing.
@@ -10965,6 +11002,7 @@ function renderSpotList(){
     return `${groupHead}<div class="spot-card${isActive?' active-spot':''} ${oClass}" id="spot-card-${i}" onclick="goToSpot(${i})">
       <div class="spot-card-head">
         <span class="spot-num">#${i+1}</span>
+        ${window.TehfizWeakSpots ? TehfizWeakSpots.tagHTML(s) : ''}
         <span class="spot-range-start">${s.surah}:${s.ayah}</span>
         <span class="spot-range-arrow">→</span>
         ${spotEndChipHTML(s,i)}
@@ -10975,6 +11013,7 @@ function renderSpotList(){
         <button class="spot-outcome-btn${s.outcome==='partial'?' sel-partial':''}${recCls('partial')}" onclick="event.stopPropagation();setSpotOutcome(${i},'partial')">Partial</button>
         <button class="spot-outcome-btn${s.outcome==='fail'?' sel-fail':''}${recCls('fail')}" onclick="event.stopPropagation();setSpotOutcome(${i},'fail')">Fail</button>
       </div>
+      ${window.TehfizWeakSpots ? TehfizWeakSpots.cardHTML(s, i, isActive) : ''}
       ${live ? `<div class="spot-live" title="Provisional — recalculated as you mark mistakes and follow along. Firms up when you set the outcome.">
         <span class="spot-live-dot"></span>
         <span class="spot-live-val" style="color:${strengthBand(live.score).color};">${live.score}%</span>
@@ -11404,46 +11443,7 @@ function refreshSpotVisuals(){
    lesson needs. Dividing would answer "how weak is that page" and is a
    different question — the fraction is in the tooltip so a two-verse sliver at
    the edge of a range is never mistaken for a whole page. */
-function segPageLoads(segs, seg, mistakes){
-  const s = segOrdered(seg || {});
-  if(!keyValid(s.startKey) || !keyValid(s.endKey)) return null;
-  const a = keyAbs(s.startKey), b = keyAbs(s.endKey);
-  if(!a || !b) return null;
-  const lo = Math.min(a,b), hi = Math.max(a,b);
-  const p1 = pageForAbs(lo), p2 = pageForAbs(hi);
-  if(!p1 || !p2 || p2 < p1) return null;
-
-  const pages = [];
-  for(let p = p1; p <= p2; p++){
-    const bd = pageBoundsAbs(p);
-    const covered = bd
-      ? Math.max(0, Math.min(hi, bd.last) - Math.max(lo, bd.first) + 1) /
-        (bd.last - bd.first + 1)
-      : 1;
-    pages.push({page:p, load:0, count:0, tajweed:0, worst:null, covered:+covered.toFixed(3)});
-  }
-  const byPage = new Map(pages.map(p=>[p.page, p]));
-
-  // Severity rank, so `worst` means what a teacher means by it: needing to be
-  // taught outranks any number of self-corrections.
-  const RANK = {c0:0, c4:1, c1:2, c2:3, c3:4};
-  mistakesInSegment(segs, seg, mistakes).forEach(m=>{
-    const rec = byPage.get(pageForVerse(m.surah, m.ayah));
-    if(!rec) return;                       // outside the span; nothing to draw
-    /* Counted apart, never together. `count` is the hifz count that `load`
-       divides against, and `load` is a sum of intervention weights — a tajweed
-       mark has no level and so no weight to contribute. Putting it in `count`
-       but not `load` would make a page look easier the more tajweed was marked
-       on it. */
-    if(isTajweedMistake(m)){ rec.tajweed++; return; }
-    rec.count++;
-    rec.load += mistakeWeight(m);
-    const c = (m && m.correction) || 'c0';
-    if(rec.worst === null || (RANK[c]||0) > (RANK[rec.worst]||0)) rec.worst = c;
-  });
-  pages.forEach(p=>{ p.load = +p.load.toFixed(3); });
-  return pages;
-}
+/* v4_375: moved to /app/shared/tehfiz-shared.js (s29), one copy for both apps. */
 
 
 
@@ -12178,6 +12178,7 @@ function saveTeachHours(){
 function openSettings(){
   setTimeout(syncTeachHours, 0);
   setTimeout(_syncMushafPrefSwitches, 0);
+  if(window.TehfizPast && TehfizPast.bar) TehfizPast.bar();
   initTzPicker();
   renderTermChoice();
   document.getElementById('settingDateFormat').value=appSettings.dateFormat;
@@ -12550,6 +12551,8 @@ document.querySelectorAll('.modal-bg').forEach(m=>m.addEventListener('click',e=>
       </label>
       <div style="font-size:12px;color:var(--ink3);margin-top:4px;line-height:1.5;">Turn off to hide the auto-scroll controls entirely if you don't use them.</div>
     </div>
+<!-- v4_383: past mistakes (TehfizPast fills this), here and in View; no longer in the menu -->
+<div class="edit-form-group pm-box pm-in-settings"></div>
         </div>
         <div id="stp-datetime" style="display:none;">
 <div class="edit-form-group">
@@ -13261,7 +13264,7 @@ function footerState() {
 
 /* ── sending ────────────────────────────────────────────────────────────── */
 
-function localSessions() { return readJSON('qrt4_sessions', []); }
+function localSessions() { return typeof getSessions === 'function' ? getSessions() : readJSON('qrt4_sessions', []); }   // v4_387
 
 function saveLocalSessions(list) { putSessions(list); }   // v4_367: was silent when the device was full
 
@@ -13283,6 +13286,8 @@ function scrub(sess) {
 }
 
 async function pushOnce(clientId, studentId) {
+  // v4_387: a lesson filed in the database is only found once it has loaded.
+  if (window.TehfizStore) await TehfizStore.ready;
   const local = findLocal(clientId);
   if (!local) throw new ApiError('session no longer exists locally', 410);
   const data = await api('/api/sessions', {
@@ -13664,6 +13669,7 @@ function stuCard(s) {
   const menu = stuMenu === s.id
     ? '<div class="tsy-menu" role="menu">' +
         '<button type="button" role="menuitem" data-tsy="profile" data-id="' + esc(s.id) + '">Profile</button>' +
+        '<button type="button" role="menuitem" data-tsy="progress" data-id="' + esc(s.id) + '">Progress report</button>' +
         '<button type="button" role="menuitem" data-tsy="review" data-id="' + esc(s.id) + '">Open in viewer</button>' +
         (o && window.TehfizRemind ? '<button type="button" role="menuitem" data-tsy="remind" data-id="' + esc(s.id) + '">Remind about next lesson<small>' + esc(stuT() ? stuT().whenText(+o.at) : '') + '</small></button>' : '') +
         '<button type="button" role="menuitem" data-tsy="copycode" data-code="' + esc(s.code) + '">Copy code · ' + esc(s.code) + '</button>' +
@@ -14262,6 +14268,10 @@ document.addEventListener('click', async (e) => {
     try { await createStudent(''); render(); toast('Code created — add a name'); }
     catch (err) { showError('Could not create a code: ' + err.message); }
   }
+  if (act === 'progress') {   // v4_374: the report inside this app (TehfizProgress)
+    stuMenu = null;
+    if (window.TehfizProgress) { TehfizProgress.open(id); render(); return; }
+  }
   if (act === 'review') {
     /* New tab, and the mode is carried in the URL so the viewer decides it at
        boot — before it would otherwise touch a student's local store. */
@@ -14490,7 +14500,10 @@ window.TehfizSync = {
   },
   // mode 'progress' opens straight on the progress report.
   viewerUrl(id, mode) { return '/app/student?review=' + encodeURIComponent(id) + (mode === 'progress' ? '&open=progress' : ''); },
-  openViewer(id, mode) { window.open(window.TehfizSync.viewerUrl(id, mode), '_blank'); },
+  openViewer(id, mode) {
+    if (mode === 'progress' && window.TehfizProgress) { TehfizProgress.open(id); return; }   // v4_374
+    window.open(window.TehfizSync.viewerUrl(id, mode), '_blank');
+  },
   /* The bridge the Settings modal uses. That modal lives in the main app's
      script block and this panel lives in its own IIFE, so nothing here is
      reachable from there except through this object. */
@@ -14498,6 +14511,8 @@ window.TehfizSync = {
     open();               // the overlay this panel lives in
     openProfilePanel();
   },
+  // v4_390: for the tour, which shows the student list.
+  closeProfile() { if (profileOpen) closeProfilePanel(); },
   bindFromSession(sess) {
     const s = (sess && sess.studentId && studentById(sess.studentId)) || null;
     binding = s ? { id: s.id, code: s.code, name: s.name } : null;
@@ -14590,6 +14605,15 @@ window.TehfizSync = {
   sendState: (clientId) => (
     queue.some((q) => String(q.clientId) === String(clientId)) ? 'queued'
       : sent[String(clientId)] ? 'sent' : 'none'),
+  /* v4_385: a lesson brought here from Sessions → Sent to students was sent
+     (from this device or another), so this device should know: its card says
+     Sent, and Finish after Edit offers "Send again". Never overwrites a record. */
+  markSent: (clientId, serverId, studentId, at) => {
+    const k = String(clientId);
+    if (sent[k]) return;
+    sent[k] = { serverId, at: at || Date.now(), studentId };
+    writeJSON(K.sent, sent);
+  },
   /* The invoice arithmetic, for TehfizFinish (the "bills as" note) and
      TehfizInvoices (the month screen). One implementation, so the note, the
      month table and the printed invoice can never disagree. */
@@ -17760,6 +17784,8 @@ function rosterOpen() {
    when already open is safe — but checking first avoids a pointless rebuild
    that would drop any Manage panel the teacher had expanded. */
 function openRoster() {
+  // v4_390: the list, not the teacher profile form a first sign-in opens on.
+  try { if (window.TehfizSync && TehfizSync.closeProfile) TehfizSync.closeProfile(); } catch (_) {}
   if (rosterOpen()) return false;
   try { if (window.TehfizSync) window.TehfizSync.open(); } catch (e) {
     console.error('TehfizTour: TehfizSync.open() failed', e);
@@ -17771,30 +17797,46 @@ function openRoster() {
 /* Mirrors the real .tsy-row markup so it inherits every style, minus the
    data-tsy attributes: without those the document-level delegate cannot match
    it, so even if a click got through it would do nothing. */
+/* v4_390: the example student is today's card (stuCard), with its ⋯ menu
+   shown only for the step about it. Same rule as before: DOM only. */
+const DEMO_MENU =
+  '<div class="tsy-menu ttr-demo-menu" role="menu" style="position:static;grid-column:1 / -1;margin:4px 0 0;box-shadow:none;width:auto;">' +
+    '<button type="button">Profile</button>' +
+    '<button type="button">Progress report</button>' +
+    '<button type="button">Open in viewer</button>' +
+    '<button type="button">Remind about next lesson<small>Thu 5:00 pm</small></button>' +
+    '<button type="button">Copy code \u00b7 K4M-7QP</button>' +
+    '<button type="button">Archive</button>' +
+    '<button type="button" class="tsy-rmi">Remove from this device\u2026</button>' +
+  '</div>';
 const DEMO_ROW =
-  '<div class="tsy-row ttr-demo">' +
+  '<div class="tsy-card ttr-demo" style="pointer-events:none;position:relative;">' +
     '<span class="ttr-demo-pill">Example</span>' +
-    '<div class="tsy-row-main">' +
-      '<input class="tsy-name" value="Yusuf" readonly>' +
-      '<code class="tsy-code tsy-copyable" title="Tap to copy">K4M-7QP</code>' +
-    '</div>' +
-    '<div class="tsy-row-meta">' +
-      '<span class="tsy-ok-dot">\u25cf claimed</span>' +
-      '<span>12 sent</span>' +
-      '<button class="tsy-chip-btn">Manage</button>' +
-      '<button class="tsy-chip-btn">Hours</button>' +
-      '<button class="tsy-chip-btn">Open in viewer</button>' +
-      '<button class="tsy-chip-btn tsy-rm">Remove</button>' +
-    '</div>' +
+    '<span class="tsy-av" aria-hidden="true">Y</span>' +
+    '<span class="tsy-mid">' +
+      '<span class="tsy-nm"><b>Yusuf</b></span>' +
+      '<span class="tsy-l2">Next: Thu 5:00 pm \u00b7 45 min</span>' +
+      '<span class="tsy-l3">Last lesson 2 days ago</span>' +
+    '</span>' +
+    '<span class="tsy-acts"><button type="button" class="tsy-go">Start</button><button type="button" class="tsy-more">\u22ef</button></span>' +
   '</div>';
 
 function realRosterRows() {
   const b = $('tsyBody');
-  return b ? b.querySelectorAll('.tsy-row:not(.ttr-demo)').length : 0;
+  return b ? b.querySelectorAll('.tsy-card:not(.ttr-demo)').length : 0;
+}
+/* The ⋯ menu of the first card, real or example, for the step that shows it.
+   A real card's menu is only drawn here as a copy beside it: opening the real
+   one would re-render the panel under the tour. */
+function demoMenu(on) {
+  document.querySelectorAll('.ttr-demo-menu').forEach((m) => m.remove());
+  if (!on) return;
+  const card = document.querySelector('#tsyBody .tsy-card');
+  if (card) card.insertAdjacentHTML('beforeend', DEMO_MENU);
 }
 function ensureDemo() {
   if (realRosterRows() > 0) return;          // real students: point at those
-  const rows = document.querySelector('#tsyBody .tsy-rows');
+  const rows = document.querySelector('#tsyList');
   const body = $('tsyBody');
   const host = rows || body;
   if (!host || host.querySelector('.ttr-demo')) return;
@@ -17906,7 +17948,7 @@ const DEMO_SEG_SPOT = () =>
     '<div class="seg-row-line">' +
       '<label class="seg-lbl">Spots</label>' +
       '<span class="seg-in narrow ttr-fake-sel">8</span>' +
-      '<span class="seg-start ttr-fake-btn">\u25b6 Populate spots</span>' +
+      '<span class="seg-start ttr-fake-btn">\u25b6 Choose spots</span>' +
       '<span class="seg-hint">across 564 verses</span>' +
     '</div>' +
   '</div>';
@@ -17981,13 +18023,18 @@ function demoSpotCard(n, surah, ref, active, outcome) {
          (outcome ? ' outcome-' + outcome : '') + '">' +
     '<div class="spot-card-head">' +
       '<span class="spot-num">#' + n + '</span>' +
+      // v4_390: how each spot was placed, as the real cards show it
+      '<span class="ws-chip ' + (n === 2 ? 'random' : 'weak') + '">' + (n === 2 ? 'Random' : 'Weak place') + '</span>' +
       '<span class="spot-name">' + esc(surah) + '</span></div>' +
     '<div class="spot-ref">' + esc(ref) + '</div>' +
     '<div class="spot-outcome-row">' +
       '<span class="spot-outcome-btn' + (outcome === 'pass' ? ' sel-pass' : '') + '">\u2713 Pass</span>' +
       '<span class="spot-outcome-btn' + (outcome === 'partial' ? ' sel-partial' : '') + '">~ Partial</span>' +
       '<span class="spot-outcome-btn' + (outcome === 'fail' ? ' sel-fail' : '') + '">\u2717 Fail</span>' +
-    '</div></div>';
+    '</div>' +
+    (active ? '<div class="ws-why">Aimed at <b>5:10</b>: 3 slips, worst Lvl 2, wrong the last time it was heard. Starts 2 verses before.</div>' +
+      '<div class="ws-acts"><span class="ws-act">Another weak place</span><span class="ws-act">A random spot</span><span class="ws-act">Remove</span></div>' : '') +
+    '</div>';
 }
 
 const DEMO_SPOTLIST = () =>
@@ -18146,7 +18193,7 @@ function clearDemo() {
 
 /* ── steps ──────────────────────────────────────────────────────────────── */
 
-const STEPS = [
+const BASE = [
   { title: 'Welcome to Tehf\u012bz Feedback Logger',
     body: 'This walks through setting a student up, sending them their code, ' +
           'and where everything lives. About a minute.' },
@@ -18287,11 +18334,11 @@ const STEPS = [
           'you rather than clustering, so eight spots across a juz means eight ' +
           'genuinely different places.' },
 
-  { title: 'Populate, then work through them',
+  { title: 'Choose spots, then work through them',
     seg: 'spot',
     before: () => { openTracker(); ensureDemoSeg('spot'); },
     find: () => pick(['#ttrDemoSpot .seg-start', '#segPanel .seg-row.spot .seg-start']),
-    body: 'Populate spots picks them and starts the test. You can regenerate a ' +
+    body: 'Choose spots asks how many and where (random, the student\u2019s weak places, or a mix), then starts the test. You can choose a ' +
           'fresh set later \u2014 though that discards any mistakes logged against ' +
           'the old ones, and it will warn you first.' },
 
@@ -18394,6 +18441,199 @@ const STEPS = [
           'shortcut. Press ? at any time to open it. You can run this tour again from there.' },
 ];
 
+/* v4_390 (stage 8): the tour in topics, chosen from a list ("Take the tour"),
+   each a minute or two. A new device starts on The basics. Steps are the
+   earlier ones where they still hold (BASE, by title) and new ones for what
+   came since. A step with nothing to point at is shown centred, never skipped,
+   unless it names a control that is simply not there. */
+const _b = (t) => BASE.find((x) => x.title === t);
+const _with = (t, o) => Object.assign({}, _b(t), o);
+const _stage = BASE.find((x) => typeof x.title === 'function');
+const _menuItem = (id) => () => { menuOpen(true); return pick(['.tzh-mi[data-tzh-item="' + id + '"]', '#tzhMenuBtn']); };
+const _settingsRow = (txt) => () => { settingsOpen('display'); return [...document.querySelectorAll('#stp-display .edit-form-group')].find((g) => g.textContent.includes(txt) && g.getBoundingClientRect().height > 0) || null; };
+
+const TOPICS = [
+  { id: 'basics', title: 'The basics', blurb: 'Set up a lesson, mark mistakes, finish and send.', steps: [
+    { title: 'The basics',
+      body: 'One lesson from start to finish: setting it up, marking mistakes, and sending it. ' +
+            'The other topics in the tour (students, spot tests, planning, invoices, reports) are in Menu → Take the tour.' },
+    _b('Naming the session'),
+    _b('Two kinds of segment'),
+    _b('A recite segment'),
+    _stage,
+    _with('The range fills itself in', {
+      body: 'Press Start on the timer and the segment begins at the first verse on screen. Tap a chip to arm it, ' +
+            'then tap a word to set it yourself; a dashed chip was filled in for you, and tapping it corrects it. ' +
+            'Range… sets a whole juz, page or surah in one go.' }),
+    _b('Tap a word to mark a mistake'),
+    _b('What went wrong'),
+    _b('How much help it took'),
+    _b('Add commits it'),
+    _b('Everything you have marked'),
+    _b('Finishing a lesson'),
+    _with('Help, and the shortcuts', {
+      body: 'Help explains mistake types, levels of help and the strength score, and lists every keyboard shortcut: ' +
+            'press ? at any time. Take the tour, in the same menu, has the other topics.' }),
+  ] },
+
+  { id: 'students', title: 'Students and Profile', blurb: 'Add students, send their code, and what each one holds.', steps: [
+    _b('Students live here'),
+    { title: 'Adding a student',
+      before: () => openRoster(),
+      find: () => pick(['#tsyHActs [data-tsy="newstudent"]', '[data-tsy="newstudent"]']),
+      body: 'Add gives a student a code, made on the server. You never enter their email or anything else about them. ' +
+            'You can also type a name in the session panel and choose Create a code.' },
+    { title: 'One card per student',
+      roster: true,
+      before: () => { openRoster(); ensureDemo(); },
+      find: () => pick(['#tsyBody .tsy-card']),
+      body: 'The name is yours alone: it stays on this device (and in your own Google Drive if you turn on name sync) and ' +
+            'is never sent to the Tehfīz server. A student who has not joined yet shows their code with Copy beside it, ' +
+            'to paste into WhatsApp. Start picks the student for this lesson.' },
+    { title: 'Everything else is under ⋯',
+      roster: true, menu: true,
+      before: () => { openRoster(); ensureDemo(); demoMenu(true); },
+      find: () => pick(['.ttr-demo-menu']),
+      body: 'Profile, Progress report, Open in viewer (exactly what they see), a reminder about the next lesson, Copy code, ' +
+            'Archive, and Remove from this device. Remove keeps their code and lessons on the server.' },
+    { title: 'A student’s Profile',
+      roster: true, menu: true,
+      before: () => { openRoster(); ensureDemo(); demoMenu(true); },
+      find: () => pick(['.ttr-demo-menu button']),
+      body: 'Four tabs. Overview: their code, Reset PIN for a forgotten one, and Change code if it leaks (both sign out every ' +
+            'device they use). Memorisation: the map of what they know. Schedule: their weekly lessons. Billing: their rate.' },
+    { title: 'Export your roster',
+      before: () => { openRoster(); topMenu(true); },
+      find: () => pick(['[data-tsy="exportroster"]']),
+      body: 'Because names live only here, clearing site data or changing device leaves you holding codes and no names. ' +
+            'Export the roster now and keep the file somewhere safe, or turn on name sync.' },
+  ] },
+
+  { id: 'spots', title: 'Spot tests', blurb: 'Sample a portion, aim at weak places, see past mistakes.', steps: [
+    _b('A spot test segment'),
+    _b('Scope, not from-and-to'),
+    _b('How many spots'),
+    _with('Choose spots, then work through them', {
+      body: 'Choose spots opens a short setup: how many, and where they go. Random spreads them evenly; Weak places aims at ' +
+            'where this student went wrong before; Mixed, the default, does both. You can tick, pin or pick the weak places ' +
+            'yourself. Choosing again later replaces the spots, and warns you first.' }),
+    _b('Moving between spots'),
+    _b('Pass, partial or fail'),
+    { title: 'Swap or remove a spot',
+      spot: true,
+      before: () => { closeRoster(); closeTracker(); },
+      find: () => pick(['#spotList .spot-card.active-spot', '#ttrDemoSpotCards .spot-card.active-spot', '#ttrDemoSpotNav']),
+      body: 'The spot you are on says why it is there: aimed at a weak place, or picked by you. Until it has an outcome or a ' +
+            'mistake, it can be swapped for another weak place or a random spot, or removed.' },
+    { title: 'Past mistakes on the page',
+      find: () => pick(['#tzhViewBtn', '#tzhMenuBtn']),
+      body: 'Turn on Past mistakes in View (or Settings → Display, or press P) to see where this student went wrong before. ' +
+            'Each word is outlined, with a number for how many lessons it went wrong in. Tap the number to see what happened ' +
+            'there; tap the word itself to mark a mistake, as usual.' },
+    _b('Mistakes belong to a segment'),
+  ] },
+
+  { id: 'planning', title: 'Planning', blurb: 'The memorisation map, lesson times, calendar and reminders.', steps: [
+    { title: 'What they have memorised',
+      find: () => pick(['.tzh-bar [data-tzh-bar="students"]', '#tzhMenuBtn']),
+      body: 'Each student’s Profile has a map of what they have memorised, page by page: old, recent and new. Finishing a ' +
+            'lesson adds what was recited as the new lesson, and the last new lesson moves to recent. Segments suggest their ' +
+            'stage from it.' },
+    { title: 'Lesson times and the next lesson',
+      before: () => openTracker(),
+      find: () => pick(['.tracker-footer']),
+      body: 'Set a student’s weekly lessons in Profile → Schedule. When you finish a lesson, the next one fills itself in, ' +
+            'with what to prepare, and the student sees it in their viewer.' },
+    { title: 'Calendar',
+      find: _menuItem('calendar'),
+      body: 'The whole week for every student, and a private link that puts your lessons in your own calendar app. Press C to open it.' },
+    { title: 'Reminders',
+      find: () => pick(['.tzh-bar [data-tzh-bar="students"]', '#tzhMenuBtn']),
+      body: 'In Students, a student’s ⋯ menu has Remind about next lesson: a reminder, running late or cancelled, already ' +
+            'written, ready to copy or open in WhatsApp.' },
+  ] },
+
+  { id: 'invoices', title: 'Hours and invoices', blurb: 'Lesson time totalled, invoices printed, billing settings.', steps: [
+    { title: 'Invoices',
+      find: _menuItem('invoices'),
+      body: 'Lesson time is totalled per student, by month or any dates you choose. Preview an invoice, print it, and mark it paid.' },
+    { title: 'Billing defaults',
+      find: _settingsRow('Billing defaults'),
+      body: 'Your rate, how time is rounded (each lesson or the period’s total, and from how many minutes over), and the ' +
+            'payment details printed on invoices. A student can have their own rate in Profile → Billing.' },
+    { title: 'When an invoice changes',
+      body: 'An invoice already printed or paid keeps its amount. If its lessons or the rate change afterwards, it shows what it ' +
+            'now works out to, with Update, which asks before changing it.' },
+  ] },
+
+  { id: 'reports', title: 'Reports and Sessions', blurb: 'Review, edit and resend lessons; the progress report.', steps: [
+    { title: 'Sessions',
+      find: () => pick(['.tzh-bar [data-tzh-bar="sessions"]', '#tzhMenuBtn']),
+      body: 'Every lesson you have saved or sent. Press H to open it.' },
+    { title: 'Sent, and on this device',
+      before: () => sessionsOpen(true),
+      find: () => pick(['#sessionsOverlay .tss-tabs', '#sessionsOverlay .modal']),
+      body: 'Sent to students lists every lesson on the server, from any of your devices. On this device lists the ones kept here, ' +
+            'including any not sent yet.' },
+    { title: 'Review and Edit',
+      before: () => sessionsOpen(true),
+      find: () => pick(['#sessionsOverlay .tss-card .tss-main', '#sessionsOverlay .sess-card .sess-actions', '#sessionsOverlay .tss-tabs']),
+      body: 'Review opens a lesson’s report. Edit opens it in the app to change it; Finish then sends it again, replacing the ' +
+            'copy the student sees.' },
+    { title: 'The progress report',
+      roster: true, menu: true,
+      before: () => { sessionsOpen(false); openRoster(); ensureDemo(); demoMenu(true); },
+      find: () => pick(['.ttr-demo-menu button:nth-child(2)', '.ttr-demo-menu']),
+      body: 'Every lesson together: how each stage is holding, what keeps coming back, spot test pass rates (random and weak ' +
+            'places apart), and pace. Narrow it to a juz, a surah or any verses, and to a time window; switch students without closing it.' },
+    { title: 'Your own grade',
+      before: () => { closeRoster(); openTracker(); },
+      find: () => pick(['.tracker-footer']),
+      body: 'In Finish session you can grade the lesson, or each part of it. Your grade leads the report, beside the score worked ' +
+            'out from the mistakes.' },
+  ] },
+];
+const TOPIC = (id) => TOPICS.find((t) => t.id === id) || TOPICS[0];
+
+/* What the tour opens for a step (the menu, Settings, Sessions) it closes
+   again before the next one, and at the end. */
+const opened = { menu: false, settings: false, sessions: false, top: false };
+function menuOpen(on) {
+  try {
+    if (on && window.TehfizHeader && !document.querySelector('.tzh-mi')) { TehfizHeader.openMenu(); opened.menu = true; }
+    if (!on && opened.menu && window.TehfizHeader) { TehfizHeader.closeMenu(); opened.menu = false; }
+  } catch (_) {}
+}
+function settingsOpen(tab) {
+  try {
+    if (tab) {
+      const m = $('settingsModal');
+      if (m && !m.classList.contains('open') && typeof window.openSettings === 'function') { window.openSettings(); opened.settings = true; }
+      if (typeof window.switchSetTab === 'function') window.switchSetTab(tab);
+    } else if (opened.settings) { const m = $('settingsModal'); if (m) m.classList.remove('open'); opened.settings = false; }
+  } catch (_) {}
+}
+function sessionsOpen(on) {
+  try {
+    const o = $('sessionsOverlay');
+    if (on && o && !o.classList.contains('open') && typeof window.openSessions === 'function') { window.openSessions(); opened.sessions = true; }
+    if (!on && opened.sessions && typeof window.closeSessions === 'function') { window.closeSessions(); opened.sessions = false; }
+  } catch (_) {}
+}
+// The Students panel's own ⋯ (Refresh, Export roster…): a copy is not possible
+// here, so the real one is opened and closed with the panel.
+function topMenu(on) {
+  const b = document.querySelector('#tsyHActs [data-tsy="stumenu"][data-id="__top"]');
+  const isOn = !!document.querySelector('#tsyHActs .tsy-menu.top');
+  if (b && on !== isOn) { b.click(); opened.top = on; }
+}
+function closeOpened(step) {
+  if (!step || !step.menu) demoMenu(false);
+  menuOpen(false); settingsOpen(null);
+  if (opened.top) topMenu(false);
+  if (!step || String(step.before || '').indexOf('sessionsOpen(true)') < 0) sessionsOpen(false);
+}
+
 function closeRoster() {
   const o = $('tsyOverlay');
   if (o) o.classList.remove('tsy-on');
@@ -18441,13 +18681,17 @@ function openTracker() {
    remembering to do so for every future step, and forgetting shows up as a
    panel covering the thing being pointed at — the bug this fixes. There is no
    build step or minifier on this file, so the function source is stable. */
-STEPS.forEach((s) => {
-  if (s.before && String(s.before).indexOf('openTracker') >= 0) s.tracker = true;
+[...BASE, ...TOPICS.flatMap((t) => t.steps)].forEach((s) => {
+  if (s && s.before && String(s.before).indexOf('openTracker') >= 0) s.tracker = true;
 });
 
 /* ── state ──────────────────────────────────────────────────────────────── */
 
 let running = false, i = 0, dir = 1, gen = 0, mounted = false;
+let steps = TOPICS[0].steps, topic = TOPICS[0], picking = false;
+const K_DONE = 'tehfiz_tour_done';
+function doneSet() { try { return new Set(JSON.parse(localStorage.getItem(K_DONE) || '[]')); } catch { return new Set(); } }
+function markDone(id) { const d = doneSet(); d.add(id); try { localStorage.setItem(K_DONE, JSON.stringify([...d])); } catch {} }
 
 function seen() {
   try { return Number(localStorage.getItem(K_SEEN) || 0) >= VERSION; } catch { return false; }
@@ -18456,20 +18700,46 @@ function markSeen() {
   try { localStorage.setItem(K_SEEN, String(VERSION)); } catch {}
 }
 
-function start(force) {
-  if (running) return;
+/* v4_390: start(true) shows the list of topics; start(true, id) runs one;
+   start(false) runs The basics on a device that has not had the tour. */
+function start(force, id) {
+  if (running && !picking) return;
   if (!force && seen()) return;
-  // Four of nine steps point at the topbar, which is display:none while
+  // Several steps point at the topbar, which is display:none while
   // body.topbar-hidden.
   try { if (typeof window.setTopbarHidden === 'function') window.setTopbarHidden(false); } catch {}
-  running = true; i = 0; dir = 1;
+  if (force && !id) return showPicker();
+  begin(id || 'basics');
+}
+function begin(id) {
+  topic = TOPIC(id); steps = topic.steps;
+  running = true; picking = false; i = 0; dir = 1;
   $('ttrRoot').classList.add('ttr-on');
+  $('ttrRoot').classList.remove('ttr-picking');
   show();
+}
+/* The list of topics: at the start, and after each topic ("More topics"). */
+function showPicker() {
+  closeOpened(null); clearDemoSpotNav(); clearDemo(); closeRoster();
+  running = true; picking = true; gen++;
+  const root = $('ttrRoot'), done = doneSet();
+  root.classList.add('ttr-on', 'ttr-picking');
+  $('ttrHole').style.display = 'none'; $('ttrHole').style.width = '';
+  $('ttrPick').innerHTML =
+    '<div class="ttr-title">Take the tour</div>' +
+    '<div class="ttr-body">Pick a topic. Each takes a minute or two, and you can come back for the others.</div>' +
+    '<div class="ttr-topics">' + TOPICS.map((t) =>
+      '<button type="button" class="ttr-topic" data-ttr-topic="' + t.id + '">' +
+        '<span class="ttr-tt">' + esc(t.title) + (done.has(t.id) ? ' <span class="ttr-done">\u2713 seen</span>' : '') + '</span>' +
+        '<span class="ttr-tb">' + esc(t.blurb) + ' \u00b7 ' + t.steps.length + ' steps</span></button>').join('') + '</div>' +
+    '<div class="ttr-foot"><span class="ttr-spacer"></span><button class="ttr-btn" data-ttr="skip">Close</button></div>';
+  const first = $('ttrPick').querySelector('.ttr-topic'); if (first) first.focus();
 }
 
 function end() {
-  running = false;
-  $('ttrRoot').classList.remove('ttr-on');
+  running = false; picking = false;
+  closeOpened(null);
+  $('ttrRoot').classList.remove('ttr-on', 'ttr-picking');
   clearDemoSpotNav();
   clearDemo();
   // Put the roster back the way the tour found it rather than leaving an
@@ -18481,15 +18751,17 @@ function end() {
 function go(d) {
   const n = i + d;
   if (n < 0) return;
-  if (n >= STEPS.length) return end();
+  if (n >= steps.length) { markDone(topic.id); markSeen(); return showPicker(); }
   dir = d < 0 ? -1 : 1;
   i = n; show();
 }
 
 function show() {
-  const step = STEPS[i];
+  const step = steps[i];
   const myGen = ++gen;
   const alive = () => myGen === gen;
+  // Whatever the last step opened (the menu, Settings, Sessions) goes first.
+  try { closeOpened(step); } catch (e) { console.error('TehfizTour: closeOpened threw', e); }
 
   if (step.before) {
     try { step.before(); } catch (e) { console.error('TehfizTour: before() threw', e); }
@@ -18553,9 +18825,9 @@ function paint(step, el, rect, alive) {
       (typeof step.title === 'function') ? step.title() : step.title;
     $('ttrBody').textContent  =
       (typeof step.body === 'function') ? step.body() : step.body;
-    $('ttrCount').textContent = (i + 1) + ' of ' + STEPS.length;
+    $('ttrCount').textContent = topic.title + ' \u00b7 ' + (i + 1) + ' of ' + steps.length;
     $('ttrBack').style.visibility = i === 0 ? 'hidden' : 'visible';
-    $('ttrNext').textContent = (i === STEPS.length - 1) ? 'Done' : 'Next';
+    $('ttrNext').textContent = (i === steps.length - 1) ? 'More topics' : 'Next';
     place(card, rect);
   });
 }
@@ -18600,10 +18872,13 @@ function mount() {
         '<button class="ttr-btn" data-ttr="back" id="ttrBack">Back</button>' +
         '<button class="ttr-btn ttr-primary" data-ttr="next" id="ttrNext">Next</button>' +
       '</div>' +
-    '</div>';
+    '</div>' +
+    '<div class="ttr-card ttr-pick" id="ttrPick" role="dialog" aria-label="Take the tour"></div>';
 
   /* Document-level delegate, matching how TehfizSync and TehfizAdmin bind. */
   document.addEventListener('click', (e) => {
+    const tp = e.target.closest('[data-ttr-topic]');
+    if (tp && running && picking) { begin(tp.dataset.ttrTopic); return; }
     const t = e.target.closest('[data-ttr]');
     if (!t || !running) return;
     const a = t.dataset.ttr;
@@ -18616,7 +18891,8 @@ function mount() {
     if (!running) return;
     // Captured before the app's own handlers: '?' opens Help, and the arrow
     // keys move the mushaf.
-    if (e.key === 'Escape')     { e.preventDefault(); e.stopPropagation(); end(); }
+    if (e.key === 'Escape')     { e.preventDefault(); e.stopPropagation(); end(); return; }
+    if (picking) return;
     if (e.key === 'ArrowRight') { e.preventDefault(); e.stopPropagation(); go(1); }
     if (e.key === 'ArrowLeft')  { e.preventDefault(); e.stopPropagation(); go(-1); }
   }, true);
@@ -18625,7 +18901,7 @@ function mount() {
   window.addEventListener('resize', () => {
     if (!running) return;
     clearTimeout(rt);
-    rt = setTimeout(show, 120);        // rects are stale after a rotation
+    rt = setTimeout(() => { if (!picking) show(); }, 120);        // rects are stale after a rotation
   });
 }
 
@@ -18638,7 +18914,7 @@ if (document.readyState === 'loading') {
    pushed the mistakes list and the footer buttons off the bottom of the panel,
    so the very things those steps point at were off-screen. */
 function syncExamples() {
-  const step = STEPS[i] || {};
+  const step = steps[i] || {};
   if (step.roster) ensureDemo();
   if (step.seg) ensureDemoSeg(step.seg);
   else { const a = $('ttrDemoRecite'), b = $('ttrDemoSpot');
@@ -18647,6 +18923,7 @@ function syncExamples() {
   else clearDemoSpotNav();
   if (step.form) ensureDemoForm();
   else { const f = $('ttrDemoForm'); if (f) f.remove(); }
+  if (step.menu) demoMenu(true);
   if (step.mistake) ensureDemoMistake();
   else { const m = $('ttrDemoMistake'); if (m) m.remove(); }
 }
@@ -18654,7 +18931,7 @@ function syncExamples() {
 function decorate() { if (running) syncExamples(); }
 function active()   { return running; }
 
-window.TehfizTour = { start: () => start(true), startIfUnseen: () => start(false),
+window.TehfizTour = { start: (id) => start(true, id), startIfUnseen: () => start(false), topics: () => TOPICS.map((t) => t.id),
                       active, decorate };
 
 })();
@@ -18664,6 +18941,16 @@ window.TehfizTour = { start: () => start(true), startIfUnseen: () => start(false
 /* ── TehfizTour — every selector prefixed .ttr- ───────────────────────── */
 #ttrRoot{display:none;}
 #ttrRoot.ttr-on{display:block;}
+/* v4_390: the list of topics, centred, in place of the step card */
+#ttrRoot .ttr-pick{display:none;}
+#ttrRoot.ttr-picking .ttr-pick{display:flex;flex-direction:column;gap:10px;left:50% !important;top:50% !important;transform:translate(-50%,-50%);visibility:visible !important;width:min(440px,calc(100vw - 24px));max-height:calc(100vh - 24px);overflow:auto;}
+#ttrRoot.ttr-picking #ttrCard,#ttrRoot.ttr-picking #ttrHole{display:none !important;}
+.ttr-topics{display:flex;flex-direction:column;gap:6px;}
+.ttr-topic{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;padding:10px 12px;min-height:48px;border-radius:9px;border:1px solid rgba(127,127,127,.35);background:transparent;color:inherit;font:inherit;cursor:pointer;}
+.ttr-topic:hover,.ttr-topic:focus-visible{border-color:currentColor;}
+.ttr-tt{font-weight:600;font-size:14.5px;}
+.ttr-tb{font-size:12.5px;opacity:.75;}
+.ttr-done{font-weight:500;font-size:12px;opacity:.7;}
 
 /* Transparent and click-eating: a narrated tour must not let a stray tap fire
    an app control whose result the teacher cannot see. 849 sits above the
@@ -18803,6 +19090,7 @@ span.seg-chip{display:flex;align-items:center;justify-content:center;box-sizing:
         // v4_333: Import a .qrs file moved into Settings → Storage.
         { id: 'settings', label: 'Settings', icon: 'settings', group: 'tools', kbd: (window.TehfizKeys && (TehfizKeys.list().find((x) => x.id === 'settings') || {}).key) || undefined, run: () => openSettings() },
         { id: 'help', label: 'Help & keyboard shortcuts', icon: 'help', group: 'tools', kbd: '?', run: () => openShortcuts() },
+        // v4_383: Past mistakes moved out of the menu to Settings → Display (and View).
         { id: 'tour', label: 'Take the tour', icon: 'tour', group: 'tools',
           hidden: !window.TehfizTour, run: () => window.TehfizTour.start() },
         { id: 'hide', label: 'Hide the toolbar', icon: 'hide', group: 'tools', run: () => setTopbarHidden(true) },
@@ -18876,12 +19164,16 @@ span.seg-chip{display:flex;align-items:center;justify-content:center;box-sizing:
   if (document.readyState !== 'loading' && window.TehfizKeys) TehfizKeys.mountHelp(document.getElementById('tzkHelp'));
 })();
 </script>
-<script src="/app/teacher/sessions-sent.js?v=m7"></script>
-<script src="/app/teacher/finish-session.js?v=f20"></script>
+<script src="/app/teacher/sessions-sent.js?v=m8"></script>
+<script src="/app/teacher/finish-session.js?v=f21"></script>
 <script src="/app/teacher/invoices.js?v=i10"></script>
-<script src="/app/shared/tehfiz-map.js?v=mp7"></script>
+<script src="/app/shared/tehfiz-map.js?v=mp8"></script>
 <script src="/app/shared/tehfiz-time.js?v=t4"></script>
-<script src="/app/teacher/profile.js?v=p20"></script>
+<script src="/app/shared/tehfiz-range.js?v=r6"></script>
+<script src="/app/teacher/progress.js?v=g3"></script>
+<script src="/app/teacher/past.js?v=pm5"></script>
+<script src="/app/teacher/spot-weak.js?v=ws2"></script>
+<script src="/app/teacher/profile.js?v=p22"></script>
 <script src="/app/teacher/range-picker.js?v=rg5"></script>
 <script src="/app/teacher/lesson-editor.js?v=le7"></script>
 <script src="/app/teacher/calendar.js?v=c8"></script>
