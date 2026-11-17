@@ -1,6 +1,17 @@
 /* ═══════════════════════════════════════════════════════════════════════════
    past.js — TehfizPast — pm4 (17 Nov 2026)
 
+   pm6 (17 Nov, found on a real student):
+        · a mistake across several words (wordPos…wordPosEnd) outlines every
+          word of it, with the number on its first word; before, only the
+          first word was marked;
+        · a spot test hears the pages of its spots, not its whole range: one
+          spot test over a juz no longer counts as reciting all 20 pages and
+          pushing real recitations out of "the last 3";
+        · a lesson also heard every page it has a mistake on, so mistakes
+          outside its segment's range (an end left unset, older lessons) are
+          no longer dropped.
+
    pm5: the controls say a tap on the number opens the history and a tap on
         the word marks it (decided 17 Nov).
 
@@ -39,7 +50,7 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 (function () {
 'use strict';
-const VERSION = 'pm5';
+const VERSION = 'pm6';
 const KEY = 'tehfiz_past';
 const E = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -92,15 +103,21 @@ async function lessonsFor(id) {
 
 /* ── which marks, per word ──────────────────────────────────────────────── */
 const sevRank = (c) => ((window.METRICS_MODEL && METRICS_MODEL.focus && METRICS_MODEL.focus.severityOrder) || { c0: 0, c4: 1, c1: 2, c2: 3, c3: 4 })[c] ?? 0;
-function pagesOf(s) {          // the pages a lesson recited, from its parts
+// The pages a lesson heard: a recited part's whole range; a spot test only
+// the pages of its spots (pm6); and every page it has a mistake on (pm6).
+function pagesOf(s) {
   const out = new Set();
+  const spotPages = (spots) => (spots || []).forEach((x) => { if (x && x.surah && x.ayah) out.add(pageForVerse(+x.surah, +x.ayah)); });
   (s.segments || []).forEach((sg) => {
     try {
+      if (sg.mode === 'spot') return spotPages(sg.spots);
       const o = segOrdered(sg); if (!keyValid(o.startKey) || !keyValid(o.endKey)) return;
       const [a1, b1] = o.startKey.split(':').map(Number), [a2, b2] = o.endKey.split(':').map(Number);
       for (let p = pageForVerse(a1, b1); p <= pageForVerse(a2, b2); p++) out.add(p);
     } catch (_) {}
   });
+  if (s.spotTest && s.spotTest.spots) spotPages(s.spotTest.spots);            // lessons from before segments
+  (s.mistakes || []).forEach((m) => { if (m && m.surah && m.ayah) out.add(pageForVerse(+m.surah, +m.ayah)); });
   return out;
 }
 function build() {
@@ -123,12 +140,18 @@ function build() {
       if (taj ? !opt.taj : !opt.hifz) return;
       const pg = pageForVerse(m.surah, m.ayah);
       if (opt.n && !(allowed.get(pg) && allowed.get(pg).has(i))) return;
-      const k = m.surah + ':' + m.ayah + ':' + m.wordPos;
-      let e = index.get(k);
-      if (!e) index.set(k, e = { word: m.word || '', marks: [], lessons: new Set(), worst: null, hifz: false });
-      e.marks.push({ m, s: x.s, t: x.t, taj, cfg });
-      e.lessons.add(i);
-      if (!taj) { e.hifz = true; if (!e.worst || sevRank(m.correction) > sevRank(e.worst.m.correction)) e.worst = { m, cfg }; }
+      // pm6: every word of a mistake across several words; the number goes on
+      // its first word only (head), the others are outlined.
+      const a = +m.wordPos, b = Math.max(a, +(m.wordPosEnd || a));
+      for (let w = a; w <= b; w++) {
+        const k = m.surah + ':' + m.ayah + ':' + w;
+        let e = index.get(k);
+        if (!e) index.set(k, e = { word: m.word || '', marks: [], lessons: new Set(), heads: new Set(), worst: null, hifz: false });
+        e.marks.push({ m, s: x.s, t: x.t, taj, cfg });
+        e.lessons.add(i);
+        if (w === a) e.heads.add(i);
+        if (!taj) { e.hifz = true; if (!e.worst || sevRank(m.correction) > sevRank(e.worst.m.correction)) e.worst = { m, cfg }; }
+      }
     });
   });
   if (opt.rep2) for (const [k, e] of index) if (e.lessons.size < 2) index.delete(k);
@@ -143,7 +166,8 @@ function paint() {
     const e = index.get(w.dataset.surah + ':' + w.dataset.ayah + ':' + w.dataset.pos);
     if (!e) return;
     w.classList.add('pm-past');
-    w.setAttribute('data-pm', e.lessons.size);
+    // The number only where a mistake starts; a word inside one is outlined.
+    if (e.heads.size) w.setAttribute('data-pm', e.lessons.size); else w.setAttribute('data-pm', '');
     w.style.setProperty('--pm-c', e.worst ? sevForMistake(e.worst.m, e.worst.cfg).color : 'var(--ink)');
   });
 }
@@ -157,7 +181,7 @@ async function refresh(force) {
 
 /* ── the badge: a tap on it opens the details, a tap on the word marks it ── */
 function onBadge(e) {
-  const w = e.target.closest && e.target.closest('[data-pm]'); if (!w) return;
+  const w = e.target.closest && e.target.closest('[data-pm]'); if (!w || !w.getAttribute('data-pm')) return;   // pm6: no number, no badge
   const r = w.getBoundingClientRect();
   // The badge sits at the word's bottom-left corner (see .pm-past::after).
   const inBadge = e.clientX >= r.left - 10 && e.clientX <= r.left + 18 && e.clientY >= r.bottom - 11 && e.clientY <= r.bottom + 13;
@@ -303,6 +327,7 @@ window.TehfizPast = { set, openSheet, isOn: () => opt.on, refresh: () => refresh
 /* ── styles (.pm-*) ─────────────────────────────────────────────────────── */
 const css = document.createElement('style');
 css.textContent = `
+.pm-past[data-pm=""]::after{display:none;}
 .pm-past{position:relative;outline:2px solid var(--pm-c,var(--ink));outline-offset:1px;border-radius:4px;}
 .pm-past::after{content:attr(data-pm);position:absolute;bottom:-11px;left:-8px;min-width:12px;height:16px;padding:0 4px;
   font:600 11px/16px 'IBM Plex Mono',monospace;color:var(--pm-c,var(--ink));background:var(--surface,#fff);
