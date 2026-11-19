@@ -1,4 +1,4 @@
-/* tehfiz-shared.css — s24
+/* tehfiz-shared.css — s25
    (vcheck.py compares the tag on the line above with the ?v= each app loads
    this file under: change them together.)
    Theme tokens, the theme picker, the one-row header and the mushaf page
@@ -751,3 +751,15 @@ body .mistake-item .m-corr.c3::before{background-image:var(--pf),var(--pf),var(-
 :root.tz-bsm .msl-basmala-text .bs-cal{display:inline-block;vertical-align:middle;height:2em;width:calc(2em * 176 / 36);max-width:92%;background:currentColor;
   -webkit-mask:url("/app/shared/fonts/bismillah.svg") center / contain no-repeat;mask:url("/app/shared/fonts/bismillah.svg") center / contain no-repeat;}
 
+
+/* s25: TehfizHeader.flash — a small note under the Menu button (h8). */
+.tzh-flash{position:fixed;z-index:1400;max-width:min(320px,calc(100vw - 16px));padding:8px 12px;border-radius:10px;
+  background:var(--ink);color:var(--parchment);font:500 13px/1.4 var(--ui-font,system-ui,sans-serif);
+  box-shadow:0 6px 18px rgba(0,0,0,.22);opacity:0;transform:translateY(-4px);transition:opacity .2s,transform .2s;pointer-events:auto;}
+.tzh-flash.on{opacity:1;transform:none;}
+.tzh-flash::before{content:"";position:absolute;top:-5px;left:var(--tzh-flash-x,14px);width:12px;height:12px;background:inherit;
+  transform:rotate(45deg);border-radius:2px;}
+.tzh-flash span{position:relative;}
+.tzh-flash-a{position:relative;border:0;background:none;padding:0;margin:0;color:inherit;font:inherit;font-weight:700;
+  text-decoration:underline;text-underline-offset:2px;cursor:pointer;}
+@media (prefers-reduced-motion:reduce){.tzh-flash{transition:none;transform:none;}}

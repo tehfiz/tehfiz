@@ -1,7 +1,10 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   tehfiz-time.js — TehfizTime — t2
+   tehfiz-time.js — TehfizTime — t5
    Loaded by the teacher app and the student viewer, from
-   /app/shared/tehfiz-time.js?v=t2.
+   /app/shared/tehfiz-time.js?v=t5.
+
+   t5: times follow Settings → Clock (12-hour unless set to 24-hour), not
+   the browser's language: timeText(ms, tz, h12?), and clockOpts(o, h12?).
 
    t4: zones carry their country (country, zoneSearch), so a time zone can be
    found by country; renamed cities show their current name (Kolkata).
@@ -35,7 +38,7 @@
    ═══════════════════════════════════════════════════════════════════════ */
 (function () {
 'use strict';
-const TEHFIZ_TIME_VERSION = 't4';
+const TEHFIZ_TIME_VERSION = 't5';
 const DAY = 86400000;
 
 function deviceTz() {
@@ -138,9 +141,15 @@ function diffText(tz, ms, from) {
 }
 function sameOffset(a, b, ms) { return offsetMin(ms || Date.now(), a) === offsetMin(ms || Date.now(), b); }
 
-function timeText(ms, tz) {
-  try { return new Date(ms).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', ...(validTz(tz) ? { timeZone: tz } : {}) }); }
-  catch { return new Date(ms).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }); }
+/* t5: the app's clock (12/24), passed as h12 to force one (reminders). */
+function clockOpts(o, h12) {
+  if (typeof window.tehfizTimeOpts === 'function') return window.tehfizTimeOpts(o, h12);
+  const t = h12 == null ? true : !!h12;
+  return Object.assign({}, o || {}, { hour: t ? 'numeric' : '2-digit', minute: '2-digit', hour12: t });
+}
+function timeText(ms, tz, h12) {
+  try { return new Date(ms).toLocaleTimeString(undefined, clockOpts(validTz(tz) ? { timeZone: tz } : {}, h12)); }
+  catch { return new Date(ms).toLocaleTimeString(undefined, clockOpts({}, h12)); }
 }
 /* "Today", "Tomorrow" or "Mon 9 Nov", for that zone's calendar. */
 function dayText(ms, tz, now) {
@@ -270,6 +279,6 @@ function planOf(o) {
     .map(([type, v]) => ({ type, mode: 'recite', text: String(v).trim() }));
 }
 
-window.TehfizTime = { myTz, deviceTz, planText, planOf, validTz, partsIn, offsetMin, zonedToMs, city, country, zoneSearch, zoneScore, tzLabel, diffText, sameOffset,
+window.TehfizTime = { clockOpts, myTz, deviceTz, planText, planOf, validTz, partsIn, offsetMin, zonedToMs, city, country, zoneSearch, zoneScore, tzLabel, diffText, sameOffset,
   timeText, dayText, whenText, weekdayShort, zones, occurrences, next, slotIn, version: TEHFIZ_TIME_VERSION };
 })();

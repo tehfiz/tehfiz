@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ═══════════════════════════════════════════════════════════════════
-     Tehfiz teacher app — v4_400
+     Tehfiz teacher app — v4_401
      Deployed from the `tehfiz` repo at app/teacher/index.html (the repo root
      is the web root). Locally, tehfiz-api/public/ is a clone of that repo:
      test with `npm run dev`, then commit and push from inside public/.
@@ -9,20 +9,20 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="tehfiz-version" content="v4_400"><!-- p3: read by the update bar; vcheck keeps it equal to APP_VERSION -->
+<meta name="tehfiz-version" content="v4_401"><!-- p3: read by the update bar; vcheck keeps it equal to APP_VERSION -->
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
 <script>/* Theme and light/dark before first paint — see TehfizTheme and TehfizMode.
    Unknown or missing → Graphite, light. */
 (function(){try{var d=document.documentElement,t=localStorage.getItem('tehfiz_theme'),m=localStorage.getItem('tehfiz_mode');
 if(t==='classic'||t==='lapis'||t==='mulberry')d.setAttribute('data-tz-theme',t);
-if(m==='dark'||(m==='device'&&window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches))d.setAttribute('data-tz-mode','dark');}catch(e){}})();</script>
-<link rel="stylesheet" href="/app/shared/tehfiz-shared.css?v=s24">
-<script src="/app/shared/tehfiz-shared.js?v=s31"></script>
+if(m==='dark'||((m==='device'||!m||(m!=='light'&&m!=='dark'))&&window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches))d.setAttribute('data-tz-mode','dark');}catch(e){}})();</script>
+<link rel="stylesheet" href="/app/shared/tehfiz-shared.css?v=s25">
+<script src="/app/shared/tehfiz-shared.js?v=s32"></script>
 <!-- v4_374: the progress report, shared with the viewer, runs here too (TehfizProgress, progress.js). -->
-<script src="/app/shared/tehfiz-report.js?v=rp7"></script>
+<script src="/app/shared/tehfiz-report.js?v=rp8"></script>
 <script src="/app/teacher/lesson-store.js?v=ls1"></script>
 <script src="/app/shared/tehfiz-ornament.js?v=o2"></script>
-<script src="/app/shared/tehfiz-header.js?v=h7"></script>
+<script src="/app/shared/tehfiz-header.js?v=h8"></script>
 <script src="/app/shared/tehfiz-callink.js?v=cl2"></script>
 <script src="/app/shared/tehfiz-versefind.js?v=vf2"></script>
 <script src="/app/shared/tehfiz-keys.js?v=k2"></script>
@@ -2638,7 +2638,7 @@ body.compact-ui .quick-form::before{
    console as APP_VERSION, or grep the deployed HTML for it. Bumped on every
    saved build; vcheck.py asserts it matches the filename, so a forgotten bump
    fails the integrity check rather than shipping a lie. */
-const APP_VERSION = 'v4_400';
+const APP_VERSION = 'v4_401';
 window.APP_VERSION = APP_VERSION;
 console.info('Tehfiz teacher app ' + APP_VERSION);
 
@@ -3041,14 +3041,20 @@ window.addEventListener('DOMContentLoaded', () => {
   // than leaving them to discover it. Deferred so TehfizSync has booted and can
   // answer for itself; guarded so it happens once per load, not on every
   // re-render, and never over the pending-approval screen.
+  // v4_401: no panel on its own any more — a short note under the Menu
+  // button instead, once per tab, that goes by itself (TehfizHeader.flash).
   setTimeout(() => {
     try{
       if(!window.TehfizSync || _studentsPanelAutoOpened) return;
       if(TehfizSync.isSignedIn && TehfizSync.isSignedIn()) return;
+      if(sessionStorage.getItem('tehfiz_flash_signin')) return;
+      if(window.TehfizTour && TehfizTour.active && TehfizTour.active()) return;
       _studentsPanelAutoOpened = true;
-      TehfizSync.open();
+      if(window.TehfizHeader && TehfizHeader.flash && TehfizHeader.flash('Sign in from the menu \u00b7 New here?',
+           { tour: window.TehfizTour ? () => TehfizTour.start() : null }))
+        sessionStorage.setItem('tehfiz_flash_signin','1');
     }catch{}
-  }, 900);
+  }, 1200);
   _applyAutoscrollToggle(appSettings.autoscrollEnabled !== false);
   // Start background Quran cache prefetch 4 seconds after load (non-blocking)
   setTimeout(()=>startBackgroundPrefetch(), 4000);
@@ -12300,7 +12306,7 @@ function formatDate(d, tzOverride){
 // Format a time string in the effective timezone
 function formatTime(d){
   return d.toLocaleTimeString(undefined,{
-    timeZone:effectiveTz(),hour:'2-digit',minute:'2-digit'
+    ...tehfizTimeOpts({timeZone:effectiveTz()})
   });
 }
 
@@ -12308,7 +12314,7 @@ function updateSettingsPreviews(){
   const now=new Date();
   const tz=effectiveTz();
   document.getElementById('tzPreview').textContent=
-    `Current time in ${tz}: ${now.toLocaleTimeString(undefined,{timeZone:tz,hour:'2-digit',minute:'2-digit',timeZoneName:'short'})}`;
+    `Current time in ${tz}: ${now.toLocaleTimeString(undefined,tehfizTimeOpts({timeZone:tz,timeZoneName:'short'}))}`;
   document.getElementById('datePreview').textContent=
     `Preview: ${formatDate(now)}`;
 }
@@ -12484,6 +12490,11 @@ document.querySelectorAll('.modal-bg').forEach(m=>m.addEventListener('click',e=>
       <label style="display:block;font-size:13px;color:var(--ink2);margin-bottom:6px;font-weight:600;">Line spacing</label>
       <div class="tz-theme-choice" id="lineSpacingChoice"></div>
       <div style="font-size:12px;color:var(--ink3);margin-top:4px;line-height:1.5;">Compact sets the lines closer, so more of the page fits on screen. The words on each line never change. Printing always uses As printed.</div>
+    </div>
+<div class="edit-form-group" style="border-top:.5px solid var(--border);padding-top:10px;margin-top:4px;">
+      <label style="display:block;font-size:13px;color:var(--ink2);margin-bottom:6px;font-weight:600;">Clock</label>
+      <div class="tz-theme-choice" id="clockChoice"></div>
+      <div style="font-size:12px;color:var(--ink3);margin-top:4px;line-height:1.5;">How times show across the app. Web pages can’t read your phone’s 12/24-hour setting, so it’s set here.</div>
     </div>
 <div class="edit-form-group" style="border-top:.5px solid var(--border);padding-top:10px;margin-top:4px;">
       <label style="display:block;font-size:13px;color:var(--ink2);margin-bottom:6px;font-weight:600;">⌨ Keyboard scroll speed</label>
@@ -15528,7 +15539,7 @@ function bcPage() {
 function bcHistoryHtml() {
   if (!bcHist) return '';
   if (!bcHist.length) return '<p class="tad-note" style="margin-top:10px;">No broadcasts sent yet.</p>';
-  const when = (ms) => { try { return new Date(ms).toLocaleString(undefined, { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' }); } catch { return ''; } };
+  const when = (ms) => { try { return new Date(ms).toLocaleString(undefined, tehfizTimeOpts({ day: 'numeric', month: 'short', year: 'numeric' })); } catch { return ''; } };
   return '<details class="bc-hist"' + (bcHistOpen ? ' open' : '') + '><summary>Past broadcasts (' + bcHist.length + ')</summary>' +
     bcHist.map((b) => {
       const open = b.status !== 'done' && b.pos < b.total;
@@ -16594,7 +16605,7 @@ function bkPaint() {
   if (bk.error) { host.innerHTML = errHtml(bk.error); return; }
   const st = bkState(bk);
   const mb = (n) => n == null ? '' : (n / 1048576).toFixed(2) + ' MB';
-  const when2 = (ms) => { try { return new Date(ms).toLocaleString(undefined, { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }); } catch { return ''; } };
+  const when2 = (ms) => { try { return new Date(ms).toLocaleString(undefined, tehfizTimeOpts({ weekday: 'short', day: 'numeric', month: 'short' })); } catch { return ''; } };
   host.innerHTML = (!bk.configured ? '<p class="tad-warn-note">Reports are switched off: the server has no BACKUP_REPORT_KEY yet.</p>' : '') +
     (st && st.warn ? '<p class="tad-warn-note">' + esc(st.text) + '</p>' : '') +
     (bk.runs.length ? '<div class="bk-list">' + bk.runs.slice(0, 14).map((r) => {
@@ -19165,20 +19176,20 @@ span.seg-chip{display:flex;align-items:center;justify-content:center;box-sizing:
   if (document.readyState !== 'loading' && window.TehfizKeys) TehfizKeys.mountHelp(document.getElementById('tzkHelp'));
 })();
 </script>
-<script src="/app/teacher/sessions-sent.js?v=m8"></script>
-<script src="/app/teacher/finish-session.js?v=f21"></script>
+<script src="/app/teacher/sessions-sent.js?v=m9"></script>
+<script src="/app/teacher/finish-session.js?v=f22"></script>
 <script src="/app/teacher/invoices.js?v=i10"></script>
 <script src="/app/shared/tehfiz-map.js?v=mp8"></script>
-<script src="/app/shared/tehfiz-time.js?v=t4"></script>
+<script src="/app/shared/tehfiz-time.js?v=t5"></script>
 <script src="/app/shared/tehfiz-range.js?v=r6"></script>
 <script src="/app/teacher/progress.js?v=g3"></script>
 <script src="/app/teacher/past.js?v=pm12"></script>
 <script src="/app/teacher/spot-weak.js?v=ws2"></script>
-<script src="/app/teacher/profile.js?v=p22"></script>
+<script src="/app/teacher/profile.js?v=p23"></script>
 <script src="/app/teacher/range-picker.js?v=rg5"></script>
-<script src="/app/teacher/lesson-editor.js?v=le8"></script>
+<script src="/app/teacher/lesson-editor.js?v=le9"></script>
 <script src="/app/teacher/calendar.js?v=c8"></script>
-<script src="/app/teacher/remind.js?v=r2"></script>
+<script src="/app/teacher/remind.js?v=r3"></script>
 <script src="/app/teacher/tz-converter.js?v=tc1"></script>
 <script src="/app/teacher/grades.js?v=g5"></script>
 <script src="/app/teacher/name-sync.js?v=n5"></script>

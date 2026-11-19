@@ -1,6 +1,8 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   finish-session.js — TehfizFinish — f21
-   Loaded by the teacher app only, from /app/teacher/finish-session.js?v=f21.
+   finish-session.js — TehfizFinish — f22
+
+   f22: clock times follow Settings → Clock (12-hour unless 24-hour).
+   Loaded by the teacher app only, from /app/teacher/finish-session.js?v=f22.
 
    f21 (stage 9, decided 17 Nov): a lesson that was already sent and is
    finished again (Edit in Sessions) says "Send again to …": it replaces the
@@ -54,7 +56,7 @@
    ═══════════════════════════════════════════════════════════════════════ */
 (function () {
 'use strict';
-const TEHFIZ_FINISH_VERSION = 'f21';
+const TEHFIZ_FINISH_VERSION = 'f22';
 
 let open_ = false, view = 'form', moreOpen = false;
 let st = null;   // the sheet's working state, see begin()
@@ -288,7 +290,7 @@ function guessMinutes() {
 function guessText() {
   const ts = (mistakes || []).map((m) => Date.parse(m.isoTime)).filter((n) => Number.isFinite(n)).sort((a, b) => a - b);
   if (ts.length < 2) return '';
-  const f = (n) => new Date(n).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+  const f = (n) => new Date(n).toLocaleTimeString(undefined, (typeof tehfizTimeOpts === 'function' ? tehfizTimeOpts() : { hour: '2-digit', minute: '2-digit' }));
   return f(ts[0]) + ' → ' + f(ts[ts.length - 1]);
 }
 

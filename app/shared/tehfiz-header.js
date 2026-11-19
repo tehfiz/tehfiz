@@ -1,6 +1,6 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   tehfiz-header.js — TehfizHeader — h7
-   Loaded by both apps from /app/shared/tehfiz-header.js?v=h7, after
+   tehfiz-header.js — TehfizHeader — h8
+   Loaded by both apps from /app/shared/tehfiz-header.js?v=h8, after
    tehfiz-shared.js. Styles live in tehfiz-shared.css under .tzh-.
 
    The one-row header. The bar's own markup is in each app (it has to paint
@@ -26,7 +26,10 @@
    ═══════════════════════════════════════════════════════════════════════ */
 (function () {
 'use strict';
-const TEHFIZ_HEADER_VERSION = 'h7';
+const TEHFIZ_HEADER_VERSION = 'h8';
+/* h8: flash(text, {tour}) — a small note under the Menu button that goes by
+   itself. It replaces the sign-in panels both apps used to open on their
+   own: "Sign in from the menu · New here? Take the tour". */
 /* h7: the phone menu's View has Pages (Framed / Continuous), as the desktop
    View pop does. In Go to, searching for a surah keeps the list above the
    keyboard: the sheet follows the visible part of the screen
@@ -522,6 +525,48 @@ window.addEventListener('resize', () => {
   _wasCompact = c;
 });
 
+/* A short note pointing at the Menu button. Goes after `ms`, or at the
+   first tap or key anywhere; a tap on its link runs opts.tour. Never over
+   an open menu, a dialog or the tour, and not when the button is hidden. */
+let flashEl = null, flashT = 0;
+function unflash() {
+  clearTimeout(flashT);
+  if (!flashEl) return;
+  const el = flashEl; flashEl = null;
+  el.classList.remove('on');
+  setTimeout(() => el.remove(), 220);
+  document.removeEventListener('pointerdown', onFlashAway, true);
+  document.removeEventListener('keydown', unflash, true);
+  window.removeEventListener('resize', unflash);
+}
+function onFlashAway(e) { if (!(flashEl && flashEl.contains(e.target))) unflash(); }
+function flash(text, opts) {
+  opts = opts || {};
+  const btn = $('tzhMenuBtn');
+  if (!btn || flashEl || menuOpen) return false;
+  const r = btn.getBoundingClientRect();
+  if (!r.width || !r.height) return false;
+  const shown = (e) => e.getClientRects().length && getComputedStyle(e).visibility !== 'hidden';
+  if ([...document.querySelectorAll('.modal-bg.open, [aria-modal="true"]')].some(shown)) return false;
+  const el = document.createElement('div');
+  el.className = 'tzh-flash'; el.setAttribute('role', 'status');
+  el.innerHTML = '<span>' + esc(text) + '</span>' +
+    (opts.tour ? ' <button type="button" class="tzh-flash-a">' + esc(opts.tourLabel || 'Take the tour') + '</button>' : '');
+  document.body.appendChild(el);
+  const w = el.offsetWidth, left = Math.max(8, Math.min(r.left, innerWidth - w - 8));
+  el.style.left = left + 'px'; el.style.top = (r.bottom + 8) + 'px';
+  el.style.setProperty('--tzh-flash-x', Math.max(10, Math.min(w - 18, r.left + r.width / 2 - left - 6)) + 'px');
+  const a = el.querySelector('.tzh-flash-a');
+  if (a) a.addEventListener('click', () => { unflash(); try { opts.tour(); } catch (e) {} });
+  flashEl = el;
+  requestAnimationFrame(() => el.classList.add('on'));
+  document.addEventListener('pointerdown', onFlashAway, true);
+  document.addEventListener('keydown', unflash, true);
+  window.addEventListener('resize', unflash);
+  flashT = setTimeout(unflash, opts.ms || 8000);
+  return true;
+}
+
 function init(c) {
   cfg = { ...cfg, ...(c || {}) };
   _wasCompact = compact();
@@ -530,7 +575,7 @@ function init(c) {
 
 window.TehfizHeader = {
   init, toggleMenu, openMenu, closeMenu, refreshMenu, toggleView, closeView,
-  openGoto, closeGoto, stepPage, goVerse, syncPosition, icon,
+  openGoto, closeGoto, stepPage, goVerse, syncPosition, icon, flash, unflash,
   isOpen: () => menuOpen || viewOpen || gotoOpen,
   version: TEHFIZ_HEADER_VERSION,
 };

@@ -8,18 +8,18 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="tehfiz-version" content="v1_215"><!-- p3: read by the update bar; vcheck keeps it equal to APP_VERSION -->
+<meta name="tehfiz-version" content="v1_217"><!-- p3: read by the update bar; vcheck keeps it equal to APP_VERSION -->
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <script>/* Theme and light/dark before first paint — see TehfizTheme and TehfizMode.
    Unknown or missing → Graphite, light. */
 (function(){try{var d=document.documentElement,t=localStorage.getItem('tehfiz_theme'),m=localStorage.getItem('tehfiz_mode');
 if(t==='classic'||t==='lapis'||t==='mulberry')d.setAttribute('data-tz-theme',t);
-if(m==='dark'||(m==='device'&&window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches))d.setAttribute('data-tz-mode','dark');}catch(e){}})();</script>
-<link rel="stylesheet" href="/app/shared/tehfiz-shared.css?v=s24">
-<script src="/app/shared/tehfiz-shared.js?v=s31"></script>
-<script src="/app/shared/tehfiz-report.js?v=rp7"></script>
+if(m==='dark'||((m==='device'||!m||(m!=='light'&&m!=='dark'))&&window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches))d.setAttribute('data-tz-mode','dark');}catch(e){}})();</script>
+<link rel="stylesheet" href="/app/shared/tehfiz-shared.css?v=s25">
+<script src="/app/shared/tehfiz-shared.js?v=s32"></script>
+<script src="/app/shared/tehfiz-report.js?v=rp8"></script>
 <script src="/app/shared/tehfiz-ornament.js?v=o2"></script>
-<script src="/app/shared/tehfiz-header.js?v=h7"></script>
+<script src="/app/shared/tehfiz-header.js?v=h8"></script>
 <script src="/app/shared/tehfiz-pwa.js?v=p3"></script>
 <script src="/app/shared/tehfiz-callink.js?v=cl2"></script>
 <script src="/app/shared/tehfiz-versefind.js?v=vf2"></script>
@@ -1489,6 +1489,12 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
     </div>
 
     <div style="border-top:.5px solid var(--border);padding-top:10px;margin-top:10px;">
+      <label style="display:block;font-size:13px;color:var(--ink2);margin-bottom:6px;font-weight:600;">Clock</label>
+      <div class="tz-theme-choice" id="clockChoice"></div>
+      <div style="font-size:12px;color:var(--ink3);margin-top:4px;line-height:1.5;">How times show across the app. Web pages can’t read your phone’s 12/24-hour setting, so it’s set here.</div>
+    </div>
+
+    <div style="border-top:.5px solid var(--border);padding-top:10px;margin-top:10px;">
       <label style="display:flex;align-items:center;justify-content:space-between;user-select:none;">
         <span>ع Ruku markers</span>
         <span style="font-size:12px;color:var(--ink3);font-weight:400;margin-right:6px;font-family:var(--ui-font);">Mark where each ruku ends</span>
@@ -1804,7 +1810,7 @@ body.topbar-hidden .topbar-restore-btn{display:block!important;}
    console as APP_VERSION, or grep the deployed HTML for it. Bumped on every
    saved build; vcheck.py asserts it matches the filename, so a forgotten bump
    fails the integrity check rather than shipping a lie. */
-const APP_VERSION = 'v1_215';
+const APP_VERSION = 'v1_217';
 window.APP_VERSION = APP_VERSION;
 console.info('Tehfiz student viewer ' + APP_VERSION);
 
@@ -4324,12 +4330,11 @@ function syncHintBar(){
      line plus Show me around, which is the only always-visible way into the
      tour. Losing it would leave the tour reachable only from inside Help,
      which a first-time student has no reason to open. */
-  document.body.classList.toggle('hint-welcome', !linked);
-  if (bar) bar.style.display = linked ? 'none' : '';
-  if (!linked) {
-    txt.textContent = 'Welcome to the Student viewer. Sign in, or set up your PIN ' +
-                      'using the code your teacher has sent you.';
-  }
+  /* v1_217: the welcome bar is gone. What it said (log in, or set up the
+     PIN with the teacher's code) and its way into the tour are in the note
+     under the Menu button now (TehfizClaim's mount, TehfizHeader.flash). */
+  document.body.classList.remove('hint-welcome');
+  if (bar) bar.style.display = 'none';
 }
 
 function revealSessions(){
@@ -5234,7 +5239,7 @@ function render() {
   }
 
   const when = lastPull
-    ? 'Last checked ' + new Date(lastPull).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+    ? 'Last checked ' + new Date(lastPull).toLocaleTimeString([], tehfizTimeOpts())
     : 'Not checked yet';
 
   body.innerHTML = err + wait +
@@ -5420,11 +5425,17 @@ function mount() {
      Dismissible, and that must stay true: ✕ and the backdrop both close it.
      This runs AFTER the review-mode return above, so a teacher opening a
      student's history is never prompted (open() refuses in review mode too). */
-  let hasLocal = true;   // assume yes, so a missing seam degrades to silence
-  try {
-    if (typeof window.localSessionCount === 'function') hasLocal = window.localSessionCount() > 0;
-  } catch { hasLocal = true; }
-  if (!hasLocal) open(false);
+  /* v1_216: no panel on its own any more — a short note under the Menu
+     button instead, once per tab, that goes by itself (TehfizHeader.flash). */
+  setTimeout(() => {
+    try {
+      if (paired() || sessionStorage.getItem('tehfiz_flash_signin')) return;
+      if (window.TehfizTour && TehfizTour.active && TehfizTour.active()) return;
+      if (window.TehfizHeader && TehfizHeader.flash && TehfizHeader.flash('Log in from the menu, or set up your PIN with the code your teacher sent you. New here?',
+            { ms: 10000, tour: window.TehfizTour ? () => TehfizTour.start() : null }))
+        sessionStorage.setItem('tehfiz_flash_signin', '1');
+    } catch {}
+  }, 1200);
 }
 
 if (document.readyState === 'loading') {
@@ -6452,8 +6463,8 @@ span.seg-chip{display:flex;align-items:center;justify-content:center;box-sizing:
 <!-- v1_174: My journey — the left panel and the next-lesson strip. -->
 <script src="/app/shared/tehfiz-map.js?v=mp8"></script>
 <script src="/app/shared/tehfiz-range.js?v=r6"></script>
-<script src="/app/shared/tehfiz-time.js?v=t4"></script>
-<script src="/app/student/journey.js?v=j9"></script>
+<script src="/app/shared/tehfiz-time.js?v=t5"></script>
+<script src="/app/student/journey.js?v=j10"></script>
 
 <script>
 /* ═══ Header configuration (TehfizHeader, /app/shared/tehfiz-header.js) ═══ */

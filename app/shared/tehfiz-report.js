@@ -1,5 +1,7 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   tehfiz-report.js — TehfizReport — rp7 (17 Nov 2026)
+   tehfiz-report.js — TehfizReport — rp8 (19 Nov 2026)
+
+   rp8: clock times follow Settings → Clock (12-hour unless 24-hour).
 
    The progress report, moved here from the student viewer so the teacher app
    can run it too (stage 7b, decided 16 Nov).
@@ -30,7 +32,7 @@
    Loaded by both apps after tehfiz-shared.js; reads the app's STRENGTH_MODEL
    and sessionDateText, which both define, at call time.
    ═══════════════════════════════════════════════════════════════════════════ */
-const TEHFIZ_REPORT_VERSION = 'rp7';
+const TEHFIZ_REPORT_VERSION = 'rp8';
 // var, not const: a top-level const is not a property of window, and the range
 // module and the teacher app's panel look for window.TehfizReport.
 var TehfizReport = { version: TEHFIZ_REPORT_VERSION, hooks: {} };
@@ -1037,7 +1039,7 @@ function _logRows(S){
   S.forEach(s => {
     const d    = _sessDate(s);
     const ymd  = _sessYMD(s);
-    const time = d && !isNaN(d) ? d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : '';
+    const time = d && !isNaN(d) ? d.toLocaleTimeString([], (typeof tehfizTimeOpts === 'function' ? tehfizTimeOpts() : {hour:'2-digit', minute:'2-digit'})) : '';
     (s.segments || []).forEach(sg => {
       const o    = segOrdered(sg);
       const spot = sg.mode === 'spot';

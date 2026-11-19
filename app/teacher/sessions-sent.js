@@ -1,6 +1,8 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   sessions-sent.js — TehfizSent — m8
-   Loaded by the teacher app only, from /app/teacher/sessions-sent.js?v=m8.
+   sessions-sent.js — TehfizSent — m9
+
+   m9: clock times follow Settings → Clock (12-hour unless 24-hour).
+   Loaded by the teacher app only, from /app/teacher/sessions-sent.js?v=m9.
 
    m8 (stage 9): Review and Edit are buttons on every card, not hidden in a
    tap on the card. Edit opens the lesson in the app (copying it to this
@@ -37,7 +39,7 @@
    ═══════════════════════════════════════════════════════════════════════ */
 (function () {
 'use strict';
-const TEHFIZ_SENT_VERSION = 'm8';
+const TEHFIZ_SENT_VERSION = 'm9';
 const KEY_STUDENT = 'tehfiz_sent_student';
 const PAGE = 100;
 
@@ -66,7 +68,7 @@ function studentLabel(id, code) {
    showed only the lesson's own date and "On this device", which read as if
    nothing said whether — or when — it had gone. */
 function sentText(r) {
-  const at = (ms) => new Date(ms).toLocaleString(undefined, { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
+  const at = (ms) => new Date(ms).toLocaleString(undefined, (typeof tehfizTimeOpts === 'function' ? tehfizTimeOpts({ day: 'numeric', month: 'short' }) : { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }));
   if (!r.created_at) return '';
   const upd = r.updated_at && r.updated_at - r.created_at > 60000 ? ' \u00b7 updated ' + at(r.updated_at) : '';
   return 'Sent ' + at(r.created_at) + upd;

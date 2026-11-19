@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   tehfiz-shared.js — s31
+   tehfiz-shared.js — s32
    Loaded by BOTH apps (teacher /app/teacher/, viewer /app/student/) before
    their own scripts, from /app/shared/tehfiz-shared.js?v=<version>.
 
@@ -18,7 +18,23 @@
    · Nothing here may run against the page at load time: this file runs in the
      <head>, before <body> exists. Declarations and pure tables only.
    ═══════════════════════════════════════════════════════════════════════ */
-const TEHFIZ_SHARED_VERSION = 's31';
+const TEHFIZ_SHARED_VERSION = 's32';
+
+/* s32: the clock. Times show 12-hour (5:30 PM) unless Settings → Clock says
+   24-hour (17:30). It no longer follows the browser's language, which was why
+   a phone set to 12-hour could show 17:30: phones keep their clock setting
+   apart from the language, and a web page can't read that setting. Storage
+   key 'tehfiz_clock' ('12' | '24'), shared by both apps like the theme.
+   Every clock time in both apps goes through tehfizTimeOpts(); the picker is
+   TehfizClock, drawn in #clockChoice. Light/dark now starts on Device. */
+function tehfizHour12(){ try { return localStorage.getItem('tehfiz_clock') !== '24'; } catch(e) { return true; } }
+/* Options for toLocaleTimeString/toLocaleString: the caller's, with the hour
+   set the clock's way. 12-hour drops the leading zero (5:30 PM); 24-hour
+   keeps it (05:30). */
+function tehfizTimeOpts(o, h12){
+  const t = h12 == null ? tehfizHour12() : !!h12;
+  return Object.assign({}, o || {}, { hour: t ? 'numeric' : '2-digit', minute: '2-digit', hour12: t });
+}
 
 /* s16: the surah banner on the mushaf — the calligraphic name (fonts/surah-names
    .woff2, from quran.com) with سورة, and at the sides the number of verses and
@@ -3557,7 +3573,7 @@ function pageLoadChartHTML(segs, seg, mistakes){
 function sessionTimeText(sess){
   if(!sess?.isoDate) return '';
   const d=new Date(sess.isoDate);
-  return isNaN(d) ? '' : d.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'});
+  return isNaN(d) ? '' : d.toLocaleTimeString(undefined,tehfizTimeOpts());
 }
 
 // Clock time of a single mistake, in the reader's zone.
@@ -3573,7 +3589,7 @@ function mistakeTimeTitle(m){
 function mistakeTimeText(m){
   if(m?.isoTime){
     const d=new Date(m.isoTime);
-    if(!isNaN(d)) return d.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'});
+    if(!isNaN(d)) return d.toLocaleTimeString(undefined,tehfizTimeOpts());
   }
   return m?.time||'';
 }
@@ -3726,7 +3742,7 @@ function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace
 })();
 
 /* ═══ TehfizMode ═════════════════════════════════════════════════════════
-   Light (default), Dark, or Device (follow the system). Storage key
+   Light, Dark, or Device (follow the system; the default since s32). Storage key
    'tehfiz_mode', shared by both apps like the theme. Applied as
    <html data-tz-mode="dark"> — absent means light. Each app's <head>
    bootstrap applies it before first paint; this keeps it current and draws
@@ -3743,7 +3759,7 @@ function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace
   function get(){
     var t = null;
     try { t = localStorage.getItem(KEY); } catch(e) {}
-    return valid(t) ? t : 'light';
+    return valid(t) ? t : 'device';
   }
   function isDark(){ var m = get(); return m === 'dark' || (m === 'device' && !!(mq && mq.matches)); }
   /* Paper is white. The print stylesheets force a white page, but everything
@@ -3847,6 +3863,38 @@ function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace
   apply(get());
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', render); else render();
   window.TehfizLines = { get:get, set:set, render:render, forPrint:forPrint };
+})();
+
+/* ═══ TehfizClock ═══════════════════════════════════════════════════════
+   12-hour (default) or 24-hour, for every clock time in both apps (s32).
+   Storage key 'tehfiz_clock'. DOM: #clockChoice. A change fires
+   'tehfiz-clock' on window, so a view that is open can redraw its times. */
+(function(){
+  var KEY = 'tehfiz_clock';
+  var OPTS = [ { id:'12', name:'12-hour', note:'5:30 PM' }, { id:'24', name:'24-hour', note:'17:30' } ];
+  function get(){ return tehfizHour12() ? '12' : '24'; }
+  function set(id){
+    if (id !== '12' && id !== '24') return;
+    try { localStorage.setItem(KEY, id); } catch(e) {}
+    render();
+    try { window.dispatchEvent(new Event('tehfiz-clock')); } catch(e) {}
+  }
+  function render(){
+    var el = document.getElementById('clockChoice');
+    if (!el) return;
+    var cur = get();
+    el.innerHTML = OPTS.map(function(o){
+      return '<button type="button" class="tz-theme-opt tz-clock-opt' + (o.id === cur ? ' on' : '') + '" data-tzc="' + o.id + '"' +
+        ' aria-pressed="' + (o.id === cur) + '"><span class="tz-theme-name">' + o.name + '<small>' + o.note + '</small></span></button>';
+    }).join('');
+  }
+  document.addEventListener('click', function(e){
+    var b = e.target.closest && e.target.closest('.tz-clock-opt');
+    if (b && b.dataset.tzc) set(b.dataset.tzc);
+  });
+  window.addEventListener('storage', function(e){ if (e.key === KEY) { render(); try { window.dispatchEvent(new Event('tehfiz-clock')); } catch(x) {} } });
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', render); else render();
+  window.TehfizClock = { get:get, set:set, render:render };
 })();
 
 /* After a setting changes the height of every page (page style, line

@@ -1,6 +1,9 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   journey.js — TehfizJourney — j9
-   Loaded by the student viewer only, from /app/student/journey.js?v=j8.
+   journey.js — TehfizJourney — j10
+   Loaded by the student viewer only, from /app/student/journey.js?v=j10.
+
+   j10: times follow Settings → Clock (12-hour unless set to 24-hour), and
+   redraw when it changes.
 
    j8: when the teacher changed the code or reset the PIN, the calendar link
    stopped with it (server, 0016). Reminders says so and offers to add the
@@ -53,7 +56,7 @@
    ═══════════════════════════════════════════════════════════════════════ */
 (function () {
 'use strict';
-const TEHFIZ_JOURNEY_VERSION = 'j9';
+const TEHFIZ_JOURNEY_VERSION = 'j10';
 const KEY_PLAN = 'tehfiz_journey_plan';
 const REFRESH_MS = 5 * 60 * 1000;
 const DAY_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -136,7 +139,7 @@ function dayText(d) {
   if (TT()) return TT().dayText(+d);
   return d.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
 }
-function timeText(d) { return d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }); }
+function timeText(d) { return d.toLocaleTimeString(undefined, (typeof tehfizTimeOpts === 'function' ? tehfizTimeOpts() : { hour: 'numeric', minute: '2-digit' })); }
 function slotTime(t) { const [h, m] = String(t || '').split(':').map(Number); const d = new Date(); d.setHours(h || 0, m || 0, 0, 0); return timeText(d); }
 function agoText(ms) {
   const m = Math.round((Date.now() - ms) / 60000);
@@ -506,5 +509,6 @@ function mapOf() {
   const m = plan && plan.map;
   return m && window.TehfizMap && window.TehfizMap.valid(m.pages) && /[orn]/.test(m.pages) ? m : null;
 }
+window.addEventListener('tehfiz-clock', () => { try { render(); } catch (e) {} });
 window.TehfizJourney = { open: openPanel, close: () => close(), toggle, isOpen: () => open_, refresh: fetchPlan, map: mapOf, version: TEHFIZ_JOURNEY_VERSION };
 })();

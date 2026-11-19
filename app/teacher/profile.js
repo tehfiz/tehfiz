@@ -1,6 +1,8 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   profile.js — TehfizProfile — p22
-   Loaded by the teacher app only, from /app/teacher/profile.js?v=p16.
+   profile.js — TehfizProfile — p23
+
+   p23: clock times follow Settings → Clock (12-hour unless 24-hour).
+   Loaded by the teacher app only, from /app/teacher/profile.js?v=p23.
 
    p16: applyLesson returns the map as it was (.before) and restoreMap puts
    it back, for an undone send; the PIN and code confirmations say when the
@@ -64,7 +66,7 @@
    ═══════════════════════════════════════════════════════════════════════ */
 (function () {
 'use strict';
-const TEHFIZ_PROFILE_VERSION = 'p22';
+const TEHFIZ_PROFILE_VERSION = 'p23';
 const K_TT = 'tehfiz_prof_tt';            // {sid: {days: {'1': {t:'17:00', len:45}, …}, lessons: [{at, len}]}}, 0 = Sunday — a cache
 const K_LSQ = 'tehfiz_prof_lsq';          // {sid: true} single lessons not yet on the server (p7)
 const K_MAPQ = 'tehfiz_prof_mapq';        // {sid: {pages, recent_auto, ayahs}} not yet on the server
@@ -289,7 +291,7 @@ function nextLesson(id, from) {
 }
 // p6: "Today" and "Tomorrow" instead of the date when it is that close.
 function dayText(d) { return T() ? T().dayText(+d) : d.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' }); }
-function timeText(d) { return d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }); }
+function timeText(d) { return d.toLocaleTimeString(undefined, (typeof tehfizTimeOpts === 'function' ? tehfizTimeOpts() : { hour: 'numeric', minute: '2-digit' })); }
 
 /* ── CSS ────────────────────────────────────────────────────────────────── */
 function injectCss() {

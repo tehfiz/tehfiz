@@ -1,6 +1,9 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   remind.js — TehfizRemind — r2
-   Loaded by the teacher app only, from /app/teacher/remind.js?v=r2.
+   remind.js — TehfizRemind — r3
+   Loaded by the teacher app only, from /app/teacher/remind.js?v=r3.
+
+   r3: 12-hour or 24-hour, for the times in the message. 12-hour to start;
+   the choice is kept with the other options, apart from the app's own clock.
 
    r2: the ticks in the option chips are a drawn shape, not rotated borders,
    so they sit right in every font and in dark mode.
@@ -30,7 +33,7 @@
    ═══════════════════════════════════════════════════════════════════════ */
 (function () {
 'use strict';
-const TEHFIZ_REMIND_VERSION = 'r2';
+const TEHFIZ_REMIND_VERSION = 'r3';
 const T = () => window.TehfizTime;
 const $ = (id) => document.getElementById(id);
 const esc = (x) => String(x == null ? '' : x).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -119,7 +122,7 @@ function theirTz(sid) {
   return z && T().validTz(z) ? z : null;
 }
 function differs(sid, ms) { const z = theirTz(sid); return !!z && !T().sameOffset(z, T().myTz(), ms); }
-function timeIn(ms, tz) { return T().timeText(ms, tz).replace(/\s?([AP])M$/i, (m, a) => ' ' + a.toLowerCase() + 'm'); }
+function timeIn(ms, tz) { return T().timeText(ms, tz, !(st && st.opts && st.opts.h24)).replace(/\s?([AP])M$/i, (m, a) => ' ' + a.toLowerCase() + 'm'); }
 /* "today", "tomorrow (Tuesday)", or "on Thursday 12 November", in their day. */
 function dayWords(ms, tz) {
   const d = T().dayText(ms, tz);
@@ -182,7 +185,7 @@ function open(o) {
   css();
   const saved = readJ(K_OPT, {});
   st = { sid: o.sid, at: +o.at, len: +o.len || 0, lesson: o.lesson || null, kind: 'remind', editing: false,
-         opts: { salaam: saved.salaam !== false, their: saved.their !== false, mine: !!saved.mine, plan: saved.plan !== false },
+         opts: { salaam: saved.salaam !== false, their: saved.their !== false, mine: !!saved.mine, plan: saved.plan !== false, h24: saved.h24 === true },
          mins: 5, other: false, text: '' };
   // A lesson under way or minutes away: "running late" is the likely one.
   if (st.at <= Date.now() + 10 * 60000 && st.at + (st.len || 30) * 60000 > Date.now()) st.kind = 'late';
@@ -230,6 +233,10 @@ function render() {
                  chip('opt', 'My time too', st.opts.mine).replace('data-trm="opt"', 'data-trm="opt" data-o="mine"') : '') +
         (st.kind === 'remind' && planLines(st.lesson).length ? chip('opt', 'What to prepare', st.opts.plan).replace('data-trm="opt"', 'data-trm="opt" data-o="plan"') : '') +
       '</div>' +
+      '<div class="trm-chips" role="group" aria-label="Clock">' +
+        chip('clock', '12-hour', !st.opts.h24, true).replace('data-trm="clock"', 'data-trm="clock" data-h="12"') +
+        chip('clock', '24-hour', !!st.opts.h24, true).replace('data-trm="clock"', 'data-trm="clock" data-h="24"') +
+      '</div>' +
       '<textarea class="trm-txt" id="trmTxt" aria-label="Message">' + esc(st.text) + '</textarea>' +
       '<div class="trm-row"><button type="button" class="trm-big" data-trm="copy" id="trmCopy">Copy</button>' +
         '<button type="button" class="trm-big wa" data-trm="wa">Open in WhatsApp</button>' +
@@ -271,6 +278,7 @@ function onClick(e) {
   const a = b.dataset.trm;
   if (a === 'close') return close();
   if (a === 'kind') { st.kind = b.dataset.k; st.text = fill(st.kind); render(); return; }
+  if (a === 'clock') { st.opts.h24 = b.dataset.h === '24'; writeJ(K_OPT, st.opts); st.text = fill(st.kind); render(); return; }
   if (a === 'opt') {
     const k = b.dataset.o; st.opts[k] = !st.opts[k];
     writeJ(K_OPT, st.opts); st.text = fill(st.kind); render(); return;

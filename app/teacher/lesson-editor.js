@@ -1,6 +1,8 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   lesson-editor.js — TehfizLesson — le8
-   Loaded by the teacher app only, from /app/teacher/lesson-editor.js?v=le8.
+   lesson-editor.js — TehfizLesson — le9
+
+   le9: clock times follow Settings → Clock (12-hour unless 24-hour).
+   Loaded by the teacher app only, from /app/teacher/lesson-editor.js?v=le9.
 
    le8: typing a time no longer jumps (10 became 00): the fields aren't
    rebuilt between keystrokes.
@@ -60,7 +62,7 @@
    ═══════════════════════════════════════════════════════════════════════ */
 (function () {
 'use strict';
-const TEHFIZ_LESSON_VERSION = 'le8';
+const TEHFIZ_LESSON_VERSION = 'le9';
 const K_HOURS = 'tehfiz_teach_hours';     // {from:'15:00', to:'21:00'} — optional, set in Settings
 const K_PLANS = 'tehfiz_cal_plans';       // the calendar's copy of every student's timetable
 const SNAP = 15;
@@ -94,7 +96,7 @@ function atOf(day, min) { const p = T().partsIn(day + 12 * 3600000, myZ()); retu
 function fmtMin(m) {
   m = ((m % 1440) + 1440) % 1440;
   const d = new Date(2000, 0, 1, Math.floor(m / 60), m % 60);
-  return d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+  return d.toLocaleTimeString(undefined, (typeof tehfizTimeOpts === 'function' ? tehfizTimeOpts() : { hour: 'numeric', minute: '2-digit' }));
 }
 function theirZ() {
   const st = S() && S().student ? S().student(ed.sid) : null;
